@@ -802,8 +802,8 @@ function showRosterReview() {
   }
   var teamChanges = changes.teamChanges[STATE.careerTeam] || { retired: [], rookies: [] };
 
-  var avatarUrl = DEFAULT_PLAYER_AVATAR;
-  var defaultAvatar = DEFAULT_PLAYER_AVATAR;
+  var avatarUrl = getPlayerAvatarUrl();
+  var defaultAvatar = avatarUrl;
 
   function renderPlayer(p, isUser) {
     var pOvr = parseInt(p.ovr) || 0;

@@ -3056,7 +3056,7 @@ function selectCareerTeam(team) {
   STATE.season.isUserStarter = !startBench && !!lineup.isUserStarter;
   
   // 自建球员头像：用户头像 / 默认篮坛造星局头像
-  var defaultAvatar = DEFAULT_PLAYER_AVATAR;
+  var defaultAvatar = getPlayerAvatarUrl();
   if (!LOCAL_PLAYER_PROFILE.loaded || !LOCAL_PLAYER_PROFILE.isLogin) { ensureLocalPlayerProfile(true); }
   var avatarUrl = defaultAvatar;
   
