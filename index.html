@@ -24,7 +24,7 @@ window.open = function(){ return null; };
   </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>球员锻造局 · Court Foundry</title>
+  <title>篮坛造星局 · Court Forge</title>
   <link href="assets/fonts.googleapis.com/css2-eebebbc7944b.css" rel="stylesheet">
   <style>
 /* ============================================================
@@ -632,7 +632,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 (function () {
   window.__COLORBOX_AI_CONFIG__ = {
     projectId: "project-ai-1783761934042",
-    settings: {"ownerId":402116,"projectId":"project-ai-1783761934042","title":"球员锻造局","trackingCode":"PHBS7947","bizCategory":"match","isGamePlay":true,"postTopicId":"152165","shareInviteParams":"1783761934042","rewardVideoIncomeId":"16899","shareTitle":"","shareSubtitle":"","shareCover":"","theme":{"webviewBackground":"#1c1713","skeletonColor":"#332923","containerBackground":"#1c1713"},"dayNightMode":"dark"},
+    settings: {"ownerId":402116,"projectId":"project-ai-1783761934042","title":"篮坛造星局","trackingCode":"PHBS7947","bizCategory":"match","isGamePlay":true,"postTopicId":"152165","shareInviteParams":"1783761934042","rewardVideoIncomeId":"16899","shareTitle":"","shareSubtitle":"","shareCover":"","theme":{"webviewBackground":"#1c1713","skeletonColor":"#332923","containerBackground":"#1c1713"},"dayNightMode":"dark"},
     pagePi: "activity_match_project-ai-1783761934042"
   };
   "use strict";
@@ -1267,9 +1267,9 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   <div class="screen active" id="screen-menu">
     <!-- Top Nav Bar (like reference site) -->
     <div class="navbar">
-      <div class="nav-logo" aria-label="球员锻造局 Court Foundry">
+      <div class="nav-logo" aria-label="篮坛造星局 Court Forge">
         <span class="brand-mark" aria-hidden="true"><span>CF</span></span>
-        <span class="brand-lockup"><span class="brand-name">球员锻造局</span><span class="brand-sub">COURT FOUNDRY</span></span>
+        <span class="brand-lockup"><span class="brand-name">篮坛造星局</span><span class="brand-sub">COURT FORGE</span></span>
       </div>
       <div class="nav-pos-toggle" id="nav-pos-toggle">
         <button class="nav-pos-btn active" data-pos="NBA">🏀</button>
@@ -1278,7 +1278,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 
     <!-- Hero -->
     <div class="hero">
-      <div class="hero-title">COURT FOUNDRY · PLAYER LAB</div>
+      <div class="hero-title">COURT FORGE · PLAYER LAB</div>
       <div class="hero-headline">
         锻造你的传奇球星
       </div>
@@ -3880,7 +3880,7 @@ function selectCareerTeam(team) {
   var role = (!startBench && lineup.isUserStarter) ? '首发' : '替补';
   STATE.season.isUserStarter = !startBench && !!lineup.isUserStarter;
   
-  // 自建球员头像：用户头像 / 默认球员锻造局头像
+  // 自建球员头像：用户头像 / 默认篮坛造星局头像
   var defaultAvatar = DEFAULT_PLAYER_AVATAR;
   if (!HUPU_USER.loaded || !HUPU_USER.isLogin) { ensureHupuUser(true); }
   var avatarUrl = defaultAvatar;
@@ -4307,39 +4307,58 @@ function renderSeasonSimulationControl() {
   controls.innerHTML = '';
 }
 
-function startSeasonSimulation() {
-  if (!STATE.season || STATE._calendarAutoSimulating || !STATE.season.schedule?.some(function(game) { return !game.simulated; })) return;
-  trackEvent({act:'click',blk:'BMC098',pos:'TC7',label:'开始模拟'});
+function startSeasonSimulation(targetDay) {
+  if (!STATE.season || STATE._calendarAutoSimulating) return;
+  var hasTargetDay = Number.isFinite(targetDay);
+  var hasPendingGames = STATE.season.schedule?.some(function(game) {
+    return !game.simulated && (!hasTargetDay || game.day <= targetDay);
+  });
+  if (!hasPendingGames) return;
+  trackEvent({act:'click',blk:'BMC098',pos:'TC7',label:hasTargetDay ? '模拟到比赛日' : '开始模拟'});
   STATE.season._simulationStarted = true;
   STATE._calendarAutoSimulating = true;
   renderSeasonSimulationControl();
   renderCalendar();
   renderSeasonInsights();
   queueSeasonAutoSave();
-  quickSimAllGames();
+  quickSimAllGames(hasTargetDay ? targetDay : null);
 }
 
-// ★ 逐场模拟全部 82 场常规赛，日历实时更新
-function quickSimAllGames() {
+function simToDay(targetDay) {
+  startSeasonSimulation(Number(targetDay));
+}
+
+// ★ 逐场模拟常规赛；传入 targetDay 时只模拟到指定比赛日
+function quickSimAllGames(targetDay) {
   var schedule = STATE.season.schedule;
   if (!schedule || schedule.length === 0) { console.error('[Sim] 赛程为空'); STATE._calendarAutoSimulating = false; renderCalendar(); renderSeasonInsights(); renderSeasonSimulationControl(); return; }
-  var games = schedule.filter(function(g) { return !g.simulated; });
+  var hasTargetDay = Number.isFinite(targetDay);
+  var games = schedule.filter(function(g) { return !g.simulated && (!hasTargetDay || g.day <= targetDay); });
   if (games.length === 0) { STATE._calendarAutoSimulating = false; renderCalendar(); renderSeasonInsights(); renderSeasonSimulationControl(); return; }
 
   var gi = 0;
   function simNextWithDelay() {
     if (gi >= games.length) {
-      processAllRemainingDays();
+      var seasonIsComplete = !schedule.some(function(game) { return !game.simulated; });
+      if (seasonIsComplete) processAllRemainingDays();
       reconcileStandings();
-      calcSeasonAwards();
+      if (seasonIsComplete) calcSeasonAwards();
 
       STATE._calendarAutoSimulating = false;
+      if (!seasonIsComplete && hasTargetDay) {
+        var targetMonthIdx = SEASON_MONTHS.findIndex(function(month) {
+          return targetDay >= month.start && targetDay <= month.end;
+        });
+        if (targetMonthIdx >= 0) STATE._calendarMonth = targetMonthIdx;
+      }
       renderCalendar();
       renderSeasonInsights();
       renderSeasonSimulationControl();
       queueSeasonAutoSave();
-      trackExposureOnce(document.getElementById('simActions'), {act:"exposure",blk:"BMC099",pos:"T1",label:"赛季结果"});
-      setTimeout(function() { maybeShowFirstSixtyWinCelebration(); }, 260);
+      if (seasonIsComplete) {
+        trackExposureOnce(document.getElementById('simActions'), {act:"exposure",blk:"BMC099",pos:"T1",label:"赛季结果"});
+        setTimeout(function() { maybeShowFirstSixtyWinCelebration(); }, 260);
+      }
       return;
     }
 
@@ -5651,7 +5670,7 @@ function renderCalendar() {
   const month = SEASON_MONTHS[monthIdx];
   if (!month) return;
   const simulationStarted = hasSeasonSimulationStarted();
-  const canManualSim = simulationStarted && !STATE._calendarAutoSimulating;
+  const canManualSim = !STATE._calendarAutoSimulating;
 
   function renderCalendarOpponent(team) {
     const logo = getTeamLogo(team, 16);
@@ -5738,7 +5757,7 @@ function renderCalendar() {
   // 底部 — 只保留进度文字
   const calendarHint = STATE._calendarAutoSimulating
     ? '⏳ 模拟中，日历会随比赛进度自动更新'
-    : (simulationStarted ? '💡 点击赛程表中任意一场比赛，可直接模拟至该场比赛' : '点击上方“开始模拟”后生成比赛结果');
+    : (simulationStarted ? '💡 点击任意未比赛程，可继续模拟至该场比赛' : '💡 点击比赛日可模拟到当天，或点击下方“开始模拟”模拟完整赛季');
   htmlStr += `<div class="cal-footer">
     <span style="font-size:10px;color:var(--text-muted);flex:1;text-align:left;">${calendarHint}</span>
     <span class="cal-progress">${schedule.filter(g => g.simulated).length} / ${schedule.length} 场</span>
@@ -6353,7 +6372,8 @@ function setSeasonRankingsConference(conf) {
 }
 
 function setSeasonPlayerRankingStat(stat) {
-  STATE._playerRankingStat = stat === 'reb' || stat === 'ast' ? stat : 'pts';
+  var allowedStats = ['pts', 'reb', 'ast', 'stl', 'blk'];
+  STATE._playerRankingStat = allowedStats.indexOf(stat) >= 0 ? stat : 'pts';
   renderSeasonRankingsPage();
 }
 
@@ -6378,6 +6398,8 @@ function renderSeasonRankingsPage() {
       pts: { key: 'ppg', label: '场均得分' },
       reb: { key: 'rpg', label: '场均篮板' },
       ast: { key: 'apg', label: '场均助攻' },
+      stl: { key: 'spg', label: '场均抢断' },
+      blk: { key: 'bpg', label: '场均盖帽' },
     };
     var config = statConfig[stat];
     var rows = getSeasonPlayerStatRows().filter(function(row) { return row.gp > 0; }).sort(function(a, b) {
@@ -6397,6 +6419,8 @@ function renderSeasonRankingsPage() {
         '<button class="player-ranking-tab ' + (stat === 'pts' ? 'active' : '') + '" onclick="setSeasonPlayerRankingStat(\'pts\')">得分</button>' +
         '<button class="player-ranking-tab ' + (stat === 'reb' ? 'active' : '') + '" onclick="setSeasonPlayerRankingStat(\'reb\')">篮板</button>' +
         '<button class="player-ranking-tab ' + (stat === 'ast' ? 'active' : '') + '" onclick="setSeasonPlayerRankingStat(\'ast\')">助攻</button>' +
+        '<button class="player-ranking-tab ' + (stat === 'stl' ? 'active' : '') + '" onclick="setSeasonPlayerRankingStat(\'stl\')">抢断</button>' +
+        '<button class="player-ranking-tab ' + (stat === 'blk' ? 'active' : '') + '" onclick="setSeasonPlayerRankingStat(\'blk\')">盖帽</button>' +
       '</div>' +
       '<div class="player-ranking-list">' +
         '<div class="player-ranking-head"><span>排名</span><span>球员</span><span>球队</span><span>场次</span><span>' + config.label + '</span></div>' +
@@ -10732,7 +10756,7 @@ EVENT_REGISTRY.push({
 <script>
 // ── 配置 ──
 var POSTER_TAG_ID = 152165;
-var POSTER_TAG_NAME = '球员锻造局';
+var POSTER_TAG_NAME = '篮坛造星局';
 var POSTER_TOPIC_NAME = '社区话题';
 var POSTER_TOPIC_ID = 177;
 var POSTER_W = 620;
@@ -12706,7 +12730,7 @@ function generateCareerBiographyPosterDataURL(r) {
   ctx.textBaseline = 'top';
   ctx.fillStyle = C.paper;
   ctx.font = '900 25px ' + C.fd;
-  ctx.fillText('COURT FOUNDRY DAILY', pad + 14, y + 8);
+  ctx.fillText('COURT FORGE DAILY', pad + 14, y + 8);
   var logoSize = 22;
   var logoX = W - pad - logoSize - 10;
   var logoY = mastY + 11;

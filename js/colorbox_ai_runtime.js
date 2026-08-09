@@ -1,7 +1,7 @@
 (function () {
   window.__COLORBOX_AI_CONFIG__ = {
     projectId: "project-ai-1783761934042",
-    settings: {"ownerId":402116,"projectId":"project-ai-1783761934042","title":"完美球员模拟器","trackingCode":"PHBS7947","bizCategory":"match","isGamePlay":true,"postTopicId":"152165","shareInviteParams":"1783761934042","rewardVideoIncomeId":"16899","shareTitle":"","shareSubtitle":"","shareCover":"","theme":{"webviewBackground":"#ffffff","skeletonColor":"#edeef0","containerBackground":"#ffffff"},"dayNightMode":"auto"},
+    settings: {"ownerId":402116,"projectId":"project-ai-1783761934042","title":"篮坛造星局","trackingCode":"PHBS7947","bizCategory":"match","isGamePlay":true,"postTopicId":"152165","shareInviteParams":"1783761934042","rewardVideoIncomeId":"16899","shareTitle":"","shareSubtitle":"","shareCover":"","theme":{"webviewBackground":"#ffffff","skeletonColor":"#edeef0","containerBackground":"#ffffff"},"dayNightMode":"auto"},
     pagePi: "activity_match_project-ai-1783761934042"
   };
   "use strict";

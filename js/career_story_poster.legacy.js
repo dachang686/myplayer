@@ -1,7 +1,7 @@
 ﻿
 // ── 配置 ──
 var POSTER_TAG_ID = 152165;
-var POSTER_TAG_NAME = '球员生涯';
+var POSTER_TAG_NAME = '篮坛造星局';
 var POSTER_TOPIC_NAME = '社区话题';
 var POSTER_TOPIC_ID = 177;
 var POSTER_W = 620;
