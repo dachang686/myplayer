@@ -956,7 +956,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   <button type="button" class="season-nav-item" data-season-nav="team" onclick="seasonNavTo('team')">
     <span class="season-nav-icon" aria-hidden="true">🏀</span><span>球队</span>
   </button>
-  <button type="button" class="season-nav-item active" data-season-nav="schedule" onclick="seasonNavTo('schedule')">
+  <button type="button" class="season-nav-item" data-season-nav="schedule" onclick="seasonNavTo('schedule')">
     <span class="season-nav-icon" aria-hidden="true">📅</span><span>赛程</span>
   </button>
   <button type="button" class="season-nav-item" data-season-nav="rankings" onclick="seasonNavTo('rankings')">
@@ -1170,6 +1170,38 @@ function updateSeasonBadge(activeId) {
   el.innerHTML = '<span style="display:inline-block;background:var(--bg-card);border:1px solid var(--border);border-radius:999px;padding:4px 12px;box-shadow:var(--shadow);">🏀 ' + label + '</span>';
 }
 
+// 每个赛季内页面只在这里声明所属底部菜单，避免页面函数各自维护高亮状态。
+var SEASON_NAV_SECTION_BY_SCREEN = Object.freeze({
+  'screen-mycard': 'player',
+  'screen-career-stats': 'player',
+  'screen-career-honors': 'player',
+  'screen-achievements': 'player',
+  'screen-training': 'player',
+  'screen-team': 'team',
+  'screen-roster-review': 'team',
+  'screen-season': 'schedule',
+  'screen-awards': 'schedule',
+  'screen-playoffs': 'schedule',
+  'screen-results': 'schedule',
+  'screen-rankings': 'rankings'
+});
+
+function getSeasonNavSection(screenId) {
+  if (!screenId) {
+    var activeScreen = document.querySelector('.screen.active');
+    screenId = activeScreen ? activeScreen.id : '';
+  }
+  return SEASON_NAV_SECTION_BY_SCREEN[screenId] || '';
+}
+
+function syncSeasonNavigation(screenId) {
+  var section = getSeasonNavSection(screenId);
+  var inSeasonContext = Object.prototype.hasOwnProperty.call(SEASON_NAV_SECTION_BY_SCREEN, screenId);
+  document.body.classList.toggle('season-context-active', inSeasonContext);
+  setSeasonNavActive(section);
+  return inSeasonContext;
+}
+
 function showScreen(id) {
   clearGlobalNextAction();
   $$('.screen').forEach(s => s.classList.remove('active'));
@@ -1177,15 +1209,7 @@ function showScreen(id) {
   if (el) el.classList.add('active');
   var playerCreated = id !== 'screen-menu' && id !== 'screen-position' && id !== 'screen-build';
   document.body.classList.toggle('game-session-active', playerCreated);
-  var seasonNavigationScreens = [
-    'screen-season', 'screen-team', 'screen-mycard', 'screen-rankings',
-    'screen-awards', 'screen-playoffs', 'screen-results', 'screen-achievements',
-    'screen-career-stats', 'screen-career-honors', 'screen-training', 'screen-roster-review'
-  ];
-  var seasonContextActive = seasonNavigationScreens.indexOf(id) >= 0;
-  document.body.classList.toggle('season-context-active', seasonContextActive);
-  var navKey = id === 'screen-season' || id === 'screen-playoffs' ? 'schedule' : id === 'screen-team' ? 'team' : id === 'screen-mycard' ? 'player' : id === 'screen-rankings' ? 'rankings' : '';
-  if (seasonContextActive && typeof setSeasonNavActive === 'function') setSeasonNavActive(navKey);
+  var seasonContextActive = syncSeasonNavigation(id);
   if (seasonContextActive) setDefaultGlobalNextAction(id);
   updateSeasonBadge(id);
 }
@@ -1236,29 +1260,59 @@ function hasActiveSeasonPlayoffs() {
     !STATE.season.playoffsDone && !STATE.season.playoffEliminated);
 }
 
-function setDefaultGlobalNextAction(screenId) {
-  if (screenId === 'screen-mycard') {
-    var hasPendingSeasonGames = !!(STATE.season && STATE.season.schedule && STATE.season.schedule.some(function(game) { return !game.simulated; }));
-    var regularSeasonComplete = !!(STATE.season && STATE.season.schedule && STATE.season.schedule.length && !hasPendingSeasonGames && !STATE.season.isPlayoffs && !STATE.season._resultsViewed);
-    if (STATE._calendarAutoSimulating) {
-      setGlobalNextStatus('⏳ 赛季模拟中');
-    } else if (hasActiveSeasonPlayoffs()) {
-      setGlobalNextAction('🏀 返回季后赛', resumePlayoffs);
-    } else if (hasPendingSeasonGames) {
-      setGlobalNextAction(hasSeasonSimulationStarted() ? '▶ 继续模拟' : '🏀 开始模拟', startSeasonSimulationFromPlayerPage);
-    } else if (regularSeasonComplete && !STATE.season._awardsViewed) {
-      setGlobalNextAction('📊 查看常规赛奖项', showAwardsScreen);
-    } else if (regularSeasonComplete) {
-      setPostRegularSeasonGlobalAction();
+function setSeasonProgressGlobalAction() {
+  var season = STATE.season;
+  if (!season || !Array.isArray(season.schedule) || season.schedule.length === 0) {
+    setGlobalNextStatus('⏳ 正在准备赛程');
+    return;
+  }
+
+  if (STATE._calendarAutoSimulating) {
+    setGlobalNextStatus('⏳ 赛季模拟中');
+    return;
+  }
+
+  if (season._resultsViewed) {
+    if (!season._finalStatsViewed) {
+      setGlobalNextAction('📊 查看我的赛季数据', showMyCard);
     } else {
-      setGlobalNextAction('📅 返回赛程', backToSeason);
+      setGlobalNextAction('🏋️ 进入休赛期', beginOffseason);
     }
-  } else if (screenId === 'screen-team' || screenId === 'screen-rankings' || screenId === 'screen-achievements') {
-    setGlobalNextAction('📅 返回赛程', backToSeason);
+    return;
+  }
+
+  var postseasonComplete = !!(season.playoffsDone || season.playoffEliminated || season.isChampion ||
+    (season.playInState && season.playInState.isEliminated));
+  if (postseasonComplete) {
+    setGlobalNextAction('📊 查看赛季总结', showSeasonResults);
+    return;
+  }
+
+  if (hasActiveSeasonPlayoffs()) {
+    setGlobalNextAction('🏀 返回季后赛', resumePlayoffs);
+    return;
+  }
+
+  var hasPendingSeasonGames = season.schedule.some(function(game) { return !game.simulated; });
+  if (hasPendingSeasonGames) {
+    setGlobalNextAction(hasSeasonSimulationStarted() ? '▶ 继续模拟' : '🏀 开始模拟', startSeasonSimulationFromPlayerPage);
+    return;
+  }
+
+  if (!season._awardsViewed) {
+    setGlobalNextAction('📊 查看常规赛奖项', showAwardsScreen);
+    return;
+  }
+
+  setPostRegularSeasonGlobalAction();
+}
+
+function setDefaultGlobalNextAction(screenId) {
+  if (screenId === 'screen-season' || screenId === 'screen-team' || screenId === 'screen-mycard' ||
+      screenId === 'screen-rankings' || screenId === 'screen-achievements') {
+    setSeasonProgressGlobalAction();
   } else if (screenId === 'screen-career-stats' || screenId === 'screen-career-honors') {
     setGlobalNextAction('🧍 返回我的球员', showMyCard);
-  } else if (screenId === 'screen-season') {
-    setGlobalNextStatus('⏳ 正在准备赛程');
   } else if (screenId === 'screen-awards') {
     setGlobalNextStatus('⏳ 正在统计奖项');
   } else if (screenId === 'screen-playoffs') {
@@ -4857,21 +4911,13 @@ function showEndOfSeason() {
   html('season-header').innerHTML = '';
   const seed = getConferenceSeed(STATE.careerTeam);
   
-  let nextLabel = '';
-  let nextHandler = null;
   let emoji = '';
   if (seed <= 6) {
     emoji = '🏀';
-    nextLabel = `🏀 进入季后赛（${seed}号种子）`;
-    nextHandler = renderPlayoffs;
   } else if (seed <= 10) {
     emoji = '🔥';
-    nextLabel = `🔥 进入附加赛（${seed}号种子）`;
-    nextHandler = renderPlayoffs;
   } else {
     emoji = '📊';
-    nextLabel = '📊 查看赛季总结';
-    nextHandler = showSeasonResults;
   }
   
   const conf = getConference(STATE.careerTeam);
@@ -4885,7 +4931,7 @@ function showEndOfSeason() {
       <div class="eos-detail">${confName} 第 ${seed} 名</div>
     </div>
   `;
-  setGlobalNextAction(nextLabel, nextHandler);
+  setSeasonProgressGlobalAction();
   // 滚动到顶部
   document.querySelector('.sim-header')?.scrollIntoView({ behavior: 'smooth' });
   setTimeout(function() { maybeRecordFirstSixtyWinMilestone(); }, 260);
@@ -5210,27 +5256,9 @@ function renderSeasonInsights() {
     '</div>';
   }
 
-  var seasonIsComplete = STATE.season.schedule && !STATE.season.schedule.some(function(game) { return !game.simulated; });
   var seasonScreen = document.getElementById('screen-season');
   var seasonScreenActive = seasonScreen && seasonScreen.classList.contains('active');
-  if (seasonScreenActive) clearGlobalNextAction();
-  if (STATE._calendarAutoSimulating) {
-    if (seasonScreenActive) setGlobalNextStatus('⏳ 赛季模拟中');
-  } else if (seasonIsComplete) {
-    if (seasonScreenActive) {
-      if (STATE.season._resultsViewed || STATE.season.playoffsDone) {
-        setGlobalNextAction('📊 查看赛季总结', showSeasonResults);
-      } else if (STATE.season.isPlayoffs && STATE.season.playoffBracket && typeof resumePlayoffs === 'function') {
-        setGlobalNextAction('🏀 返回季后赛', resumePlayoffs);
-      } else {
-        setGlobalNextAction('📊 查看常规赛奖项', showAwardsScreen);
-      }
-    }
-  } else if (!hasSeasonSimulationStarted()) {
-    if (seasonScreenActive) setGlobalNextAction('🏀 开始模拟', startSeasonSimulation);
-  } else {
-    if (seasonScreenActive) setGlobalNextAction('▶ 继续模拟', startSeasonSimulation);
-  }
+  if (seasonScreenActive) setSeasonProgressGlobalAction();
 
   root.insertAdjacentHTML('beforeend',
     '<div class="season-insights" aria-label="赛季概览">' +
@@ -5628,7 +5656,7 @@ function showSeasonResults() {
 
     </div>
   `;
-  setGlobalNextAction('📊 查看我的赛季数据', showMyCard);
+  setSeasonProgressGlobalAction();
 }
 
 // ==================== My Card（实时数据面板）====================
@@ -5650,7 +5678,6 @@ function scrollSeasonPageToTop() {
 }
 
 function seasonNavTo(section) {
-  setSeasonNavActive(section);
   if (section === 'player') {
     showMyCard();
     scrollSeasonPageToTop();
@@ -5982,13 +6009,17 @@ function showSeasonTeamModal() {
 function closeSeasonTeamModal() {
   var overlay = document.getElementById('season-team-modal-overlay');
   if (overlay) overlay.remove();
-  setSeasonNavActive('schedule');
+  syncSeasonNavigation(document.querySelector('.screen.active')?.id || '');
 }
 
 function showMyCard() {
   trackEvent({act:"click",blk:"BMC098",pos:"TC8",label:"我的数据"});
-  showScreen('screen-mycard');
   const isFinal = !!(STATE.season && STATE.season._resultsViewed) || !!(STATE.career && STATE.career.retired);
+  if (STATE.season && STATE.season._resultsViewed && !STATE.season._finalStatsViewed) {
+    STATE.season._finalStatsViewed = true;
+    if (typeof queueSeasonAutoSave === 'function') queueSeasonAutoSave();
+  }
+  showScreen('screen-mycard');
   renderMyCard(isFinal, 'data');
 }
 
@@ -6346,10 +6377,8 @@ function renderMyCard(isFinal, activeTab) {
       ${btnHtml ? `<div style="padding:4px 16px 16px;">${btnHtml}</div>` : ''}
     </div>
   `;
-  if (isFinal) {
-    if (retired) setGlobalNextAction('🏆 查看退役总结', function() { showCareerStats(1); });
-    else setGlobalNextAction('🏋️ 进入休赛期', beginOffseason);
-  }
+  if (retired) setGlobalNextAction('🏆 查看退役总结', function() { showCareerStats(1); });
+  else setSeasonProgressGlobalAction();
 }
 
 // ==================== 生涯数据页面 ====================
