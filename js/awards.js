@@ -973,7 +973,7 @@ function showAwardsScreen() {
         var playerNameCN = playerInfo.cname || names[ni];
         var sourcePlayer = isMy ? null : findPlayerByIdentity(playerId, playerNameCN);
         var awardDisplayName = sourcePlayer
-          ? (sourcePlayer.shortName || sourcePlayer.cname)
+          ? (sourcePlayer.cname)
           : names[ni].replace(/·/g, '-');
         var playerTeam = playerInfo.team || (isMy
           ? STATE.careerTeam
@@ -1012,7 +1012,7 @@ function showAwardsScreen() {
       }
       var singleAwardPlayer = a.isUser ? null : findPlayerByIdentity(a.winnerId || '', a.winner || '');
       var singleAwardDisplayName = singleAwardPlayer
-        ? (singleAwardPlayer.shortName || singleAwardPlayer.cname)
+        ? (singleAwardPlayer.cname)
         : a.winner.replace(/·/g, '-');
       var statLine = displayStatValue != null ? '<div class="award-stat-line">场均 ' + displayStatValue + ' ' + (a.statLabel || '') + '</div>' : '';
       var teamName = a.team ? (typeof getTeamName === 'function' ? getTeamName(a.team) : a.team) : '';

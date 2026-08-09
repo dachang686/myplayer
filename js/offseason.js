@@ -481,9 +481,9 @@ function showContractOffers() {
     var tn = getTeamName ? getTeamName(o.team) : o.team;
     var tp1 = o.topTwo[0];
     var tp2 = o.topTwo[1];
-    var tp1Name = tp1 ? (tp1.shortName || tp1.cname) : '—';
+    var tp1Name = tp1 ? (tp1.cname) : '—';
     var tp1Ovr = tp1 ? (tp1.ovr || '—') : '—';
-    var tp2Name = tp2 ? (tp2.shortName || tp2.cname) : '—';
+    var tp2Name = tp2 ? (tp2.cname) : '—';
     var tp2Ovr = tp2 ? (tp2.ovr || '—') : '—';
 
     html += '<div class="team-pick-card" style="cursor:pointer;margin-bottom:6px;text-align:left;padding:10px;" onclick="previewTeamRosterModal(\'' + o.team + '\', function(){ selectContractOption(\'' + o.team + '\', ' + o.years + '); }, ' + o.years + ')">';
@@ -697,7 +697,7 @@ function showRetirementModal(callback) {
       : '<span style="color:var(--red);font-size:16px;">🔴</span>';
     html += '<div style="display:flex;align-items:center;gap:6px;padding:5px 2px;border-bottom:1px solid var(--border-light);font-size:13px;">';
     html += avatarHtml;
-    var retiredDisplayName = r.displayName || (typeof getPlayerShortNameById === 'function' ? getPlayerShortNameById(r.playerId) : '球员');
+    var retiredDisplayName = r.displayName || getPlayerDisplayName(r.playerId) || '球员';
     html += '<span style="flex:1;font-weight:600;">' + retiredDisplayName + '</span>';
     html += '<span style="color:var(--text-dim);font-size:11px;">' + teamCn + ' · ' + r.ovr + ' OVR</span>';
     html += '</div>';
@@ -734,7 +734,7 @@ function showFAModal(callback) {
         : '<span style="color:var(--orange);font-size:14px;">➡️</span>';
       html += '<div style="display:flex;align-items:center;gap:6px;padding:5px 2px;border-bottom:1px solid var(--border-light);font-size:13px;">';
       html += avatarHtml;
-      var signingDisplayName = s.name || (typeof getPlayerShortNameById === 'function' ? getPlayerShortNameById(s.playerId) : '球员');
+      var signingDisplayName = s.name || getPlayerDisplayName(s.playerId) || '球员';
       html += '<span style="flex:1;"><strong>' + signingDisplayName + '</strong> ' + fromTn + ' → ' + toTn + '</span>';
       html += '<span style="color:var(--text-dim);font-size:11px;">OVR ' + s.ovr + '</span>';
       html += '</div>';
@@ -767,8 +767,8 @@ function showTradesModal(callback) {
     var tb = getTeamName ? getTeamName(tr.to) : tr.to;
     html += '<div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;">';
     html += '<div style="font-family:var(--font-display);font-size:12px;color:var(--text);font-weight:600;margin-bottom:4px;">🔁 ' + ta + ' ⇄ ' + tb + '</div>';
-    var playerBDisplayName = typeof getPlayerShortNameById === 'function' ? getPlayerShortNameById(tr.playerB) : tr.playerB;
-    var playerADisplayName = typeof getPlayerShortNameById === 'function' ? getPlayerShortNameById(tr.playerA) : tr.playerA;
+    var playerBDisplayName = getPlayerDisplayName(tr.playerB);
+    var playerADisplayName = getPlayerDisplayName(tr.playerA);
     html += '<div style="font-size:12px;color:var(--text-dim);padding:2px 0;">👤 ' + playerBDisplayName + ' → ' + tb + '</div>';
     html += '<div style="font-size:12px;color:var(--text-dim);padding:2px 0;">👤 ' + playerADisplayName + ' → ' + ta + '</div>';
     html += '</div>';
@@ -808,7 +808,7 @@ function showRosterReview() {
   function renderPlayer(p, isUser) {
     var pOvr = parseInt(p.ovr) || 0;
     var pPos = p.posCn || p.pos || '—';
-    var pName = p.shortName || p.cname;
+    var pName = p.cname;
     var imgHtml;
     if (isUser) {
       imgHtml = '<' + 'img style="border-radius:50%;border:2px solid var(--border);width:28px;height:28px;object-fit:cover;flex-shrink:0;" src="' + avatarUrl + '" onerror="this.onerror=null;this.src=\'' + defaultAvatar + '\'">';
@@ -1159,11 +1159,11 @@ function assignFreeAgents() {
         roster.push(fa);
         fa._justSigned = true;
         if (fa.ovr > 86) starSignedTeams[t] = true;
-        STATE._leagueChanges.freeSignings.push({ name: fa.shortName || fa.cname, playerId: fa.id, from: fa._origTeam, to: t, ovr: fa.ovr });
+        STATE._leagueChanges.freeSignings.push({ name: fa.cname, playerId: fa.id, from: fa._origTeam, to: t, ovr: fa.ovr });
         if (t === STATE.careerTeam) {
           if (!STATE._leagueChanges.teamChanges) STATE._leagueChanges.teamChanges = {};
           STATE._leagueChanges.teamChanges[t] = STATE._leagueChanges.teamChanges[t] || { retired: [], rookies: [] };
-          STATE._leagueChanges.teamChanges[t].rookies.push(fa.shortName || fa.cname);
+          STATE._leagueChanges.teamChanges[t].rookies.push(fa.cname);
         }
         return;
       }
@@ -1185,7 +1185,7 @@ function assignFreeAgents() {
         fbRoster.push(fa);
         fa._justSigned = true;
         if (fa.ovr > 86) starSignedTeams[fb] = true;
-        STATE._leagueChanges.freeSignings.push({ name: fa.shortName || fa.cname, playerId: fa.id, from: fa._origTeam, to: fb, ovr: fa.ovr });
+        STATE._leagueChanges.freeSignings.push({ name: fa.cname, playerId: fa.id, from: fa._origTeam, to: fb, ovr: fa.ovr });
         break;
       }
     }
@@ -1424,9 +1424,9 @@ function evolveLeague() {
       else if (age >= 36) retireChance = 25;
       else if (age >= 34 && p.ovr < 75) retireChance = 35;
       if (rngNext() * 100 < retireChance) {
-        STATE._leagueChanges.retired.push({ displayName: p.shortName || p.cname, playerId: p.id, hidden: !!p._veteranTribute, ovr: p.ovr, team: t, age: age });
+        STATE._leagueChanges.retired.push({ displayName: p.cname, playerId: p.id, hidden: !!p._veteranTribute, ovr: p.ovr, team: t, age: age });
         if (t === STATE.careerTeam && STATE._leagueChanges.teamChanges[t]) {
-          STATE._leagueChanges.teamChanges[t].retired.push(p.shortName || p.cname);
+          STATE._leagueChanges.teamChanges[t].retired.push(p.cname);
         }
         return;
       }
@@ -1442,9 +1442,9 @@ function evolveLeague() {
         ? 68 + Math.floor(rngNext() * 7)
         : 60 + Math.floor(rngNext() * 8);
       newRoster.push(rk);
-      STATE._leagueChanges.rookies.push({ name: rk.shortName || rk.cname, playerId: rk.id, team: t });
+      STATE._leagueChanges.rookies.push({ name: rk.cname, playerId: rk.id, team: t });
       if (t === STATE.careerTeam && STATE._leagueChanges.teamChanges[t]) {
-        STATE._leagueChanges.teamChanges[t].rookies.push(rk.shortName || rk.cname);
+        STATE._leagueChanges.teamChanges[t].rookies.push(rk.cname);
       }
     }
     LEAGUE_PLAYER_DATA[t] = newRoster;
@@ -1502,13 +1502,13 @@ function evolveLeague() {
           p._justSigned = true;
           newRoster.push(p);
           STATE._leagueChanges.stayed = STATE._leagueChanges.stayed || [];
-          STATE._leagueChanges.stayed.push({ name: p.shortName || p.cname, playerId: p.id, team: t, years: p.contract });
+          STATE._leagueChanges.stayed.push({ name: p.cname, playerId: p.id, team: t, years: p.contract });
         } else {
           // 离队进自由池
           p._origTeam = t;
           freeAgents.push(p);
           STATE._leagueChanges.freeAgents = STATE._leagueChanges.freeAgents || [];
-          STATE._leagueChanges.freeAgents.push({ name: p.shortName || p.cname, playerId: p.id, ovr: p.ovr, team: t, age: age });
+          STATE._leagueChanges.freeAgents.push({ name: p.cname, playerId: p.id, ovr: p.ovr, team: t, age: age });
         }
       } else {
         newRoster.push(p);

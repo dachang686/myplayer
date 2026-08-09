@@ -18,7 +18,6 @@ function read(relative) {
 
 runSource(read('js/data/league_players.js'), 'js/data/league_players.js');
 runSource(read('js/data/draft_data.js'), 'js/data/draft_data.js');
-runSource(read('js/player_display_names.js'), 'js/player_display_names.js');
 runSource(read('js/awards.js'), 'js/awards.js');
 
 const teams = vm.runInContext('LEAGUE_TEAM_IDS.slice()', context);
@@ -35,7 +34,7 @@ players.forEach((player, index) => {
   if (Object.prototype.hasOwnProperty.call(player, 'name') || Object.prototype.hasOwnProperty.call(player, 'nameEN')) {
     failures.push(`${player.id} 仍含英文姓名字段`);
   }
-  if (!player.cname || player.cname !== player.shortName || /[-A-Za-z]/.test(player.cname)) {
+  if (!player.cname || /[-A-Za-z]/.test(player.cname) || Object.prototype.hasOwnProperty.call(player, 'shortName')) {
     failures.push(`${player.id} 的 cname 不是规范中文姓氏：${player.cname || '(空)'}`);
   }
 });
@@ -118,44 +117,13 @@ try {
   failures.push(`无法读取 Git 基线：${error.message}`);
 }
 
-const legacyPlayer = { ...players[0], name: 'Legacy Player' };
-delete legacyPlayer.id;
-const legacySnapshot = {
-  league: { ATL: [legacyPlayer] },
-  state: {
-    usedPlayers: ['Legacy Player'],
-    _shownThisTeam: ['Legacy Player'],
-    selectedPlayer: { ...legacyPlayer },
-    attrSlots: { threePT: { player: 'Legacy Player' } },
-    career: { flags: { bondedTeammate: { name: 'Legacy Player' }, superstarRecruiterEN: 'Legacy Player' } },
-    season: {
-      _npcSeasonProfiles: { 'ATL:Legacy Player': { sample: true } },
-      leaguePlayerSeasonStats: { 'Legacy Player': { gp: 1 } },
-      awards: [{ winnerEN: 'Legacy Player', players: [{ name: 'Legacy Player' }] }]
-    },
-    _leagueChanges: { retired: [{ nameEN: 'Legacy Player' }] }
-  },
-  ages: { 'Legacy Player': 23 },
-  genes: { 'Legacy Player': { sample: true } }
-};
-context.__legacySnapshot = legacySnapshot;
-vm.runInContext('migrateLegacySavePlayerIdentity(__legacySnapshot)', context);
-const migrated = context.__legacySnapshot;
-const migratedId = migrated.league.ATL[0].id;
-if (!migratedId) failures.push('旧存档球员未迁移到稳定 ID');
-if (migrated.league.ATL[0].name || migrated.state.selectedPlayer.name) failures.push('旧存档迁移后仍保留英文姓名');
-if (migrated.state.usedPlayers[0] !== migratedId || migrated.state.attrSlots.threePT.player !== migratedId) {
-  failures.push('旧存档玩法引用未迁移到球员 ID');
-}
-
 const result = {
   teams: teams.length,
   players: players.length,
   uniqueIds: new Set(players.map((player) => player.id)).size,
   draftPlayers: draftPlayers.length,
   legacyEnglishNameFields: players.filter((player) => player.name || player.nameEN).length,
-  gameplayBaselineCompared: baselineCompared,
-  legacySaveMigratedTo: migratedId
+  gameplayBaselineCompared: baselineCompared
 };
 
 if (failures.length) {

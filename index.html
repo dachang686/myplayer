@@ -952,7 +952,6 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 </div>
 
 <script src="js/data/league_players.js"></script>
-<script src="js/player_display_names.js"></script>
 <script src="js/data/league_schedule.js"></script>
 <script src="js/data/player_archetypes.js"></script>
 <script src="js/data/simulation_config.js"></script>
@@ -2011,7 +2010,7 @@ function renderRosterPlayers(team, shown, allAvailable) {
       <div class="bp-left">
         <div class="bp-headshot" style="${hsStyle}"></div>
         <div>
-          <div class="bp-name">${p.shortName || p.cname}</div>
+          <div class="bp-name">${p.cname}</div>
           <div class="bp-detail">${playerPos}</div>
         </div>
       </div>
@@ -2073,7 +2072,7 @@ function pickPlayer(playerId) {
   STATE.selectedPlayer = player;
   
   document.querySelectorAll('.br-player').forEach(r => {
-    r.classList.toggle('selected', r.textContent.includes(player.shortName || player.cname));
+    r.classList.toggle('selected', r.textContent.includes(player.cname));
   });
   
   renderLeftAttrs();
@@ -2326,7 +2325,7 @@ function matchPlayerArchetype(attrs, topN = 3) {
       avgOVR: meta?.avgOVR || 0,
       archCount: meta?.count || 0,
       player: p,
-      playerName: p.shortName || p.cname,
+      playerName: p.cname,
       playerPos: item.playerPos,
       playerTeam: item.team,
       playerOVR: parseInt(p.ovr) || 0,
@@ -2387,7 +2386,7 @@ function revealPlayer() {
       const hsStyle = getPlayerHeadshotStyle(p.id, 28);
       top3Html += `<div class="rv-item" style="animation-delay:${1.4 + i * 0.12}s;display:flex;align-items:center;gap:6px;padding:4px 0;${i < tiered.length-1 ? 'border-bottom:1px solid var(--border-light);' : ''}">
         <div class="bp-headshot" style="${hsStyle};border-radius:50%;border:2px solid var(--border);"></div>
-        <div style="flex:1;text-align:center;font-family:var(--font-display);font-size:12px;font-weight:600;">${p.shortName || p.cname}</div>
+        <div style="flex:1;text-align:center;font-family:var(--font-display);font-size:12px;font-weight:600;">${p.cname}</div>
       </div>`;
     });
     top3Html += '</div>';
@@ -3019,7 +3018,7 @@ function selectCareerTeam(team) {
   function renderRosterPlayer(p, isUser, idx) {
     var pOvr = parseInt(p.ovr) || 0;
     var pPos = p.posCn || p.pos || '—';
-    var pName = p.shortName || p.cname;
+    var pName = p.cname;
     var imgHtml;
     if (isUser) {
       imgHtml = '<' + 'img class="bp-headshot" style="border-radius:50%;border:2px solid var(--border);width:28px;height:28px;object-fit:cover;" src="' + avatarUrl + '" onerror="this.onerror=null;this.src=\'' + defaultAvatar + '\'">';
@@ -3074,7 +3073,7 @@ function previewTeamRosterModal(team, onConfirmSign, offerYears) {
   starters.forEach(function(p) {
     var pOvr = parseInt(p.ovr) || 0;
     var pPos = p.posCn || p.pos || '—';
-    var pName = p.shortName || p.cname;
+    var pName = p.cname;
     var hs = typeof getPlayerHeadshotStyle === 'function' ? getPlayerHeadshotStyle(p.id, 26) : '';
     var imgHtml = hs ? '<div style="' + hs + ';border-radius:50%;border:1px solid var(--border);width:26px;height:26px;flex-shrink:0;"></div>' : '<div style="width:26px;height:26px;border-radius:50%;background:var(--border);flex-shrink:0;"></div>';
     rosterHtml += '<div style="display:flex;align-items:center;gap:6px;padding:5px 6px;border-bottom:1px solid var(--border-light);font-size:12px;">'
@@ -3090,7 +3089,7 @@ function previewTeamRosterModal(team, onConfirmSign, offerYears) {
     bench.slice(0, 5).forEach(function(p) {
       var pOvr = parseInt(p.ovr) || 0;
       var pPos = p.posCn || p.pos || '—';
-      var pName = p.shortName || p.cname;
+      var pName = p.cname;
       var hs = typeof getPlayerHeadshotStyle === 'function' ? getPlayerHeadshotStyle(p.id, 24) : '';
       var imgHtml = hs ? '<div style="' + hs + ';border-radius:50%;border:1px solid var(--border);width:24px;height:24px;flex-shrink:0;"></div>' : '<div style="width:24px;height:24px;border-radius:50%;background:var(--border);flex-shrink:0;"></div>';
       rosterHtml += '<div style="display:flex;align-items:center;gap:6px;padding:4px 6px;border-bottom:1px solid var(--border-light);font-size:11px;color:var(--text-dim);">'
@@ -3273,11 +3272,7 @@ function getPlayerDisplayName(playerId) {
     const players = LEAGUE_PLAYER_DATA[team];
     if (!players) continue;
     const p = players.find(p => p.id === playerId);
-    if (p) {
-      return typeof getPlayerShortName === 'function'
-        ? getPlayerShortName(p)
-        : (p.shortName || p.cname || playerId);
-    }
+    if (p) return p.cname || playerId;
   }
   return playerId || '';
 }
@@ -3734,7 +3729,7 @@ function recordLeagueBoxScore(boxScore, gameId) {
       var stat = seasonStats[key] || {
         seasonId: STATE.career && STATE.career.seasonCount || 0,
         playerId: playerId,
-        playerName: player.shortName || player.cname,
+        playerName: player.cname,
         teamId: team,
         gp: 0, min: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0,
         fgm: 0, fga: 0, tpm: 0, tpa: 0, ftm: 0, fta: 0
@@ -4383,7 +4378,7 @@ function generateBoxScore(teamA, teamB, totalA, totalB) {
       var threeA = threeM ? Math.max(threeM, Math.round(threeM / threePct)) : 0;
       var fta = ftm ? Math.max(ftm, Math.round(ftm / ftPct)) : 0;
       return {
-        name: player.cname || player.shortName || '球员',
+        name: player.cname || '球员',
         playerId: player.id || '',
         pos: pos[i], pts: pts,
         reb: rebounds[i], ast: assists[i], stl: steals[i], blk: blocks[i], tov: turnovers[i],
@@ -5869,7 +5864,7 @@ function showSeasonTeamModal() {
 
   function renderPlayer(player) {
     var isUser = !!player._isUser;
-    var name = isUser ? getMyPlayerDisplayName() : (player.shortName || player.cname);
+    var name = isUser ? getMyPlayerDisplayName() : (player.cname);
     var ovr = isUser ? (STATE.finalOVR || 0) : (parseInt(player.ovr) || 0);
     var headshot = !isUser && typeof getPlayerHeadshotStyle === 'function' ? getPlayerHeadshotStyle(player.id, 26) : '';
     var avatarStyle = headshot ? ' style="' + headshot + '"' : '';
@@ -5896,12 +5891,12 @@ function showSeasonTeamModal() {
     if (!statRow) {
       statRow = createSeasonPlayerStatRow({}, {
         playerId: player.id,
-        playerName: player.shortName || player.cname,
+        playerName: player.cname,
         teamId: team,
         isUser: isUser,
       });
     }
-    var name = isUser ? getMyPlayerDisplayName() : (player.shortName || player.cname);
+    var name = isUser ? getMyPlayerDisplayName() : (player.cname);
     return '<div class="season-team-stat-row ' + (isUser ? 'is-user' : '') + '">' +
       '<span class="season-team-stat-player"><small>' + (player.posCn || player.pos || '-') + '</small>' + name + (isUser ? ' ⭐' : '') + '</span>' +
       '<span>' + statRow.gp + '</span>' +
@@ -7044,7 +7039,7 @@ function getBondedTeammateStatus() {
 
 function getBondedTeammateName() {
   var t = STATE.career && STATE.career.flags && STATE.career.flags.bondedTeammate;
-  return (t && (t.shortName || t.cname)) || '那位队友';
+  return (t && (t.cname)) || '那位队友';
 }
 
 function fillBranchEventText(str) {
@@ -8125,7 +8120,6 @@ function manualLoadGame(slot, options) {
       try { snap = JSON.parse(text); } catch(e) { showManualSaveToast('自动存档损坏'); return; }
       if (!snap || !snap.state) { showManualSaveToast('自动存档损坏'); return; }
       try {
-        if (typeof migrateLegacySavePlayerIdentity === 'function') migrateLegacySavePlayerIdentity(snap);
         // STATE 与 LEAGUE_PLAYER_DATA 是 const，只能原地清空后填充，保证所有引用仍然有效
         Object.keys(STATE).forEach(function(k) { delete STATE[k]; });
         Object.assign(STATE, snap.state);
@@ -9166,7 +9160,7 @@ function resolveEventVars(str, ctx, evData) {
   if (!str) return str;
   var teamAbbr = ctx && ctx.game && ctx.game.opponent;
   var topPlayer = teamAbbr ? getTeamTopPlayer(teamAbbr) : null;
-  var playerName = topPlayer ? (topPlayer.shortName || topPlayer.cname) : '对手球员';
+  var playerName = topPlayer ? (topPlayer.cname) : '对手球员';
   var teamName = teamAbbr ? (TEAM_NAMES_EV[teamAbbr] || teamAbbr) : '对手球队';
   return str
     .replace(/\{对手球员\}/g, playerName)
@@ -10682,7 +10676,7 @@ function generateBuildPlayerPoster() {
     for (var ti = 0; ti < Math.min(tiered.length, 3); ti++) {
       var item = tiered[ti];
       var p = item.player;
-      nameStr += (ti > 0 ? '、' : '') + (p.shortName || p.cname);
+      nameStr += (ti > 0 ? '、' : '') + (p.cname);
     }
     ctx.fillText(nameStr, cardX + 14, archY + 20);
   } else {

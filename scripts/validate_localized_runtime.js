@@ -9,11 +9,11 @@ vm.createContext(context);
 
 [
   'js/data/league_players.js',
-  'js/player_display_names.js',
   'js/data/league_schedule.js',
   'js/data/player_archetypes.js',
   'js/data/simulation_config.js',
   'js/data/fictional_team_names.js',
+  'js/data/legacy_text.js',
   'js/cartoon_art.js'
 ].forEach((relative) => {
   vm.runInContext(fs.readFileSync(path.join(root, relative), 'utf8'), context, { filename: relative });
@@ -34,6 +34,8 @@ const result = vm.runInContext(`({
   playerCount: LEAGUE_TEAM_IDS.reduce((count, team) => count + LEAGUE_PLAYER_DATA[team].length, 0),
   uniqueIds: new Set(LEAGUE_TEAM_IDS.flatMap(team => LEAGUE_PLAYER_DATA[team].map(player => player.id))).size,
   legacyNameFields: LEAGUE_TEAM_IDS.flatMap(team => LEAGUE_PLAYER_DATA[team]).filter(player => player.name || player.nameEN).length,
+  jerseyTextTeams: Object.keys(JERSEY_RETIREMENT_TEXT_BY_TEAM).length,
+  jerseyTemplatesPerTeam: Object.values(JERSEY_RETIREMENT_TEXT_BY_TEAM).map(templates => templates.length),
   headshot: getPlayerHeadshotStyle('P0452', 30)
 })`, context);
 
@@ -44,6 +46,9 @@ if (result.newYork !== '纽约大鲨鱼') failures.push('球队名称覆盖失�
 if (result.logos !== 30) failures.push('球队卡通徽章数量错误');
 if (result.playerCount !== 525 || result.uniqueIds !== 525) failures.push('球员 ID 数量或唯一性错误');
 if (result.legacyNameFields !== 0) failures.push('球员数据仍包含英文姓名字段');
+if (result.jerseyTextTeams !== 30 || result.jerseyTemplatesPerTeam.some(count => count !== 8)) {
+  failures.push('中性退役球衣文案结构错误');
+}
 if (!/media\/generated\/players\/avatar-\d{2}\.png/.test(result.headshot)) failures.push('球员卡通头像未接入');
 
 if (failures.length) {

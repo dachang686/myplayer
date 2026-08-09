@@ -23,6 +23,18 @@ if (!/const won = scoreA > scoreB/.test(indexSimulation)) {
 if (!/\[true, true, false, false, true, false, true\]/.test(playoffsSource)) {
   throw new Error('季后赛主场顺序不是 2-2-1-1-1');
 }
+const renderPlayoffsStart = playoffsSource.indexOf('function renderPlayoffs');
+const resumePlayoffsStart = playoffsSource.indexOf('function resumePlayoffs', renderPlayoffsStart);
+const renderPlayoffsSource = playoffsSource.slice(renderPlayoffsStart, resumePlayoffsStart);
+if (/autoSimConferenceBracket\(otherBracket\)/.test(renderPlayoffsSource)) {
+  throw new Error('进入季后赛时仍会提前模拟完整另一分区');
+}
+if (!/autoSimConferenceBracketRound\(STATE\.season\.otherBracket, round\)/.test(playoffsSource)) {
+  throw new Error('玩家完成轮次后没有同步推进另一分区');
+}
+if (!/repairPlayoffBracketState\(\)/.test(playoffsSource)) {
+  throw new Error('季后赛页面没有修复旧存档分区状态');
+}
 
 for (const [source, label] of [[indexSimulation, 'index.html 比赛模拟'], [playoffsSource, 'js/playoffs.js']]) {
   try {
@@ -170,11 +182,11 @@ function validateConferenceBracketMapping() {
   }
   const standings = {};
   for (let seed = 1; seed <= 8; seed++) standings[`T${seed}`] = { wins: 70 - seed, losses: 12 + seed };
-  const runAutoBracket = new Function(
+  const playoffBracketFns = new Function(
     'STATE',
     'getConferenceSeed',
     'simulateGameNew',
-    `${playoffsSource.slice(helperStart, helperEnd)}\n${playoffsSource.slice(autoStart, autoEnd)}\nreturn autoSimConferenceBracket;`,
+    `${playoffsSource.slice(helperStart, helperEnd)}\n${playoffsSource.slice(autoStart, autoEnd)}\nreturn { autoSimConferenceBracket, autoSimConferenceBracketRound };`,
   )(
     { season: { standings } },
     team => Number(team.slice(1)),
@@ -188,25 +200,49 @@ function validateConferenceBracketMapping() {
       options,
     }),
   );
-  const teams = Array.from({ length: 8 }, (_, index) => ({ team: `T${index + 1}` }));
-  const bracket = {
-    teams,
-    rounds: [
-      [
-        { high: teams[0], low: teams[7], winner: null },
-        { high: teams[1], low: teams[6], winner: null },
-        { high: teams[2], low: teams[5], winner: null },
-        { high: teams[3], low: teams[4], winner: null },
+  function createBracket() {
+    const teams = Array.from({ length: 8 }, (_, index) => ({ team: `T${index + 1}` }));
+    return {
+      teams,
+      rounds: [
+        [
+          { high: teams[0], low: teams[7], winner: null },
+          { high: teams[1], low: teams[6], winner: null },
+          { high: teams[2], low: teams[5], winner: null },
+          { high: teams[3], low: teams[4], winner: null },
+        ],
+        [null, null],
+        [null],
+        [null],
       ],
-      [null, null],
-      [null],
-      [null],
-    ],
-    results: [],
-    currentRound: 0,
-    confChampion: null,
+      results: [],
+      currentRound: 0,
+      confChampion: null,
+    };
+  }
+  const bracket = createBracket();
+  playoffBracketFns.autoSimConferenceBracket(bracket);
+  const roundBracket = createBracket();
+  playoffBracketFns.autoSimConferenceBracketRound(roundBracket, 0);
+  const afterFirstRound = {
+    currentRound: roundBracket.currentRound,
+    results: roundBracket.results.length,
+    semifinalistsReady: roundBracket.rounds[1].every(series => series?.high?.team && series?.low?.team),
+    champion: roundBracket.confChampion,
   };
-  runAutoBracket(bracket);
+  playoffBracketFns.autoSimConferenceBracketRound(roundBracket, 1);
+  const afterSecondRound = {
+    currentRound: roundBracket.currentRound,
+    results: roundBracket.results.length,
+    finalistsReady: !!(roundBracket.rounds[2][0]?.high?.team && roundBracket.rounds[2][0]?.low?.team),
+    champion: roundBracket.confChampion,
+  };
+  playoffBracketFns.autoSimConferenceBracketRound(roundBracket, 2);
+  const afterConferenceFinal = {
+    currentRound: roundBracket.currentRound,
+    results: roundBracket.results.length,
+    champion: roundBracket.confChampion,
+  };
   const semiA = bracket.rounds[1][0];
   const semiB = bracket.rounds[1][1];
   const firstSeries = bracket.results.find(result => result.round === 0 && result.seriesIdx === 0);
@@ -216,10 +252,77 @@ function validateConferenceBracketMapping() {
       && semiB.high.team === 'T2' && semiB.low.team === 'T3',
     champion: bracket.confChampion,
     homePattern,
+    roundProgression: { afterFirstRound, afterSecondRound, afterConferenceFinal },
   };
 }
 
 const bracketMapping = validateConferenceBracketMapping();
+
+function validateLegacyBracketRepair() {
+  const sourceStart = playoffsSource.indexOf('const PLAYOFF_HIGH_SEED_HOME_PATTERN');
+  const sourceEnd = playoffsSource.indexOf('function renderPlayoffs', sourceStart);
+  if (sourceStart < 0 || sourceEnd < 0) throw new Error('无法定位季后赛存档修复代码');
+  const conference = {
+    SOUTH: Array.from({ length: 8 }, (_, index) => `S${index + 1}`),
+    NORTH: Array.from({ length: 8 }, (_, index) => `N${index + 1}`),
+  };
+  const standings = {};
+  [...conference.SOUTH, ...conference.NORTH].forEach((team, index) => {
+    standings[team] = { wins: 70 - (index % 8), losses: 12 + (index % 8) };
+  });
+  const repairState = { season: { standings, playoffBracket: null, otherBracket: null } };
+  const playoffFns = new Function(
+    'STATE',
+    'SIM_CONFIG',
+    'getConferenceSeed',
+    'getConferenceSorted',
+    'calcTeamPowerWithPlayer',
+    'simulateGameNew',
+    `${playoffsSource.slice(sourceStart, sourceEnd)}\nreturn { buildPlayoffBracket, autoSimConferenceBracket, autoSimConferenceBracketRound, repairPlayoffBracketState };`,
+  )(
+    repairState,
+    { CONFERENCE: conference },
+    team => Number(team.slice(1)),
+    conf => conference[conf].map(team => ({ team, wins: standings[team].wins, losses: standings[team].losses })),
+    () => ({ offense: 80, defense: 80, depth: 80 }),
+    (teamA, teamB, seedBonus, probMultiplier, options) => ({
+      won: true,
+      scoreA: 110,
+      scoreB: 100,
+      qScoresA: [28, 27, 28, 27],
+      qScoresB: [25, 25, 25, 25],
+      boxScore: {},
+      options,
+    }),
+  );
+
+  repairState.season.playoffBracket = playoffFns.buildPlayoffBracket('NORTH');
+  const wrongLegacyBracket = playoffFns.buildPlayoffBracket('NORTH');
+  playoffFns.autoSimConferenceBracket(wrongLegacyBracket);
+  wrongLegacyBracket.conf = 'EAST';
+  repairState.season.otherBracket = wrongLegacyBracket;
+  const repairedWrongConference = playoffFns.repairPlayoffBracketState();
+  const wrongConferenceResult = {
+    repaired: repairedWrongConference,
+    conf: repairState.season.otherBracket.conf,
+    teamsCorrect: repairState.season.otherBracket.teams.every(entry => conference.SOUTH.includes(entry.team)),
+    completedRounds: repairState.season.otherBracket.currentRound,
+  };
+
+  playoffFns.autoSimConferenceBracketRound(repairState.season.playoffBracket, 0);
+  const aheadBracket = playoffFns.buildPlayoffBracket('SOUTH');
+  playoffFns.autoSimConferenceBracket(aheadBracket);
+  repairState.season.otherBracket = aheadBracket;
+  const repairedAheadProgress = playoffFns.repairPlayoffBracketState();
+  const aheadProgressResult = {
+    repaired: repairedAheadProgress,
+    completedRounds: repairState.season.otherBracket.currentRound,
+    results: repairState.season.otherBracket.results.length,
+  };
+  return { wrongConferenceResult, aheadProgressResult };
+}
+
+const legacyBracketRepair = validateLegacyBracketRepair();
 
 function runRealRosterSmoke() {
   const dataSource = fs.readFileSync(path.join(root, 'js/data/league_players.js'), 'utf8');
@@ -299,6 +402,7 @@ const report = {
   },
   inferredRegularSeasonContext,
   bracketMapping,
+  legacyBracketRepair,
   realRosterSmoke,
 };
 console.log(JSON.stringify(report, null, 2));
@@ -327,6 +431,24 @@ if (inferredRegularSeasonContext.isHomeA !== false || inferredRegularSeasonConte
 if (!bracketMapping.correctSemifinals || bracketMapping.champion !== 'T1') failures.push(`季后赛半区映射错误：${JSON.stringify(bracketMapping)}`);
 if (JSON.stringify(bracketMapping.homePattern) !== JSON.stringify([true, true, false, false])) {
   failures.push(`季后赛主场顺序错误：${JSON.stringify(bracketMapping.homePattern)}`);
+}
+const progression = bracketMapping.roundProgression;
+if (progression.afterFirstRound.currentRound !== 1 || progression.afterFirstRound.results !== 4 || !progression.afterFirstRound.semifinalistsReady || progression.afterFirstRound.champion) {
+  failures.push(`季后赛首轮同步推进错误：${JSON.stringify(progression.afterFirstRound)}`);
+}
+if (progression.afterSecondRound.currentRound !== 2 || progression.afterSecondRound.results !== 6 || !progression.afterSecondRound.finalistsReady || progression.afterSecondRound.champion) {
+  failures.push(`季后赛次轮同步推进错误：${JSON.stringify(progression.afterSecondRound)}`);
+}
+if (progression.afterConferenceFinal.currentRound !== 3 || progression.afterConferenceFinal.results !== 7 || progression.afterConferenceFinal.champion !== 'T1') {
+  failures.push(`季后赛分区决赛同步推进错误：${JSON.stringify(progression.afterConferenceFinal)}`);
+}
+if (!legacyBracketRepair.wrongConferenceResult.repaired || legacyBracketRepair.wrongConferenceResult.conf !== 'SOUTH'
+  || !legacyBracketRepair.wrongConferenceResult.teamsCorrect || legacyBracketRepair.wrongConferenceResult.completedRounds !== 0) {
+  failures.push(`旧存档错误分区修复失败：${JSON.stringify(legacyBracketRepair.wrongConferenceResult)}`);
+}
+if (!legacyBracketRepair.aheadProgressResult.repaired || legacyBracketRepair.aheadProgressResult.completedRounds !== 1
+  || legacyBracketRepair.aheadProgressResult.results !== 4) {
+  failures.push(`旧存档超前进度修复失败：${JSON.stringify(legacyBracketRepair.aheadProgressResult)}`);
 }
 if (realRosterSmoke.invariantErrors) failures.push(`真实名单联调存在 ${realRosterSmoke.invariantErrors} 个不变量错误`);
 if (outside(realRosterSmoke.winRatePHI, 0.68, 0.88)) failures.push(`真实强弱队胜率异常：${realRosterSmoke.winRatePHI}`);
