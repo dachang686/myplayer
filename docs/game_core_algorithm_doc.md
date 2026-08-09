@@ -79,23 +79,26 @@ return Math.round(weighted);
   - `clutch`：关键球维度
   - `depth`：综合板凳深度（= 加权 OVR 总分）
 
-### 3.2 胜负判定机制（先决定胜负，再生成比分）
-比赛的核心流程是**先射箭后画靶**式的：
-1. 先通过战力差计算出 `winProb` → 夹到 `[0.15, 0.85]` 区间内 → 一次 `Math.random()` 直接决定 `predeterminedWinner`。
-2. 然后按节（Quarter）循环生成展示用比分，包含主场加成、随机爆发事件、关键三分/压哨绝杀。
-3. **最终强制修正**：如果生成的比分与预定胜负矛盾，引擎会直接给预定胜者的最后一节强行加分，确保比分与结果一致。
+### 3.2 胜负判定机制（逐节驱动）
+比赛先根据双方战力、主场、赛季表现修正、伤病和疲劳计算 `expectedMargin`，再逐节生成真实比分：
+1. 每节以比赛节奏和预期总分为基础，分别对两队得分进行正态采样。
+2. 第四节分差不超过 8 分时，双方 `clutch` 差值会小幅影响该节预期分差。
+3. 四节打平才进入加时；加时同样由实际得分决定结果。
+4. 最终胜负直接读取 `scoreA > scoreB`，不再预定胜者，也不再强制修改第四节比分。
 
 ### 3.3 胜率公式
 ```javascript
-const netRatingA = (powerA.offense - powerB.offense) * 0.4
-                 + (powerA.defense - powerB.defense) * 0.4
-                 + (powerA.depth - powerB.depth) * 0.2
-                 + (seedBonus || 0);
-const winProb = 0.5 + netRatingA / 25;
+const rosterEdge = (powerA.offense - powerB.offense) * 0.45
+                 + (powerA.defense - powerB.defense) * 0.45
+                 + (powerA.depth - powerB.depth) * 0.10;
+const expectedMargin = clamp(
+  rosterEdge + seasonFormEdge + homeCourtEdge + availabilityEdge + fatigueEdge,
+  -18,
+  18
+);
 ```
 
-> [!IMPORTANT]
-> 玩家的 `CLU`（关键能力）属性**不会**在 `simulateGameNew` 中直接影响比赛胜负或第四节得分。`CLU` 仅在 `generatePlayerStatsNew` 中用于计算罚球命中率、助攻和失误数据。
+季后赛按 `2-2-1-1-1` 安排高种子主场。高种子优势主要来自真实主场，种子差只保留为很小的赛季表现修正。带伤出战和缺阵通过预期分差惩罚影响比赛，不再直接乘最终胜率。
 
 ---
 

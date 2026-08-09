@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; media-src 'self' data: blob:; worker-src 'self' blob:;">
   <script>
-window.__HUPU_GAME_OFFLINE__ = true;
+window.__LOCAL_GAME__ = true;
 window.open = function(){ return null; };
 (function(){
   var nativeFetch = window.fetch ? window.fetch.bind(window) : null;
@@ -629,659 +629,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     .tp-actions{display:flex;gap:8px;margin-top:10px}
     .tp-actions .btn{max-width:200px}
   </style>
-  <script src="assets/gosspublic.alicdn.com/aliyun-oss-sdk-6.17.1.min.js"></script>
-  <script src="assets/activity-static.hoopchina.com.cn/colorbox-activities/js/kaleido-fed-sdk.js"></script>
-  <!-- VA H5 SDK — 激励视频任务 -->
-  <script>
-    (function() {
-      var VA_H5_SDK_URL = 'assets/activity-static.hoopchina.com.cn/files/26728-c65ifqrc-upload-1785209154529-12.js';
-      if (document.getElementById('va-h5-sdk')) return;
-      var s = document.createElement('script');
-      s.id = 'va-h5-sdk';
-      s.src = VA_H5_SDK_URL + '?t=' + Math.floor(Date.now() / 60000);
-      s.onload = function() {
-        window._sdkReady = true;
-        try { window.dispatchEvent && window.dispatchEvent(new Event('va-sdk-ready')); } catch(e) {}
-      };
-      document.head.appendChild(s);
-    })();
-  </script>
-<script>
-  (function () {
-    if (window.WebGuard && window.WebGuard.init) {
-      window.WebGuard.init({
-        application: "colorbox-activity-fed",
-        ignoreHttpList: ["goblin", "api/v2/user"]
-      });
-    }
-  })();
-</script>
-<script src="assets/activity-static.hoopchina.com.cn/games/static/colorbox-ai/colorbox-ai_v2.1.69.js"></script>
-<script>
-(function () {
-  window.__COLORBOX_AI_CONFIG__ = {
-    projectId: "project-ai-1783761934042",
-    settings: {"ownerId":402116,"projectId":"project-ai-1783761934042","title":"篮坛造星局","trackingCode":"PHBS7947","bizCategory":"match","isGamePlay":true,"postTopicId":"152165","shareInviteParams":"1783761934042","rewardVideoIncomeId":"16899","shareTitle":"","shareSubtitle":"","shareCover":"","theme":{"webviewBackground":"#1c1713","skeletonColor":"#332923","containerBackground":"#1c1713"},"dayNightMode":"dark"},
-    pagePi: "activity_match_project-ai-1783761934042"
-  };
-  "use strict";
-(() => {
-  // src/iframe-runtime/fallbacks.ts
-  function createLocalFallbackApi() {
-    return {
-      getPostDetail: function() {
-        return Promise.reject(new Error("ColorboxAI SDK is not loaded"));
-      },
-      getTopicThreads: function() {
-        return Promise.reject(new Error("ColorboxAI SDK is not loaded"));
-      },
-      buildPostSchema: function() {
-        return "";
-      },
-      openPostEditor: function() {
-        return "";
-      }
-    };
-  }
-  function createLocalSecurityFallbackApi() {
-    return {
-      checkAudit: function() {
-        return Promise.reject(new Error("ColorboxAI SDK is not loaded"));
-      }
-    };
-  }
-  function createLocalScoreFallbackApi() {
-    return {
-      getScore: function() {
-        return Promise.reject(new Error("ColorboxAI SDK is not loaded"));
-      },
-      addScore: function() {
-        return Promise.reject(new Error("ColorboxAI SDK is not loaded"));
-      }
-    };
-  }
-  function createLocalOssFallbackApi() {
-    return {
-      uploadFile: function() {
-        return Promise.reject(new Error("ColorboxAI SDK is not loaded"));
-      }
-    };
-  }
-  function createLocalAuthFallbackApi() {
-    return {
-      getUserInfo: function() {
-        const info = window.userInfo || window.HupuBridge && window.HupuBridge.nainfo;
-        return Promise.resolve(info || null);
-      },
-      getAuthToken: function() {
-        const info = window.userInfo || window.HupuBridge && window.HupuBridge.nainfo;
-        const token = info && (info.authToken || info.token) || "";
-        return Promise.resolve(token);
-      }
-    };
-  }
-
-  // src/iframe-runtime/storage.ts
-  var MAX_STORAGE_BYTES = 5 * 1024 * 1024;
-  function createColorboxStorageApi(params) {
-    const pId = params.projectId;
-    function resolveScopedKey(key) {
-      return "cb_storage:" + pId + ":" + key;
-    }
-    function isStorageAvailable() {
-      try {
-        const testKey = "__colorbox_storage_test__";
-        window.localStorage.setItem(testKey, "test");
-        window.localStorage.removeItem(testKey);
-        return true;
-      } catch (e) {
-        return false;
-      }
-    }
-    const isLocalAvailable = isStorageAvailable();
-    function safeB64Encode(str) {
-      try {
-        const base64 = window.btoa(unescape(encodeURIComponent(str)));
-        return base64;
-      } catch (error) {
-        logError("safeB64Encode failed.", error);
-        throw error;
-      }
-    }
-    function safeB64Decode(str) {
-      try {
-        const decoded = decodeURIComponent(escape(window.atob(str)));
-        return decoded;
-      } catch (error) {
-        logError("safeB64Decode failed.", error);
-        throw error;
-      }
-    }
-    function serializeStorageValue(value) {
-      if (value == null) return "";
-      const text = typeof value === "string" ? value : JSON.stringify(value);
-      try {
-        const encoded = safeB64Encode(text);
-        return "__b64__:" + encoded;
-      } catch (error) {
-        return text;
-      }
-    }
-    function parseStorageValue(value, scopedKey) {
-      if (value == null) return null;
-      if (typeof value !== "string") return value;
-      let text = value;
-      if (text.indexOf("__b64__:") === 0) {
-        text = safeB64Decode(text.slice(8));
-      }
-      if (text.charAt(0) !== "{" && text.charAt(0) !== "[") {
-        return text;
-      }
-      try {
-        const parsed = JSON.parse(text);
-        if (parsed && typeof parsed === "object") {
-          if (!Array.isArray(parsed) && scopedKey && parsed[scopedKey] != null) {
-            return parseStorageValue(parsed[scopedKey], scopedKey);
-          }
-        }
-        return text;
-      } catch (parseError) {
-        if (text.charAt(0) === "{" && text.charAt(text.length - 1) === "}") {
-          const escapedKey = (scopedKey || "").replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
-          const pattern = new RegExp('^\\{\\s*"' + (escapedKey || '[^"]+') + '"\\s*:\\s*"(.*)"\\s*\\}\\s*$');
-          const match = text.match(pattern);
-          if (match) {
-            let rawValue = match[1];
-            rawValue = rawValue.replace(/\\"/g, '"').replace(/\\\\/g, "\\");
-            return parseStorageValue(rawValue, scopedKey);
-          }
-        }
-        return text;
-      }
-    }
-    function readLocalStorageValue(scopedKey) {
-      if (!isLocalAvailable) return null;
-      try {
-        return parseStorageValue(window.localStorage.getItem(scopedKey), scopedKey);
-      } catch (e) {
-        return null;
-      }
-    }
-    function writeLocalStorageValue(scopedKey, value) {
-      if (!isLocalAvailable) return false;
-      try {
-        window.localStorage.setItem(scopedKey, serializeStorageValue(value));
-        return true;
-      } catch (e) {
-        return false;
-      }
-    }
-    function readLocalStorageAll() {
-      const result = {};
-      if (!isLocalAvailable) return result;
-      try {
-        const prefix = "cb_storage:" + pId + ":";
-        for (let i = 0; i < window.localStorage.length; i++) {
-          const k = window.localStorage.key(i);
-          if (k && k.indexOf(prefix) === 0) {
-            const rawKey = k.substring(prefix.length);
-            const val = readLocalStorageValue(k);
-            if (val !== null) {
-              result[rawKey] = val;
-            }
-          }
-        }
-      } catch (e) {
-      }
-      return result;
-    }
-    function calculateStorageSize() {
-      let size = 0;
-      if (!isLocalAvailable) return size;
-      try {
-        const prefix = "cb_storage:" + pId + ":";
-        for (let i = 0; i < window.localStorage.length; i++) {
-          const k = window.localStorage.key(i);
-          if (k && k.indexOf(prefix) === 0) {
-            const val = window.localStorage.getItem(k);
-            size += k.length + (val ? val.length : 0);
-          }
-        }
-      } catch (e) {
-      }
-      return size;
-    }
-    function deleteLocalStorageValue(scopedKey) {
-      if (!isLocalAvailable) return false;
-      try {
-        window.localStorage.removeItem(scopedKey);
-        return true;
-      } catch (e) {
-        return false;
-      }
-    }
-    function resolveProjectId() {
-      return pId;
-    }
-    function logInfo(stage, detail) {
-      console.log("[ColorboxAI.Storage] " + stage, detail || {});
-    }
-    function logError(stage, error, extra) {
-      console.error("[ColorboxAI.Storage] Error: " + stage, error);
-      try {
-        const isBridgeError = stage.toLowerCase().indexOf("bridge") >= 0;
-        if (isBridgeError && window.WebGuard && typeof window.WebGuard.hupuLog === "function") {
-          window.WebGuard.hupuLog({
-            type: "jsError",
-            message: "[ColorboxAI.Storage] " + stage + ": " + (error && error.message || String(error)),
-            stack: error && error.stack || new Error().stack || "",
-            detail: Object.assign({
-              projectId: pId,
-              stage
-            }, extra || {})
-          });
-        }
-      } catch (e) {
-        console.error("[ColorboxAI.Storage] Failed to report to WebGuard", e);
-      }
-    }
-    function shouldUseBridge() {
-      const ua = navigator.userAgent || "";
-      return /kanqiu/i.test(ua);
-    }
-    function writeBridgeValue(scopedKey, value) {
-      const payload = {
-        method: "hupu.common.setValue",
-        data: {
-          key: scopedKey,
-          value: serializeStorageValue(value)
-        }
-      };
-      return new Promise(function(resolve, reject) {
-        if (window.HupuBridge && typeof window.HupuBridge.send === "function") {
-          window.HupuBridge.send(payload.method, payload.data).then(resolve).catch(reject);
-        } else {
-          reject(new Error("HupuBridge not available for storage set"));
-        }
-      });
-    }
-    function readBridgeValue(scopedKey) {
-      const payload = {
-        method: "hupu.common.getValue",
-        data: { key: scopedKey }
-      };
-      return new Promise(function(resolve, reject) {
-        if (window.HupuBridge && typeof window.HupuBridge.send === "function") {
-          window.HupuBridge.send(payload.method, payload.data).then(function(res) {
-            const val = res && res.value;
-            resolve(parseStorageValue(val, scopedKey));
-          }).catch(reject);
-        } else {
-          reject(new Error("HupuBridge not available for storage get"));
-        }
-      });
-    }
-    function setValue(key, value) {
-      return Promise.resolve().then(function() {
-        if (key == null || typeof key === "object") {
-          const batch = key || {};
-          const keys = Object.keys(batch);
-          if (!keys.length) return { ok: true, size: calculateStorageSize(), bridgeSynced: false };
-          let currentSize2 = calculateStorageSize();
-          let delta2 = 0;
-          const writeTasks = [];
-          keys.forEach(function(k) {
-            const scopedKey2 = resolveScopedKey(k);
-            const val = batch[k];
-            const rawVal2 = JSON.stringify(val);
-            const oldRaw2 = isLocalAvailable ? window.localStorage.getItem(scopedKey2) : null;
-            const keyDelta = scopedKey2.length + rawVal2.length - (oldRaw2 ? scopedKey2.length + oldRaw2.length : 0);
-            delta2 += keyDelta;
-            writeTasks.push({ scopedKey: scopedKey2, val });
-          });
-          if (currentSize2 + delta2 > MAX_STORAGE_BYTES) {
-            throw new Error("Storage quota exceeded (max 5MB limit). Set value failed.");
-          }
-          let ok2 = true;
-          const bridgeKeys = [];
-          writeTasks.forEach(function(task) {
-            const success = writeLocalStorageValue(task.scopedKey, task.val);
-            if (!success) ok2 = false;
-            bridgeKeys.push(task.scopedKey);
-          });
-          if (shouldUseBridge()) {
-            const bridgePayload = {
-              method: "hupu.common.setValue",
-              data: {
-                keys: bridgeKeys,
-                values: keys.map(function(k) {
-                  return serializeStorageValue(batch[k]);
-                })
-              }
-            };
-            return new Promise(function(resolve) {
-              if (window.HupuBridge && typeof window.HupuBridge.send === "function") {
-                window.HupuBridge.send(bridgePayload.method, bridgePayload.data).then(function(res) {
-                  resolve({ ok: ok2, size: calculateStorageSize(), bridgeSynced: true, rawBridgeResult: res });
-                }).catch(function(err) {
-                  logError("Bridge batch write failed", err, { keys: bridgeKeys });
-                  resolve({ ok: ok2, size: calculateStorageSize(), bridgeSynced: false, error: err });
-                });
-              } else {
-                resolve({ ok: ok2, size: calculateStorageSize(), bridgeSynced: false });
-              }
-            }).then(function(result3) {
-              logInfo("\u5199\u5165\u5B58\u50A8\u6570\u636E\u6210\u529F", {
-                projectId: resolveProjectId(),
-                input: batch,
-                payload: bridgePayload,
-                result: result3
-              });
-              return result3;
-            });
-          }
-          const result2 = { ok: ok2, size: calculateStorageSize(), bridgeSynced: false };
-          logInfo("\u5199\u5165\u5B58\u50A8\u6570\u636E\u6210\u529F", {
-            projectId: resolveProjectId(),
-            input: batch,
-            payload: null,
-            result: result2
-          });
-          return result2;
-        }
-        const storageKey = String(key);
-        const scopedKey = resolveScopedKey(storageKey);
-        const rawVal = JSON.stringify(value);
-        const oldRaw = isLocalAvailable ? window.localStorage.getItem(scopedKey) : null;
-        const currentSize = calculateStorageSize();
-        const delta = scopedKey.length + rawVal.length - (oldRaw ? scopedKey.length + oldRaw.length : 0);
-        if (currentSize + delta > MAX_STORAGE_BYTES) {
-          throw new Error("Storage quota exceeded (max 5MB limit). Set value failed.");
-        }
-        let ok = true;
-        if (value === void 0) {
-          ok = deleteLocalStorageValue(scopedKey);
-        } else {
-          ok = writeLocalStorageValue(scopedKey, value);
-        }
-        if (shouldUseBridge()) {
-          const bridgePayload = {
-            method: "hupu.common.setValue",
-            data: {
-              key: scopedKey,
-              value: serializeStorageValue(value)
-            }
-          };
-          return writeBridgeValue(scopedKey, value).then(function(bridgeResult) {
-            return { ok, key: storageKey, size: calculateStorageSize(), bridgeSynced: bridgeResult !== null };
-          }).catch(function(err) {
-            logError("Bridge write failed for key " + storageKey, err, { key: storageKey });
-            return { ok, key: storageKey, size: calculateStorageSize(), bridgeSynced: false, error: err };
-          }).then(function(result2) {
-            logInfo("\u5199\u5165\u5B58\u50A8\u6570\u636E\u6210\u529F", {
-              projectId: resolveProjectId(),
-              input: value,
-              payload: bridgePayload,
-              result: result2
-            });
-            return result2;
-          });
-        }
-        const result = { ok, key: storageKey, size: calculateStorageSize(), bridgeSynced: false };
-        logInfo("\u5199\u5165\u5B58\u50A8\u6570\u636E\u6210\u529F", {
-          projectId: resolveProjectId(),
-          input: value,
-          payload: null,
-          result
-        });
-        return result;
-      }).catch(function(error) {
-        logError("\u5199\u5165\u5B58\u50A8\u6570\u636E\u5931\u8D25", error, { key });
-        return Promise.reject(error);
-      });
-    }
-    function getValue(key) {
-      const hasKey = key != null && key !== "";
-      const storageKey = hasKey ? String(key) : "";
-      return Promise.resolve().then(function() {
-        if (!hasKey) {
-          const allValues = readLocalStorageAll();
-          logInfo("\u8BFB\u53D6\u5B58\u50A8\u6570\u636E\u6210\u529F", {
-            projectId: resolveProjectId(),
-            key: "",
-            scopedKey: "",
-            source: "localStorage",
-            result: allValues
-          });
-          return allValues;
-        }
-        const scopedKey = resolveScopedKey(storageKey);
-        if (!shouldUseBridge()) {
-          const localOnlyValue = readLocalStorageValue(scopedKey);
-          logInfo("\u8BFB\u53D6\u5B58\u50A8\u6570\u636E\u6210\u529F", {
-            projectId: resolveProjectId(),
-            key: storageKey,
-            scopedKey,
-            source: "localStorage",
-            result: localOnlyValue
-          });
-          return localOnlyValue;
-        }
-        return readBridgeValue(scopedKey).catch(function(err) {
-          logError("Bridge read failed for key " + storageKey, err, { key: storageKey });
-          throw err;
-        }).then(function(bridgeValue) {
-          if (bridgeValue != null) {
-            logInfo("\u8BFB\u53D6\u5B58\u50A8\u6570\u636E\u6210\u529F", {
-              projectId: resolveProjectId(),
-              key: storageKey,
-              scopedKey,
-              source: "hupu.common.getValue",
-              result: bridgeValue
-            });
-            return bridgeValue;
-          }
-          const localValue = readLocalStorageValue(scopedKey);
-          logInfo("\u8BFB\u53D6\u5B58\u50A8\u6570\u636E\u6210\u529F", {
-            projectId: resolveProjectId(),
-            key: storageKey,
-            scopedKey,
-            source: "localStorage",
-            result: localValue
-          });
-          return localValue;
-        });
-      }).catch(function(error) {
-        logError("\u8BFB\u53D6\u5B58\u50A8\u6570\u636E\u5931\u8D25", error, { key: storageKey });
-        return hasKey ? null : {};
-      });
-    }
-    return {
-      maxBytes: MAX_STORAGE_BYTES,
-      setValue,
-      getValue,
-      set: setValue,
-      get: getValue
-    };
-  }
-
-  // src/iframe-runtime/index.ts
-  (function() {
-    const config = window.__COLORBOX_AI_CONFIG__ || {
-      projectId: "",
-      settings: {
-        title: "",
-        trackingCode: "",
-        bizCategory: "",
-        shareTitle: "",
-        shareSubtitle: "",
-        shareCover: ""
-      },
-      pagePi: ""
-    };
-    const { settings, projectId, pagePi } = config;
-    const sessionId = "ai-runtime-" + Date.now() + "-" + Math.random().toString(36).slice(2);
-    window.__colorbox_runtime__ = true;
-    window.__colorbox_ai_runtime__ = true;
-    window.globalState = Object.assign({}, window.globalState || {}, {
-      name: settings.title,
-      pageTrackCode: settings.trackingCode,
-      wxShareTitle: settings.shareTitle,
-      wxShareSubTitle: settings.shareSubtitle,
-      wxShareImage: settings.shareCover,
-      bizCode: settings.bizCategory,
-      webViewColor: settings.theme && settings.theme.webviewBackground,
-      containerColor: settings.theme && settings.theme.containerBackground,
-      pi: pagePi
-    });
-    if (settings.title) {
-      document.title = settings.title;
-    }
-    function setupRuntimeIssueGuard() {
-      if (window.__colorbox_ai_runtime_issue_guard__) return;
-      window.__colorbox_ai_runtime_issue_guard__ = true;
-      let lastTick = Date.now();
-      window.setInterval(function() {
-        const now = Date.now();
-        const drift = now - lastTick - 1e3;
-        if (drift > 3e3) {
-          console.error("[ColorboxAI.Runtime] Main thread blocked for " + drift + "ms; possible long task or infinite loop.");
-        }
-        lastTick = now;
-      }, 1e3);
-    }
-    const frameTrackDebugLog = [];
-    function pushFrameTrackDebug(stage, detail) {
-      const entry = { stage, detail: detail || {}, ts: Date.now() };
-      frameTrackDebugLog.push(entry);
-      if (frameTrackDebugLog.length > 200) {
-        frameTrackDebugLog.shift();
-      }
-      try {
-        console.log("[ColorboxAI.Track] " + stage, detail || {});
-      } catch (error) {
-      }
-    }
-    function createTrackTraceId() {
-      return "trk_" + Date.now() + "_" + Math.random().toString(36).slice(2, 9);
-    }
-    function post(type, payload) {
-      const trackTraceId = payload && payload.trackTraceId;
-      try {
-        if (!window.parent || window.parent === window) {
-          if (type === "events.track") {
-            pushFrameTrackDebug("frame.post.skip", {
-              trackTraceId,
-              reason: "no_parent_or_same_window"
-            });
-          }
-          return;
-        }
-        window.parent.postMessage({
-          protocol: "colorbox-ai-bridge",
-          version: 1,
-          direction: "frame-to-host",
-          sessionId,
-          projectId,
-          type,
-          payload: payload || {},
-          timestamp: Date.now()
-        }, "*");
-        if (type === "events.track") {
-          pushFrameTrackDebug("frame.post.ok", { trackTraceId, projectId });
-        }
-      } catch (error) {
-        if (type === "events.track") {
-          pushFrameTrackDebug("frame.post.error", {
-            trackTraceId,
-            message: error && error.message || String(error)
-          });
-        }
-      }
-    }
-    window.ColorboxAI = window.ColorboxAI || {};
-    window.ColorboxAI.project = window.ColorboxAI.project || {
-      id: projectId,
-      settings,
-      getSettings: function() {
-        return Promise.resolve(settings);
-      }
-    };
-    if (typeof window.ColorboxAI.configure === "function") {
-      window.ColorboxAI.configure({
-        trackingCode: settings.trackingCode,
-        pi: pagePi
-      });
-    }
-    window.__colorbox_ai_track_debug_frame__ = frameTrackDebugLog;
-    window.ColorboxAI.track = function (trackParams) {
-      const trackTraceId = createTrackTraceId();
-      pushFrameTrackDebug("frame.call", {
-        trackTraceId,
-        params: trackParams || {},
-        hasParent: !!(window.parent && window.parent !== window)
-      });
-      try {
-        const customDebugger = window.ColorboxCustomDebugger;
-        if (customDebugger && typeof customDebugger.addLog === "function") {
-          customDebugger.addLog(trackParams || {});
-        }
-      } catch (error) {
-        pushFrameTrackDebug("frame.debug.error", {
-          trackTraceId,
-          message: error && error.message || String(error)
-        });
-      }
-      post("events.track", { trackParams: trackParams || {}, trackTraceId });
-    };
-    window.ColorboxAI.navigateTo = function(url, target) {
-      post("navigation.open", { url, target });
-    };
-    window.ColorboxAI.openUrl = window.ColorboxAI.navigateTo;
-    window.ColorboxAI.bbs = window.ColorboxAI.bbs || createLocalFallbackApi();
-    window.ColorboxAI.security = window.ColorboxAI.security || createLocalSecurityFallbackApi();
-    window.ColorboxAI.score = window.ColorboxAI.score || createLocalScoreFallbackApi();
-    window.ColorboxAI.oss = window.ColorboxAI.oss || createLocalOssFallbackApi();
-    window.ColorboxAI.auth = window.ColorboxAI.auth || createLocalAuthFallbackApi();
-    window.ColorboxAI.storage = window.ColorboxAI.storage || createColorboxStorageApi({ projectId });
-    window.ColorboxAI.runtime = window.ColorboxAI.runtime || {};
-    window.ColorboxAI.runtime.log = function() {
-      post("runtime.log", { args: Array.prototype.slice.call(arguments) });
-    };
-    window.ColorboxAI.hupuLog = function(params) {
-      if (window.WebGuard && typeof window.WebGuard.hupuLog === "function") {
-        window.WebGuard.hupuLog(params);
-      }
-    };
-    window.addEventListener("error", function(event) {
-      if (event.target && event.target !== window && event.target !== document) {
-        return;
-      }
-      const errorMsg = event.message || event.error && event.error.message || "Unknown error";
-      console.error("[ColorboxAI.Runtime] Uncaught error:", errorMsg);
-      post("runtime.error", {
-        message: errorMsg,
-        sourceFile: event.filename || "",
-        line: event.lineno || 0,
-        column: event.colno || 0,
-        stack: event.error && event.error.stack || ""
-      });
-    }, true);
-    window.addEventListener("unhandledrejection", function(event) {
-      const reason = event.reason || {};
-      console.error("[ColorboxAI.Runtime] Unhandled promise rejection:", reason);
-      post("runtime.error", {
-        message: reason.message || String(reason),
-        stack: reason.stack || ""
-      });
-    });
-    setupRuntimeIssueGuard();
-    post("runtime.ready", { href: location.href });
-  })();
-})();
-
-})();
-</script>
+  <script src="js/local_platform_runtime.js"></script>
 </head>
 <body>
 
@@ -1349,7 +697,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
       <div style="font-size:48px;margin-bottom:16px;">🏀</div>
       <div style="font-family:var(--font-display);font-size:20px;font-weight:700;color:var(--text);margin-bottom:8px;">请在支持环境内打开</div>
       <div style="font-size:13px;color:var(--text-dim);line-height:1.6;margin-bottom:24px;">游戏需要支持环境<br>打开后即可开始建模</div>
-      <button onclick="window.ColorboxAI?.navigateTo('https://games.mobileapi.hupu.com/landing?auto_install=yes&channel=build', '_blank')" style="display:block;width:100%;padding:14px 0;background:var(--orange);color:#fff;border:none;border-radius:12px;font-family:var(--font-display);font-size:16px;font-weight:700;text-decoration:none;box-shadow:0 4px 0 #c94d1e,0 6px 12px rgba(255,107,53,0.25);cursor:pointer;">📲 打开应用</button>
+      <button onclick="document.getElementById('downloadModal').style.display='none'" style="display:block;width:100%;padding:14px 0;background:var(--orange);color:#fff;border:none;border-radius:12px;font-family:var(--font-display);font-size:16px;font-weight:700;text-decoration:none;box-shadow:0 4px 0 #c94d1e,0 6px 12px rgba(255,107,53,0.25);cursor:pointer;">返回游戏</button>
       <button onclick="document.getElementById('downloadModal').style.display='none'" style="margin-top:16px;padding:10px 0;width:100%;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer;background:var(--bg-card);color:var(--text-dim);border:2px solid var(--border);font-family:var(--font-body);">关闭</button>
     </div>
   </div>
@@ -1541,7 +889,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     <button onclick="switchPosterPage(1)" style="min-height:34px;padding:8px 14px;border:none;border-radius:50px;font-size:13px;font-weight:700;cursor:pointer;background:#fff;color:#333;">下一张</button>
   </div>
   <div style="display:flex;gap:12px;margin-top:20px;flex-wrap:wrap;justify-content:center;">
-    <button class="btn-share-poster" onclick="sharePoster(this)" style="min-height:44px;padding:12px 24px;border:none;border-radius:50px;font-size:15px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#ff6b35,#ff8a5c);color:#fff;box-shadow:0 8px 20px rgba(255,107,53,0.35);">📤 一键发帖</button>
+    <button class="btn-share-poster" onclick="sharePoster(this)" style="min-height:44px;padding:12px 24px;border:none;border-radius:50px;font-size:15px;font-weight:700;cursor:pointer;background:linear-gradient(135deg,#ff6b35,#ff8a5c);color:#fff;box-shadow:0 8px 20px rgba(255,107,53,0.35);">📤 保存海报</button>
     <button onclick="closePoster()" style="min-height:44px;padding:12px 24px;border:none;border-radius:50px;font-size:15px;font-weight:700;cursor:pointer;background:#555;color:#fff;">关闭</button>
   </div>
 </div>
@@ -1648,331 +996,7 @@ function getPlayerHeadshotStyle(playerName, displaySize) {
   }
 })();
 </script>
-<script src="assets/activity-static.hoopchina.com.cn/files/26630-uq56cnrc-upload-1782786826635-12.js"></script>
-<script>
-// 不在控制台输出调试日志
-try { console.log = function(){}; console.warn = function(){}; console.error = function(){}; } catch(e) {}
-// == use-va-h5-sdk：用户信息只请求一次 ==
-var DEFAULT_PLAYER_AVATAR = 'js/data/player_logo.svg';
-var DEFAULT_HUPU_NICKNAME = '未登录用户';
-var HUPU_USER = {
-  requested: false,
-  loaded: false,
-  promise: null,
-  raw: null,
-  isLogin: false,
-  nickname: DEFAULT_HUPU_NICKNAME,
-  avatar: DEFAULT_PLAYER_AVATAR,
-  source: 'fallback',
-  requestCount: 0
-};
-window.__HUPU_USER__ = HUPU_USER;
-
-function parseHupuMaybeJson(value) {
-  if (typeof value !== 'string') return value;
-  var text = value.trim();
-  if (!text || (!text.startsWith('{') && !text.startsWith('['))) return value;
-  try { return JSON.parse(text); } catch (e) { return value; }
-}
-
-function normalizeHupuAvatarUrl(value) {
-  if (value === undefined || value === null) return '';
-  var url = String(value).trim();
-  if (!url) return '';
-  if (url.startsWith('//')) url = 'https:' + url;
-  if (/^data:image\//i.test(url) || /^https?:\/\//i.test(url)) return url;
-  return '';
-}
-
-function findHupuField(raw, keys, depth, seen) {
-  if (depth === undefined) depth = 0;
-  if (seen === undefined) seen = new Set();
-  raw = parseHupuMaybeJson(raw);
-  if (!raw || depth > 7 || typeof raw !== 'object' || seen.has(raw)) return undefined;
-  seen.add(raw);
-  var keyMap = new Map(Object.keys(raw).map(function(key) { return [key.toLowerCase(), key]; }));
-  for (var wi = 0; wi < keys.length; wi++) {
-    var wanted = keys[wi];
-    var actual = keyMap.get(String(wanted).toLowerCase());
-    if (!actual) continue;
-    var value = parseHupuMaybeJson(raw[actual]);
-    if (value !== undefined && value !== null && value !== '') return value;
-  }
-  var objKeys = Object.keys(raw);
-  for (var oi = 0; oi < objKeys.length; oi++) {
-    var found = findHupuField(raw[objKeys[oi]], keys, depth + 1, seen);
-    if (found !== undefined && found !== null && found !== '') return found;
-  }
-  return undefined;
-}
-
-function findHupuString(raw, keys) {
-  var value = findHupuField(raw, keys);
-  if (typeof value === 'string' || typeof value === 'number') return String(value).trim();
-  if (value && typeof value === 'object') {
-    var nested = findHupuField(value, ['url', 'src', 'value', 'text', 'name']);
-    if (typeof nested === 'string' || typeof nested === 'number') return String(nested).trim();
-  }
-  return '';
-}
-
-function normalizeHupuUserInfo(userInfo) {
-  var raw = parseHupuMaybeJson(userInfo) || {};
-  var nickname = findHupuString(raw, ['nickname', 'nickName', 'nick', 'userName', 'username', 'displayName', 'display_name']);
-  var avatarValue = findHupuField(raw, [
-    'avatar', 'avatarUrl', 'avatar_url', 'userAvatar', 'userAvatarUrl', 'head', 'header', 'headerUrl', 'headUrl',
-    'headImg', 'headImgUrl', 'headimgurl', 'profileImg', 'profileImage', 'profileImageUrl', 'profilePic', 'profilePicUrl',
-    'face', 'faceUrl', 'icon', 'iconUrl', 'photo', 'photoUrl', 'img', 'imgUrl', 'image', 'imageUrl', 'smallAvatar', 'bigAvatar'
-  ]);
-  if (avatarValue && typeof avatarValue === 'object')
-    avatarValue = findHupuField(avatarValue, ['url', 'src', 'imageUrl', 'avatarUrl']);
-  var avatar = normalizeHupuAvatarUrl(avatarValue);
-  var loginValue = findHupuField(raw, ['islogin', 'isLogin', 'loggedIn', 'login', 'hasLogin']);
-  var explicitlyLoggedIn = loginValue === 1 || loginValue === '1' || loginValue === true || loginValue === 'true' || loginValue === 'yes';
-  var isLogin = explicitlyLoggedIn || !!nickname || !!avatar;
-  return {
-    isLogin: isLogin,
-    nickname: isLogin && nickname ? nickname : DEFAULT_HUPU_NICKNAME,
-    avatar: avatar || DEFAULT_PLAYER_AVATAR,
-    raw: userInfo || null
-  };
-}
-
-function getInjectedVaUserInfo() {
-  var candidates = [
-    window.__HUPU_USER_INFO__, window.__USER_INFO__, window.hupuUserInfo, window.userInfo,
-    window.VaFuSDK && window.VaFuSDK.userInfo, window.VaFuSDK && window.VaFuSDK.currentUser, window.VaFuSDK && window.VaFuSDK.user && window.VaFuSDK.user.info
-  ];
-  for (var ci = 0; ci < candidates.length; ci++) {
-    var value = parseHupuMaybeJson(candidates[ci]);
-    if (value && typeof value === 'object') return value;
-  }
-  return null;
-}
-
-function getVaUserInfoGetter() {
-  var candidates = [
-    [window.VaFuSDK, 'getUserInfo', 'VaFuSDK.getUserInfo'],
-    [window.VaFuSDK, 'getCurrentUser', 'VaFuSDK.getCurrentUser'],
-    [window.VaFuSDK, 'getUserProfile', 'VaFuSDK.getUserProfile'],
-    [window.VaFuSDK && window.VaFuSDK.user, 'getUserInfo', 'VaFuSDK.user.getUserInfo']
-  ];
-  for (var gi = 0; gi < candidates.length; gi++) {
-    var owner = candidates[gi][0], key = candidates[gi][1], label = candidates[gi][2];
-    if (owner && typeof owner[key] === 'function') return { owner: owner, fn: owner[key], label: label };
-  }
-  return null;
-}
-
-function waitForVaUserBridge(timeout) {
-  if (timeout === undefined) timeout = 8000;
-  var started = Date.now();
-  return new Promise(function(resolve) {
-    function check() {
-      var injected = getInjectedVaUserInfo();
-      if (injected) { resolve({ injected: injected }); return; }
-      var getter = getVaUserInfoGetter();
-      if (getter) { resolve({ getter: getter }); return; }
-      if (Date.now() - started < timeout) {
-        setTimeout(check, 120);
-      } else {
-        var finalInjected = getInjectedVaUserInfo();
-        if (finalInjected) { resolve({ injected: finalInjected }); return; }
-        var finalGetter = getVaUserInfoGetter();
-        resolve(finalGetter ? { getter: finalGetter } : null);
-      }
-    }
-    check();
-  });
-}
-
-function invokeVaUserInfoGetter(getter, timeout) {
-  if (timeout === undefined) timeout = 5000;
-  return new Promise(function(resolve, reject) {
-    if (!getter) { resolve(null); return; }
-    var settled = false;
-    function finish(value) { if (settled) return; settled = true; clearTimeout(timer); resolve(value); }
-    function fail(error) { if (settled) return; settled = true; clearTimeout(timer); reject(error); }
-    function callback() {
-      if (arguments.length > 1 && arguments[1] !== undefined && arguments[1] !== null) finish(arguments[1]);
-      else finish(arguments[0]);
-    }
-    var timer = setTimeout(function() { finish(null); }, timeout);
-    try {
-      HUPU_USER.requestCount += 1;
-      var returned = getter.fn.length > 0 ? getter.fn.call(getter.owner, callback) : getter.fn.call(getter.owner);
-      if (returned && typeof returned.then === 'function') returned.then(finish, fail);
-      else if (returned !== undefined && returned !== null) finish(returned);
-    } catch (e) { fail(e); }
-  });
-}
-
-async function _fetchHupuUser() {
-  try {
-    var bridge = await waitForVaUserBridge(8000);
-    var raw = null;
-    if (bridge && bridge.injected) { raw = bridge.injected; HUPU_USER.source = 'VaFuSDK.injected'; }
-    else if (bridge && bridge.getter) { raw = await invokeVaUserInfoGetter(bridge.getter, 5000); HUPU_USER.source = bridge.getter.label; }
-    var normalized = normalizeHupuUserInfo(raw);
-    HUPU_USER.raw = normalized.raw;
-    HUPU_USER.isLogin = normalized.isLogin;
-    HUPU_USER.nickname = normalized.nickname;
-    HUPU_USER.avatar = normalized.avatar;
-    try { console.log('[hupu]', normalized.isLogin ? '已登录' : '未登录', normalized.nickname, HUPU_USER.source); } catch(e) {}
-  } catch (e) {
-    HUPU_USER.isLogin = false;
-    HUPU_USER.nickname = DEFAULT_HUPU_NICKNAME;
-    HUPU_USER.avatar = DEFAULT_PLAYER_AVATAR;
-    HUPU_USER.source = 'fallback_error';
-  } finally {
-    HUPU_USER.loaded = true;
-  }
-  return HUPU_USER;
-}
-
-var _hupuRetryCount = 0;
-function ensureHupuUser(forceRetry) {
-  // 强制重试：之前已加载但未登录，或加载超时
-  if (forceRetry) {
-    if (HUPU_USER.isLogin || _hupuRetryCount >= 3) return Promise.resolve(HUPU_USER);
-    _hupuRetryCount++;
-    HUPU_USER.loaded = false;
-    HUPU_USER.requested = true;
-    HUPU_USER.promise = _fetchHupuUser();
-    return HUPU_USER.promise;
-  }
-  if (HUPU_USER.loaded) return Promise.resolve(HUPU_USER);
-  if (!HUPU_USER.requested) { HUPU_USER.requested = true; HUPU_USER.promise = _fetchHupuUser(); }
-  return HUPU_USER.promise;
-}
-
-function getHupuDisplayName() {
-  var custom = (typeof STATE !== 'undefined' && STATE.playerName) || getCustomPlayerName();
-  if (custom) return custom;
-  return (HUPU_USER.isLogin && HUPU_USER.nickname) ? HUPU_USER.nickname : '自建球员';
-}
-function getHupuAvatarUrl() {
-  return HUPU_USER.avatar || '';
-}
-function isHupuLoggedIn() {
-  return !!HUPU_USER.isLogin;
-}
-
-function getCustomPlayerName() {
-  try { return localStorage.getItem('buildplayer_nickname') || ''; } catch(e) { return ''; }
-}
-function setCustomPlayerName(name) {
-  try { localStorage.setItem('buildplayer_nickname', name); } catch(e) {}
-  if (typeof STATE !== 'undefined') STATE.playerName = name;
-}
-
-function openEditProfile() {
-  var existing = document.getElementById('editProfileModal');
-  if (existing) existing.remove();
-  var currentName = getHupuDisplayName();
-  var avatarUrl = getHupuAvatarUrl();
-  var defaultAvatar = DEFAULT_PLAYER_AVATAR;
-  var M = document.createElement('div');
-  M.id = 'editProfileModal';
-  M.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;padding:16px;';
-  M.onclick = function(e) { if (e.target === M) M.remove(); };
-  var C = document.createElement('div');
-  C.style.cssText = 'background:var(--bg);border:2px solid var(--border);border-radius:16px;width:100%;max-width:300px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 48px rgba(0,0,0,0.45);text-align:center;padding:28px 20px 20px;position:relative;';
-  M.appendChild(C);
-  var closeBtn = document.createElement('button');
-  closeBtn.style.cssText = 'position:absolute;top:10px;right:10px;width:30px;height:30px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg-card);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--text-dim);';
-  closeBtn.textContent = '✕';
-  closeBtn.onclick = function() { M.remove(); };
-  C.appendChild(closeBtn);
-  var avatarWrap = document.createElement('div');
-  avatarWrap.style.cssText = 'width:72px;height:72px;border-radius:50%;margin:0 auto 14px;overflow:hidden;border:3px solid var(--orange);background:var(--bg-card);';
-  C.appendChild(avatarWrap);
-  var img = document.createElement('img');
-  img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;';
-  img.src = avatarUrl;
-  img.onerror = function() { this.onerror = null; this.src = defaultAvatar; };
-  avatarWrap.appendChild(img);
-  var label = document.createElement('div');
-  label.style.cssText = 'font-family:Fredoka,"Noto Sans SC",sans-serif;font-size:13px;color:var(--text-dim);margin-bottom:6px;';
-  label.textContent = '昵称';
-  C.appendChild(label);
-  var input = document.createElement('input');
-  input.id = 'editNicknameInput';
-  input.type = 'text';
-  input.maxLength = '20';
-  input.value = currentName;
-  input.style.cssText = 'width:100%;padding:10px 14px;border:2px solid var(--border);border-radius:10px;font-family:Nunito,"Noto Sans SC",sans-serif;font-size:15px;text-align:center;outline:none;background:var(--bg-card);color:var(--text);';
-  C.appendChild(input);
-  var btnRow = document.createElement('div');
-  btnRow.style.cssText = 'display:flex;gap:10px;margin-top:18px;';
-  C.appendChild(btnRow);
-  var cancelBtn = document.createElement('button');
-  cancelBtn.style.cssText = 'flex:1;padding:12px 0;border:2px solid var(--border);border-radius:12px;background:var(--bg-card);font-family:Fredoka,"Noto Sans SC",sans-serif;font-size:14px;font-weight:600;color:var(--text-dim);cursor:pointer;';
-  cancelBtn.textContent = '取消';
-  cancelBtn.onclick = function() { M.remove(); };
-  btnRow.appendChild(cancelBtn);
-  var saveBtn = document.createElement('button');
-  saveBtn.style.cssText = 'flex:1;padding:14px 0;border:none;border-radius:12px;background:var(--orange);color:var(--on-accent);font-family:Fredoka,"Noto Sans SC",sans-serif;font-size:15px;font-weight:700;cursor:pointer;';
-  saveBtn.textContent = '保存';
-  saveBtn.onclick = function() { saveEditProfile(); };
-  btnRow.appendChild(saveBtn);
-  document.body.appendChild(M);
-}
-function saveEditProfile() {
-  try{console.log('[edit] save clicked')}catch(e){}
-  var inp = document.getElementById('editNicknameInput');
-  if (!inp) { try{console.warn('[edit] input not found')}catch(e){} return; }
-  var name = inp.value.trim();
-  if (!name) { alert('昵称不能为空'); return; }
-  function doSave() {
-    try{console.log('[edit] saving name:', name)}catch(e){}
-    setCustomPlayerName(name);
-    var m = document.getElementById('editProfileModal');
-    if (m) m.remove();
-  }
-  if (window.ColorboxAI && window.ColorboxAI.security && typeof window.ColorboxAI.security.checkAudit === 'function') {
-    try{console.log('[edit] checkAudit available, calling...')}catch(e){}
-    var timedOut = false;
-    var timer = setTimeout(function() { timedOut = true; try{console.warn('[edit] checkAudit timeout')}catch(e){} doSave(); }, 1000);
-    try {
-      var p = window.ColorboxAI.security.checkAudit(name);
-      if (p && typeof p.then === 'function') {
-        p.then(function(res) {
-          if (timedOut) return;
-          clearTimeout(timer);
-          try{console.log('[edit] checkAudit result', res)}catch(e){}
-          if (res && res.code === 200 && res.data === true) {
-            doSave();
-          } else if (res && res.code === 401) {
-            alert('请先登录');
-          } else if (res && res.data === false) {
-            alert('检测到敏感词');
-          } else {
-            try{console.warn('[edit] checkAudit unexpected', res)}catch(e){}
-            alert('安全检查异常，请稍后再试');
-          }
-        }).catch(function(e) {
-          if (timedOut) return;
-          clearTimeout(timer);
-          try{console.warn('[edit] checkAudit promise error', e)}catch(ex){}
-          doSave();
-        });
-      } else {
-        clearTimeout(timer);
-        try{console.warn('[edit] checkAudit not promise, fallback')}catch(e){}
-        doSave();
-      }
-    } catch(e) {
-      clearTimeout(timer);
-      try{console.warn('[edit] checkAudit sync error', e)}catch(ex){}
-      doSave();
-    }
-  } else {
-    try{console.warn('[edit] checkAudit unavailable, save directly')}catch(e){}
-    doSave();
-  }
-}
-</script>
+<script src="js/local_player_profile.js"></script>
 <script src="js/data/draft_data.js"></script>
 <script src="js/data/legacy_text.js"></script>
 <script src="js/data/career_biography_text.js"></script>
@@ -1985,7 +1009,7 @@ var Storage = {
     if (!Storage._ready) {
       Storage._ready = new Promise(function(resolve) {
         function check() {
-          if (window.ColorboxAI && window.ColorboxAI.storage) { resolve(); return; }
+          if (window.GamePlatform && window.GamePlatform.storage) { resolve(); return; }
           setTimeout(check, 100);
         }
         check();
@@ -2001,7 +1025,7 @@ var Storage = {
   },
   setValue: function(data) {
     try {
-      if (!window.ColorboxAI || !window.ColorboxAI.storage) return Promise.resolve();
+      if (!window.GamePlatform || !window.GamePlatform.storage) return Promise.resolve();
       for (var key in data) {
         if (!data.hasOwnProperty(key)) continue;
         if (!Storage._validateKey(key)) { return Promise.resolve(); }
@@ -2010,20 +1034,20 @@ var Storage = {
       if (serialized.length > 200 * 1024) {
         return Promise.resolve();
       }
-      return window.ColorboxAI.storage.setValue(data).catch(function(){});
+      return window.GamePlatform.storage.setValue(data).catch(function(){});
     } catch(e) {}
     return Promise.resolve();
   },
   getValue: function(key) {
     try {
-      if (!window.ColorboxAI || !window.ColorboxAI.storage) return Promise.resolve(null);
+      if (!window.GamePlatform || !window.GamePlatform.storage) return Promise.resolve(null);
       if (key !== undefined && !Storage._validateKey(key)) return Promise.resolve(null);
-      if (key === undefined) return window.ColorboxAI.storage.getValue().catch(function(){ return null; });
-      return window.ColorboxAI.storage.getValue(key).catch(function(){ return null; });
+      if (key === undefined) return window.GamePlatform.storage.getValue().catch(function(){ return null; });
+      return window.GamePlatform.storage.getValue(key).catch(function(){ return null; });
     } catch(e) { return Promise.resolve(null); }
   },
   savePlayer: function(playerData) {
-    if (!window.ColorboxAI || !window.ColorboxAI.storage) return;
+    if (!window.GamePlatform || !window.GamePlatform.storage) return;
     Storage.getValue('players').then(function(raw) {
       var arr = [];
       if (raw != null) {
@@ -2285,8 +1309,8 @@ function html(id, content) {
 var _trackedExposureKeys = {};
 function trackEvent(params) {
   try {
-    if (window.ColorboxAI && typeof window.ColorboxAI.track === 'function') {
-      window.ColorboxAI.track(params);
+    if (window.GamePlatform && typeof window.GamePlatform.track === 'function') {
+      window.GamePlatform.track(params);
     }
   } catch(e) {}
 }
@@ -2379,7 +1403,7 @@ function logSavedPlayerData() {
 }
 setTimeout(logSavedPlayerData, 500);
 
-/** 验证 ColorboxAI.storage 读写回路 */
+/** 验证 GamePlatform.storage 读写回路 */
 function verifyStorage() {
   Storage.waitForReady().then(function(){
     Storage.setValue({ _ping: 'pong' }).then(function(){
@@ -2516,8 +1540,7 @@ function closeHelpModal() {
 
 /** 应用环境检测 */
 function getIsInApp() {
-  if (window.__HUPU_GAME_OFFLINE__) return true;
-  return /kanqiu|huputiyu/i.test(window.navigator.userAgent || "");
+  return window.__LOCAL_GAME__ === true;
 }
 
 /** 显示下载引导弹窗 */
@@ -2609,7 +1632,7 @@ function renderModeSelect() {
 }
 
 function startGame() {
-  ensureHupuUser(true);
+  ensureLocalPlayerProfile(true);
   if (STATE.mode === 'current' || STATE.mode === 'legend') {
     // 输出灰熊(MEM)和凯尔特人(BOS)全阵容
     console.log('========== 🏀 灰熊(MEM) 全阵容 ==========');
@@ -2688,7 +1711,7 @@ function confirmPosition() {
 
 function renderBuildUI() {
   var pi = document.getElementById('build-pos-indicator');
-  if (pi) pi.textContent = '「' + getHupuDisplayName() + '」 · ' + (SIM_CONFIG.POSITIONS[STATE.position] || STATE.position) + '（' + STATE.position + '）';
+  if (pi) pi.textContent = '「' + getMyPlayerDisplayName() + '」 · ' + (SIM_CONFIG.POSITIONS[STATE.position] || STATE.position) + '（' + STATE.position + '）';
   renderLeftAttrs();
   renderProgress();
 }
@@ -3426,7 +2449,7 @@ function revealPlayer() {
     <div class="rv-card-wrap">
       <div class="reveal-card">
         <div class="rv-item" style="animation-delay:0.1s"><div class="reveal-label">我的球员</div></div>
-         <div class="rv-item" style="animation-delay:0.2s"><div class="big-cname">${getHupuDisplayName()}</div></div>
+         <div class="rv-item" style="animation-delay:0.2s"><div class="big-cname">${getMyPlayerDisplayName()}</div></div>
         <div class="rv-ovr" style="animation-delay:0.3s"><div class="big-ovr">${STATE.finalOVR}</div></div>
         <div class="rv-item" style="animation-delay:0.4s"><div class="big-pos">${SIM_CONFIG.POSITIONS[STATE.position]}</div></div>
       </div>
@@ -4017,8 +3040,8 @@ function selectCareerTeam(team) {
 
   var pos = STATE.position;
   var myOvr = STATE.finalOVR;
-  var isLogin = isHupuLoggedIn();
-  var displayName = getHupuDisplayName();
+  var isLogin = hasLocalPlayerProfile();
+  var displayName = getMyPlayerDisplayName();
 
   STATE._lineupCache = {};
   var lineup = calcTeamLineup(team);
@@ -4031,7 +3054,7 @@ function selectCareerTeam(team) {
   
   // 自建球员头像：用户头像 / 默认篮坛造星局头像
   var defaultAvatar = DEFAULT_PLAYER_AVATAR;
-  if (!HUPU_USER.loaded || !HUPU_USER.isLogin) { ensureHupuUser(true); }
+  if (!LOCAL_PLAYER_PROFILE.loaded || !LOCAL_PLAYER_PROFILE.isLogin) { ensureLocalPlayerProfile(true); }
   var avatarUrl = defaultAvatar;
   
   function renderRosterPlayer(p, isUser, idx) {
@@ -4169,7 +3192,7 @@ function showCareerTeamPicker(teamList) {
   if (isFull) {
     // 看视频奖励：全 30 队任选
     allTeams = teamList.slice();
-    subLine = '🎉 看视频获得 · 全 ' + allTeams.length + ' 队任选';
+    subLine = '本地模式 · 全 ' + allTeams.length + ' 队任选';
   } else {
     // 从已访问球队中随机选 pickCount 支
     allTeams = STATE._teamsVisited.length > 0 ? STATE._teamsVisited.slice() : [...NBA2K_TEAMS];
@@ -4201,7 +3224,7 @@ function showCareerTeamPicker(teamList) {
     '<div class="team-picker-modal">' +
       '<div class="team-picker-header">' +
         '<span>' + (isFull ? '🎉 自选喜欢的球队' : '🎯 选择生涯球队') + '</span>' +
-        '<button id="adTeamPickBtn" onclick="watchAdToPickTeam()" style="min-height:30px;padding:5px 10px;border:none;border-radius:8px;background:linear-gradient(135deg,#ff6b35,#ff8a5c);color:#fff;font-family:var(--font-display);font-size:11px;font-weight:600;cursor:pointer;box-shadow:0 2px 0 #c94d1e;">📺 看视频自选球队</button>' +
+        '<button id="adTeamPickBtn" onclick="watchAdToPickTeam()" style="min-height:30px;padding:5px 10px;border:none;border-radius:8px;background:linear-gradient(135deg,#ff6b35,#ff8a5c);color:#fff;font-family:var(--font-display);font-size:11px;font-weight:600;cursor:pointer;box-shadow:0 2px 0 #c94d1e;">自选球队</button>' +
         '<button class="team-picker-close" onclick="closeCareerTeamPicker()">✕</button>' +
       '</div>' +
       '<div class="team-picker-header" style="border-bottom:none;padding:4px 14px 8px;justify-content:center;">' +
@@ -4303,38 +3326,19 @@ function getPlayerDisplayName(playerName) {
   return commaIdx >= 0 ? playerName.slice(commaIdx + 2) : playerName;
 }
 
-if (!window.TEAM_LOGOS) window.TEAM_LOGOS = {
-  'ATL':'assets/activity-static.hoopchina.com.cn/files/26612-t5b21erc-upload-1781237739326-44.png',
-  'BKN':'assets/activity-static.hoopchina.com.cn/files/26612-xptpjtrc-upload-1781237796378-12.png',
-  'BOS':'assets/activity-static.hoopchina.com.cn/files/26612-ccjancrc-upload-1781237796378-15.png',
-  'CHA':'assets/activity-static.hoopchina.com.cn/files/26612-4los1nrc-upload-1781237796378-18.png',
-  'CHI':'assets/activity-static.hoopchina.com.cn/files/26612-248zl7rc-upload-1781237796378-21.png',
-  'CLE':'assets/activity-static.hoopchina.com.cn/files/26612-9373nkrc-upload-1781237796378-24.png',
-  'DAL':'assets/activity-static.hoopchina.com.cn/files/26612-ye2ck7rc-upload-1781237796378-27.png',
-  'DEN':'assets/activity-static.hoopchina.com.cn/files/26612-v4su4prc-upload-1781237796378-30.png',
-  'DET':'assets/activity-static.hoopchina.com.cn/files/26612-ce809crc-upload-1781237796378-33.png',
-  'GSW':'assets/activity-static.hoopchina.com.cn/files/26612-jytyisrc-upload-1781237796378-36.png',
-  'HOU':'assets/activity-static.hoopchina.com.cn/files/26612-8x92ebrc-upload-1781237796378-39.png',
-  'IND':'assets/activity-static.hoopchina.com.cn/files/26612-q4jolqrc-upload-1781237796378-42.png',
-  'LAC':'assets/activity-static.hoopchina.com.cn/files/26612-y0fgwlrc-upload-1781237796378-45.png',
-  'LAL':'assets/activity-static.hoopchina.com.cn/files/26614-lqhvdqrc-upload-1781423262777-12.png',
-  'MEM':'assets/activity-static.hoopchina.com.cn/files/26612-hkjdthrc-upload-1781237796378-51.png',
-  'MIA':'assets/activity-static.hoopchina.com.cn/files/26612-wrdmc9rc-upload-1781237796378-54.png',
-  'MIL':'assets/activity-static.hoopchina.com.cn/files/26612-47m8grrc-upload-1781237796378-57.png',
-  'MIN':'assets/activity-static.hoopchina.com.cn/files/26612-6y471frc-upload-1781237796378-60.png',
-  'NOP':'assets/activity-static.hoopchina.com.cn/files/26612-q64i2mrc-upload-1781237796378-63.png',
-  'NYK':'assets/activity-static.hoopchina.com.cn/files/26612-ltjvjerc-upload-1781237796378-66.png',
-  'OKC':'assets/activity-static.hoopchina.com.cn/files/26612-103adgrc-upload-1781237796378-69.png',
-  'ORL':'assets/activity-static.hoopchina.com.cn/files/26612-0i4175rc-upload-1781237796378-72.png',
-  'PHI':'assets/activity-static.hoopchina.com.cn/files/26612-s2kbz8rc-upload-1781237796378-75.png',
-  'PHX':'assets/activity-static.hoopchina.com.cn/files/26612-iffq4vrc-upload-1781237796378-78.png',
-  'POR':'assets/activity-static.hoopchina.com.cn/files/26612-v2vg2xrc-upload-1781237796378-81.png',
-  'SAC':'assets/activity-static.hoopchina.com.cn/files/26612-9g4x3qrc-upload-1781237796378-84.png',
-  'SAS':'assets/activity-static.hoopchina.com.cn/files/26612-op4gosrc-upload-1781237796378-87.png',
-  'TOR':'assets/activity-static.hoopchina.com.cn/files/26612-yowkavrc-upload-1781237796378-90.png',
-  'UTA':'assets/activity-static.hoopchina.com.cn/files/26612-rb5rxsrc-upload-1781237796378-93.png',
-  'WAS':'assets/activity-static.hoopchina.com.cn/files/26612-7t2yj4rc-upload-1781237796378-96.png',
-};
+if (!window.TEAM_LOGOS) {
+  const badgeColors = ['#d85a42','#2d7fc1','#7b5bc7','#268b70','#c48524','#4766b1'];
+  window.TEAM_LOGOS = {};
+  NBA2K_TEAMS.forEach(function(team, index) {
+    const color = badgeColors[index % badgeColors.length];
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">' +
+      '<circle cx="48" cy="48" r="44" fill="' + color + '"/>' +
+      '<circle cx="48" cy="48" r="39" fill="none" stroke="#fff" stroke-width="3" opacity=".8"/>' +
+      '<text x="48" y="55" text-anchor="middle" font-family="Arial,sans-serif" font-size="24" font-weight="700" fill="#fff">' + team + '</text>' +
+      '</svg>';
+    window.TEAM_LOGOS[team] = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  });
+}
 if (!window.TEAM_CITY) window.TEAM_CITY = {
   'ATL':'亚特兰大','BKN':'布鲁克林','BOS':'波士顿','CHA':'夏洛特','CHI':'芝加哥',
   'CLE':'克里夫兰','DAL':'达拉斯','DEN':'丹佛','DET':'底特律','GSW':'金州',
@@ -4522,7 +3526,7 @@ function quickSimAllGames(targetDay) {
         var runSkippedRegularGame = function() {
           if (skipReason === 'suspension') ev.suspensionGamesLeft--;
           else ev.injuryGamesLeft--;
-          var skipResult = simulateGameNew(STATE.careerTeam, g.opponent);
+          var skipResult = simulateGameNew(STATE.careerTeam, g.opponent, 0, null, { availabilityEdge: -4 });
           recordLeagueBoxScore(skipResult.boxScore, 'career:' + (g.gameNum || g.day || gi) + ':' + g.opponent);
           g.simulated = true;
           g.result = skipResult;
@@ -4553,6 +3557,7 @@ function quickSimAllGames(targetDay) {
           if (oppH) { if (hurtResult.won) oppH.losses++; else oppH.wins++; updateStreak(g.opponent, !hurtResult.won); }
           updateStreak(STATE.careerTeam, hurtResult.won);
           var hurtStats = scaleHurtStats(generatePlayerStatsNew(buildHurtAttrs(STATE.attrs, severity), hurtResult, false), severity);
+          syncUserStatsToBoxScore(hurtResult, hurtStats);
           var psH = STATE.season.playerStats;
           psH.pts += hurtStats.pts; psH.reb += hurtStats.reb; psH.ast += hurtStats.ast;
           psH.stl += hurtStats.stl; psH.blk += hurtStats.blk; psH.tov += hurtStats.tov;
@@ -4817,7 +3822,7 @@ function simDayLeagueGames(day) {
       // 跳过包含我方球队的比赛（这些已经通过我们的比赛模拟过了）
       if (g.home === STATE.careerTeam || g.away === STATE.careerTeam) return;
       
-      const result = simulateGameNew(g.home, g.away);
+      const result = simulateGameNew(g.home, g.away, 0, null, { isHomeA: true, isB2B: false });
       recordLeagueBoxScore(result.boxScore, 'league:' + d + ':' + g.home + ':' + g.away);
       if (result.won) {
         standings[g.home].wins++; standings[g.away].losses++;
@@ -4873,7 +3878,7 @@ function calcTeamLineup(team) {
   // 如果是你的球队，把你加入阵容
   if (team === STATE.careerTeam && STATE.finalOVR) {
     const playoffDebuff = 0;
-    var _displayName = getHupuDisplayName();
+    var _displayName = getMyPlayerDisplayName();
     userPlayer = {
       name: _displayName,
       cname: _displayName,
@@ -5034,143 +4039,131 @@ function calcTeamPowerWithPlayer(team) {
   };
 }
 
-/** 比赛模拟 — 使用统一胜率公式 + 详细比分生成 */
-function simulateGameNew(teamA, teamB, seedBonus, probMultiplier) {
+/** 比赛模拟 — 逐节生成真实比分，最终比分直接决定胜负。 */
+function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
   const powerA = calcTeamPowerWithPlayer(teamA);
   const powerB = calcTeamPowerWithPlayer(teamB);
   const config = SIM_CONFIG;
-  
-  // ★ 第一步：用统一胜率公式决定胜负
-  const netRatingA = (powerA.offense - powerB.offense) * 0.4 
-                   + (powerA.defense - powerB.defense) * 0.4 
-                   + (powerA.depth - powerB.depth) * 0.2
-                   + (seedBonus || 0);  // 季后赛种子保护：高顺位概率加成
-  const winProb = 0.5 + netRatingA / 25;
-  const clampedProb = Math.max(0.15, Math.min(0.85, winProb));
-  // ★ 概率乘数（用于季后赛用户 debuff）
-  const finalProb = probMultiplier != null ? Math.max(0.10, clampedProb * probMultiplier) : clampedProb;
-  const predeterminedWinner = Math.random() < finalProb ? teamA : teamB;
-  
-  // ★ 第二步：生成展示用比分（不影响胜负结果）
-  // 计算节奏
+  const options = gameOptions || {};
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function normalRandom(mean, deviation) {
+    const u = Math.max(Math.random(), 0.000001);
+    const v = Math.random();
+    const z = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+    return mean + z * deviation;
+  }
+
+  const schedule = STATE.season.schedule || [];
+  const gameIdx = schedule.findIndex(g => !g.simulated);
+  let isHomeA = null;
+  if (typeof options.isHomeA === 'boolean') isHomeA = options.isHomeA;
+  else if (gameIdx >= 0) isHomeA = !!schedule[gameIdx]?.home;
+  const currentScheduleGame = gameIdx >= 0 ? schedule[gameIdx] : null;
+  const previousScheduleGame = gameIdx > 0 ? schedule[gameIdx - 1] : null;
+  const isB2B = typeof options.isB2B === 'boolean'
+    ? options.isB2B
+    : !!(currentScheduleGame && previousScheduleGame
+      && Number(currentScheduleGame.day) - Number(previousScheduleGame.day) === 1);
+
+  // 实力差决定预期分差；种子差仅保留为很小的赛季表现修正，主场承担主要高种子优势。
+  const rosterEdge = (powerA.offense - powerB.offense) * 0.45
+                   + (powerA.defense - powerB.defense) * 0.45
+                   + (powerA.depth - powerB.depth) * 0.10;
+  const seasonFormEdge = clamp((seedBonus || 0) * 0.25, -0.8, 0.8);
+  const homeCourtEdge = isHomeA === true ? 2.2 : (isHomeA === false ? -2.2 : 0);
+  // 兼容现有带伤接口：把概率乘数转换成预期分差惩罚，不再直接篡改胜率。
+  const availabilityEdge = Number.isFinite(options.availabilityEdge)
+    ? options.availabilityEdge
+    : (probMultiplier != null ? (probMultiplier - 1) * 25 : 0);
+  const fatigueEdge = isB2B ? -1.0 : 0;
+  const expectedMargin = clamp(
+    rosterEdge + seasonFormEdge + homeCourtEdge + availabilityEdge + fatigueEdge,
+    -18,
+    18
+  );
+
   const paceA = config.PACE.base + (Math.random() - 0.5) * config.PACE.teamRange;
   const paceB = config.PACE.base + (Math.random() - 0.5) * config.PACE.teamRange;
   const gamePace = (paceA + paceB) / 2;
   const possPerQ = Math.round(gamePace / 4);
-  
+  const matchupScoring = (
+    powerA.offense + powerB.offense - powerA.defense - powerB.defense
+  ) * 0.32;
+  const expectedTotal = clamp(
+    gamePace * 2.16 + matchupScoring + (isB2B ? -3 : 0),
+    196,
+    244
+  );
+
   let scoreA = 0, scoreB = 0;
   let highlight = false;
-  let keyEvents = [];
-  let momentum = 1.0;
-  let qScoresA = [], qScoresB = [];
-  
-  // 查找赛程，确认主客场
-  const schedule = STATE.season.schedule || [];
-  const gameIdx = schedule.findIndex(g => !g.simulated);
-  const isHome = gameIdx >= 0 ? schedule[gameIdx]?.home : true;
-  const isB2B = gameIdx > 0 && schedule[gameIdx-1]?.isB2B;
-  
-  // ★ 根据预定胜者设置倾向
-  const desiredWinner = predeterminedWinner;
-  
+  const keyEvents = [];
+  const qScoresA = [], qScoresB = [];
+
   for (let q = 0; q < 4; q++) {
-    const baseQ = possPerQ;
-    
-    // 实力差值影响比分展示（小幅度，不决定胜负）
-    const offDefDiffA = (powerA.offense - powerB.defense) / 120;
-    const offDefDiffB = (powerB.offense - powerA.defense) / 120;
-    
-    // 主场加成
-    const homeBonusQ = isHome ? 1.0 : 0;
-    
-    // 每节得分 = 基准 + 实力展示 + 主场 + 大随机
-    let ptsA = baseQ + offDefDiffA * 3 + homeBonusQ + (momentum - 1) * 1.5;
-    let ptsB = baseQ + offDefDiffB * 3;
-    
-    // 确保预定胜者适度领先
-    const currentDiff = (scoreA + ptsA) - (scoreB + ptsB);
-    const targetLead = desiredWinner === teamA ? 1 : -1;
-    if ((desiredWinner === teamA && currentDiff < targetLead) ||
-        (desiredWinner === teamB && currentDiff > targetLead)) {
-      if (desiredWinner === teamA) ptsA += 2;
-      else ptsB += 2;
-    }
-    
-    // 背靠背
-    if (isB2B) { ptsA *= 0.96; ptsB *= 0.96; }
-    
-    // ★ 大随机波动 ±25%
-    ptsA *= (0.75 + Math.random() * 0.50);
-    ptsB *= (0.75 + Math.random() * 0.50);
-    
-    // 落后方反扑
-    if (Math.abs(currentDiff) > 10) {
-      const comeback = 1 + Math.abs(currentDiff) * 0.003;
-      if (currentDiff > 0) ptsB *= comeback; else ptsA *= comeback;
-    }
-    
-    const qA = Math.max(8, Math.round(ptsA));
-    const qB = Math.max(8, Math.round(ptsB));
-    
+    const preQuarterDiff = scoreA - scoreB;
+    const isClutchQuarter = q === 3 && Math.abs(preQuarterDiff) <= 8;
+    const clutchEdge = isClutchQuarter
+      ? clamp((powerA.clutch - powerB.clutch) * 0.08, -1.2, 1.2)
+      : 0;
+    const quarterMargin = expectedMargin / 4 + clutchEdge;
+    const quarterTotal = expectedTotal / 4 + normalRandom(0, 2.4);
+    const expectedA = (quarterTotal + quarterMargin) / 2;
+    const expectedB = (quarterTotal - quarterMargin) / 2;
+    const qA = Math.max(10, Math.round(normalRandom(expectedA, 4.1)));
+    const qB = Math.max(10, Math.round(normalRandom(expectedB, 4.1)));
+
     scoreA += qA;
     scoreB += qB;
     qScoresA.push(qA);
     qScoresB.push(qB);
-    
-    // 随机事件
-    if (Math.random() < 0.08) {
-      const bonus = 3 + Math.round(Math.random() * 8);
-      if (Math.random() > 0.5) { scoreA += bonus; keyEvents.push(`🔥 ${getTeamName(teamA)} 单节爆发 +${bonus}`); }
-      else { scoreB += bonus; keyEvents.push(`🔥 ${getTeamName(teamB)} 单节爆发 +${bonus}`); }
+
+    if (qA - qB >= 10) {
+      keyEvents.push(`🔥 ${getTeamName(teamA)} 单节打出 ${qA}-${qB}`);
+      highlight = true;
+    } else if (qB - qA >= 10) {
+      keyEvents.push(`🔥 ${getTeamName(teamB)} 单节打出 ${qB}-${qA}`);
       highlight = true;
     }
-    
-    momentum = momentum * 0.7 + 0.3;
+    if (isClutchQuarter) highlight = true;
   }
-  
-  // 关键球/绝杀
-  if (Math.abs(scoreA - scoreB) < 6 && Math.random() < 0.35) {
-    highlight = true;
-    if (Math.random() > 0.5) { scoreA += 3; keyEvents.push('⚡ 关键三分！'); }
-    else { scoreB += 3; keyEvents.push('⚡ 关键三分！'); }
-  }
-  if (Math.abs(scoreA - scoreB) <= 3 && Math.random() < 0.12) {
-    highlight = true;
-    if (Math.random() > 0.5) { scoreA += 3; keyEvents.push('🏆 压哨绝杀！'); }
-    else { scoreB += 3; keyEvents.push('💔 被压哨绝杀...'); }
-  }
-  
-  // 加时
+
+  // 只有四节打平才进入加时；关键球能力只在真正的决胜阶段产生小幅影响。
   let ot = 0;
-  while (Math.abs(scoreA - scoreB) < 3 && ot < 3) {
+  while (scoreA === scoreB && ot < 5) {
     ot++;
-    scoreA += Math.round(4 + Math.random() * 8);
-    scoreB += Math.round(4 + Math.random() * 8);
+    const otClutchEdge = clamp((powerA.clutch - powerB.clutch) * 0.10, -1.5, 1.5);
+    const otTotal = normalRandom(22, 3.2);
+    const otA = Math.max(4, Math.round(normalRandom((otTotal + expectedMargin / 5 + otClutchEdge) / 2, 2.2)));
+    const otB = Math.max(4, Math.round(normalRandom((otTotal - expectedMargin / 5 - otClutchEdge) / 2, 2.2)));
+    scoreA += otA;
+    scoreB += otB;
     keyEvents.push(`⏱ 加时赛 #${ot}`);
     highlight = true;
   }
-  
-  // ★ 最终结果由预定胜者决定
-  const won = predeterminedWinner === teamA;
-  // 确保比分方向正确：胜者必须领先
-  if (won && scoreB >= scoreA) {
-    const add = scoreB - scoreA + 1;
-    scoreA += add;
-    if (qScoresA.length) qScoresA[qScoresA.length - 1] += add;
-  } else if (!won && scoreA >= scoreB) {
-    const add = scoreA - scoreB + 1;
-    scoreB += add;
-    if (qScoresB.length) qScoresB[qScoresB.length - 1] += add;
+  // 极小概率连续五次加时仍平局时，用一次真实的决胜回合结束比赛。
+  if (scoreA === scoreB) {
+    const aWinsFinalPossession = Math.random() < 1 / (1 + Math.exp(-expectedMargin / 6.5));
+    if (aWinsFinalPossession) scoreA++;
+    else scoreB++;
+    keyEvents.push('⚡ 最后一次进攻决定胜负');
+    highlight = true;
   }
-  
-  // 冷门检测
-  const avgA = (powerA.offense + powerA.defense) / 2;
-  const avgB = (powerB.offense + powerB.defense) / 2;
-  if (won !== (avgA > avgB) && Math.abs(avgA - avgB) > 3) {
+
+  const won = scoreA > scoreB;
+  const estimatedWinProb = 1 / (1 + Math.exp(-expectedMargin / 6.5));
+  if ((expectedMargin >= 4 && !won) || (expectedMargin <= -4 && won)) {
     highlight = true;
     keyEvents.push('💥 爆冷！');
+  } else if (Math.abs(scoreA - scoreB) <= 3) {
+    highlight = true;
+    keyEvents.push('⚡ 关键回合决胜');
   }
-  
+
   return {
     won, scoreA, scoreB,
     qScoresA, qScoresB,
@@ -5179,139 +4172,298 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier) {
     teamB: { power: powerB },
     pace: gamePace,
     possPerQ,
+    isHomeA,
+    expectedMargin,
+    estimatedWinProb,
     boxScore: generateBoxScore(teamA, teamB, scoreA, scoreB),
   };
 }
 
-/** 限制单个 NPC 长期占用过高得分份额，并把溢出得分分配给其他轮换球员。 */
-function capAndRedistributeScoring(allocated, weights, players, totalPts) {
-  var caps = players.map(function(player) {
-    var ovr = parseInt(player.ovr) || 50;
-    var starRange = Math.max(0, Math.min(19, ovr - 80));
-    var hotNight = Math.random() < 0.08;
-    var shareCap = 0.22 + starRange * 0.004 + (hotNight ? 0.08 : 0);
-    return Math.max(8, Math.min(hotNight ? 45 : 34, Math.round(totalPts * shareCap)));
+function leagueStatClamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function leagueStatNormal(mean, deviation) {
+  var u = Math.max(Math.random(), 0.000001);
+  var v = Math.random();
+  var z = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  return mean + z * deviation;
+}
+
+/** 每名 NPC 每赛季只生成一次状态，让爆发、低迷和耐久度跨场延续，但下赛季重新洗牌。 */
+function getNpcSeasonProfile(team, player) {
+  var profiles = STATE.season._npcSeasonProfiles || (STATE.season._npcSeasonProfiles = {});
+  var key = team + ':' + (player.name || player.cname || 'unknown');
+  if (profiles[key]) return profiles[key];
+
+  var age = Number(player._age) || 27;
+  if (typeof getLeaguePlayerAge === 'function') {
+    try { age = getLeaguePlayerAge(player) || age; } catch (e) {}
+  }
+  var ovr = parseInt(player.ovr) || 70;
+  var athletic = af(parseInt(player.ATH) || 50);
+  var baseForm = leagueStatClamp(leagueStatNormal(1, 0.09), 0.78, 1.22);
+  var scoring = leagueStatClamp(baseForm * leagueStatNormal(1, 0.08), 0.72, 1.30);
+  if (Math.random() < 0.08) scoring = leagueStatClamp(scoring * (1.12 + Math.random() * 0.12), 0.72, 1.34);
+  if (Math.random() < 0.08) scoring = leagueStatClamp(scoring * (0.78 + Math.random() * 0.10), 0.68, 1.34);
+
+  var ageRisk = age >= 35 ? 1.55 : (age >= 31 ? 1.25 : (age <= 22 ? 1.10 : 1));
+  var healthLuck = Math.random();
+  var healthMultiplier = healthLuck < 0.10 ? 1.9 : (healthLuck > 0.90 ? 0.45 : 1);
+  profiles[key] = {
+    scoring: scoring,
+    rebounding: leagueStatClamp(baseForm * leagueStatNormal(1, 0.10), 0.75, 1.28),
+    playmaking: leagueStatClamp(baseForm * leagueStatNormal(1, 0.11), 0.74, 1.30),
+    defense: leagueStatClamp(baseForm * leagueStatNormal(1, 0.10), 0.75, 1.28),
+    injuryRisk: leagueStatClamp((0.005 + Math.random() * 0.006) * ageRisk * healthMultiplier * (1.12 - athletic * 0.22), 0.002, 0.025),
+    restChance: leagueStatClamp(0.010 + (ovr >= 88 ? 0.022 : 0.010) + (age >= 33 ? 0.014 : 0) + Math.random() * 0.010, 0.010, 0.065),
+    injuryGamesLeft: 0,
+    gamesMissed: 0,
+  };
+  return profiles[key];
+}
+
+/** NPC 伤病以连续缺阵呈现，另有小概率轮休；季后赛只取消轮休，不会清除已有伤病。 */
+function shouldNpcPlayLeagueGame(team, player, roleRank) {
+  var profile = getNpcSeasonProfile(team, player);
+  if (profile.injuryGamesLeft > 0) {
+    profile.injuryGamesLeft--;
+    profile.gamesMissed++;
+    return false;
+  }
+  if (Math.random() < profile.injuryRisk) {
+    var roll = Math.random();
+    var duration = roll < 0.58
+      ? 1 + Math.floor(Math.random() * 3)
+      : (roll < 0.89
+        ? 4 + Math.floor(Math.random() * 6)
+        : (roll < 0.98 ? 10 + Math.floor(Math.random() * 11) : 25 + Math.floor(Math.random() * 21)));
+    profile.injuryGamesLeft = duration - 1;
+    profile.gamesMissed++;
+    return false;
+  }
+  var isPlayoffs = !!(STATE.season && STATE.season.isPlayoffs);
+  var roleRest = roleRank < 5 ? profile.restChance : profile.restChance * 0.55;
+  if (!isPlayoffs && Math.random() < roleRest) {
+    profile.gamesMissed++;
+    return false;
+  }
+  return true;
+}
+
+/** 把球队总量按权重分配，先给稳定期望值，再随机分配余量，避免每场完全模板化。 */
+function allocateLeagueCountingTotal(total, weights, caps) {
+  total = Math.max(0, Math.round(total));
+  var safeWeights = weights.map(function(weight) { return Math.max(0.0001, Number(weight) || 0); });
+  var weightSum = safeWeights.reduce(function(sum, weight) { return sum + weight; }, 0);
+  var allocated = safeWeights.map(function(weight, index) {
+    var base = Math.floor(total * weight / weightSum * 0.68);
+    return caps ? Math.min(base, caps[index]) : base;
   });
+  var remaining = total - allocated.reduce(function(sum, value) { return sum + value; }, 0);
 
-  var overflow = 0;
-  for (var i = 0; i < allocated.length; i++) {
-    if (allocated[i] > caps[i]) {
-      overflow += allocated[i] - caps[i];
-      allocated[i] = caps[i];
+  while (remaining > 0) {
+    var availableWeight = 0;
+    for (var i = 0; i < safeWeights.length; i++) {
+      if (!caps || allocated[i] < caps[i]) availableWeight += safeWeights[i];
     }
-  }
-
-  while (overflow > 0) {
-    var eligible = [];
-    for (var j = 0; j < allocated.length; j++) {
-      if (allocated[j] < caps[j]) eligible.push(j);
+    if (availableWeight <= 0) {
+      allocated[safeWeights.indexOf(Math.max.apply(null, safeWeights))] += remaining;
+      break;
     }
-    if (!eligible.length) break;
-    eligible.sort(function(a, b) {
-      return weights[b] - weights[a] || allocated[a] - allocated[b];
-    });
-    for (var k = 0; k < eligible.length && overflow > 0; k++) {
-      allocated[eligible[k]]++;
-      overflow--;
+    var pick = Math.random() * availableWeight;
+    for (var j = 0; j < safeWeights.length; j++) {
+      if (caps && allocated[j] >= caps[j]) continue;
+      pick -= safeWeights[j];
+      if (pick <= 0) {
+        allocated[j]++;
+        remaining--;
+        break;
+      }
     }
-  }
-
-  if (overflow > 0) {
-    var bestIdx = weights.indexOf(Math.max.apply(null, weights));
-    allocated[bestIdx] += overflow;
   }
   return allocated;
 }
 
-/** 生成两队全队数据（确保总分=比分） */
+function allocateLeagueRotationMinutes(players, roleRanks) {
+  var starterBase = [35, 34, 33, 32, 30];
+  var benchBase = [24, 20, 17, 14, 11, 8, 6];
+  var isPlayoffs = !!(STATE.season && STATE.season.isPlayoffs);
+  var raw = players.map(function(player, index) {
+    var rank = roleRanks[index];
+    var base = rank < 5 ? starterBase[rank] : (benchBase[rank - 5] || 6);
+    if (isPlayoffs) base += rank < 5 ? 2 : -1;
+    return Math.max(5, base + ((parseInt(player.ovr) || 70) - 75) * 0.07 + leagueStatNormal(0, 1.6));
+  });
+  var rawTotal = raw.reduce(function(sum, value) { return sum + value; }, 0) || 1;
+  var minutes = raw.map(function(value) { return Math.max(4, Math.round(value * 240 / rawTotal)); });
+  var difference = 240 - minutes.reduce(function(sum, value) { return sum + value; }, 0);
+  var order = minutes.map(function(value, index) { return index; }).sort(function(a, b) { return raw[b] - raw[a]; });
+  var cursor = 0;
+  while (difference !== 0 && order.length) {
+    var target = order[cursor % order.length];
+    if (difference > 0) {
+      minutes[target]++;
+      difference--;
+    } else if (minutes[target] > 4) {
+      minutes[target]--;
+      difference++;
+    }
+    cursor++;
+  }
+  return minutes;
+}
+
+/** 动态选择 9-11 人轮换。首发伤停时会由完整名单中的后备球员递补。 */
+function buildLeagueGameRotation(team) {
+  var lineup = calcTeamLineup(team);
+  var ordered = Object.values(lineup.starters).concat(lineup.bench || []);
+  var unique = [];
+  ordered.forEach(function(player) { if (player && unique.indexOf(player) < 0) unique.push(player); });
+  var user = unique.find(function(player) { return !!player._isUser; });
+  var available = [];
+  unique.forEach(function(player, roleRank) {
+    if (player._isUser || shouldNpcPlayLeagueGame(team, player, roleRank)) available.push(player);
+  });
+  var targetSize = 9 + (Math.random() < 0.68 ? 1 : (Math.random() < 0.70 ? 2 : 0));
+  var selected = available.slice(0, targetSize);
+  if (user && selected.indexOf(user) < 0) {
+    if (selected.length >= targetSize) selected[selected.length - 1] = user;
+    else selected.push(user);
+  }
+  return {
+    players: selected,
+    roleRanks: selected.map(function(player) { return unique.indexOf(player); }),
+  };
+}
+
+/** 生成两队全队数据：伤病/轮休影响 GP，五项数据受球队总量约束。 */
 function generateBoxScore(teamA, teamB, totalA, totalB) {
   function getLineupStats(team, totalPts) {
-    const lineup = calcTeamLineup(team);
-    // 展示所有轮换球员（首发5人 + 替补前5 = 10人）
-    const players = Object.values(lineup.starters).concat(lineup.bench.slice(0, 5));
-    if (players.length === 0) return [];
-    
-    // 按OVR从高到低排序（替补排最后）
-    players.sort((a, b) => (parseInt(b.ovr)||0) - (parseInt(a.ovr)||0));
-    
-    // 计算得分权重：OVR为主（指数放大差距），进攻技能微调
-    const minOvr = Math.min(...players.map(p => parseInt(p.ovr)||50));
-    const maxOvr = Math.max(...players.map(p => parseInt(p.ovr)||50));
-    const weights = players.map((p, idx) => {
-      const ovr = parseInt(p.ovr) || 50;
-      // OVR指数放大：55以下几乎不得分，越高差距越大
-      const ovrFactor = Math.pow(Math.max(0, (ovr - 55) / 44), 2.0);
-      // 进攻技能微调（±20%）
-      const offBonus = (af(parseInt(p.threePT)||50) + af(parseInt(p.FIN)||50) + af(parseInt(p.MID)||50)) / 3;
-      // 得分手加成：第一核心承担接近真实 NBA 的高使用率，轮换末端相应收缩
-      const starBonus = idx === 0 ? 2.1 : Math.max(0.3, 1.55 - idx * 0.2);
-      return Math.max(0.05, ovrFactor * (0.7 + 0.3 * offBonus) * starBonus);
+    var rotation = buildLeagueGameRotation(team);
+    var players = rotation.players;
+    var roleRanks = rotation.roleRanks;
+    if (!players.length) return [];
+    var minutes = allocateLeagueRotationMinutes(players, roleRanks);
+    var profiles = players.map(function(player) {
+      if (!player._isUser) return getNpcSeasonProfile(team, player);
+      var userSeasonForm = typeof getSeasonUsageBias === 'function' ? Math.sqrt(getSeasonUsageBias()) : 1;
+      return { scoring: leagueStatClamp(userSeasonForm, 0.90, 1.10), rebounding: 1, playmaking: 1, defense: 1 };
     });
-    const totalW = weights.reduce((a, b) => a + b, 0);
-    
-    // 分配得分（确保总和=totalPts）
-    let allocated = weights.map((w, i) => Math.round(totalPts * w / totalW));
-    let diff = totalPts - allocated.reduce((a, b) => a + b, 0);
-    if (diff !== 0) {
-      const best = weights.indexOf(Math.max(...weights));
-      allocated[best] = Math.max(0, allocated[best] + diff);
-    }
-    allocated = capAndRedistributeScoring(allocated, weights, players, totalPts);
-    
-    // 确保每人至少1分（只要他上场）
-    allocated = allocated.map(v => Math.max(1, v));
-    // 如有差额从得分王扣/补
-    let sum = allocated.reduce((a, b) => a + b, 0);
-    const bestIdx = weights.indexOf(Math.max(...weights));
-    if (sum > totalPts) {
-      allocated[bestIdx] -= (sum - totalPts);
-      if (allocated[bestIdx] < 0) allocated[bestIdx] = 0;
-    } else if (sum < totalPts) {
-      allocated[bestIdx] += (totalPts - sum);
-    }
-    
-    return players.map((p, i) => {
-      const pos = (p.pos || 'SF').split('/')[0].trim();
-      const ovr = parseInt(p.ovr) || 50;
-      const ath = af(parseInt(p.ATH)||50);
-      const reb = af(parseInt(p.REB)||50);
-      const pas = af(parseInt(p.PAS)||50) * 0.5 + af(parseInt(p.HAN)||50) * 0.3 + af(parseInt(p.CLU)||50) * 0.2;
-      const pdef = af(parseInt(p.PDEF)||50);
-      const blk = af(parseInt(p.BLK)||50) * 0.5 + af(parseInt(p.IDEF)||50) * 0.5;
-      const han = af(parseInt(p.HAN)||50) * 0.5 + af(parseInt(p.CLU)||50) * 0.5;
-      
-      const pts = allocated[i];
-      // 上场时间：核心主力>角色球员
-      const mins = i < 5
-        ? 26 + Math.round((1 - i * 0.15) * 12 + Math.random() * 4)
-        : 8 + Math.round(Math.random() * 8);
-      const fga = Math.round(Math.max(2, pts * 0.7 + Math.random() * 4));
-      const fgm = Math.min(fga, Math.max(0, Math.round(fga * (0.32 + Math.random() * 0.28))));
-      const threeA = Math.min(fga, Math.max(0, Math.round(fga * (0.20 + af(parseInt(p.threePT)||50) * 0.18))));
-      const threeM = Math.min(threeA, Math.max(0, Math.round(threeA * (0.28 + af(parseInt(p.threePT)||50) * 0.18))));
-      const fta = Math.max(0, Math.round(pts * (0.12 + af(parseInt(p.FIN)||50) * 0.12)));
-      const ftm = Math.min(fta, Math.max(0, Math.round(fta * (0.65 + af(parseInt(p.CLU)||50) * 0.15))));
-      
+    var pos = players.map(function(player) { return (player.pos || 'SF').split('/')[0].trim(); });
+    var offSkill = players.map(function(player) {
+      return af(parseInt(player.threePT) || 50) * 0.34 + af(parseInt(player.FIN) || 50) * 0.30 + af(parseInt(player.MID) || 50) * 0.20 + af(parseInt(player.HAN) || 50) * 0.16;
+    });
+    var rebSkill = players.map(function(player) { return af(parseInt(player.REB) || 50); });
+    var passSkill = players.map(function(player) { return af(parseInt(player.PAS) || 50) * 0.68 + af(parseInt(player.HAN) || 50) * 0.24 + af(parseInt(player.CLU) || 50) * 0.08; });
+    var stealSkill = players.map(function(player) { return af(parseInt(player.PDEF) || 50) * 0.72 + af(parseInt(player.ATH) || 50) * 0.28; });
+    var blockSkill = players.map(function(player) { return af(parseInt(player.BLK) || 50) * 0.62 + af(parseInt(player.IDEF) || 50) * 0.38; });
+    var handleSkill = players.map(function(player) { return af(parseInt(player.HAN) || 50) * 0.65 + af(parseInt(player.CLU) || 50) * 0.35; });
+
+    var scoreCaps = [];
+    var scoreWeights = players.map(function(player, index) {
+      var ovr = parseInt(player.ovr) || 70;
+      var star = leagueStatClamp((ovr - 82) / 17, 0, 1);
+      var hot = Math.random() < 0.055;
+      var cold = !hot && Math.random() < 0.08;
+      var gameForm = hot ? 1.38 + Math.random() * 0.28 : (cold ? 0.68 + Math.random() * 0.16 : 0.84 + Math.random() * 0.32);
+      var roleUsage = roleRanks[index] < 5 ? 1.08 : leagueStatClamp(0.88 - (roleRanks[index] - 5) * 0.055, 0.55, 0.88);
+      var shareCap = hot ? 0.37 : (0.235 + star * 0.065);
+      scoreCaps[index] = Math.max(14, Math.min(hot ? 46 : 36, Math.round(totalPts * shareCap)));
+      return minutes[index] * (0.10 + Math.pow(offSkill[index], 1.65) * 1.55) * roleUsage * profiles[index].scoring * gameForm;
+    });
+    var points = allocateLeagueCountingTotal(totalPts, scoreWeights, scoreCaps);
+
+    var minuteWeighted = function(values) {
+      return values.reduce(function(sum, value, index) { return sum + value * minutes[index]; }, 0) / 240;
+    };
+    var teamRebounds = leagueStatClamp(Math.round(leagueStatNormal(43.5 + (minuteWeighted(rebSkill) - 0.55) * 5, 3.2)), 34, 56);
+    var teamAssists = leagueStatClamp(Math.round(leagueStatNormal(totalPts * 0.202 + minuteWeighted(passSkill) * 6, 2.5)), 17, 35);
+    var teamSteals = leagueStatClamp(Math.round(leagueStatNormal(6.4 + minuteWeighted(stealSkill) * 2.2, 1.35)), 3, 13);
+    var teamBlocks = leagueStatClamp(Math.round(leagueStatNormal(3.0 + minuteWeighted(blockSkill) * 3.0, 1.25)), 1, 11);
+    var teamTurnovers = leagueStatClamp(Math.round(leagueStatNormal(13.2 + minuteWeighted(offSkill) * 1.5, 2.1)), 8, 21);
+
+    var rebPos = { PG:0.78, SG:0.85, SF:1.00, PF:1.12, C:1.25 };
+    var astPos = { PG:1.35, SG:1.10, SF:1.00, PF:0.82, C:0.78 };
+    var stlPos = { PG:1.05, SG:1.05, SF:1.00, PF:0.92, C:0.88 };
+    var blkPos = { PG:0.45, SG:0.55, SF:0.85, PF:1.25, C:1.60 };
+    var reboundWeights = players.map(function(player, i) { return minutes[i] * (0.42 + Math.pow(rebSkill[i], 1.35) * 1.30) * (rebPos[pos[i]] || 1) * profiles[i].rebounding * (0.88 + Math.random() * 0.24); });
+    var assistWeights = players.map(function(player, i) { return minutes[i] * (0.20 + Math.pow(passSkill[i], 1.55) * 1.40) * (astPos[pos[i]] || 1) * profiles[i].playmaking * (0.84 + Math.random() * 0.32); });
+    var stealWeights = players.map(function(player, i) { return minutes[i] * (0.38 + Math.pow(stealSkill[i], 1.35) * 0.75) * (stlPos[pos[i]] || 1) * profiles[i].defense * (0.80 + Math.random() * 0.40); });
+    var blockWeights = players.map(function(player, i) { return minutes[i] * (0.12 + Math.pow(blockSkill[i], 1.70) * 1.15) * (blkPos[pos[i]] || 1) * profiles[i].defense * (0.78 + Math.random() * 0.44); });
+    var turnoverWeights = players.map(function(player, i) { return minutes[i] * (0.10 + offSkill[i] * 0.55 + passSkill[i] * 0.42) * (1.12 - handleSkill[i] * 0.28); });
+    var rebounds = allocateLeagueCountingTotal(teamRebounds, reboundWeights, players.map(function() { return 24; }));
+    var assists = allocateLeagueCountingTotal(teamAssists, assistWeights, players.map(function() { return 17; }));
+    var steals = allocateLeagueCountingTotal(teamSteals, stealWeights, players.map(function() { return 7; }));
+    var blocks = allocateLeagueCountingTotal(teamBlocks, blockWeights, players.map(function() { return 8; }));
+    var turnovers = allocateLeagueCountingTotal(teamTurnovers, turnoverWeights, players.map(function() { return 9; }));
+
+    return players.map(function(player, i) {
+      var pts = points[i];
+      var threeSkill = af(parseInt(player.threePT) || 50);
+      var finishSkill = af(parseInt(player.FIN) || 50);
+      var clutchSkill = af(parseInt(player.CLU) || 50);
+      var ftm = Math.min(pts, Math.max(0, Math.round(pts * (0.10 + finishSkill * 0.08) * (0.82 + Math.random() * 0.36))));
+      var threeM = Math.min(Math.floor((pts - ftm) / 3), Math.max(0, Math.round(pts * (0.08 + threeSkill * 0.12) / 3)));
+      var remainingPoints = pts - ftm - threeM * 3;
+      if (remainingPoints % 2 !== 0 && ftm < pts) { ftm++; remainingPoints--; }
+      var twoM = Math.max(0, Math.floor(remainingPoints / 2));
+      var twoPct = leagueStatClamp(0.43 + finishSkill * 0.12, 0.43, 0.60);
+      var threePct = leagueStatClamp(0.29 + threeSkill * 0.11, 0.29, 0.43);
+      var ftPct = leagueStatClamp(0.68 + clutchSkill * 0.18, 0.68, 0.90);
+      var twoA = twoM ? Math.max(twoM, Math.round(twoM / twoPct)) : 0;
+      var threeA = threeM ? Math.max(threeM, Math.round(threeM / threePct)) : 0;
+      var fta = ftm ? Math.max(ftm, Math.round(ftm / ftPct)) : 0;
       return {
-        name: p.cname || p.name,
-        pos, pts,
-        // 二次曲线压低普通属性、保留顶尖球员的真实榜首产量
-        reb: Math.round(reb * reb * 10.5 + Math.random() * 3 + 2),
-        ast: Math.round(pas * pas * 10.5 + Math.random() * 2 + 1),
-        stl: Math.round(pdef * pdef * 2.5 + Math.random() + 0.25),
-        blk: Math.round(blk * blk * 3.3 + Math.random() + 0.2),
-        tov: Math.round(1 + (1 - Math.min(1, han)) * 2.5 + Math.random() * 1),
-        fgm, fga, threeM, threeA, ftm, fta,
-        mins,
-        isUser: p._isUser || false,
+        name: player.cname || player.name,
+        pos: pos[i], pts: pts,
+        reb: rebounds[i], ast: assists[i], stl: steals[i], blk: blocks[i], tov: turnovers[i],
+        fgm: twoM + threeM, fga: twoA + threeA, threeM: threeM, threeA: threeA, ftm: ftm, fta: fta,
+        mins: minutes[i],
+        _isUser: !!player._isUser,
+        isUser: !!player._isUser,
       };
     });
   }
-  
+
   return {
     [teamA]: getLineupStats(teamA, totalA),
     [teamB]: getLineupStats(teamB, totalB),
   };
+}
+
+/** 同步带伤等赛后二次调整，并把差额还给同队球员，保持整队统计总量不变。 */
+function syncUserStatsToBoxScore(gameResult, stats) {
+  if (!gameResult || !gameResult.boxScore || !stats) return;
+  Object.keys(gameResult.boxScore).forEach(function(teamKey) {
+    var rows = gameResult.boxScore[teamKey];
+    if (!Array.isArray(rows)) return;
+    var userRow = rows.find(function(row) { return row && (row._isUser || row.isUser); });
+    if (!userRow) return;
+    var teammates = rows.filter(function(row) { return row && row !== userRow; });
+    ['pts','reb','ast','stl','blk','tov','mins'].forEach(function(field) {
+      var previous = Math.max(0, Math.round(Number(userRow[field]) || 0));
+      var next = Math.max(0, Math.round(Number(stats[field]) || 0));
+      var difference = previous - next;
+      userRow[field] = next;
+      if (!difference || !teammates.length) return;
+      if (difference > 0) {
+        var additions = allocateLeagueCountingTotal(difference, teammates.map(function(row) { return (Number(row[field]) || 0) + 1; }));
+        teammates.forEach(function(row, index) { row[field] = (Number(row[field]) || 0) + additions[index]; });
+        return;
+      }
+      var remaining = -difference;
+      teammates.slice().sort(function(a, b) { return (Number(b[field]) || 0) - (Number(a[field]) || 0); }).forEach(function(row) {
+        if (remaining <= 0) return;
+        var removable = Math.min(remaining, Math.max(0, Math.round(Number(row[field]) || 0)));
+        row[field] -= removable;
+        remaining -= removable;
+      });
+    });
+    ['fgm','fga','ftm','fta','threeM','threeA'].forEach(function(field) {
+      userRow[field] = Math.max(0, Math.round(Number(stats[field]) || 0));
+    });
+  });
 }
 
 /** 属性→效率系数：递减曲线
@@ -5356,6 +4508,25 @@ function sampleCountingStat(mean) {
 
 /** 生成你的球员数据 — 由单项属性决定，不是总评 */
 function generatePlayerStatsNew(attrs, gameResult, isPlayoff) {
+  var userBoxRow = null;
+  if (gameResult && gameResult.boxScore) {
+    Object.keys(gameResult.boxScore).some(function(teamKey) {
+      var rows = gameResult.boxScore[teamKey];
+      if (!Array.isArray(rows)) return false;
+      userBoxRow = rows.find(function(row) { return row && (row._isUser || row.isUser); }) || null;
+      return !!userBoxRow;
+    });
+  }
+  if (userBoxRow) {
+    return {
+      pts: Number(userBoxRow.pts) || 0, reb: Number(userBoxRow.reb) || 0, ast: Number(userBoxRow.ast) || 0,
+      stl: Number(userBoxRow.stl) || 0, blk: Number(userBoxRow.blk) || 0, tov: Number(userBoxRow.tov) || 0,
+      fgm: Number(userBoxRow.fgm) || 0, fga: Number(userBoxRow.fga) || 0,
+      ftm: Number(userBoxRow.ftm) || 0, fta: Number(userBoxRow.fta) || 0,
+      threeM: Number(userBoxRow.threeM) || 0, threeA: Number(userBoxRow.threeA) || 0,
+      mins: Number(userBoxRow.mins) || 0,
+    };
+  }
   const cfg = SIM_CONFIG.PLAYER_STATS;
   const pos = STATE.position || 'PG';
   const posScale = cfg.POS_SCALE[pos] || cfg.POS_SCALE.PG;
@@ -5470,7 +4641,9 @@ function generatePlayerStatsNew(attrs, gameResult, isPlayoff) {
   const tovVal = fga * 0.2 * (1.0 - af(hanCluAvg) * 0.4);
   const tov = Math.round(Math.max(0.5, tovVal));
   
-  return { pts, reb, ast, stl, blk, tov, fgm, fga, ftm, fta, threeM, threeA, mins };
+  var res = { pts, reb, ast, stl, blk, tov, fgm, fga, ftm, fta, threeM, threeA, mins };
+  syncUserStatsToBoxScore(gameResult, res);
+  return res;
 }
 
 function calcShotPct(type, attrVal, totalScore) {
@@ -5994,7 +5167,7 @@ function renderSeasonInsights() {
   var threePct = ps.threeA ? ((ps.threeM || 0) / ps.threeA * 100).toFixed(1) : '—';
   var ftPct = ps.fta ? ((ps.ftm || 0) / ps.fta * 100).toFixed(1) : '—';
   var pctText = function(value) { return value === '—' ? value : value + '%'; };
-  var displayName = typeof getHupuDisplayName === 'function' ? getHupuDisplayName() : '我的球员';
+  var displayName = typeof getMyPlayerDisplayName === 'function' ? getMyPlayerDisplayName() : '我的球员';
   var statItems = [
     ['得分', avg.pts], ['篮板', avg.reb], ['助攻', avg.ast],
     ['抢断', avg.stl], ['盖帽', avg.blk], ['失误', avg.tov]
@@ -6543,7 +5716,7 @@ function getSeasonPlayerStatRows() {
   var userStats = STATE.season.playerStats || {};
   rows.push(createSeasonPlayerStatRow(userStats, {
     playerId: '__user__',
-    playerName: typeof getHupuDisplayName === 'function' ? getHupuDisplayName() : '我的球员',
+    playerName: typeof getMyPlayerDisplayName === 'function' ? getMyPlayerDisplayName() : '我的球员',
     teamId: STATE.careerTeam,
     isUser: true,
   }));
@@ -6637,7 +5810,14 @@ function renderSeasonRankingsPage() {
       blk: { key: 'bpg', label: '场均盖帽' },
     };
     var config = statConfig[stat];
-    var rows = getSeasonPlayerStatRows().filter(function(row) { return row.gp > 0; }).sort(function(a, b) {
+    var standings = STATE.season.standings || {};
+    var leagueGamesPlayed = Object.keys(standings).reduce(function(maxGames, team) {
+      var standing = standings[team] || {};
+      return Math.max(maxGames, (Number(standing.wins) || 0) + (Number(standing.losses) || 0));
+    }, 0);
+    // NBA 场均榜采用约 70% 的出场资格；赛季初至少打过 1 场即可进入临时榜单。
+    var qualifyingGames = leagueGamesPlayed < 10 ? 1 : Math.ceil(leagueGamesPlayed * 0.70);
+    var rows = getSeasonPlayerStatRows().filter(function(row) { return row.gp >= qualifyingGames; }).sort(function(a, b) {
       return b[config.key] - a[config.key] || b.gp - a.gp;
     });
     var visibleLimit = Math.max(10, Number(STATE._playerRankingLimit) || 10);
@@ -6720,7 +5900,7 @@ function showSeasonTeamModal() {
 
   function renderPlayer(player) {
     var isUser = !!player._isUser;
-    var name = isUser ? getHupuDisplayName() : (player.cname || player.name);
+    var name = isUser ? getMyPlayerDisplayName() : (player.cname || player.name);
     var ovr = isUser ? (STATE.finalOVR || 0) : (parseInt(player.ovr) || 0);
     var headshot = !isUser && typeof getPlayerHeadshotStyle === 'function' ? getPlayerHeadshotStyle(player.name, 26) : '';
     var avatarStyle = headshot ? ' style="' + headshot + '"' : '';
@@ -6752,7 +5932,7 @@ function showSeasonTeamModal() {
         isUser: isUser,
       });
     }
-    var name = isUser ? getHupuDisplayName() : (player.cname || player.name);
+    var name = isUser ? getMyPlayerDisplayName() : (player.cname || player.name);
     return '<div class="season-team-stat-row ' + (isUser ? 'is-user' : '') + '">' +
       '<span class="season-team-stat-player"><small>' + (player.posCn || player.pos || '-') + '</small>' + name + (isUser ? ' ⭐' : '') + '</span>' +
       '<span>' + statRow.gp + '</span>' +
@@ -7140,7 +6320,7 @@ function renderMyCard(isFinal, activeTab) {
       <div class="mc-header">
         <div class="mc-summary-line">
           <span class="mc-pos">${SIM_CONFIG.POSITIONS[STATE.position]}</span>
-          <span class="mc-name">${getHupuDisplayName()}</span>
+          <span class="mc-name">${getMyPlayerDisplayName()}</span>
           <span class="mc-ovr">${STATE.finalOVR}</span>
           <span class="mc-team-line">${getTeamName(STATE.careerTeam)} · ${STATE.season.wins}-${STATE.season.losses}</span>
         </div>
@@ -8803,11 +7983,11 @@ function buildManualSaveSnapshot() {
     savedAt: Date.now(),
     label: (STATE.career ? '第' + (STATE.career.seasonCount + 1) + '赛季 · ' + STATE.career.currentAge + '岁' : '未开始'),
     screen: (document.querySelector('.screen.active') || {}).id || '',
-    hupuUser: {
-      nickname: HUPU_USER.nickname || '',
-      avatar: HUPU_USER.avatar || '',
-      isLogin: !!HUPU_USER.isLogin,
-      source: HUPU_USER.source || ''
+    localPlayerProfile: {
+      nickname: LOCAL_PLAYER_PROFILE.nickname || '',
+      avatar: LOCAL_PLAYER_PROFILE.avatar || '',
+      isLogin: !!LOCAL_PLAYER_PROFILE.isLogin,
+      source: LOCAL_PLAYER_PROFILE.source || ''
     },
     state: rawState,
     league: JSON.parse(JSON.stringify(NBA2K_DATA || {})),
@@ -8999,11 +8179,11 @@ function manualLoadGame(slot, options) {
           _rookieNameSeq = snap.rookieState.rookieNameSeq || 0;
         }
         _rngState = snap.rng || null;
-        if (snap.hupuUser) {
-          HUPU_USER.nickname = snap.hupuUser.nickname || HUPU_USER.nickname;
-          HUPU_USER.avatar = snap.hupuUser.avatar || HUPU_USER.avatar;
-          HUPU_USER.isLogin = !!snap.hupuUser.isLogin;
-          HUPU_USER.source = snap.hupuUser.source || HUPU_USER.source;
+        if (snap.localPlayerProfile) {
+          LOCAL_PLAYER_PROFILE.nickname = snap.localPlayerProfile.nickname || LOCAL_PLAYER_PROFILE.nickname;
+          LOCAL_PLAYER_PROFILE.avatar = snap.localPlayerProfile.avatar || LOCAL_PLAYER_PROFILE.avatar;
+          LOCAL_PLAYER_PROFILE.isLogin = !!snap.localPlayerProfile.isLogin;
+          LOCAL_PLAYER_PROFILE.source = snap.localPlayerProfile.source || LOCAL_PLAYER_PROFILE.source;
         }
         ['player-retirement-choice', 'contract-modal', 'contract-retirement-choice', 'legacy-modal', 'offseason-event-modal', 'offseason-result-modal', 'countdown-legacy-modal', 'countdown-legacy-result-modal', 'load-menu-modal'].forEach(function(id) {
           var el = document.getElementById(id);
@@ -11287,15 +10467,6 @@ var POSTER_TOPIC_ID = 177;
 var POSTER_W = 620;
 var POSTER_SCALE = 2;
 
-// window.require shim
-window.require = window.require || function(name) {
-  if (name === 'ali-oss') return window.OSS;
-  if (name === '@hupu/kaleido-fed-sdk') return window.KaleidoOSS;
-  return null;
-};
-
-var _ossClient = null;
-
 var _posterTeamLogoImages = {};
 function preloadPosterTeamLogos() {
   if (!window.TEAM_LOGOS) return;
@@ -11337,22 +10508,6 @@ function drawPosterTeamLogo(ctx, team, x, y, size, colors) {
   ctx.fillText(team || '', x + size / 2, y + size / 2 + 0.5);
   ctx.restore();
 }
-function getOssClient() {
-  if (_ossClient) return _ossClient;
-  var K = window.KaleidoOSS || (typeof require === 'function' ? require('@hupu/kaleido-fed-sdk') : null);
-  if (K) {
-    _ossClient = new K({
-      appId: 'b1AcxWKA1u0hyDYv5kXgImZBRSQ=',
-      module: 'activity-screenshot-fed',
-      path: '/screenshot/activity/fed',
-      sk: 'HioGpkmGe9bsW0iqRLJEyGoLr4Q=',
-      action: '1',
-    });
-    if (typeof _ossClient.start === 'function') _ossClient.start();
-  }
-  return _ossClient;
-}
-
 function roundRectC(ctx, x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
@@ -12844,7 +11999,7 @@ function buildBiographyFacts(r) {
     : ('场均' + ((ts.stl || 0) / tg).toFixed(1) + '次抢断、场均' + ((ts.blk || 0) / tg).toFixed(1) + '次盖帽的防守履历');
   var mvpLine = mvp > 0 ? buildCountPhrase(mvp, '座', 'MVP') : '';
   return {
-    '姓名': (typeof getHupuDisplayName === 'function') ? getHupuDisplayName() : '我的球员',
+    '姓名': (typeof getMyPlayerDisplayName === 'function') ? getMyPlayerDisplayName() : '我的球员',
     '英文名': '',
     '位置': (SIM_CONFIG && SIM_CONFIG.POSITIONS) ? (SIM_CONFIG.POSITIONS[s.position] || s.position) : (s.position || '球员'),
     '顺位': getDraftPickLabel(STATE.career && STATE.career.draft),
@@ -13536,7 +12691,7 @@ function generateCareerPoster() {
   var legacy = c.legacy || null;
   var retired = !!c.retired;
   var posName = (SIM_CONFIG && SIM_CONFIG.POSITIONS) ? SIM_CONFIG.POSITIONS[s.position] : s.position;
-  var displayName = (typeof getHupuDisplayName === 'function') ? getHupuDisplayName() : '我的球员';
+  var displayName = (typeof getMyPlayerDisplayName === 'function') ? getMyPlayerDisplayName() : '我的球员';
 
   var C = {
     bg: '#faf5eb', bgCard: '#fffaf2', border: '#f0e0cc',
@@ -13755,7 +12910,7 @@ function stripPosterHtml(text) {
 function buildRetirementStoryPosterSections(r) {
   r = r || calculateLegacyResult();
   var c = STATE.career || {};
-  var displayName = (typeof getHupuDisplayName === 'function') ? getHupuDisplayName() : '我的球员';
+  var displayName = (typeof getMyPlayerDisplayName === 'function') ? getMyPlayerDisplayName() : '我的球员';
   var jerseyTeams = Array.isArray(r.jerseyTeams) ? r.jerseyTeams : [];
   var jerseyText = '';
   if (jerseyTeams.length) {
@@ -13828,7 +12983,7 @@ function generateRetirementStoryPosterDataURL(r) {
   r = r || c.legacy || calculateLegacyResult();
   if (!r) return '';
 
-  var displayName = (typeof getHupuDisplayName === 'function') ? getHupuDisplayName() : '我的球员';
+  var displayName = (typeof getMyPlayerDisplayName === 'function') ? getMyPlayerDisplayName() : '我的球员';
   var seasons = (c.seasons || []).length || (r.seasons || 0);
   var summary = seasons + '年生涯，' + Math.round(r.games || 0) + '场，' + Math.round(r.points || 0) + '分，' + (r.mvp || 0) + '座MVP，' + (r.championships || 0) + '枚总冠军戒指。';
   var C = {
@@ -14220,313 +13375,46 @@ function finishCountdownLegacy() {
   showPlayerRetirementChoice();
 }
 
-// ── 查看其他用户建模 ──
+// ── 本地海报导出 ──
 function viewOtherBuilds() {
-  console.log('👥 viewOtherBuilds 被点击');
-  console.log('  POSTER_TAG_ID:', POSTER_TAG_ID);
-  var url = 'huputiyu://bbs/topicTag?tagId=' + POSTER_TAG_ID;
-  console.log('  拼接URL:', url);
-  console.log('  ColorboxAI 是否存在:', !!window.ColorboxAI);
-  console.log('  navigateTo 是否可用:', typeof (window.ColorboxAI && window.ColorboxAI.navigateTo));
-  console.log('  openUrl 是否可用:', typeof (window.ColorboxAI && window.ColorboxAI.openUrl));
-  if (window.ColorboxAI && typeof window.ColorboxAI.navigateTo === 'function') {
-    console.log('  → 调用 ColorboxAI.navigateTo');
-    window.ColorboxAI.navigateTo(url, '_self');
-  } else if (window.ColorboxAI && typeof window.ColorboxAI.openUrl === 'function') {
-    console.log('  → 调用 ColorboxAI.openUrl');
-    window.ColorboxAI.openUrl(url);
-  } else {
-    console.warn('  ⚠️ ColorboxAI 跳转API不可用，无法跳转');
-  }
-  console.log('  → 关闭海报');
-  closePoster();
-}
-
-// ── OSS 上传 ──
-function dataURLToBlob(dataURL) {
-  var parts = dataURL.split(',');
-  var mime = parts[0].match(/:(.*?);/)[1];
-  var bytes = atob(parts[1]);
-  var ab = new ArrayBuffer(bytes.length);
-  var ia = new Uint8Array(ab);
-  for (var i = 0; i < bytes.length; i++) ia[i] = bytes.charCodeAt(i);
-  return new Blob([ab], { type: mime });
-}
-
-function uploadToOSS(file, filename) {
-  return new Promise(function(resolve, reject) {
-    // 方案1: ColorboxAI
-    if (window.ColorboxAI && window.ColorboxAI.oss && typeof window.ColorboxAI.oss.uploadFile === 'function') {
-      window.ColorboxAI.oss.uploadFile({ file: file, filename: filename })
-        .then(function(res) { resolve(res.downloadUrl || ''); })
-        .catch(reject);
-      return;
-    }
-    // 方案2: postMessage Bridge
-    if (window.parent && window.parent !== window) {
-      var callbackId = '_cb_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
-      var timer = setTimeout(function() { cleanup(); reject(new Error('上传超时')); }, 30000);
-      var handler = function(e) {
-        var d = e.data;
-        if (d && d.protocol === 'colorbox-ai-bridge' && d.type === 'oss.upload.callback' && d.payload && d.payload.callbackId === callbackId) {
-          clearTimeout(timer); cleanup();
-          d.payload.error ? reject(new Error(d.payload.error)) : resolve(d.payload.downloadUrl || '');
-        }
-      };
-      var cleanup = function() { window.removeEventListener('message', handler); };
-      window.addEventListener('message', handler);
-      window.parent.postMessage({
-        protocol: 'colorbox-ai-bridge', version: 1, direction: 'frame-to-host',
-        type: 'oss.upload',
-        payload: { file: file, filename: filename, callbackId: callbackId }
-      }, '*');
-      return;
-    }
-    // 方案3: 直连 KaleidoOSS
-    var client = getOssClient();
-    if (client) {
-      var ext = filename.lastIndexOf('.') >= 0 ? filename.slice(filename.lastIndexOf('.')) : '.png';
-      var now = new Date();
-      var key = 'user-upload/' + (now.getFullYear() % 100) + (now.getMonth() + 1) + now.getDate() + '-' + Math.random().toString(36).slice(-6) + ext;
-      client.multipartUpload(key, file, {})
-        .then(function(res) { resolve(res.downloadUrl || 'https://activity-static.hoopchina.com.cn/' + res.name); })
-        .catch(reject);
-      return;
-    }
-    reject(new Error('No upload capability'));
-  });
-}
-
-function safeNavigate(url, target) {
-  if (window.ColorboxAI && typeof window.ColorboxAI.navigateTo === 'function') {
-    try { window.ColorboxAI.navigateTo(url, target || '_blank'); return; } catch(e) {}
-  }
-  if (window.ColorboxAI && typeof window.ColorboxAI.openUrl === 'function') {
-    try { window.ColorboxAI.openUrl(url); return; } catch(e) {}
-  }
+  alert('本地模式不提供社区浏览功能');
 }
 
 async function sharePoster(btn) {
-  trackEvent({act:"click",blk:"BMC098",pos:"TC14",label:"一键发帖"});
   var dataURLs = (window._posterDataURLs && window._posterDataURLs.length) ? window._posterDataURLs : [window._posterDataURL];
   dataURLs = dataURLs.filter(function(url) { return !!url; });
   if (!dataURLs.length) return;
-
-  var origText = btn.innerHTML;
-  btn.innerHTML = '⏳ 上传中...';
+  var originalText = btn.innerHTML;
+  btn.innerHTML = '⏳ 正在导出...';
   btn.disabled = true;
-
   try {
-    var imageList = [];
-    for (var i = 0; i < dataURLs.length; i++) {
-      var blob = dataURLToBlob(dataURLs[i]);
-      if (blob.size === 0) { alert('海报图片为空'); return; }
-      var filename = 'buildplayer_' + Date.now() + '_' + (i + 1) + '.png';
-      var imageUrl = await uploadToOSS(blob, filename);
-      if (imageUrl) imageList.push(imageUrl);
-    }
-    var initialValue = {
-      syncPost: true,
-      appJsonV3: {
-        activeTab: 'thread',
-        data: {
-          title: '',
-          imageList: imageList,
-          content: ''
-        }
-      }
-    };
-
-    var postUrl = 'huputiyu://bbs/postImg?tagName=' + encodeURIComponent(POSTER_TAG_NAME) +
-      '&tagId=' + POSTER_TAG_ID +
-      '&topicName=' + encodeURIComponent(POSTER_TOPIC_NAME) +
-      '&topicId=' + POSTER_TOPIC_ID +
-      '&initialValue=' + encodeURIComponent(JSON.stringify(initialValue));
-    safeNavigate(postUrl, '_self');
-    closePoster();
-  } catch (e) {
-    console.warn('上传失败, 降级为纯文字发帖', e);
-    var fallback = {
-      syncPost: true,
-      appJsonV3: {
-        activeTab: 'thread',
-        data: { title: '', imageList: [], content: '' }
-      }
-    };
-    var fallbackUrl = 'huputiyu://bbs/postImg?tagName=' + encodeURIComponent(POSTER_TAG_NAME) +
-      '&tagId=' + POSTER_TAG_ID +
-      '&topicName=' + encodeURIComponent(POSTER_TOPIC_NAME) +
-      '&topicId=' + POSTER_TOPIC_ID +
-      '&initialValue=' + encodeURIComponent(JSON.stringify(fallback));
-    safeNavigate(fallbackUrl, '_self');
+    dataURLs.forEach(function(dataURL, index) {
+      var link = document.createElement('a');
+      link.href = dataURL;
+      link.download = 'court-forge-poster-' + Date.now() + '-' + (index + 1) + '.png';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    });
     closePoster();
   } finally {
-    btn.innerHTML = origText;
+    btn.innerHTML = originalText;
     btn.disabled = false;
   }
 }
 </script>
 
-<!-- ====== 激励视频自选球队（VA H5 SDK · activityId 318）====== -->
+<!-- ====== 本地自选球队与更换机会 ====== -->
 <script>
-// ===================================================================
-//  VA H5 SDK — 激励视频自选球队任务
-// ===================================================================
-var AD_ACTIVITY_ID = 318;
-var _adTeamLoading = false;      // 防连点
-var _adChanceCount = -1;         // -1 = 未加载
-var _adTaskTitle = '';
-
-function adSdkAvailable() {
-  return typeof VaFuSDK !== 'undefined' && window._sdkReady;
+function fetchAdTeamTask() {}
+function watchAdToPickTeam() {
+  showCareerTeamPicker([].concat(NBA2K_TEAMS));
 }
-
-function showAdToast(msg) {
-  var existing = document.querySelector('.cq-toast');
-  if (existing) { existing.remove(); clearTimeout(existing._t); }
-  var el = document.createElement('div');
-  el.className = 'cq-toast';
-  el.style.cssText = 'position:fixed;top:clamp(50px,8vh,70px);left:50%;transform:translateX(-50%);z-index:600;background:linear-gradient(145deg,#3a2a1a,#2a2015);border:2px solid #d4af37;border-radius:16px;padding:14px 28px;font-family:var(--font-display);font-size:14px;font-weight:600;color:#f5e6c8;box-shadow:0 8px 40px rgba(212,175,55,0.15);white-space:nowrap;max-width:88vw;text-align:center;letter-spacing:.5px;';
-  el.textContent = msg;
-  document.body.appendChild(el);
-  el._t = setTimeout(function() {
-    if (el.parentNode) el.parentNode.removeChild(el);
-  }, 2800);
-}
-
-function renderAdTeamStatus() {
-  var btn = document.getElementById('adTeamPickBtn');
-  if (!btn) return;
-  if (_adTeamLoading) {
-    btn.disabled = true;
-    btn.textContent = '📺 视频加载中...';
-  } else {
-    btn.disabled = false;
-    btn.textContent = '📺 看视频自选球队';
-  }
-}
-
-/** 页面进入/刷新时读取任务状态（纯读取，不触发登录） */
-async function fetchAdTeamTask() {
-  if (!adSdkAvailable()) return;
-  try {
-    var result = await VaFuSDK.getActivityTaskState({ activityId: AD_ACTIVITY_ID });
-    if (result && result.ok) {
-      _adChanceCount = (result.state && typeof result.state.availableChanceCount === 'number') ? result.state.availableChanceCount : 0;
-      _adTaskTitle = '';
-      var tasks = (result.state && result.state.tasks) || [];
-      for (var i = 0; i < tasks.length; i++) {
-        if (tasks[i].action && tasks[i].action.kind === 'reward_video') {
-          _adTaskTitle = tasks[i].title || '';
-          break;
-        }
-      }
-    }
-  } catch(e) {
-    // 静默失败，不影响游戏
-  }
-  renderAdTeamStatus();
-}
-
-/** 点击看视频自选球队：请求期间禁用按钮，页面自己防连点 */
-async function watchAdToPickTeam() {
-  if (_adTeamLoading) return;
-  if (!adSdkAvailable()) {
-    showAdToast('功能暂不可用，请稍后再试');
-    return;
-  }
-
-  _adTeamLoading = true;
-  renderAdTeamStatus();
-
-  var result = null;
-  try {
-    result = await VaFuSDK.completeRewardVideoTask({ activityId: AD_ACTIVITY_ID });
-  } catch (e) {
-    _adTeamLoading = false;
-    renderAdTeamStatus();
-    return;
-  }
-  _adTeamLoading = false;
-
-  if (result && result.ok) {
-    // 完整观看并获得奖励 → 主动刷新任务状态
-    await fetchAdTeamTask();
-    showAdToast('✅ 观看完成，可以自选球队了');
-    openAdTeamPicker();
-  } else if (result && (result.code === 'LOGIN_REQUIRED' || result.code === 'APP_REQUIRED')) {
-    return;
-  } else if (result && result.code === 'NOT_REWARDED') {
-    renderAdTeamStatus();
-    showAdToast('需完成观看才能获得活动次数');
-  } else {
-    renderAdTeamStatus();
-    showAdToast('获取广告失败，请稍后再试');
-  }
-}
-
-/** 看视频奖励后打开全 30 队选择器 */
-function openAdTeamPicker() {
-  showCareerTeamPicker([...NBA2K_TEAMS]);
-}
-
-var _adRerollLoading = false;      // 换人广告防连点
-
-/** 更换球员用完时：看广告获得 1 次更换机会 */
-async function watchAdToReroll() {
-  if (_adRerollLoading) return;
-  if (!adSdkAvailable()) {
-    showAdToast('功能暂不可用，请稍后再试');
-    return;
-  }
-
-  _adRerollLoading = true;
+function watchAdToReroll() {
+  STATE._rerollsLeft = (STATE._rerollsLeft || 0) + 1;
   updateSlotButtons();
-
-  var result = null;
-  try {
-    result = await VaFuSDK.completeRewardVideoTask({ activityId: AD_ACTIVITY_ID });
-  } catch (e) {
-    _adRerollLoading = false;
-    updateSlotButtons();
-    return;
-  }
-  _adRerollLoading = false;
-
-  if (result && result.ok) {
-    STATE._rerollsLeft = (STATE._rerollsLeft || 0) + 1;
-    await fetchAdTeamTask();
-    updateSlotButtons();
-    showAdToast('✅ 观看完成，获得一次更换球员机会！');
-  } else if (result && (result.code === 'LOGIN_REQUIRED' || result.code === 'APP_REQUIRED')) {
-    updateSlotButtons();
-    return;
-  } else if (result && result.code === 'NOT_REWARDED') {
-    updateSlotButtons();
-    showAdToast('需完成观看才能获得更换机会');
-  } else {
-    updateSlotButtons();
-    showAdToast('获取广告失败，请稍后再试');
-  }
-}
-
-// 从其他页面（如登录 / 唤起 App）返回时刷新任务状态
-document.addEventListener('visibilitychange', function() {
-  if (document.visibilityState !== 'visible') return;
-  setTimeout(function() {
-    fetchAdTeamTask();
-  }, 500);
-});
-
-// SDK 后加载完成时，若选队页已展示则补拉任务状态
-document.addEventListener('va-sdk-ready', function() {
-  if (document.getElementById('career-area')) fetchAdTeamTask();
-});
-if (window._sdkReady && document.getElementById('career-area')) {
-  setTimeout(function() { fetchAdTeamTask(); }, 0);
 }
 </script>
-
 <!-- ====== 成就系统模块（热拔插：移除本行即卸载）====== -->
 <script src="assets/activity-static.hoopchina.com.cn/files/26716-pz0d55rc-upload-1784184998973-30.js"></script>
 <script>

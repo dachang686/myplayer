@@ -2152,38 +2152,19 @@ function getPlayerDisplayName(playerName) {
   return commaIdx >= 0 ? playerName.slice(commaIdx + 2) : playerName;
 }
 
-if (!window.TEAM_LOGOS) window.TEAM_LOGOS = {
-  'ATL':'assets/activity-static.hoopchina.com.cn/files/26612-t5b21erc-upload-1781237739326-44.png',
-  'BKN':'assets/activity-static.hoopchina.com.cn/files/26612-xptpjtrc-upload-1781237796378-12.png',
-  'BOS':'assets/activity-static.hoopchina.com.cn/files/26612-ccjancrc-upload-1781237796378-15.png',
-  'CHA':'assets/activity-static.hoopchina.com.cn/files/26612-4los1nrc-upload-1781237796378-18.png',
-  'CHI':'assets/activity-static.hoopchina.com.cn/files/26612-248zl7rc-upload-1781237796378-21.png',
-  'CLE':'assets/activity-static.hoopchina.com.cn/files/26612-9373nkrc-upload-1781237796378-24.png',
-  'DAL':'assets/activity-static.hoopchina.com.cn/files/26612-ye2ck7rc-upload-1781237796378-27.png',
-  'DEN':'assets/activity-static.hoopchina.com.cn/files/26612-v4su4prc-upload-1781237796378-30.png',
-  'DET':'assets/activity-static.hoopchina.com.cn/files/26612-ce809crc-upload-1781237796378-33.png',
-  'GSW':'assets/activity-static.hoopchina.com.cn/files/26612-jytyisrc-upload-1781237796378-36.png',
-  'HOU':'assets/activity-static.hoopchina.com.cn/files/26612-8x92ebrc-upload-1781237796378-39.png',
-  'IND':'assets/activity-static.hoopchina.com.cn/files/26612-q4jolqrc-upload-1781237796378-42.png',
-  'LAC':'assets/activity-static.hoopchina.com.cn/files/26612-y0fgwlrc-upload-1781237796378-45.png',
-  'LAL':'assets/activity-static.hoopchina.com.cn/files/26614-lqhvdqrc-upload-1781423262777-12.png',
-  'MEM':'assets/activity-static.hoopchina.com.cn/files/26612-hkjdthrc-upload-1781237796378-51.png',
-  'MIA':'assets/activity-static.hoopchina.com.cn/files/26612-wrdmc9rc-upload-1781237796378-54.png',
-  'MIL':'assets/activity-static.hoopchina.com.cn/files/26612-47m8grrc-upload-1781237796378-57.png',
-  'MIN':'assets/activity-static.hoopchina.com.cn/files/26612-6y471frc-upload-1781237796378-60.png',
-  'NOP':'assets/activity-static.hoopchina.com.cn/files/26612-q64i2mrc-upload-1781237796378-63.png',
-  'NYK':'assets/activity-static.hoopchina.com.cn/files/26612-ltjvjerc-upload-1781237796378-66.png',
-  'OKC':'assets/activity-static.hoopchina.com.cn/files/26612-103adgrc-upload-1781237796378-69.png',
-  'ORL':'assets/activity-static.hoopchina.com.cn/files/26612-0i4175rc-upload-1781237796378-72.png',
-  'PHI':'assets/activity-static.hoopchina.com.cn/files/26612-s2kbz8rc-upload-1781237796378-75.png',
-  'PHX':'assets/activity-static.hoopchina.com.cn/files/26612-iffq4vrc-upload-1781237796378-78.png',
-  'POR':'assets/activity-static.hoopchina.com.cn/files/26612-v2vg2xrc-upload-1781237796378-81.png',
-  'SAC':'assets/activity-static.hoopchina.com.cn/files/26612-9g4x3qrc-upload-1781237796378-84.png',
-  'SAS':'assets/activity-static.hoopchina.com.cn/files/26612-op4gosrc-upload-1781237796378-87.png',
-  'TOR':'assets/activity-static.hoopchina.com.cn/files/26612-yowkavrc-upload-1781237796378-90.png',
-  'UTA':'assets/activity-static.hoopchina.com.cn/files/26612-rb5rxsrc-upload-1781237796378-93.png',
-  'WAS':'assets/activity-static.hoopchina.com.cn/files/26612-7t2yj4rc-upload-1781237796378-96.png',
-};
+if (!window.TEAM_LOGOS) {
+  const badgeColors = ['#d85a42','#2d7fc1','#7b5bc7','#268b70','#c48524','#4766b1'];
+  window.TEAM_LOGOS = {};
+  NBA2K_TEAMS.forEach(function(team, index) {
+    const color = badgeColors[index % badgeColors.length];
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">' +
+      '<circle cx="48" cy="48" r="44" fill="' + color + '"/>' +
+      '<circle cx="48" cy="48" r="39" fill="none" stroke="#fff" stroke-width="3" opacity=".8"/>' +
+      '<text x="48" y="55" text-anchor="middle" font-family="Arial,sans-serif" font-size="24" font-weight="700" fill="#fff">' + team + '</text>' +
+      '</svg>';
+    window.TEAM_LOGOS[team] = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  });
+}
 if (!window.TEAM_CITY) window.TEAM_CITY = {
   'ATL':'亚特兰大','BKN':'布鲁克林','BOS':'波士顿','CHA':'夏洛特','CHI':'芝加哥',
   'CLE':'克里夫兰','DAL':'达拉斯','DEN':'丹佛','DET':'底特律','GSW':'金州',
@@ -2449,7 +2430,7 @@ function quickSimAllGames() {
         var runSkippedRegularGame = function() {
           if (skipReason === 'suspension') ev.suspensionGamesLeft--;
           else ev.injuryGamesLeft--;
-           var skipResult = simulateGameNew(STATE.careerTeam, g.opponent);
+           var skipResult = simulateGameNew(STATE.careerTeam, g.opponent, 0, null, { availabilityEdge: -4 });
            recordLeagueBoxScore(skipResult.boxScore, 'career:' + (g.gameNum || g.day || gi) + ':' + g.opponent);
           g.simulated = true;
           g.result = skipResult;
@@ -2857,7 +2838,7 @@ function simDayLeagueGames(day) {
       // 跳过包含我方球队的比赛（这些已经通过我们的比赛模拟过了）
       if (g.home === STATE.careerTeam || g.away === STATE.careerTeam) return;
       
-      const result = simulateGameNew(g.home, g.away);
+      const result = simulateGameNew(g.home, g.away, 0, null, { isHomeA: true, isB2B: false });
       recordLeagueBoxScore(result.boxScore, 'league:' + d + ':' + g.home + ':' + g.away);
       if (result.won) {
         standings[g.home].wins++; standings[g.away].losses++;
@@ -3060,144 +3041,131 @@ function calcTeamPowerWithPlayer(team) {
   };
 }
 
-/** 比赛模拟 — 使用统一胜率公式 + 详细比分生成 */
-function simulateGameNew(teamA, teamB, seedBonus, probMultiplier) {
+/** 比赛模拟 — 逐节生成真实比分，最终比分直接决定胜负。 */
+function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
   const powerA = calcTeamPowerWithPlayer(teamA);
   const powerB = calcTeamPowerWithPlayer(teamB);
   const config = SIM_CONFIG;
-  
-  // ★ 第一步：用统一胜率公式决定胜负
-  const netRatingA = (powerA.offense - powerB.offense) * 0.4 
-                   + (powerA.defense - powerB.defense) * 0.4 
-                   + (powerA.depth - powerB.depth) * 0.1
-                   + (powerA.clutch - powerB.clutch) * 0.1
-                   + (seedBonus || 0);  // 季后赛种子保护：高顺位概率加成
-  const winProb = 0.5 + netRatingA / 25;
-  const clampedProb = Math.max(0.15, Math.min(0.85, winProb));
-  // ★ 概率乘数（用于季后赛用户 debuff）
-  const finalProb = probMultiplier != null ? Math.max(0.10, clampedProb * probMultiplier) : clampedProb;
-  const predeterminedWinner = Math.random() < finalProb ? teamA : teamB;
-  
-  // ★ 第二步：生成展示用比分（不影响胜负结果）
-  // 计算节奏
+  const options = gameOptions || {};
+
+  function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+  }
+
+  function normalRandom(mean, deviation) {
+    const u = Math.max(Math.random(), 0.000001);
+    const v = Math.random();
+    const z = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+    return mean + z * deviation;
+  }
+
+  const schedule = STATE.season.schedule || [];
+  const gameIdx = schedule.findIndex(g => !g.simulated);
+  let isHomeA = null;
+  if (typeof options.isHomeA === 'boolean') isHomeA = options.isHomeA;
+  else if (gameIdx >= 0) isHomeA = !!schedule[gameIdx]?.home;
+  const currentScheduleGame = gameIdx >= 0 ? schedule[gameIdx] : null;
+  const previousScheduleGame = gameIdx > 0 ? schedule[gameIdx - 1] : null;
+  const isB2B = typeof options.isB2B === 'boolean'
+    ? options.isB2B
+    : !!(currentScheduleGame && previousScheduleGame
+      && Number(currentScheduleGame.day) - Number(previousScheduleGame.day) === 1);
+
+  // 实力差决定预期分差；种子差仅保留为很小的赛季表现修正，主场承担主要高种子优势。
+  const rosterEdge = (powerA.offense - powerB.offense) * 0.45
+                   + (powerA.defense - powerB.defense) * 0.45
+                   + (powerA.depth - powerB.depth) * 0.10;
+  const seasonFormEdge = clamp((seedBonus || 0) * 0.25, -0.8, 0.8);
+  const homeCourtEdge = isHomeA === true ? 2.2 : (isHomeA === false ? -2.2 : 0);
+  // 兼容现有带伤接口：把概率乘数转换成预期分差惩罚，不再直接篡改胜率。
+  const availabilityEdge = Number.isFinite(options.availabilityEdge)
+    ? options.availabilityEdge
+    : (probMultiplier != null ? (probMultiplier - 1) * 25 : 0);
+  const fatigueEdge = isB2B ? -1.0 : 0;
+  const expectedMargin = clamp(
+    rosterEdge + seasonFormEdge + homeCourtEdge + availabilityEdge + fatigueEdge,
+    -18,
+    18
+  );
+
   const paceA = config.PACE.base + (Math.random() - 0.5) * config.PACE.teamRange;
   const paceB = config.PACE.base + (Math.random() - 0.5) * config.PACE.teamRange;
   const gamePace = (paceA + paceB) / 2;
   const possPerQ = Math.round(gamePace / 4);
-  
+  const matchupScoring = (
+    powerA.offense + powerB.offense - powerA.defense - powerB.defense
+  ) * 0.32;
+  const expectedTotal = clamp(
+    gamePace * 2.16 + matchupScoring + (isB2B ? -3 : 0),
+    196,
+    244
+  );
+
   let scoreA = 0, scoreB = 0;
   let highlight = false;
-  let keyEvents = [];
-  let momentum = 1.0;
-  let qScoresA = [], qScoresB = [];
-  
-  // 查找赛程，确认主客场
-  const schedule = STATE.season.schedule || [];
-  const gameIdx = schedule.findIndex(g => !g.simulated);
-  const isHome = gameIdx >= 0 ? schedule[gameIdx]?.home : true;
-  const isB2B = gameIdx > 0 && schedule[gameIdx-1]?.isB2B;
-  
-  // ★ 根据预定胜者设置倾向
-  const desiredWinner = predeterminedWinner;
-  
+  const keyEvents = [];
+  const qScoresA = [], qScoresB = [];
+
   for (let q = 0; q < 4; q++) {
-    const baseQ = possPerQ;
-    
-    // 实力差值影响比分展示（小幅度，不决定胜负）
-    const offDefDiffA = (powerA.offense - powerB.defense) / 120;
-    const offDefDiffB = (powerB.offense - powerA.defense) / 120;
-    
-    // 主场加成
-    const homeBonusQ = isHome ? 1.0 : 0;
-    
-    // 每节得分 = 基准 + 实力展示 + 主场 + 大随机
-    let ptsA = baseQ + offDefDiffA * 3 + homeBonusQ + (momentum - 1) * 1.5;
-    let ptsB = baseQ + offDefDiffB * 3;
-    
-    // 确保预定胜者适度领先
-    const currentDiff = (scoreA + ptsA) - (scoreB + ptsB);
-    const targetLead = desiredWinner === teamA ? 1 : -1;
-    if ((desiredWinner === teamA && currentDiff < targetLead) ||
-        (desiredWinner === teamB && currentDiff > targetLead)) {
-      if (desiredWinner === teamA) ptsA += 2;
-      else ptsB += 2;
-    }
-    
-    // 背靠背
-    if (isB2B) { ptsA *= 0.96; ptsB *= 0.96; }
-    
-    // ★ 大随机波动 ±25%
-    ptsA *= (0.75 + Math.random() * 0.50);
-    ptsB *= (0.75 + Math.random() * 0.50);
-    
-    // 落后方反扑
-    if (Math.abs(currentDiff) > 10) {
-      const comeback = 1 + Math.abs(currentDiff) * 0.003;
-      if (currentDiff > 0) ptsB *= comeback; else ptsA *= comeback;
-    }
-    
-    const qA = Math.max(8, Math.round(ptsA));
-    const qB = Math.max(8, Math.round(ptsB));
-    
+    const preQuarterDiff = scoreA - scoreB;
+    const isClutchQuarter = q === 3 && Math.abs(preQuarterDiff) <= 8;
+    const clutchEdge = isClutchQuarter
+      ? clamp((powerA.clutch - powerB.clutch) * 0.08, -1.2, 1.2)
+      : 0;
+    const quarterMargin = expectedMargin / 4 + clutchEdge;
+    const quarterTotal = expectedTotal / 4 + normalRandom(0, 2.4);
+    const expectedA = (quarterTotal + quarterMargin) / 2;
+    const expectedB = (quarterTotal - quarterMargin) / 2;
+    const qA = Math.max(10, Math.round(normalRandom(expectedA, 4.1)));
+    const qB = Math.max(10, Math.round(normalRandom(expectedB, 4.1)));
+
     scoreA += qA;
     scoreB += qB;
     qScoresA.push(qA);
     qScoresB.push(qB);
-    
-    // 随机事件
-    if (Math.random() < 0.08) {
-      const bonus = 3 + Math.round(Math.random() * 8);
-      if (Math.random() > 0.5) { scoreA += bonus; keyEvents.push(`🔥 ${getTeamName(teamA)} 单节爆发 +${bonus}`); }
-      else { scoreB += bonus; keyEvents.push(`🔥 ${getTeamName(teamB)} 单节爆发 +${bonus}`); }
+
+    if (qA - qB >= 10) {
+      keyEvents.push(`🔥 ${getTeamName(teamA)} 单节打出 ${qA}-${qB}`);
+      highlight = true;
+    } else if (qB - qA >= 10) {
+      keyEvents.push(`🔥 ${getTeamName(teamB)} 单节打出 ${qB}-${qA}`);
       highlight = true;
     }
-    
-    momentum = momentum * 0.7 + 0.3;
+    if (isClutchQuarter) highlight = true;
   }
-  
-  // 关键球/绝杀
-  if (Math.abs(scoreA - scoreB) < 6 && Math.random() < 0.35) {
-    highlight = true;
-    if (Math.random() > 0.5) { scoreA += 3; keyEvents.push('⚡ 关键三分！'); }
-    else { scoreB += 3; keyEvents.push('⚡ 关键三分！'); }
-  }
-  if (Math.abs(scoreA - scoreB) <= 3 && Math.random() < 0.12) {
-    highlight = true;
-    if (Math.random() > 0.5) { scoreA += 3; keyEvents.push('🏆 压哨绝杀！'); }
-    else { scoreB += 3; keyEvents.push('💔 被压哨绝杀...'); }
-  }
-  
-  // 加时
+
+  // 只有四节打平才进入加时；关键球能力只在真正的决胜阶段产生小幅影响。
   let ot = 0;
-  while (Math.abs(scoreA - scoreB) < 3 && ot < 3) {
+  while (scoreA === scoreB && ot < 5) {
     ot++;
-    scoreA += Math.round(4 + Math.random() * 8);
-    scoreB += Math.round(4 + Math.random() * 8);
+    const otClutchEdge = clamp((powerA.clutch - powerB.clutch) * 0.10, -1.5, 1.5);
+    const otTotal = normalRandom(22, 3.2);
+    const otA = Math.max(4, Math.round(normalRandom((otTotal + expectedMargin / 5 + otClutchEdge) / 2, 2.2)));
+    const otB = Math.max(4, Math.round(normalRandom((otTotal - expectedMargin / 5 - otClutchEdge) / 2, 2.2)));
+    scoreA += otA;
+    scoreB += otB;
     keyEvents.push(`⏱ 加时赛 #${ot}`);
     highlight = true;
   }
-  
-  // ★ 最终结果由预定胜者决定
-  const won = predeterminedWinner === teamA;
-  // 确保比分方向正确：胜者必须领先（最多修正15分，避免离谱单节比分）
-  if (won && scoreB >= scoreA) {
-    const add = Math.min(15, scoreB - scoreA + 1);
-    scoreA += add;
-    if (qScoresA.length) qScoresA[qScoresA.length - 1] += add;
-  } else if (!won && scoreA >= scoreB) {
-    const add = Math.min(15, scoreA - scoreB + 1);
-    scoreB += add;
-    if (qScoresB.length) qScoresB[qScoresB.length - 1] += add;
+  // 极小概率连续五次加时仍平局时，用一次真实的决胜回合结束比赛。
+  if (scoreA === scoreB) {
+    const aWinsFinalPossession = Math.random() < 1 / (1 + Math.exp(-expectedMargin / 6.5));
+    if (aWinsFinalPossession) scoreA++;
+    else scoreB++;
+    keyEvents.push('⚡ 最后一次进攻决定胜负');
+    highlight = true;
   }
-  
-  // 冷门检测
-  const avgA = (powerA.offense + powerA.defense) / 2;
-  const avgB = (powerB.offense + powerB.defense) / 2;
-  if (won !== (avgA > avgB) && Math.abs(avgA - avgB) > 3) {
+
+  const won = scoreA > scoreB;
+  const estimatedWinProb = 1 / (1 + Math.exp(-expectedMargin / 6.5));
+  if ((expectedMargin >= 4 && !won) || (expectedMargin <= -4 && won)) {
     highlight = true;
     keyEvents.push('💥 爆冷！');
+  } else if (Math.abs(scoreA - scoreB) <= 3) {
+    highlight = true;
+    keyEvents.push('⚡ 关键回合决胜');
   }
-  
+
   return {
     won, scoreA, scoreB,
     qScoresA, qScoresB,
@@ -3206,156 +3174,297 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier) {
     teamB: { power: powerB },
     pace: gamePace,
     possPerQ,
+    isHomeA,
+    expectedMargin,
+    estimatedWinProb,
     boxScore: generateBoxScore(teamA, teamB, scoreA, scoreB),
   };
 }
 
-/** 限制单个 NPC 长期占用过高得分份额，并把溢出得分分配给其他轮换球员。 */
-function capAndRedistributeScoring(allocated, weights, players, totalPts) {
-  var caps = players.map(function(player) {
-    var ovr = parseInt(player.ovr) || 50;
-    var starRange = Math.max(0, Math.min(19, ovr - 80));
-    var hotNight = Math.random() < 0.08;
-    var shareCap = 0.22 + starRange * 0.004 + (hotNight ? 0.08 : 0);
-    return Math.max(8, Math.min(hotNight ? 45 : 34, Math.round(totalPts * shareCap)));
+function leagueStatClamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function leagueStatNormal(mean, deviation) {
+  var u = Math.max(Math.random(), 0.000001);
+  var v = Math.random();
+  var z = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  return mean + z * deviation;
+}
+
+/** 每名 NPC 每赛季只生成一次状态，让爆发、低迷和耐久度跨场延续，但下赛季重新洗牌。 */
+function getNpcSeasonProfile(team, player) {
+  var profiles = STATE.season._npcSeasonProfiles || (STATE.season._npcSeasonProfiles = {});
+  var key = team + ':' + (player.name || player.cname || 'unknown');
+  if (profiles[key]) return profiles[key];
+
+  var age = Number(player._age) || 27;
+  if (typeof getLeaguePlayerAge === 'function') {
+    try { age = getLeaguePlayerAge(player) || age; } catch (e) {}
+  }
+  var ovr = parseInt(player.ovr) || 70;
+  var athletic = af(parseInt(player.ATH) || 50);
+  var baseForm = leagueStatClamp(leagueStatNormal(1, 0.09), 0.78, 1.22);
+  var scoring = leagueStatClamp(baseForm * leagueStatNormal(1, 0.08), 0.72, 1.30);
+  if (Math.random() < 0.08) scoring = leagueStatClamp(scoring * (1.12 + Math.random() * 0.12), 0.72, 1.34);
+  if (Math.random() < 0.08) scoring = leagueStatClamp(scoring * (0.78 + Math.random() * 0.10), 0.68, 1.34);
+
+  var ageRisk = age >= 35 ? 1.55 : (age >= 31 ? 1.25 : (age <= 22 ? 1.10 : 1));
+  var healthLuck = Math.random();
+  var healthMultiplier = healthLuck < 0.10 ? 1.9 : (healthLuck > 0.90 ? 0.45 : 1);
+  profiles[key] = {
+    scoring: scoring,
+    rebounding: leagueStatClamp(baseForm * leagueStatNormal(1, 0.10), 0.75, 1.28),
+    playmaking: leagueStatClamp(baseForm * leagueStatNormal(1, 0.11), 0.74, 1.30),
+    defense: leagueStatClamp(baseForm * leagueStatNormal(1, 0.10), 0.75, 1.28),
+    injuryRisk: leagueStatClamp((0.005 + Math.random() * 0.006) * ageRisk * healthMultiplier * (1.12 - athletic * 0.22), 0.002, 0.025),
+    restChance: leagueStatClamp(0.010 + (ovr >= 88 ? 0.022 : 0.010) + (age >= 33 ? 0.014 : 0) + Math.random() * 0.010, 0.010, 0.065),
+    injuryGamesLeft: 0,
+    gamesMissed: 0,
+  };
+  return profiles[key];
+}
+
+/** NPC 伤病以连续缺阵呈现，另有小概率轮休；季后赛只取消轮休，不会清除已有伤病。 */
+function shouldNpcPlayLeagueGame(team, player, roleRank) {
+  var profile = getNpcSeasonProfile(team, player);
+  if (profile.injuryGamesLeft > 0) {
+    profile.injuryGamesLeft--;
+    profile.gamesMissed++;
+    return false;
+  }
+  if (Math.random() < profile.injuryRisk) {
+    var roll = Math.random();
+    var duration = roll < 0.58
+      ? 1 + Math.floor(Math.random() * 3)
+      : (roll < 0.89
+        ? 4 + Math.floor(Math.random() * 6)
+        : (roll < 0.98 ? 10 + Math.floor(Math.random() * 11) : 25 + Math.floor(Math.random() * 21)));
+    profile.injuryGamesLeft = duration - 1;
+    profile.gamesMissed++;
+    return false;
+  }
+  var isPlayoffs = !!(STATE.season && STATE.season.isPlayoffs);
+  var roleRest = roleRank < 5 ? profile.restChance : profile.restChance * 0.55;
+  if (!isPlayoffs && Math.random() < roleRest) {
+    profile.gamesMissed++;
+    return false;
+  }
+  return true;
+}
+
+/** 把球队总量按权重分配，先给稳定期望值，再随机分配余量，避免每场完全模板化。 */
+function allocateLeagueCountingTotal(total, weights, caps) {
+  total = Math.max(0, Math.round(total));
+  var safeWeights = weights.map(function(weight) { return Math.max(0.0001, Number(weight) || 0); });
+  var weightSum = safeWeights.reduce(function(sum, weight) { return sum + weight; }, 0);
+  var allocated = safeWeights.map(function(weight, index) {
+    var base = Math.floor(total * weight / weightSum * 0.68);
+    return caps ? Math.min(base, caps[index]) : base;
   });
+  var remaining = total - allocated.reduce(function(sum, value) { return sum + value; }, 0);
 
-  var overflow = 0;
-  for (var i = 0; i < allocated.length; i++) {
-    if (allocated[i] > caps[i]) {
-      overflow += allocated[i] - caps[i];
-      allocated[i] = caps[i];
+  while (remaining > 0) {
+    var availableWeight = 0;
+    for (var i = 0; i < safeWeights.length; i++) {
+      if (!caps || allocated[i] < caps[i]) availableWeight += safeWeights[i];
     }
-  }
-
-  while (overflow > 0) {
-    var eligible = [];
-    for (var j = 0; j < allocated.length; j++) {
-      if (allocated[j] < caps[j]) eligible.push(j);
+    if (availableWeight <= 0) {
+      allocated[safeWeights.indexOf(Math.max.apply(null, safeWeights))] += remaining;
+      break;
     }
-    if (!eligible.length) break;
-    eligible.sort(function(a, b) {
-      return weights[b] - weights[a] || allocated[a] - allocated[b];
-    });
-    for (var k = 0; k < eligible.length && overflow > 0; k++) {
-      allocated[eligible[k]]++;
-      overflow--;
+    var pick = Math.random() * availableWeight;
+    for (var j = 0; j < safeWeights.length; j++) {
+      if (caps && allocated[j] >= caps[j]) continue;
+      pick -= safeWeights[j];
+      if (pick <= 0) {
+        allocated[j]++;
+        remaining--;
+        break;
+      }
     }
-  }
-
-  if (overflow > 0) {
-    var bestIdx = weights.indexOf(Math.max.apply(null, weights));
-    allocated[bestIdx] += overflow;
   }
   return allocated;
 }
 
-/** 生成两队全队数据（确保总分=比分） */
+function allocateLeagueRotationMinutes(players, roleRanks) {
+  var starterBase = [35, 34, 33, 32, 30];
+  var benchBase = [24, 20, 17, 14, 11, 8, 6];
+  var isPlayoffs = !!(STATE.season && STATE.season.isPlayoffs);
+  var raw = players.map(function(player, index) {
+    var rank = roleRanks[index];
+    var base = rank < 5 ? starterBase[rank] : (benchBase[rank - 5] || 6);
+    if (isPlayoffs) base += rank < 5 ? 2 : -1;
+    return Math.max(5, base + ((parseInt(player.ovr) || 70) - 75) * 0.07 + leagueStatNormal(0, 1.6));
+  });
+  var rawTotal = raw.reduce(function(sum, value) { return sum + value; }, 0) || 1;
+  var minutes = raw.map(function(value) { return Math.max(4, Math.round(value * 240 / rawTotal)); });
+  var difference = 240 - minutes.reduce(function(sum, value) { return sum + value; }, 0);
+  var order = minutes.map(function(value, index) { return index; }).sort(function(a, b) { return raw[b] - raw[a]; });
+  var cursor = 0;
+  while (difference !== 0 && order.length) {
+    var target = order[cursor % order.length];
+    if (difference > 0) {
+      minutes[target]++;
+      difference--;
+    } else if (minutes[target] > 4) {
+      minutes[target]--;
+      difference++;
+    }
+    cursor++;
+  }
+  return minutes;
+}
+
+/** 动态选择 9-11 人轮换。首发伤停时会由完整名单中的后备球员递补。 */
+function buildLeagueGameRotation(team) {
+  var lineup = calcTeamLineup(team);
+  var ordered = Object.values(lineup.starters).concat(lineup.bench || []);
+  var unique = [];
+  ordered.forEach(function(player) { if (player && unique.indexOf(player) < 0) unique.push(player); });
+  var user = unique.find(function(player) { return !!player._isUser; });
+  var available = [];
+  unique.forEach(function(player, roleRank) {
+    if (player._isUser || shouldNpcPlayLeagueGame(team, player, roleRank)) available.push(player);
+  });
+  var targetSize = 9 + (Math.random() < 0.68 ? 1 : (Math.random() < 0.70 ? 2 : 0));
+  var selected = available.slice(0, targetSize);
+  if (user && selected.indexOf(user) < 0) {
+    if (selected.length >= targetSize) selected[selected.length - 1] = user;
+    else selected.push(user);
+  }
+  return {
+    players: selected,
+    roleRanks: selected.map(function(player) { return unique.indexOf(player); }),
+  };
+}
+
+/** 生成两队全队数据：伤病/轮休影响 GP，五项数据受球队总量约束。 */
 function generateBoxScore(teamA, teamB, totalA, totalB) {
   function getLineupStats(team, totalPts) {
-    const lineup = calcTeamLineup(team);
-    // 展示所有轮换球员（首发5人 + 替补前5 = 10人）
-    const players = Object.values(lineup.starters).concat(lineup.bench.slice(0, 5));
-    if (players.length === 0) return [];
-    
-    // 按OVR从高到低排序（替补排最后）
-    players.sort((a, b) => (parseInt(b.ovr)||0) - (parseInt(a.ovr)||0));
-    
-    // 计算得分权重：OVR为主（指数放大差距），进攻技能微调
-    const minOvr = Math.min(...players.map(p => parseInt(p.ovr)||50));
-    const maxOvr = Math.max(...players.map(p => parseInt(p.ovr)||50));
-    const weights = players.map((p, idx) => {
-      const ovr = parseInt(p.ovr) || 50;
-      // 线性权重：OVR=40时权重=0.1，OVR=99时权重=1.0，无断崖
-      const ovrFactor = Math.max(0.1, (ovr - 40) / 59);
-      // 进攻技能微调（±20%）
-      const offBonus = (af(parseInt(p.threePT)||50) + af(parseInt(p.FIN)||50) + af(parseInt(p.MID)||50)) / 3;
-      // 得分手加成：第一核心承担接近真实 NBA 的高使用率，轮换末端相应收缩
-      const starBonus = idx === 0 ? 2.1 : Math.max(0.3, 1.55 - idx * 0.2);
-      return Math.max(0.05, ovrFactor * (0.7 + 0.3 * offBonus) * starBonus);
+    var rotation = buildLeagueGameRotation(team);
+    var players = rotation.players;
+    var roleRanks = rotation.roleRanks;
+    if (!players.length) return [];
+    var minutes = allocateLeagueRotationMinutes(players, roleRanks);
+    var profiles = players.map(function(player) {
+      if (!player._isUser) return getNpcSeasonProfile(team, player);
+      var userSeasonForm = typeof getSeasonUsageBias === 'function' ? Math.sqrt(getSeasonUsageBias()) : 1;
+      return { scoring: leagueStatClamp(userSeasonForm, 0.90, 1.10), rebounding: 1, playmaking: 1, defense: 1 };
     });
-    const totalW = weights.reduce((a, b) => a + b, 0);
-    
-    // 分配得分（确保总和=totalPts）
-    let allocated = weights.map((w, i) => Math.round(totalPts * w / totalW));
-    let diff = totalPts - allocated.reduce((a, b) => a + b, 0);
-    if (diff !== 0) {
-      const best = weights.indexOf(Math.max(...weights));
-      allocated[best] = Math.max(0, allocated[best] + diff);
-    }
-    allocated = capAndRedistributeScoring(allocated, weights, players, totalPts);
-    
-    // 确保每人至少1分（只要他上场）
-    allocated = allocated.map(v => Math.max(1, v));
-    // 如有差额从得分王扣/补
-    let sum = allocated.reduce((a, b) => a + b, 0);
-    const bestIdx = weights.indexOf(Math.max(...weights));
-    if (sum > totalPts) {
-      allocated[bestIdx] -= (sum - totalPts);
-      if (allocated[bestIdx] < 0) allocated[bestIdx] = 0;
-    } else if (sum < totalPts) {
-      allocated[bestIdx] += (totalPts - sum);
-    }
-    
-    return players.map((p, i) => {
-      const pos = (p.pos || 'SF').split('/')[0].trim();
-      const ovr = parseInt(p.ovr) || 50;
-      const ath = af(parseInt(p.ATH)||50);
-      const reb = af(parseInt(p.REB)||50);
-      const pas = af(parseInt(p.PAS)||50) * 0.5 + af(parseInt(p.HAN)||50) * 0.3 + af(parseInt(p.CLU)||50) * 0.2;
-      const pdef = af(parseInt(p.PDEF)||50);
-      const blk = af(parseInt(p.BLK)||50) * 0.5 + af(parseInt(p.IDEF)||50) * 0.5;
-      const han = af(parseInt(p.HAN)||50) * 0.5 + af(parseInt(p.CLU)||50) * 0.5;
-      
-      const pts = allocated[i];
-      // 上场时间：核心主力>角色球员
-      const mins = i < 5
-        ? 26 + Math.round((1 - i * 0.15) * 12 + Math.random() * 4)
-        : 8 + Math.round(Math.random() * 8);
-      const fga = Math.round(Math.max(2, pts * 0.7 + Math.random() * 4));
-      const fgm = Math.min(fga, Math.max(0, Math.round(fga * (0.32 + Math.random() * 0.28))));
-      const threeA = Math.min(fga, Math.max(0, Math.round(fga * (0.20 + af(parseInt(p.threePT)||50) * 0.18))));
-      const threeM = Math.min(threeA, Math.max(0, Math.round(threeA * (0.28 + af(parseInt(p.threePT)||50) * 0.18))));
-      const fta = Math.max(0, Math.round(pts * (0.12 + af(parseInt(p.FIN)||50) * 0.12)));
-      const ftm = Math.min(fta, Math.max(0, Math.round(fta * (0.65 + af(parseInt(p.CLU)||50) * 0.15))));
-      
+    var pos = players.map(function(player) { return (player.pos || 'SF').split('/')[0].trim(); });
+    var offSkill = players.map(function(player) {
+      return af(parseInt(player.threePT) || 50) * 0.34 + af(parseInt(player.FIN) || 50) * 0.30 + af(parseInt(player.MID) || 50) * 0.20 + af(parseInt(player.HAN) || 50) * 0.16;
+    });
+    var rebSkill = players.map(function(player) { return af(parseInt(player.REB) || 50); });
+    var passSkill = players.map(function(player) { return af(parseInt(player.PAS) || 50) * 0.68 + af(parseInt(player.HAN) || 50) * 0.24 + af(parseInt(player.CLU) || 50) * 0.08; });
+    var stealSkill = players.map(function(player) { return af(parseInt(player.PDEF) || 50) * 0.72 + af(parseInt(player.ATH) || 50) * 0.28; });
+    var blockSkill = players.map(function(player) { return af(parseInt(player.BLK) || 50) * 0.62 + af(parseInt(player.IDEF) || 50) * 0.38; });
+    var handleSkill = players.map(function(player) { return af(parseInt(player.HAN) || 50) * 0.65 + af(parseInt(player.CLU) || 50) * 0.35; });
+
+    var scoreCaps = [];
+    var scoreWeights = players.map(function(player, index) {
+      var ovr = parseInt(player.ovr) || 70;
+      var star = leagueStatClamp((ovr - 82) / 17, 0, 1);
+      var hot = Math.random() < 0.055;
+      var cold = !hot && Math.random() < 0.08;
+      var gameForm = hot ? 1.38 + Math.random() * 0.28 : (cold ? 0.68 + Math.random() * 0.16 : 0.84 + Math.random() * 0.32);
+      var roleUsage = roleRanks[index] < 5 ? 1.08 : leagueStatClamp(0.88 - (roleRanks[index] - 5) * 0.055, 0.55, 0.88);
+      var shareCap = hot ? 0.37 : (0.235 + star * 0.065);
+      scoreCaps[index] = Math.max(14, Math.min(hot ? 46 : 36, Math.round(totalPts * shareCap)));
+      return minutes[index] * (0.10 + Math.pow(offSkill[index], 1.65) * 1.55) * roleUsage * profiles[index].scoring * gameForm;
+    });
+    var points = allocateLeagueCountingTotal(totalPts, scoreWeights, scoreCaps);
+
+    var minuteWeighted = function(values) {
+      return values.reduce(function(sum, value, index) { return sum + value * minutes[index]; }, 0) / 240;
+    };
+    var teamRebounds = leagueStatClamp(Math.round(leagueStatNormal(43.5 + (minuteWeighted(rebSkill) - 0.55) * 5, 3.2)), 34, 56);
+    var teamAssists = leagueStatClamp(Math.round(leagueStatNormal(totalPts * 0.202 + minuteWeighted(passSkill) * 6, 2.5)), 17, 35);
+    var teamSteals = leagueStatClamp(Math.round(leagueStatNormal(6.4 + minuteWeighted(stealSkill) * 2.2, 1.35)), 3, 13);
+    var teamBlocks = leagueStatClamp(Math.round(leagueStatNormal(3.0 + minuteWeighted(blockSkill) * 3.0, 1.25)), 1, 11);
+    var teamTurnovers = leagueStatClamp(Math.round(leagueStatNormal(13.2 + minuteWeighted(offSkill) * 1.5, 2.1)), 8, 21);
+
+    var rebPos = { PG:0.78, SG:0.85, SF:1.00, PF:1.12, C:1.25 };
+    var astPos = { PG:1.35, SG:1.10, SF:1.00, PF:0.82, C:0.78 };
+    var stlPos = { PG:1.05, SG:1.05, SF:1.00, PF:0.92, C:0.88 };
+    var blkPos = { PG:0.45, SG:0.55, SF:0.85, PF:1.25, C:1.60 };
+    var reboundWeights = players.map(function(player, i) { return minutes[i] * (0.42 + Math.pow(rebSkill[i], 1.35) * 1.30) * (rebPos[pos[i]] || 1) * profiles[i].rebounding * (0.88 + Math.random() * 0.24); });
+    var assistWeights = players.map(function(player, i) { return minutes[i] * (0.20 + Math.pow(passSkill[i], 1.55) * 1.40) * (astPos[pos[i]] || 1) * profiles[i].playmaking * (0.84 + Math.random() * 0.32); });
+    var stealWeights = players.map(function(player, i) { return minutes[i] * (0.38 + Math.pow(stealSkill[i], 1.35) * 0.75) * (stlPos[pos[i]] || 1) * profiles[i].defense * (0.80 + Math.random() * 0.40); });
+    var blockWeights = players.map(function(player, i) { return minutes[i] * (0.12 + Math.pow(blockSkill[i], 1.70) * 1.15) * (blkPos[pos[i]] || 1) * profiles[i].defense * (0.78 + Math.random() * 0.44); });
+    var turnoverWeights = players.map(function(player, i) { return minutes[i] * (0.10 + offSkill[i] * 0.55 + passSkill[i] * 0.42) * (1.12 - handleSkill[i] * 0.28); });
+    var rebounds = allocateLeagueCountingTotal(teamRebounds, reboundWeights, players.map(function() { return 24; }));
+    var assists = allocateLeagueCountingTotal(teamAssists, assistWeights, players.map(function() { return 17; }));
+    var steals = allocateLeagueCountingTotal(teamSteals, stealWeights, players.map(function() { return 7; }));
+    var blocks = allocateLeagueCountingTotal(teamBlocks, blockWeights, players.map(function() { return 8; }));
+    var turnovers = allocateLeagueCountingTotal(teamTurnovers, turnoverWeights, players.map(function() { return 9; }));
+
+    return players.map(function(player, i) {
+      var pts = points[i];
+      var threeSkill = af(parseInt(player.threePT) || 50);
+      var finishSkill = af(parseInt(player.FIN) || 50);
+      var clutchSkill = af(parseInt(player.CLU) || 50);
+      var ftm = Math.min(pts, Math.max(0, Math.round(pts * (0.10 + finishSkill * 0.08) * (0.82 + Math.random() * 0.36))));
+      var threeM = Math.min(Math.floor((pts - ftm) / 3), Math.max(0, Math.round(pts * (0.08 + threeSkill * 0.12) / 3)));
+      var remainingPoints = pts - ftm - threeM * 3;
+      if (remainingPoints % 2 !== 0 && ftm < pts) { ftm++; remainingPoints--; }
+      var twoM = Math.max(0, Math.floor(remainingPoints / 2));
+      var twoPct = leagueStatClamp(0.43 + finishSkill * 0.12, 0.43, 0.60);
+      var threePct = leagueStatClamp(0.29 + threeSkill * 0.11, 0.29, 0.43);
+      var ftPct = leagueStatClamp(0.68 + clutchSkill * 0.18, 0.68, 0.90);
+      var twoA = twoM ? Math.max(twoM, Math.round(twoM / twoPct)) : 0;
+      var threeA = threeM ? Math.max(threeM, Math.round(threeM / threePct)) : 0;
+      var fta = ftm ? Math.max(ftm, Math.round(ftm / ftPct)) : 0;
       return {
-        name: p.cname || p.name,
-        pos, pts,
-        // 二次曲线压低普通属性、保留顶尖球员的真实榜首产量
-        reb: Math.round(reb * reb * 10.5 + Math.random() * 3 + 2),
-        ast: Math.round(pas * pas * 10.5 + Math.random() * 2 + 1),
-        stl: Math.round(pdef * pdef * 2.5 + Math.random() + 0.25),
-        blk: Math.round(blk * blk * 3.3 + Math.random() + 0.2),
-        tov: Math.round(1 + (1 - Math.min(1, han)) * 2.5 + Math.random() * 1),
-        fgm, fga, threeM, threeA, ftm, fta,
-        mins,
-        _isUser: p._isUser || false,
-        isUser: p._isUser || false,
+        name: player.cname || player.name,
+        pos: pos[i], pts: pts,
+        reb: rebounds[i], ast: assists[i], stl: steals[i], blk: blocks[i], tov: turnovers[i],
+        fgm: twoM + threeM, fga: twoA + threeA, threeM: threeM, threeA: threeA, ftm: ftm, fta: fta,
+        mins: minutes[i],
+        _isUser: !!player._isUser,
+        isUser: !!player._isUser,
       };
     });
   }
-  
+
   return {
     [teamA]: getLineupStats(teamA, totalA),
     [teamB]: getLineupStats(teamB, totalB),
   };
 }
 
-/** 实时将当场生成的玩家真实数据同步回 gameResult.boxScore 中，消除 N-1 帧延迟 */
+/** 同步带伤等赛后二次调整，并把差额还给同队球员，保持整队统计总量不变。 */
 function syncUserStatsToBoxScore(gameResult, stats) {
   if (!gameResult || !gameResult.boxScore || !stats) return;
   Object.keys(gameResult.boxScore).forEach(function(teamKey) {
     var rows = gameResult.boxScore[teamKey];
     if (!Array.isArray(rows)) return;
-    var userRow = rows.find(function(r) { return r && (r._isUser || r.isUser); });
-    if (userRow) {
-      Object.assign(userRow, {
-        pts: stats.pts, reb: stats.reb, ast: stats.ast,
-        stl: stats.stl, blk: stats.blk, tov: stats.tov,
-        fgm: stats.fgm, fga: stats.fga, mins: stats.mins
+    var userRow = rows.find(function(row) { return row && (row._isUser || row.isUser); });
+    if (!userRow) return;
+    var teammates = rows.filter(function(row) { return row && row !== userRow; });
+    ['pts','reb','ast','stl','blk','tov','mins'].forEach(function(field) {
+      var previous = Math.max(0, Math.round(Number(userRow[field]) || 0));
+      var next = Math.max(0, Math.round(Number(stats[field]) || 0));
+      var difference = previous - next;
+      userRow[field] = next;
+      if (!difference || !teammates.length) return;
+      if (difference > 0) {
+        var additions = allocateLeagueCountingTotal(difference, teammates.map(function(row) { return (Number(row[field]) || 0) + 1; }));
+        teammates.forEach(function(row, index) { row[field] = (Number(row[field]) || 0) + additions[index]; });
+        return;
+      }
+      var remaining = -difference;
+      teammates.slice().sort(function(a, b) { return (Number(b[field]) || 0) - (Number(a[field]) || 0); }).forEach(function(row) {
+        if (remaining <= 0) return;
+        var removable = Math.min(remaining, Math.max(0, Math.round(Number(row[field]) || 0)));
+        row[field] -= removable;
+        remaining -= removable;
       });
-    }
+    });
+    ['fgm','fga','ftm','fta','threeM','threeA'].forEach(function(field) {
+      userRow[field] = Math.max(0, Math.round(Number(stats[field]) || 0));
+    });
   });
 }
 
@@ -3393,6 +3502,25 @@ function getSeasonUsageBias() {
 
 /** 生成你的球员数据 — 由单项属性决定，不是总评 */
 function generatePlayerStatsNew(attrs, gameResult, isPlayoff) {
+  var userBoxRow = null;
+  if (gameResult && gameResult.boxScore) {
+    Object.keys(gameResult.boxScore).some(function(teamKey) {
+      var rows = gameResult.boxScore[teamKey];
+      if (!Array.isArray(rows)) return false;
+      userBoxRow = rows.find(function(row) { return row && (row._isUser || row.isUser); }) || null;
+      return !!userBoxRow;
+    });
+  }
+  if (userBoxRow) {
+    return {
+      pts: Number(userBoxRow.pts) || 0, reb: Number(userBoxRow.reb) || 0, ast: Number(userBoxRow.ast) || 0,
+      stl: Number(userBoxRow.stl) || 0, blk: Number(userBoxRow.blk) || 0, tov: Number(userBoxRow.tov) || 0,
+      fgm: Number(userBoxRow.fgm) || 0, fga: Number(userBoxRow.fga) || 0,
+      ftm: Number(userBoxRow.ftm) || 0, fta: Number(userBoxRow.fta) || 0,
+      threeM: Number(userBoxRow.threeM) || 0, threeA: Number(userBoxRow.threeA) || 0,
+      mins: Number(userBoxRow.mins) || 0,
+    };
+  }
   const cfg = SIM_CONFIG.PLAYER_STATS;
   const pos = STATE.position || 'PG';
   const posScale = cfg.POS_SCALE[pos] || cfg.POS_SCALE.PG;

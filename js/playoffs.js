@@ -292,6 +292,26 @@ function endSeason() {
 }
 
 // ==================== 季后赛系统（真实排名版）====================
+const PLAYOFF_HIGH_SEED_HOME_PATTERN = [true, true, false, false, true, false, true];
+
+function isTeamAHigherPlayoffSeed(teamA, teamB) {
+  const standings = STATE.season?.standings || {};
+  const a = standings[teamA] || { wins: 0, losses: 0 };
+  const b = standings[teamB] || { wins: 0, losses: 0 };
+  const aGames = (a.wins || 0) + (a.losses || 0);
+  const bGames = (b.wins || 0) + (b.losses || 0);
+  const aPct = aGames > 0 ? (a.wins || 0) / aGames : 0;
+  const bPct = bGames > 0 ? (b.wins || 0) / bGames : 0;
+  if (aPct !== bPct) return aPct > bPct;
+  if ((a.wins || 0) !== (b.wins || 0)) return (a.wins || 0) > (b.wins || 0);
+  return getConferenceSeed(teamA) <= getConferenceSeed(teamB);
+}
+
+function isPlayoffTeamAHome(gameNum, teamAIsHigherSeed) {
+  const highSeedHome = PLAYOFF_HIGH_SEED_HOME_PATTERN[gameNum] !== false;
+  return highSeedHome ? !!teamAIsHigherSeed : !teamAIsHigherSeed;
+}
+
 /** 为指定分区构建季后赛对阵数据结构 */
 function buildPlayoffBracket(conf, playInState) {
   const sorted = getConferenceSorted(conf);
@@ -332,7 +352,10 @@ function buildPlayoffBracket(conf, playInState) {
 function autoSimConferenceBracket(confBracket) {
   if (!confBracket) return;
   const bracketOrder = [0, 7, 1, 6, 2, 5, 3, 4];
-  let roundTeams = bracketOrder.map(i => confBracket.teams[i]?.team).filter(Boolean);
+  // 顺序必须让首轮胜者自然组成 1/8 vs 4/5、2/7 vs 3/6 两个半区。
+  const simulationOrder = [0, 7, 3, 4, 1, 6, 2, 5];
+  const firstRoundSeriesOrder = [0, 3, 1, 2];
+  let roundTeams = simulationOrder.map(i => confBracket.teams[i]?.team).filter(Boolean);
   
   for (let r = 0; r < 3; r++) {
     const pairs = [];
@@ -343,36 +366,36 @@ function autoSimConferenceBracket(confBracket) {
     const winners = [];
     pairs.forEach(([tA, tB], idx) => {
       if (!tB) { winners.push(tA); return; }
-      const pA = calcTeamPowerWithPlayer(tA);
-      const pB = calcTeamPowerWithPlayer(tB);
+      const seriesIdx = r === 0 ? firstRoundSeriesOrder[idx] : idx;
       let wA = 0, wB = 0;
       const sGames = [];
+      const teamAIsHigherSeed = isTeamAHigherPlayoffSeed(tA, tB);
       // ★ 首轮根据种子排名计算 seedBonus
       let sb = 0;
       if (r === 0) {
-        const seedIdxA = bracketOrder[idx * 2];
-        const seedIdxB = bracketOrder[idx * 2 + 1];
+        const seedIdxA = bracketOrder[seriesIdx * 2];
+        const seedIdxB = bracketOrder[seriesIdx * 2 + 1];
         const gapSeed = Math.abs(seedIdxA - seedIdxB);
         sb = 0.4 * gapSeed;
         sb = seedIdxA < seedIdxB ? sb : -sb;
       }
       for (let g = 0; g < 7 && wA < 4 && wB < 4; g++) {
-        const gr = simulateGameNew(tA, tB, sb);
+        const isHomeA = isPlayoffTeamAHome(g, teamAIsHigherSeed);
+        const gr = simulateGameNew(tA, tB, sb, null, { isHomeA: isHomeA, isB2B: false });
         if (gr.won) wA++; else wB++;
-        sGames.push({ myScore: gr.scoreA, oppScore: gr.scoreB, won: gr.won, home: g < 4, qScoresA: gr.qScoresA, qScoresB: gr.qScoresB, boxScore: gr.boxScore });
+        sGames.push({ myScore: gr.scoreA, oppScore: gr.scoreB, won: gr.won, home: isHomeA, qScoresA: gr.qScoresA, qScoresB: gr.qScoresB, boxScore: gr.boxScore });
       }
       const sWinner = wA >= 4 ? tA : tB;
       winners.push(sWinner);
       
       // 存储结果
       if (confBracket.rounds[r]) {
-        const seriesIdx = idx;
         if (!confBracket.rounds[r][seriesIdx]) {
           confBracket.rounds[r][seriesIdx] = { high: null, low: null, winner: null };
         }
         const s = confBracket.rounds[r][seriesIdx];
         if (r === 0) {
-          const orderIdx = idx * 2;
+          const orderIdx = seriesIdx * 2;
           s.high = confBracket.teams[bracketOrder[orderIdx]];
           s.low = confBracket.teams[bracketOrder[orderIdx + 1]];
         } else {
@@ -383,7 +406,7 @@ function autoSimConferenceBracket(confBracket) {
       }
       
       confBracket.results.push({
-        round: r, seriesIdx: idx,
+        round: r, seriesIdx: seriesIdx,
         roundName: ['首轮', '分区半决赛', '分区决赛'][r],
         teamA: tA, teamB: tB,
         winner: sWinner,
@@ -400,8 +423,8 @@ function autoSimConferenceBracket(confBracket) {
         if (nr) {
           var ni, isHigh;
           if (r === 0) {
-            ni = (idx === 0 || idx === 3) ? 0 : 1;
-            isHigh = (idx === 0 || idx === 1);
+            ni = (seriesIdx === 0 || seriesIdx === 3) ? 0 : 1;
+            isHigh = (seriesIdx === 0 || seriesIdx === 1);
           } else {
             ni = 0;
             isHigh = idx === 0;
@@ -733,23 +756,19 @@ function simOnePlayoffGame(round, seriesIdx, teamA, teamB, isMySeries, gameNum, 
     return;
   }
   
-  // ★ 种子保护（概率层面）：高顺位种子获得 netRating 加成
-  const bracket = STATE.season.playoffBracket;
-  const series = bracket?.rounds[round]?.[seriesIdx];
-  const highSeed = series?.high?.team;
-  const isHighA = highSeed && teamA === highSeed;
+  // 根据真实常规赛排名确定主场归属，避免爆冷晋级后沿用错误槽位身份。
+  const teamAIsHigherSeed = isTeamAHigherPlayoffSeed(teamA, teamB);
+  const isHomeA = isPlayoffTeamAHome(gameNum, teamAIsHigherSeed);
   
   let seedBonus = 0;
-  // ★ 用户系列赛同样保留高顺位种子保护
-  if (highSeed) {
-    const conf = getConference(highSeed);
-    const sorted = getConferenceSorted(conf);
-    const highRank = sorted.findIndex(t => t.team === highSeed);
-    const lowTeam = isHighA ? teamB : teamA;
-    const lowRank = sorted.findIndex(t => t.team === lowTeam);
-    const gap = Math.max(1, Math.min(8, Math.abs(highRank - lowRank)));
-    seedBonus = 0.4 * gap; // gap 1→+0.4, gap 8→+3.2
-    seedBonus = isHighA ? seedBonus : -seedBonus;
+  // 同分区保留很小的赛季表现修正；主要高种子优势由真实主场顺序提供。
+  if (getConference(teamA) === getConference(teamB)) {
+    const rankA = getConferenceSeed(teamA);
+    const rankB = getConferenceSeed(teamB);
+    if (rankA < 99 && rankB < 99) {
+      const gap = Math.max(1, Math.min(8, Math.abs(rankA - rankB)));
+      seedBonus = 0.4 * gap * (rankA < rankB ? 1 : -1);
+    }
   }
   
   const userDebuff = 1.0;
@@ -763,13 +782,13 @@ function simOnePlayoffGame(round, seriesIdx, teamA, teamB, isMySeries, gameNum, 
     var runSkippedPlayoffGame = function() {
       if (skipReason === 'suspension') skipEv.suspensionGamesLeft--;
       else skipEv.injuryGamesLeft--;
-      var skipResult = simulateGameNew(teamA, teamB, seedBonus, userDebuff);
+      var skipResult = simulateGameNew(teamA, teamB, seedBonus, userDebuff, { isHomeA: isHomeA, isB2B: false, availabilityEdge: -4 });
       const skipWon = skipResult.won;
       const skipNewWinsA = winsA + (skipWon ? 1 : 0);
       const skipNewWinsB = winsB + (skipWon ? 0 : 1);
       const skipEntry = {
         game: gameNum + 1, myScore: skipResult.scoreA, oppScore: skipResult.scoreB,
-        won: skipWon, home: gameNum < 4,
+        won: skipWon, home: isHomeA,
         qScoresA: skipResult.qScoresA, qScoresB: skipResult.qScoresB,
         keyEvents: skipResult.keyEvents, ot: skipResult.ot,
         boxScore: skipResult.boxScore,
@@ -786,7 +805,7 @@ function simOnePlayoffGame(round, seriesIdx, teamA, teamB, isMySeries, gameNum, 
     };
     var runPlayedThroughPlayoffGame = function(severity) {
       skipEv.injuryGamesLeft = Math.max(0, (skipEv.injuryGamesLeft || 0) - 1);
-      var hurtResult = simulateGameNew(teamA, teamB, seedBonus, getInjuryPlayWinMultiplier(severity));
+      var hurtResult = simulateGameNew(teamA, teamB, seedBonus, getInjuryPlayWinMultiplier(severity), { isHomeA: isHomeA, isB2B: false });
       const hurtWon = hurtResult.won;
       const hurtNewWinsA = winsA + (hurtWon ? 1 : 0);
       const hurtNewWinsB = winsB + (hurtWon ? 0 : 1);
@@ -803,7 +822,7 @@ function simOnePlayoffGame(round, seriesIdx, teamA, teamB, isMySeries, gameNum, 
       poH.games++;
       const hurtEntry = {
         game: gameNum + 1, myScore: hurtResult.scoreA, oppScore: hurtResult.scoreB,
-        won: hurtWon, home: gameNum < 4,
+        won: hurtWon, home: isHomeA,
         qScoresA: hurtResult.qScoresA, qScoresB: hurtResult.qScoresB,
         keyEvents: hurtResult.keyEvents, ot: hurtResult.ot,
         boxScore: hurtResult.boxScore,
@@ -828,17 +847,16 @@ function simOnePlayoffGame(round, seriesIdx, teamA, teamB, isMySeries, gameNum, 
     return;
   }
   
-  const gameResult = simulateGameNew(teamA, teamB, seedBonus, userDebuff);
+  const gameResult = simulateGameNew(teamA, teamB, seedBonus, userDebuff, { isHomeA: isHomeA, isB2B: false });
   const finalA = gameResult.scoreA;
   const finalB = gameResult.scoreB;
   const won = gameResult.won;
   const newWinsA = winsA + (won ? 1 : 0);
   const newWinsB = winsB + (won ? 0 : 1);
   
-  const isHome = gameNum < 4;
   const gameEntry = {
     game: gameNum + 1, myScore: finalA, oppScore: finalB,
-    won, home: isHome,
+    won, home: isHomeA,
     qScoresA: gameResult.qScoresA, qScoresB: gameResult.qScoresB,
     keyEvents: gameResult.keyEvents, ot: gameResult.ot,
     boxScore: gameResult.boxScore,
@@ -986,10 +1004,12 @@ function simPlayoffSeries(round, seriesIdx) {
       
       let sWA = 0, sWB = 0;
       const sGames = [];
+      const sTeamAIsHigherSeed = isTeamAHigherPlayoffSeed(sTeamA, sTeamB);
       for (let g = 0; g < 7 && sWA < 4 && sWB < 4; g++) {
-        const gr = simulateGameNew(sTeamA, sTeamB, sb);
+        const isHomeA = isPlayoffTeamAHome(g, sTeamAIsHigherSeed);
+        const gr = simulateGameNew(sTeamA, sTeamB, sb, null, { isHomeA: isHomeA, isB2B: false });
         if (gr.won) sWA++; else sWB++;
-        sGames.push({ myScore: gr.scoreA, oppScore: gr.scoreB, won: gr.won, home: g < 4, qScoresA: gr.qScoresA, qScoresB: gr.qScoresB, boxScore: gr.boxScore });
+        sGames.push({ myScore: gr.scoreA, oppScore: gr.scoreB, won: gr.won, home: isHomeA, qScoresA: gr.qScoresA, qScoresB: gr.qScoresB, boxScore: gr.boxScore });
       }
       const sWinner = sWA >= 4 ? sTeamA : sTeamB;
       s.winner = sWinner;
@@ -1084,19 +1104,19 @@ function simOtherConference(conf) {
   const teams = sorted.slice(0, 8).map(t => t.team);
   if (teams.length < 8) return teams[0] || '';
   
-  // NBA标准对阵：1v8, 2v7, 3v6, 4v5（种子顺序）
-  const bracketOrder = [0, 7, 1, 6, 2, 5, 3, 4];
+  // 让首轮胜者自然进入正确半区：1/8 vs 4/5、2/7 vs 3/6。
+  const bracketOrder = [0, 7, 3, 4, 1, 6, 2, 5];
   let roundTeams = bracketOrder.map(i => teams[i]);
   
   // 3轮7场4胜
   const simSeries = (tA, tB) => {
-    const pA = calcTeamPowerWithPlayer(tA);
-    const pB = calcTeamPowerWithPlayer(tB);
+    const teamAIsHigherSeed = isTeamAHigherPlayoffSeed(tA, tB);
     let wA = 0, wB = 0;
     for (let g = 0; g < 7 && wA < 4 && wB < 4; g++) {
-      const sA = Math.round(pA.offense * (0.5 + Math.random() * 0.5) + pA.defense * 0.3);
-      const sB = Math.round(pB.offense * (0.5 + Math.random() * 0.5) + pB.defense * 0.3);
-      if ((g < 4 ? sA + 3 : sA) >= (g < 4 ? sB : sB + 3)) wA++; else wB++;
+      const isHomeA = isPlayoffTeamAHome(g, teamAIsHigherSeed);
+      const result = simulateGameNew(tA, tB, 0, null, { isHomeA: isHomeA, isB2B: false });
+      if (result.won) wA++;
+      else wB++;
     }
     return wA >= 4 ? tA : tB;
   };
