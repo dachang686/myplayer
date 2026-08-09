@@ -117,6 +117,8 @@ function showScreen(id) {
   $$('.screen').forEach(s => s.classList.remove('active'));
   const el = document.getElementById(id);
   if (el) el.classList.add('active');
+  var playerCreated = id !== 'screen-menu' && id !== 'screen-position' && id !== 'screen-build';
+  document.body.classList.toggle('game-session-active', playerCreated);
   updateSeasonBadge(id);
 }
 
@@ -3208,6 +3210,46 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier) {
   };
 }
 
+/** 限制单个 NPC 长期占用过高得分份额，并把溢出得分分配给其他轮换球员。 */
+function capAndRedistributeScoring(allocated, weights, players, totalPts) {
+  var caps = players.map(function(player) {
+    var ovr = parseInt(player.ovr) || 50;
+    var starRange = Math.max(0, Math.min(19, ovr - 80));
+    var hotNight = Math.random() < 0.08;
+    var shareCap = 0.22 + starRange * 0.004 + (hotNight ? 0.08 : 0);
+    return Math.max(8, Math.min(hotNight ? 45 : 34, Math.round(totalPts * shareCap)));
+  });
+
+  var overflow = 0;
+  for (var i = 0; i < allocated.length; i++) {
+    if (allocated[i] > caps[i]) {
+      overflow += allocated[i] - caps[i];
+      allocated[i] = caps[i];
+    }
+  }
+
+  while (overflow > 0) {
+    var eligible = [];
+    for (var j = 0; j < allocated.length; j++) {
+      if (allocated[j] < caps[j]) eligible.push(j);
+    }
+    if (!eligible.length) break;
+    eligible.sort(function(a, b) {
+      return weights[b] - weights[a] || allocated[a] - allocated[b];
+    });
+    for (var k = 0; k < eligible.length && overflow > 0; k++) {
+      allocated[eligible[k]]++;
+      overflow--;
+    }
+  }
+
+  if (overflow > 0) {
+    var bestIdx = weights.indexOf(Math.max.apply(null, weights));
+    allocated[bestIdx] += overflow;
+  }
+  return allocated;
+}
+
 /** 生成两队全队数据（确保总分=比分） */
 function generateBoxScore(teamA, teamB, totalA, totalB) {
   function getLineupStats(team, totalPts) {
@@ -3228,8 +3270,8 @@ function generateBoxScore(teamA, teamB, totalA, totalB) {
       const ovrFactor = Math.max(0.1, (ovr - 40) / 59);
       // 进攻技能微调（±20%）
       const offBonus = (af(parseInt(p.threePT)||50) + af(parseInt(p.FIN)||50) + af(parseInt(p.MID)||50)) / 3;
-      // 得分手加成：前几得分点获得额外权重
-      const starBonus = Math.max(0.6, 1.3 - idx * 0.15);
+      // 得分手加成：第一核心承担接近真实 NBA 的高使用率，轮换末端相应收缩
+      const starBonus = idx === 0 ? 2.1 : Math.max(0.3, 1.55 - idx * 0.2);
       return Math.max(0.05, ovrFactor * (0.7 + 0.3 * offBonus) * starBonus);
     });
     const totalW = weights.reduce((a, b) => a + b, 0);
@@ -3241,6 +3283,7 @@ function generateBoxScore(teamA, teamB, totalA, totalB) {
       const best = weights.indexOf(Math.max(...weights));
       allocated[best] = Math.max(0, allocated[best] + diff);
     }
+    allocated = capAndRedistributeScoring(allocated, weights, players, totalPts);
     
     // 确保每人至少1分（只要他上场）
     allocated = allocated.map(v => Math.max(1, v));
@@ -3279,10 +3322,11 @@ function generateBoxScore(teamA, teamB, totalA, totalB) {
       return {
         name: p.cname || p.name,
         pos, pts,
-        reb: Math.round(reb * 4 + Math.random() * 3 + 1),
-        ast: Math.round(pas * 5 + Math.random() * 2),
-        stl: Math.round(pdef * 1.2 + Math.random() * 1),
-        blk: Math.round(blk * 1.2 + Math.random() * 1),
+        // 二次曲线压低普通属性、保留顶尖球员的真实榜首产量
+        reb: Math.round(reb * reb * 10.5 + Math.random() * 3 + 2),
+        ast: Math.round(pas * pas * 10.5 + Math.random() * 2 + 1),
+        stl: Math.round(pdef * pdef * 2.5 + Math.random() + 0.25),
+        blk: Math.round(blk * blk * 3.3 + Math.random() + 0.2),
         tov: Math.round(1 + (1 - Math.min(1, han)) * 2.5 + Math.random() * 1),
         fgm, fga, threeM, threeA, ftm, fta,
         mins,
@@ -6071,23 +6115,77 @@ function renderTrainingCamp() {
 
 var MANUAL_SAVE_KEYS = ['lenf_auto_slot'];
 var MANUAL_SAVE_META = {};
+var SAVE_IDB_NAME = 'lenf_save_v1';
+var SAVE_IDB_STORE = 'saves';
+var _saveIndexedDbPromise = null;
 
 function getManualSaveSummary(slot) {
   return MANUAL_SAVE_META[slot] || null;
 }
 
-function storageGet(key) {
-  return Storage.waitForReady().then(function() {
-    return Storage.getValue(key);
+function openSaveIndexedDb() {
+  if (!window.indexedDB) return Promise.reject(new Error('IndexedDB 不可用'));
+  if (_saveIndexedDbPromise) return _saveIndexedDbPromise;
+  _saveIndexedDbPromise = new Promise(function(resolve, reject) {
+    var request = window.indexedDB.open(SAVE_IDB_NAME, 1);
+    request.onupgradeneeded = function() {
+      var db = request.result;
+      if (!db.objectStoreNames.contains(SAVE_IDB_STORE)) db.createObjectStore(SAVE_IDB_STORE);
+    };
+    request.onsuccess = function() { resolve(request.result); };
+    request.onerror = function() {
+      _saveIndexedDbPromise = null;
+      reject(request.error || new Error('IndexedDB 打开失败'));
+    };
+    request.onblocked = function() {
+      _saveIndexedDbPromise = null;
+      reject(new Error('IndexedDB 被阻止'));
+    };
+  });
+  return _saveIndexedDbPromise;
+}
+
+function indexedDbStorageGet(key) {
+  return openSaveIndexedDb().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var transaction = db.transaction(SAVE_IDB_STORE, 'readonly');
+      var request = transaction.objectStore(SAVE_IDB_STORE).get(key);
+      request.onsuccess = function() { resolve(request.result == null ? null : request.result); };
+      request.onerror = function() { reject(request.error || new Error('IndexedDB 读取失败')); };
+    });
   });
 }
 
-function storageSet(key, value) {
-  return Storage.waitForReady().then(function() {
-    var d = {};
-    d[key] = value;
-    return Storage.setValue(d);
+function indexedDbStorageSet(key, value) {
+  return openSaveIndexedDb().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var transaction = db.transaction(SAVE_IDB_STORE, 'readwrite');
+      transaction.objectStore(SAVE_IDB_STORE).put(value, key);
+      transaction.oncomplete = function() { resolve({ ok: true, backend: 'indexedDB' }); };
+      transaction.onerror = function() { reject(transaction.error || new Error('IndexedDB 写入失败')); };
+      transaction.onabort = function() { reject(transaction.error || new Error('IndexedDB 写入中止')); };
+    });
   });
+}
+
+function indexedDbStorageDelete(key) {
+  return openSaveIndexedDb().then(function(db) {
+    return new Promise(function(resolve, reject) {
+      var transaction = db.transaction(SAVE_IDB_STORE, 'readwrite');
+      transaction.objectStore(SAVE_IDB_STORE).delete(key);
+      transaction.oncomplete = function() { resolve({ ok: true, backend: 'indexedDB' }); };
+      transaction.onerror = function() { reject(transaction.error || new Error('IndexedDB 删除失败')); };
+      transaction.onabort = function() { reject(transaction.error || new Error('IndexedDB 删除中止')); };
+    });
+  });
+}
+
+function storageGet(key) {
+  return indexedDbStorageGet(key);
+}
+
+function storageSet(key, value) {
+  return value == null ? indexedDbStorageDelete(key) : indexedDbStorageSet(key, value);
 }
 
 function refreshManualSaveMeta() {
@@ -6106,6 +6204,12 @@ function refreshManualSaveMeta() {
     refreshContinueActivityButton();
     renderMenuSavePanel();
     return MANUAL_SAVE_META[1];
+  }, function(error) {
+    MANUAL_SAVE_META[1] = null;
+    console.error('[Save] IndexedDB 读取失败:', error);
+    refreshContinueActivityButton();
+    renderMenuSavePanel();
+    return null;
   });
 }
 
@@ -6309,6 +6413,8 @@ function manualLoadGame(slot) {
     } else {
       restoreJson(typeof raw === 'string' ? raw : JSON.stringify(raw));
     }
+  }, function(error) {
+    showManualSaveToast('读取失败：' + ((error && error.message) || 'IndexedDB 不可用'));
   });
 }
 
@@ -6328,7 +6434,11 @@ function manualClearSave(slot) {
       refreshContinueActivityButton();
       if (document.getElementById('load-menu-modal')) showLoadMenu();
       showManualSaveToast('已清除自动存档');
+    }, function(error) {
+      showManualSaveToast('清除失败：' + ((error && error.message) || 'IndexedDB 不可用'));
     });
+  }, function(error) {
+    showManualSaveToast('读取失败：' + ((error && error.message) || 'IndexedDB 不可用'));
   });
 }
 
@@ -6385,6 +6495,8 @@ function clearAutoSaveStorage() {
   storageSet(MANUAL_SAVE_KEYS[0], null).then(function() {
     MANUAL_SAVE_META[1] = null;
     refreshContinueActivityButton();
+  }, function(error) {
+    console.error('[Save] IndexedDB 清除失败:', error);
   });
 }
 
@@ -6395,7 +6507,7 @@ function showLoadMenu() {
   html += '<div class="team-picker-modal" style="max-width:400px;">';
   html += '<div class="team-picker-header"><span>📂 继续活动</span><button class="team-picker-close" onclick="closeLoadMenu()">✕</button></div>';
   html += '<div style="padding:14px;">';
-  html += '<div style="font-size:12px;color:var(--text-dim);margin-bottom:10px;">自动存档会在每个休赛期开始新赛季前自动写入</div>';
+  html += '<div style="font-size:12px;color:var(--text-dim);margin-bottom:10px;">赛程模拟期间每场自动保存，存档统一保存在 IndexedDB</div>';
   for (var si = 1; si <= 1; si++) {
     var sum = getManualSaveSummary(si);
     html += '<div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--border-light);">';

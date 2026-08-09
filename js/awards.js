@@ -71,12 +71,169 @@ function findPlayerByIdentity(nameEN, nameCN) {
   return null;
 }
 
-/** 读取联盟球员本赛季累计统计；奖项模块不得生成或估算 NPC 数据。 */
+function findPlayerTeamByIdentity(nameEN, nameCN) {
+  for (var _ftt = 0; _ftt < NBA2K_TEAMS.length; _ftt++) {
+    var roster = (NBA2K_DATA && NBA2K_DATA[NBA2K_TEAMS[_ftt]]) || [];
+    for (var _fpt = 0; _fpt < roster.length; _fpt++) {
+      var p = roster[_fpt];
+      if ((nameEN && p.name === nameEN) || (nameCN && p.cname === nameCN)) return NBA2K_TEAMS[_ftt];
+    }
+  }
+  return '';
+}
+
+function toPerGameSeasonStats(raw) {
+  if (!raw) return null;
+  var gp = Number(raw.gp != null ? raw.gp : raw.games) || 0;
+  if (!gp) return null;
+  function average(field) {
+    return Math.round(((Number(raw[field]) || 0) / gp) * 10) / 10;
+  }
+  return {
+    gp: gp,
+    pts: average('pts'),
+    reb: average('reb'),
+    ast: average('ast'),
+    stl: average('stl'),
+    blk: average('blk')
+  };
+}
+
+/** 读取联盟球员本赛季累计统计并转换为场均；奖项模块不得生成或估算 NPC 数据。 */
 function getLeaguePlayerSeasonStats(player, team) {
   if (!player || !STATE.season) return null;
   var store = STATE.season.leaguePlayerSeasonStats || {};
   var key = String(team || '') + ':' + String(player.name || player.cname || '');
-  return store[key] || null;
+  return toPerGameSeasonStats(store[key]);
+}
+
+function getUserSeasonAverageStats() {
+  return STATE.season ? toPerGameSeasonStats(STATE.season.playerStats) : null;
+}
+
+/** 最佳新秀只看当季实际表现；球队排名只提供很小加成，不能盖过明显的数据差距。 */
+function calcRookieAwardScore(candidate) {
+  var stats = candidate && candidate.stats || {};
+  var gp = Number(stats.gp) || 0;
+  if (gp < 40) return -10000 + gp;
+  var score = (Number(stats.pts) || 0)
+    + (Number(stats.reb) || 0) * 0.7
+    + (Number(stats.ast) || 0) * 0.8
+    + (Number(stats.stl) || 0) * 1.5
+    + (Number(stats.blk) || 0) * 1.5
+    + (Number(candidate.teamBonus) || 0) * 0.5;
+  if (gp < 58) score -= (58 - gp) * 0.75;
+  return score;
+}
+
+function getRookieAwardTeamBonus(team) {
+  var seed = getConferenceSeed(team);
+  if (seed <= 3) return 4;
+  if (seed <= 6) return 2;
+  if (seed <= 10) return 1;
+  return 0;
+}
+
+function find2026RookieAwardPlayer(cname) {
+  if (typeof NBA2K_TEAMS !== 'undefined' && typeof NBA2K_DATA !== 'undefined') {
+    for (var teamIndex = 0; teamIndex < NBA2K_TEAMS.length; teamIndex++) {
+      var team = NBA2K_TEAMS[teamIndex];
+      var roster = NBA2K_DATA[team] || [];
+      for (var playerIndex = 0; playerIndex < roster.length; playerIndex++) {
+        if (roster[playerIndex].cname === cname) {
+          return { player: roster[playerIndex], team: team };
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function build2026RookieAwards() {
+  if (!STATE.season || !STATE.season.playerStats) return null;
+  var draftClass = typeof DRAFT_CLASS_2026 !== 'undefined' ? DRAFT_CLASS_2026 : [];
+  if (!draftClass.length) return null;
+
+  var seen = {};
+  var rookieCandidates = draftClass.filter(function(draftPlayer) {
+    if (!draftPlayer || !draftPlayer.cn || seen[draftPlayer.cn]) return false;
+    seen[draftPlayer.cn] = true;
+    return true;
+  }).map(function(draftPlayer) {
+    var match = find2026RookieAwardPlayer(draftPlayer.cn);
+    var player = match && match.player;
+    var team = match ? match.team : (draftPlayer.team || '');
+    return {
+      name: player && player.name || '',
+      cname: draftPlayer.cn,
+      team: team,
+      stats: player && team ? getLeaguePlayerSeasonStats(player, team) : null,
+      isUser: false,
+      teamBonus: team ? getRookieAwardTeamBonus(team) : 0
+    };
+  });
+
+  rookieCandidates.push({
+    name: '',
+    cname: getHupuDisplayName(),
+    team: STATE.careerTeam,
+    stats: getUserSeasonAverageStats(),
+    isUser: true,
+    teamBonus: getRookieAwardTeamBonus(STATE.careerTeam)
+  });
+  rookieCandidates.forEach(function(candidate) {
+    candidate.awardScore = calcRookieAwardScore(candidate);
+  });
+  rookieCandidates.sort(function(a, b) {
+    return b.awardScore - a.awardScore
+      || ((b.stats && b.stats.gp) || 0) - ((a.stats && a.stats.gp) || 0)
+      || ((b.stats && b.stats.pts) || 0) - ((a.stats && a.stats.pts) || 0);
+  });
+
+  var userRookieIndex = rookieCandidates.findIndex(function(candidate) { return candidate.isUser; });
+  var userRookiePlacement = userRookieIndex + 1;
+  var rankLabels = ['🥇 第一名', '🥈 第二名', '🥉 第三名', '第四名', '第五名'];
+  var userStats = getUserSeasonAverageStats();
+  var rotyRank = userRookieIndex >= 0 && userRookieIndex < rankLabels.length
+    ? rankLabels[userRookieIndex]
+    : ((userStats || {}).gp < 40 ? '出勤不足' : '未进入前五');
+  var rotyWinner = rookieCandidates[0];
+  var rookiePlayers = rookieCandidates.slice(0, 5).map(function(candidate) {
+    return {
+      name: candidate.name || '',
+      cname: candidate.cname,
+      team: candidate.team || '',
+      stats: candidate.stats,
+      isUser: !!candidate.isUser
+    };
+  });
+  var userInRookie = userRookiePlacement >= 1 && userRookiePlacement <= 5;
+  var userRookieRank = userInRookie
+    ? '入选最佳新秀阵容'
+    : (userRookiePlacement >= 6 && userRookiePlacement <= 10 ? '新秀二阵' : rotyRank);
+
+  return [
+    {
+      act: 'roty',
+      label: '年度最佳新秀',
+      winner: rotyWinner.cname,
+      winnerEN: rotyWinner.name || '',
+      team: rotyWinner.team || '',
+      isUser: !!rotyWinner.isUser,
+      userRank: rotyRank
+    },
+    {
+      act: 'allRookie',
+      label: '最佳新秀阵容',
+      winner: rookiePlayers.map(function(player) { return player.cname; }).join('、'),
+      winnerEN: rookiePlayers.map(function(player) { return player.name || ''; }).join('、'),
+      team: '',
+      players: rookiePlayers,
+      isUser: userInRookie,
+      userRank: userRookieRank,
+      isList: true
+    }
+  ];
 }
 
 function pickLeagueDPOY() {
@@ -418,9 +575,11 @@ function calcSeasonAwards() {
           winnerEN: enNames,
           players: list.map(function(x) {
             return {
+              name: x.name,
               cname: x.cname,
               team: x.team,
-              stats: x.stats
+              stats: x.stats,
+              isUser: !!x.isUser
             };
           }),
           team: '',
@@ -488,9 +647,11 @@ function calcSeasonAwards() {
           winnerEN: enNames,
           players: list.map(function(x) {
             return {
+              name: x.name,
               cname: x.cname,
               team: x.team,
-              stats: x.stats
+              stats: x.stats,
+              isUser: !!x.isUser
             };
           }),
           team: '',
@@ -615,64 +776,8 @@ function calcSeasonAwards() {
 
     var isFirstCareerSeason = !STATE.career || STATE.career.seasonCount === 0;
     if (isFirstCareerSeason) {
-      function draft2026Player(cn) {
-        if (typeof NBA2K_TEAMS !== 'undefined' && typeof NBA2K_DATA !== 'undefined') {
-          for (var _rt = 0; _rt < NBA2K_TEAMS.length; _rt++) {
-            var _rr = NBA2K_DATA[NBA2K_TEAMS[_rt]] || [];
-            for (var _rp2 = 0; _rp2 < _rr.length; _rp2++) {
-              if (_rr[_rp2].cname === cn) return { cname: cn, playerName: _rr[_rp2].name || '', team: NBA2K_TEAMS[_rt] };
-            }
-          }
-        }
-        return { cname: cn, playerName: '' };
-      }
-      function getDefault2026RookieAwardPool() {
-        var fixedRookies = ['A-J-迪班萨', '达林-彼得森', '卡梅隆-布泽尔'];
-        var randomPool = (typeof DRAFT_CLASS_2026 !== 'undefined' ? DRAFT_CLASS_2026 : [])
-          .filter(function(p) { return p && fixedRookies.indexOf(p.cn) < 0; })
-          .map(function(p) { return p.cn; });
-        var randomRookies = [];
-        while (randomPool.length && randomRookies.length < 2) {
-          var pickIdx = Math.floor(Math.random() * randomPool.length);
-          randomRookies.push(randomPool.splice(pickIdx, 1)[0]);
-        }
-        while (randomRookies.length < 2) randomRookies.push('随机26届新秀');
-        return fixedRookies.concat(randomRookies).map(draft2026Player);
-      }
-      var default2026RookieAwardPool = getDefault2026RookieAwardPool();
-      var cSeed = getConferenceSeed(STATE.careerTeam);
-      var rotyRank = '未进入前五';
-      if (STATE.finalOVR >= 88 && cSeed <= 6) { rotyRank = '🥇 第一名'; }
-      else if (STATE.finalOVR >= 85 && cSeed < 8) { rotyRank = '🥉 第三名'; }
-      else if (STATE.finalOVR >= 85 && cSeed < 10) { rotyRank = '第四名'; }
-      var rotyWin = STATE.finalOVR >= 88 && cSeed <= 6;
-      if (rotyWin) {
-        STATE.season.awards.push({ act: 'roty', label: '年度最佳新秀', winner: getHupuDisplayName(), winnerEN: '', team: STATE.careerTeam, isUser: true, userRank: '🥇 第一名' });
-      } else {
-        var pool = default2026RookieAwardPool;
-        var rp = pool[Math.floor(Math.random() * pool.length)];
-        STATE.season.awards.push({ act: 'roty', label: '年度最佳新秀', winner: rp.cname, winnerEN: rp.playerName || '', team: rp.team || '', isUser: false, userRank: rotyRank });
-      }
-
-      (function() {
-        var rookies = default2026RookieAwardPool.slice();
-        var rotyIsTop4 = rotyRank === '🥇 第一名' || rotyRank === '🥉 第三名' || rotyRank === '第四名';
-        var userInRookie = rotyIsTop4;
-        var userRookieRank = '';
-        if (rotyIsTop4) {
-          userRookieRank = '🥇 入选最佳新秀阵容';
-        } else if (STATE.finalOVR > 75) {
-          userRookieRank = '新秀二阵';
-        } else {
-          userRookieRank = '未入围';
-        }
-        var names = rookies.map(function(r) { return r.cname; });
-        if (rotyIsTop4) {
-          names[4] = getHupuDisplayName();
-        }
-        var winnerList = names.join('、');
-        STATE.season.awards.push({ act: 'allRookie', label: '最佳新秀阵容', winner: winnerList, winnerEN: '', team: '', isUser: userInRookie, userRank: userRookieRank, isList: true });
-      })();
+      var rookieAwards = build2026RookieAwards();
+      if (rookieAwards) STATE.season.awards.push.apply(STATE.season.awards, rookieAwards);
     }
 
     (function() {
@@ -733,18 +838,14 @@ function calcSeasonAwards() {
 /** 奖项页：每个奖项一行，头像 + 获奖者 + 排名 */
 function showAwardsScreen() {
   trackEvent({act:"click",blk:"BMC098",pos:"TC16",label:"常规赛奖项"});
-  if (!STATE._skipSixtyWinBeforeAwards && maybeShowFirstSixtyWinCelebration(function() {
-    STATE._skipSixtyWinBeforeAwards = true;
-    showAwardsScreen();
-    STATE._skipSixtyWinBeforeAwards = false;
-  })) {
-    return;
-  }
+  maybeRecordFirstSixtyWinMilestone();
   if (!STATE.season.awards || STATE.season.awards.length === 0) calcSeasonAwards();
   var awards = STATE.season.awards;
   if (!awards || awards.length === 0) return;
 
+  STATE.season._awardsViewed = true;
   showScreen('screen-awards');
+  scrollSeasonPageToTop();
   html('awards-content').innerHTML =
     '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100dvh - 120px);">' +
       '<div class="loading-balls"><span class="loading-ball"></span><span class="loading-ball"></span><span class="loading-ball"></span></div>' +
@@ -752,7 +853,6 @@ function showAwardsScreen() {
     '</div>';
 
   setTimeout(function() {
-  var seed = getConferenceSeed(STATE.careerTeam);
   var emojiMap = {
     mvp: '🏆',
     dpoy: '🔒',
@@ -853,14 +953,26 @@ function showAwardsScreen() {
       leftContent = '<div style="font-size:13px;font-weight:600;color:var(--text);margin:1px 0 1px;">你的全明星入选结果</div>';
     } else if (a.isList) {
       var names = a.winner.split('、');
+      var winnerENs = a.winnerEN ? a.winnerEN.split('、') : [];
       var players = Array.isArray(a.players) ? a.players : [];
       leftContent = '<div style="padding:2px 0 0;">';
       for (var ni = 0; ni < names.length; ni++) {
         var isMy = names[ni] === getHupuDisplayName();
-        var playerTeam = players[ni] && players[ni].team;
+        var playerInfo = players[ni] || {};
+        var playerNameEN = playerInfo.name || winnerENs[ni] || '';
+        var playerNameCN = playerInfo.cname || names[ni];
+        var sourcePlayer = isMy ? null : findPlayerByIdentity(playerNameEN, playerNameCN);
+        var playerTeam = playerInfo.team || (isMy
+          ? STATE.careerTeam
+          : findPlayerTeamByIdentity(playerNameEN, playerNameCN));
         var teamName = playerTeam ? (typeof getTeamName === 'function' ? getTeamName(playerTeam) : playerTeam) : '';
         var teamHtml = teamName ? '<span class="award-list-team"> · ' + teamName + '</span>' : '';
-        var playerStats = players[ni] && players[ni].stats;
+        var playerStats = playerInfo.stats;
+        if (isMy) {
+          playerStats = getUserSeasonAverageStats() || playerStats;
+        } else if (playerTeam) {
+          playerStats = getLeaguePlayerSeasonStats(sourcePlayer, playerTeam) || playerStats;
+        }
         var statItems = playerStats ? [
           ['得分', playerStats.pts],
           ['篮板', playerStats.reb],
@@ -878,7 +990,14 @@ function showAwardsScreen() {
       }
       leftContent += '</div>';
     } else {
-      var statLine = a.statValue != null ? '<div class="award-stat-line">场均 ' + a.statValue + ' ' + (a.statLabel || '') + '</div>' : '';
+      var displayStatValue = a.statValue;
+      if (a.statKey) {
+        var awardWinnerStats = a.isUser
+          ? getUserSeasonAverageStats()
+          : getLeaguePlayerSeasonStats(findPlayerByIdentity(a.winnerEN || '', a.winner || ''), a.team);
+        if (awardWinnerStats && awardWinnerStats[a.statKey] != null) displayStatValue = awardWinnerStats[a.statKey];
+      }
+      var statLine = displayStatValue != null ? '<div class="award-stat-line">场均 ' + displayStatValue + ' ' + (a.statLabel || '') + '</div>' : '';
       var teamName = a.team ? (typeof getTeamName === 'function' ? getTeamName(a.team) : a.team) : '';
       var teamLine = teamName ? '<div class="award-team">球队：' + teamName + '</div>' : '';
       leftContent = '<div style="font-size:13px;font-weight:600;' + (a.isUser ? 'color:var(--orange);' : 'color:var(--text);') + 'margin:1px 0 1px;">' + (a.isUser ? '⭐ ' : '') + a.winner.replace(/·/g, '-') + '</div>' + teamLine + statLine;
@@ -901,14 +1020,17 @@ function showAwardsScreen() {
       '</div>';
   }
 
-  var actionBtns = '';
-  if (seed <= 6) actionBtns = '<button class="btn btn-gold" onclick="renderPlayoffs()">🏀 进入季后赛（' + seed + '号种子）</button>';
-  else if (seed <= 10) actionBtns = '<button class="btn btn-gold" onclick="renderPlayoffs()">🔥 附加赛（' + seed + '号种子）</button>';
-  else actionBtns = '<button class="btn btn-secondary" onclick="showSeasonResults()">📊 查看赛季总结</button>';
-
-  html('awards-content').innerHTML =
-    rowsHtml +
-    '<div style="text-align:center;padding:8px 0 0;">' + actionBtns + '</div>';
+  var milestoneWins = STATE.season && STATE.season._sixtyWinPageNotice;
+  var milestoneHtml = milestoneWins ?
+    '<div class="awards-milestone" role="status">' +
+      '<div class="awards-milestone-title">🎊 生涯首次 60 胜赛季</div>' +
+      '<div class="awards-milestone-copy">' + getTeamName(STATE.careerTeam) + '常规赛拿下 ' + milestoneWins + ' 胜。</div>' +
+    '</div>' : '';
+  html('awards-content').innerHTML = milestoneHtml + rowsHtml;
+  var awardsScreen = document.getElementById('screen-awards');
+  if (awardsScreen && awardsScreen.classList.contains('active')) {
+    setPostRegularSeasonGlobalAction();
+  }
   document.querySelectorAll('#awards-content .award-row').forEach(function(row) {
     trackExposureOnce(row, {act:"exposure",blk:"BMC099",pos:row.getAttribute('data-track-pos'),label:row.getAttribute('data-track-label')});
   });

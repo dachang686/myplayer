@@ -432,7 +432,7 @@ function showContractOffers() {
     showCareerStats(1);
     return;
   }
-  showRosterReview();
+  if (typeof showMyCard === 'function') showMyCard();
   var c = STATE.career;
   var myOvr = STATE.finalOVR;
   var myAge = STATE.career.currentAge;
@@ -673,7 +673,7 @@ function refreshSeasonTeamHeader() {
   el.innerHTML = '';
 }
 
-// ==================== 休赛期弹窗（退役→交易→阵容预览）====================
+// ==================== 休赛期联盟变动与新赛季入口 ====================
 function isHiddenRetiredPlayer(r) {
   return !!(r && (r.nameEN === 'Kyle Lowry' || r.name === '凯尔-洛瑞'));
 }
@@ -683,7 +683,7 @@ function isHiddenRetiredPlayerName(n) {
 }
 
 function showOffSeasonModals() {
-  showRosterReview();
+  startNewSeason();
 }
 
 function showRetirementModal(callback) {
@@ -834,7 +834,6 @@ function showRosterReview() {
   html += '<div style="font-size:24px;font-weight:800;margin:6px 0;font-family:var(--font-display);letter-spacing:2px;">' + teamName + '</div>';
   html += '<div style="font-size:12px;color:var(--text-dim);">' + STATE.finalPosition + ' · OVR ' + STATE.finalOVR + ' · ' + c.currentAge + '岁</div>';
   html += '<div style="font-size:11px;color:var(--text-muted);margin-top:2px;">上赛季 ' + prevRecord + '</div>';
-  html += '<div style="margin-top:10px;"><button class="btn btn-primary" onclick="startNewSeason()" style="max-width:240px;">👤 进入我的球员</button></div>';
   html += '</div>';
 
   // 阵容列表
@@ -855,6 +854,7 @@ function showRosterReview() {
 
   html += '</div>';
   document.getElementById('roster-review-content').innerHTML = html;
+  setGlobalNextAction('👤 进入我的球员', startNewSeason);
 }
 
 function startNewSeason() {
