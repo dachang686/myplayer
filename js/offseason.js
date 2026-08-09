@@ -1368,8 +1368,8 @@ function inferLeaguePlayerPotential(player, age) {
 }
 
 function assignKnownPlayerPotentials() {
-  if (!_playerGenes || typeof LEAGUE_PLAYER_DATA === 'undefined') return;
-  Object.keys(LEAGUE_PLAYER_DATA).forEach(function(teamId) {
+  if (!_playerGenes || typeof LEAGUE_PLAYER_DATA === 'undefined' || typeof LEAGUE_TEAM_IDS === 'undefined') return;
+  LEAGUE_TEAM_IDS.forEach(function(teamId) {
     (LEAGUE_PLAYER_DATA[teamId] || []).forEach(function(player) {
       var gene = _playerGenes[player.id];
       if (!gene || typeof gene.potential === 'number') return;
