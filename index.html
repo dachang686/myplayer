@@ -406,6 +406,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .season-team-avatar{width:26px;height:26px;flex:0 0 26px;border-radius:50%;border:1px solid var(--border);background:var(--bg-elevated) center/cover no-repeat}
 .season-team-position{width:38px;flex:0 0 38px;color:var(--text-dim);font-size:10px}
 .season-team-name{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.season-team-loyalty{flex:0 0 auto;padding:2px 5px;border:1px solid var(--border);border-radius:999px;color:var(--text-dim);background:var(--bg-elevated);font-size:9px;white-space:nowrap}
 .season-team-ovr{font:700 13px var(--font-display);color:var(--text)}
 .season-team-player.is-user .season-team-ovr{color:var(--orange)}
 .season-team-stats{padding:8px 12px 12px;overflow-x:auto}
@@ -988,6 +989,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 </div>
 
 <script src="js/data/league_players.js"></script>
+<script src="js/data/player_loyalty.js"></script>
 <script src="js/data/league_schedule.js"></script>
 <script src="js/data/player_archetypes.js"></script>
 <script src="js/data/simulation_config.js"></script>
@@ -5940,10 +5942,15 @@ function showSeasonTeamModal() {
     var ovr = isUser ? (STATE.finalOVR || 0) : (parseInt(player.ovr) || 0);
     var headshot = !isUser && typeof getPlayerHeadshotStyle === 'function' ? getPlayerHeadshotStyle(player.id, 26) : '';
     var avatarStyle = headshot ? ' style="' + headshot + '"' : '';
+    var loyalty = !isUser && typeof getPlayerLoyalty === 'function' ? getPlayerLoyalty(player) : null;
+    var loyaltyBasis = loyalty == null || typeof getPlayerLoyaltyBasis !== 'function' ? '' : getPlayerLoyaltyBasis(player);
+    var loyaltyTitle = loyalty == null ? '' : getPlayerLoyaltyLabel(loyalty) + (loyaltyBasis ? ' · ' + loyaltyBasis : '');
+    var loyaltyHtml = loyalty == null ? '' : '<span class="season-team-loyalty" title="' + loyaltyTitle + '">忠 ' + loyalty + '</span>';
     return '<div class="season-team-player' + (isUser ? ' is-user' : '') + '">' +
       '<span class="season-team-avatar"' + avatarStyle + '></span>' +
       '<span class="season-team-position">' + (player.posCn || player.pos || '—') + '</span>' +
       '<span class="season-team-name">' + name + (isUser ? ' ⭐' : '') + '</span>' +
+      loyaltyHtml +
       '<span class="season-team-ovr">' + ovr + '</span>' +
       '</div>';
   }
@@ -8015,7 +8022,7 @@ function buildManualSaveSnapshot() {
     rawState.season._processedDays = Array.from(STATE.season._processedDays);
   }
   return {
-    v: 2,
+    v: 3,
     savedAt: Date.now(),
     label: (STATE.career ? '第' + (STATE.career.seasonCount + 1) + '赛季 · ' + STATE.career.currentAge + '岁' : '未开始'),
     screen: (document.querySelector('.screen.active') || {}).id || '',
@@ -8212,7 +8219,12 @@ function manualLoadGame(slot, options) {
         Object.keys(snap.genes || {}).forEach(function(playerId) {
           _playerGenes[playerId] = {
             v: snap.genes[playerId].v,
-            potential: snap.genes[playerId].potential
+            potential: snap.genes[playerId].potential,
+            loyalty: snap.genes[playerId].loyalty,
+            loyaltyVersion: snap.genes[playerId].loyaltyVersion,
+            loyaltyRenewals: snap.genes[playerId].loyaltyRenewals,
+            loyaltyLastEvent: snap.genes[playerId].loyaltyLastEvent,
+            loyaltyTeam: snap.genes[playerId].loyaltyTeam
           };
         });
         assignKnownPlayerPotentials();
@@ -9017,6 +9029,7 @@ function generateRookie() {
     cname: pick.cn,
     pos: pos, height: '6\'7"', type: '新秀', ovr: ovr,
     _age: 19 + Math.floor(rngNext() * 3),
+    loyalty: 60,
   };
   var attrKeys = SIM_CONFIG.ATTR_LIST || ['threePT','MID','FIN','DNK','HAN','PAS','PDEF','IDEF','BLK','REB','ATH','STR','CLU'];
   attrKeys.forEach(function(k) { p[k] = Math.max(25, Math.min(99, ovr + Math.floor(rngNext() * 16) - 8)); });

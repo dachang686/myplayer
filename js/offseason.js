@@ -735,7 +735,8 @@ function showFAModal(callback) {
       html += '<div style="display:flex;align-items:center;gap:6px;padding:5px 2px;border-bottom:1px solid var(--border-light);font-size:13px;">';
       html += avatarHtml;
       var signingDisplayName = s.name || getPlayerDisplayName(s.playerId) || '球员';
-      html += '<span style="flex:1;"><strong>' + signingDisplayName + '</strong> ' + fromTn + ' → ' + toTn + '</span>';
+      var signingRoute = s.returned || s.from === s.to ? fromTn + ' 重新签约' : fromTn + ' → ' + toTn;
+      html += '<span style="flex:1;"><strong>' + signingDisplayName + '</strong> ' + signingRoute + '</span>';
       html += '<span style="color:var(--text-dim);font-size:11px;">OVR ' + s.ovr + '</span>';
       html += '</div>';
     });
@@ -1022,6 +1023,7 @@ function applyDraftClass2026() {
         ovr: ovr,
         _age: 19 + Math.floor(Math.random() * 3),
         contract: pk.pick <= 14 ? 3 : (pk.pick <= 30 ? 2 : 1),
+        loyalty: inferPlayerLoyalty('D26-' + pad),
         _awardStreak: {},
       };
       attrKeys.forEach(function(k) {
@@ -1076,6 +1078,7 @@ function processDraft() {
     if (idx < 5) rookie.contract = 3 + Math.floor(rngNext() * 2);
     else if (idx < 14) rookie.contract = 2 + Math.floor(rngNext() * 3);
     else rookie.contract = 1 + Math.floor(rngNext() * 3);
+    rookie.loyalty = getRookieContractLoyalty(rookie.contract);
 
     var roster = LEAGUE_PLAYER_DATA[t];
     if (!roster) return;
@@ -1096,6 +1099,22 @@ function randomContractByAge(age) {
   if (age <= 30) return 1 + Math.floor(rngNext() * 3);
   if (age <= 33) return 1 + Math.floor(rngNext() * 2);
   return 1;
+}
+
+function getTeamHistoricalWinPct(teamId, standings) {
+  var row = standings && standings[teamId];
+  var wins = (row && row.wins) || 0;
+  var losses = (row && row.losses) || 0;
+  return wins + losses > 0 ? wins / (wins + losses) : 0.5;
+}
+
+function getFreeAgentTeamPreferenceScore(player, teamId, standings, noise) {
+  var winPct = getTeamHistoricalWinPct(teamId, standings);
+  var score = player.ovr >= 85 ? winPct : 1 - winPct;
+  if (teamId === player._origTeam) {
+    score += (getPlayerLoyalty(player) - 50) * 0.007;
+  }
+  return score + (Number(noise) || 0);
 }
 
 function assignFreeAgents() {
@@ -1121,33 +1140,28 @@ function assignFreeAgents() {
   pool.forEach(function(fa) {
     if (!fa._origTeam) console.log('[FA] 无_origTeam:', (fa.cname || fa.id), 'ovr:', fa.ovr);
     var pos = (fa.pos || 'SF').split('/')[0].trim();
-    // ★ 择队偏好：大牌球星(OVR>=85)优先考察强队/中游争冠队；角色球员偏好弱队寻找出场时间
-    var targetTeams = teams.slice();
-    if (fa.ovr >= 85) {
-      targetTeams.sort(function(a, b) {
-        var aw = (st && st[a] && st[a].wins) || 0, al = (st && st[a] && st[a].losses) || 0;
-        var bw = (st && st[b] && st[b].wins) || 0, bl = (st && st[b] && st[b].losses) || 0;
-        var ap = aw + al > 0 ? aw / (aw + al) : 0.5;
-        var bp = bw + bl > 0 ? bw / (bw + bl) : 0.5;
-        return (bp + (rngNext() - 0.5) * 0.15) - (ap + (rngNext() - 0.5) * 0.15);
-      });
-    }
+    // 大牌优先争冠队、角色球员优先弱队；忠诚度决定原队在自由市场中的额外吸引力。
+    var targetTeams = teams.map(function(teamId) {
+      return {
+        teamId: teamId,
+        score: getFreeAgentTeamPreferenceScore(fa, teamId, st, (rngNext() - 0.5) * 0.15)
+      };
+    }).sort(function(a, b) { return b.score - a.score; }).map(function(item) { return item.teamId; });
     for (var ti = 0; ti < targetTeams.length; ti++) {
       var t = targetTeams[ti];
-      if (t === fa._origTeam) { console.log('[FA] 跳过回原队:', (fa.cname || fa.id), fa._origTeam); continue; }
       // ★ 简化版薪资约束：任何球队 OVR≥85 球员不超过 3 名
       if (fa.ovr >= 82) {
         var starCount = (LEAGUE_PLAYER_DATA[t] || []).filter(function(p) { return !p._isUser && p.ovr >= 85; }).length;
         if (starCount >= 3) continue;
       }
       if (fa.ovr > 86) {
-        if (starSignedTeams[t]) { console.log('[FA] 该队已签球星，跳过:', (fa.cname || fa.id), t); continue; }
+        if (t !== fa._origTeam && starSignedTeams[t]) { console.log('[FA] 该队已签球星，跳过:', (fa.cname || fa.id), t); continue; }
         var hasStar = false;
         (LEAGUE_PLAYER_DATA[t] || []).forEach(function(p) {
           // 全队范围检查：不论位置，只要有 OVR≥84 的球星就拦截
           if (p !== fa && !p._isUser && p.ovr >= 84) hasStar = true;
         });
-        if (hasStar) continue;
+        if (t !== fa._origTeam && hasStar) continue;
       }
       var roster = LEAGUE_PLAYER_DATA[t];
       if (!roster || roster.length >= 18) continue;
@@ -1158,8 +1172,12 @@ function assignFreeAgents() {
       if (posCount < 2) {
         roster.push(fa);
         fa._justSigned = true;
+        fa.contract = randomContractByAge(getLeaguePlayerAge(fa));
         if (fa.ovr > 86) starSignedTeams[t] = true;
-        STATE._leagueChanges.freeSignings.push({ name: fa.cname, playerId: fa.id, from: fa._origTeam, to: t, ovr: fa.ovr });
+        var returnedToOriginalTeam = t === fa._origTeam;
+        var loyaltyChange = recordPlayerLoyaltyDecision(fa, returnedToOriginalTeam ? 'renew' : 'leave', fa.contract, true, t);
+        if (returnedToOriginalTeam) console.log('[FA] 自由市场回签:', (fa.cname || fa.id), t, '忠诚度', getPlayerLoyalty(fa));
+        STATE._leagueChanges.freeSignings.push({ name: fa.cname, playerId: fa.id, from: fa._origTeam, to: t, ovr: fa.ovr, returned: returnedToOriginalTeam, years: fa.contract, loyaltyChange: loyaltyChange });
         if (t === STATE.careerTeam) {
           if (!STATE._leagueChanges.teamChanges) STATE._leagueChanges.teamChanges = {};
           STATE._leagueChanges.teamChanges[t] = STATE._leagueChanges.teamChanges[t] || { retired: [], rookies: [] };
@@ -1171,21 +1189,24 @@ function assignFreeAgents() {
     // fallback
     for (var fi = 0; fi < teams.length; fi++) {
       var fb = teams[fi];
-      if (fb === fa._origTeam) { console.log('[FA] fallback跳过回原队:', (fa.cname || fa.id), fa._origTeam); continue; }
       if (fa.ovr > 86) {
-        if (starSignedTeams[fb]) continue;
+        if (fb !== fa._origTeam && starSignedTeams[fb]) continue;
         var hasStarFB = false;
         (LEAGUE_PLAYER_DATA[fb] || []).forEach(function(p) {
           if (p !== fa && !p._isUser && p.ovr >= 84) hasStarFB = true;
         });
-        if (hasStarFB) continue;
+        if (fb !== fa._origTeam && hasStarFB) continue;
       }
       var fbRoster = LEAGUE_PLAYER_DATA[fb];
       if (fbRoster && fbRoster.length < 18) {
         fbRoster.push(fa);
         fa._justSigned = true;
+        fa.contract = randomContractByAge(getLeaguePlayerAge(fa));
         if (fa.ovr > 86) starSignedTeams[fb] = true;
-        STATE._leagueChanges.freeSignings.push({ name: fa.cname, playerId: fa.id, from: fa._origTeam, to: fb, ovr: fa.ovr });
+        var fallbackReturned = fb === fa._origTeam;
+        var fallbackLoyaltyChange = recordPlayerLoyaltyDecision(fa, fallbackReturned ? 'renew' : 'leave', fa.contract, true, fb);
+        if (fallbackReturned) console.log('[FA] 自由市场回签:', (fa.cname || fa.id), fb, '忠诚度', getPlayerLoyalty(fa));
+        STATE._leagueChanges.freeSignings.push({ name: fa.cname, playerId: fa.id, from: fa._origTeam, to: fb, ovr: fa.ovr, returned: fallbackReturned, years: fa.contract, loyaltyChange: fallbackLoyaltyChange });
         break;
       }
     }
@@ -1330,6 +1351,7 @@ function calcOVR(attrs, pos) {
 // ==================== 联盟演变 ====================
 var _playerAges = null;
 var _playerGenes = null;
+var PLAYER_LOYALTY_GENE_VERSION = 3;
 
 function loadPlayerAges() {
   if (_playerAges) return;
@@ -1367,14 +1389,109 @@ function inferLeaguePlayerPotential(player, age) {
   return Math.max(ovr, Math.min(99, potential));
 }
 
+function getPublishedPlayerLoyalty(playerId) {
+  if (typeof PLAYER_LOYALTY_DATA === 'undefined') return null;
+  var value = PLAYER_LOYALTY_DATA[playerId];
+  return typeof value === 'number' ? Math.max(0, Math.min(100, value)) : null;
+}
+
+function getRookieContractLoyalty(contractYears) {
+  var years = Math.max(1, Math.min(4, Number(contractYears) || 1));
+  return 58 + years * 2;
+}
+
+function ensurePlayerLoyaltyGene(gene, player) {
+  if (!gene) return gene;
+  if (gene.loyaltyVersion !== PLAYER_LOYALTY_GENE_VERSION) {
+    gene.loyalty = inferPlayerLoyalty(player);
+    gene.loyaltyVersion = PLAYER_LOYALTY_GENE_VERSION;
+    gene.loyaltyRenewals = 0;
+    gene.loyaltyLastEvent = '';
+    gene.loyaltyTeam = '';
+  } else if (typeof gene.loyalty !== 'number') {
+    gene.loyalty = inferPlayerLoyalty(player);
+  }
+  return gene;
+}
+
+function inferPlayerLoyalty(player) {
+  var playerId = player && typeof player === 'object' ? player.id : player;
+  var published = getPublishedPlayerLoyalty(playerId);
+  if (published !== null) return published;
+  if (player && typeof player === 'object' && typeof player.loyalty === 'number') {
+    return Math.max(0, Math.min(100, player.loyalty));
+  }
+  var id = String(playerId || '');
+  if ((player && player.type === '新秀') || /^R\d/.test(id) || /^D\d{2}-/.test(id)) {
+    return getRookieContractLoyalty(player && player.contract);
+  }
+  return 50;
+}
+
+function getPlayerLoyalty(player) {
+  var gene = getPlayerGene(player);
+  return Math.max(0, Math.min(100, Number(gene && gene.loyalty) || 50));
+}
+
+function getPlayerLoyaltyLabel(loyalty) {
+  var value = Math.max(0, Math.min(100, Number(loyalty) || 50));
+  if (value >= 80) return '忠诚型';
+  if (value >= 60) return '稳定型';
+  if (value >= 40) return '观望型';
+  return '流动型';
+}
+
+function recordPlayerLoyaltyDecision(player, decision, contractYears, throughFreeAgency, teamId) {
+  var gene = getPlayerGene(player);
+  var before = Math.max(0, Math.min(100, Number(gene.loyalty) || 50));
+  var after = before;
+  if (decision === 'renew') {
+    var years = Math.max(1, Math.min(4, Number(contractYears) || 1));
+    if (gene.loyaltyTeam && teamId && gene.loyaltyTeam !== teamId) gene.loyaltyRenewals = 0;
+    var baseGain = [0, 2, 3, 4, 5][years];
+    var repeatBonus = gene.loyaltyRenewals >= 2 ? 3 : gene.loyaltyRenewals >= 1 ? 2 : 0;
+    var rawGain = Math.max(1, baseGain + repeatBonus - (throughFreeAgency ? 1 : 0));
+    var headroomFactor = Math.max(0.25, (95 - before) / 45);
+    var gain = Math.max(1, Math.round(rawGain * headroomFactor));
+    after = Math.max(before, Math.min(95, before + gain));
+    gene.loyaltyRenewals = (Number(gene.loyaltyRenewals) || 0) + 1;
+    gene.loyaltyLastEvent = throughFreeAgency ? '自由市场回签' : years + '年续约';
+    if (teamId) gene.loyaltyTeam = teamId;
+  } else if (decision === 'leave') {
+    var penalty = before >= 80 ? 12 : before >= 60 ? 10 : 8;
+    after = Math.max(5, before - penalty);
+    gene.loyaltyRenewals = 0;
+    gene.loyaltyLastEvent = '主动离队';
+    gene.loyaltyTeam = '';
+  }
+  gene.loyalty = after;
+  return after - before;
+}
+
+function getPlayerLoyaltyBasis(player) {
+  var playerId = player && typeof player === 'object' ? player.id : player;
+  var publishedBasis = typeof PLAYER_LOYALTY_BASIS !== 'undefined' ? PLAYER_LOYALTY_BASIS[playerId] : '';
+  var gene = _playerGenes && _playerGenes[playerId];
+  var dynamicBasis = gene && gene.loyaltyLastEvent ? '游戏内：' + gene.loyaltyLastEvent : '';
+  if (publishedBasis) return publishedBasis + (dynamicBasis ? ' · ' + dynamicBasis : '');
+  var id = String(playerId || '');
+  if ((player && player.type === '新秀') || /^R\d/.test(id) || /^D\d{2}-/.test(id)) {
+    return '新秀合同·不推测个人意愿' + (dynamicBasis ? ' · ' + dynamicBasis : '');
+  }
+  return '公开信息不足·中性值' + (dynamicBasis ? ' · ' + dynamicBasis : '');
+}
+
 function assignKnownPlayerPotentials() {
   if (!_playerGenes || typeof LEAGUE_PLAYER_DATA === 'undefined' || typeof LEAGUE_TEAM_IDS === 'undefined') return;
   LEAGUE_TEAM_IDS.forEach(function(teamId) {
     (LEAGUE_PLAYER_DATA[teamId] || []).forEach(function(player) {
       var gene = _playerGenes[player.id];
-      if (!gene || typeof gene.potential === 'number') return;
-      var age = _playerAges[player.id] || player._age || inferAge(player.id, player.ovr);
-      gene.potential = inferLeaguePlayerPotential(player, age);
+      if (!gene) return;
+      if (typeof gene.potential !== 'number') {
+        var age = _playerAges[player.id] || player._age || inferAge(player.id, player.ovr);
+        gene.potential = inferLeaguePlayerPotential(player, age);
+      }
+      ensurePlayerLoyaltyGene(gene, player);
     });
   });
 }
@@ -1383,11 +1500,19 @@ function getPlayerGene(player) {
   loadPlayerAges();
   var playerId = player && typeof player === 'object' ? player.id : player;
   var playerObject = player && typeof player === 'object' ? player : null;
-  if (_playerGenes && _playerGenes[playerId]) return _playerGenes[playerId];
+  if (_playerGenes && _playerGenes[playerId]) {
+    var existingGene = _playerGenes[playerId];
+    return ensurePlayerLoyaltyGene(existingGene, playerObject || playerId);
+  }
   var age = playerObject ? getLeaguePlayerAge(playerObject) : null;
   var g = {
     v: 1 + Math.floor(rngNext() * 4),
-    potential: inferLeaguePlayerPotential(playerObject, age)
+    potential: inferLeaguePlayerPotential(playerObject, age),
+    loyalty: inferPlayerLoyalty(playerObject || playerId),
+    loyaltyVersion: PLAYER_LOYALTY_GENE_VERSION,
+    loyaltyRenewals: 0,
+    loyaltyLastEvent: '',
+    loyaltyTeam: ''
   };
   if (_playerGenes) _playerGenes[playerId] = g;
   return g;
@@ -1414,6 +1539,24 @@ function getLeaguePlayerAge(player) {
   var age = getPlayerAge(player && player.id) || inferAge(player && player.id, player && player.ovr);
   if (player) player._age = age;
   return age;
+}
+
+function calculateContractStayRate(player, history) {
+  var avgPct = 0.5;
+  if (history && history.length > 0) {
+    var sum = 0;
+    history.forEach(function(value) { sum += value; });
+    avgPct = sum / history.length;
+  }
+  var teamFactor = avgPct >= 0.65 ? 1.35 : avgPct >= 0.55 ? 1.15 : avgPct >= 0.45 ? 0.95 : avgPct >= 0.35 ? 0.75 : 0.6;
+  var starFactor = player.ovr >= 88 ? 0.95 : 1.0;
+  var trendFactor = 1.0;
+  if (history && history.length >= 3) {
+    if (history[0] - history[1] < -0.02 && history[1] - history[2] < -0.02) trendFactor = 0.85;
+    else if (history[0] - history[1] > 0.02 && history[1] - history[2] > 0.02) trendFactor = 1.1;
+  }
+  var loyaltyBonus = (getPlayerLoyalty(player) - 50) * 0.006;
+  return Math.max(0.1, Math.min(0.96, 0.80 * teamFactor * starFactor * trendFactor + loyaltyBonus));
 }
 
 function advanceSpecialLeaguePlayerAge(player, age) {
@@ -1485,6 +1628,8 @@ function evolveLeague() {
       rk.ovr = draftSlot <= 3
         ? 68 + Math.floor(rngNext() * 7)
         : 60 + Math.floor(rngNext() * 8);
+      rk.contract = draftSlot <= 3 ? 3 : 2;
+      rk.loyalty = getRookieContractLoyalty(rk.contract);
       newRoster.push(rk);
       STATE._leagueChanges.rookies.push({ name: rk.cname, playerId: rk.id, team: t });
       if (t === STATE.careerTeam && STATE._leagueChanges.teamChanges[t]) {
@@ -1524,29 +1669,16 @@ function evolveLeague() {
         // 留队判定
         var age = getLeaguePlayerAge(p);
         var hist = STATE._teamHistory ? STATE._teamHistory[t] : null;
-        var avgPct = 0.5;
-        if (hist && hist.length > 0) {
-          var sum = 0;
-          hist.forEach(function(h) { sum += h; });
-          avgPct = sum / hist.length;
-        }
-        // 提升高战绩争冠强队的续约留队率（胜率>=65%时留队率可达 95% 上下）
-        var teamFactor = avgPct >= 0.65 ? 1.35 : avgPct >= 0.55 ? 1.15 : avgPct >= 0.45 ? 0.95 : avgPct >= 0.35 ? 0.75 : 0.6;
-        var starFactor = p.ovr >= 88 ? 0.95 : 1.0;
-        var trendFactor = 1.0;
-        if (hist && hist.length >= 3) {
-          if (hist[0] - hist[1] < -0.02 && hist[1] - hist[2] < -0.02) trendFactor = 0.85;
-          else if (hist[0] - hist[1] > 0.02 && hist[1] - hist[2] > 0.02) trendFactor = 1.1;
-        }
-        var stayRate = Math.max(0.1, Math.min(0.96, 0.80 * teamFactor * starFactor * trendFactor));
+        var stayRate = calculateContractStayRate(p, hist);
 
         if (rngNext() < stayRate) {
           // 留队续约
           p.contract = randomContractByAge(age);
+          var loyaltyChange = recordPlayerLoyaltyDecision(p, 'renew', p.contract, false, t);
           p._justSigned = true;
           newRoster.push(p);
           STATE._leagueChanges.stayed = STATE._leagueChanges.stayed || [];
-          STATE._leagueChanges.stayed.push({ name: p.cname, playerId: p.id, team: t, years: p.contract });
+          STATE._leagueChanges.stayed.push({ name: p.cname, playerId: p.id, team: t, years: p.contract, loyaltyChange: loyaltyChange });
         } else {
           // 离队进自由池
           p._origTeam = t;
