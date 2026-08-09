@@ -1,0 +1,199 @@
+{
+  "state": {
+    "title": "完美球员模拟器",
+    "teams": [
+      "ATL",
+      "BKN",
+      "BOS",
+      "CHA",
+      "CHI",
+      "CLE",
+      "DAL",
+      "DEN",
+      "DET",
+      "GSW",
+      "HOU",
+      "IND",
+      "LAC",
+      "LAL",
+      "MEM",
+      "MIA",
+      "MIL",
+      "MIN",
+      "NOP",
+      "NYK",
+      "OKC",
+      "ORL",
+      "PHI",
+      "PHX",
+      "POR",
+      "SAC",
+      "SAS",
+      "TOR",
+      "UTA",
+      "WAS",
+      "_draftClass2026Applied"
+    ],
+    "teamCount": 31,
+    "playerCount": 585,
+    "headshotMapCount": 10125,
+    "activeScreens": [
+      "screen-menu"
+    ],
+    "visibleButtons": [
+      "🎮 进入活动",
+      "即将上线，敬请期待",
+      "🏆 征服联盟",
+      "📖 玩法说明",
+      "👥 查看其他用户建模"
+    ],
+    "localResourceCount": 58,
+    "scriptCount": 27,
+    "offlineFlag": true,
+    "badImages": []
+  },
+  "interaction": {
+    "clicked": "进入活动",
+    "activeScreensAfterClick": [
+      "screen-position"
+    ],
+    "visibleButtonsAfterClick": [
+      "确认位置"
+    ]
+  },
+  "flow": [
+    {
+      "step": "confirm_position",
+      "activeScreens": [
+        "screen-build"
+      ],
+      "visibleButtons": [
+        "\n          🎲 随机球队\n        ",
+        "👥 更换球员 (3)"
+      ]
+    },
+    {
+      "step": "lock_all_attributes",
+      "locks": [
+        {
+          "key": "threePT",
+          "team": "ATL",
+          "player": "Jalen Johnson"
+        },
+        {
+          "key": "MID",
+          "team": "BKN",
+          "player": "Michael Porter Jr."
+        },
+        {
+          "key": "FIN",
+          "team": "BOS",
+          "player": "Jayson Tatum"
+        },
+        {
+          "key": "DNK",
+          "team": "CHA",
+          "player": "Brandon Miller"
+        },
+        {
+          "key": "HAN",
+          "team": "CHI",
+          "player": "Norman Powell"
+        },
+        {
+          "key": "PAS",
+          "team": "CLE",
+          "player": "Donovan Mitchell"
+        },
+        {
+          "key": "PDEF",
+          "team": "DAL",
+          "player": "Kyrie Irving"
+        },
+        {
+          "key": "IDEF",
+          "team": "DEN",
+          "player": "Nikola Jokic"
+        },
+        {
+          "key": "BLK",
+          "team": "DET",
+          "player": "Cade Cunningham"
+        },
+        {
+          "key": "REB",
+          "team": "GSW",
+          "player": "Stephen Curry"
+        },
+        {
+          "key": "ATH",
+          "team": "HOU",
+          "player": "Kevin Durant"
+        },
+        {
+          "key": "STR",
+          "team": "IND",
+          "player": "Tyrese Haliburton"
+        },
+        {
+          "key": "CLU",
+          "team": "LAC",
+          "player": "Brandon Ingram"
+        }
+      ],
+      "lockedCount": 13,
+      "finalOVR": 75,
+      "activeScreens": [
+        "screen-reveal"
+      ]
+    },
+    {
+      "step": "reveal_player",
+      "activeScreens": [
+        "screen-reveal"
+      ],
+      "visibleButtons": [
+        "开始生涯"
+      ],
+      "localHeadshots": 1
+    },
+    {
+      "step": "draft_story",
+      "modalSteps": [
+        "选秀前夜",
+        "选秀前夜",
+        "经纪团队",
+        "经纪团队",
+        "试训策略",
+        "试训策略",
+        "选秀大会",
+        "选秀结果 · 次轮第45顺位",
+        "选秀结果 · 次轮第45顺位"
+      ],
+      "careerTeamSelectorVisible": true
+    },
+    {
+      "step": "career_team_and_contract",
+      "contractSteps": [
+        "签下第一份合同",
+        "签下第一份合同"
+      ],
+      "careerTeam": "BKN",
+      "draftDone": true,
+      "startSeasonVisible": true
+    },
+    {
+      "step": "start_season",
+      "activeScreens": [
+        "screen-season"
+      ],
+      "scheduleGames": 82,
+      "simulatedGames": 5
+    }
+  ],
+  "external_requests": [],
+  "failed_local_responses": [],
+  "page_errors": [],
+  "console_errors": [],
+  "failed_request_initiators": {}
+}
