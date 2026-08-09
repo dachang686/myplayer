@@ -43,7 +43,7 @@ function renderPlayInUI() {
   let h = `<div class="playin-container" style="padding:8px 0;">`;
   h += `<div style="text-align:center;margin-bottom:12px;">
     <div style="font-size:14px;color:var(--text-dim);">🔥 附加赛</div>
-    <div style="font-size:20px;font-weight:800;">${getConference(STATE.careerTeam) === 'EAST' ? '东部' : '西部'} Play-In</div>
+    <div style="font-size:20px;font-weight:800;">${getConference(STATE.careerTeam) === 'SOUTH' ? '南方' : '北方'} Play-In</div>
   </div>`;
   
   // Game A: 7 vs 8
@@ -417,7 +417,7 @@ function autoSimConferenceBracket(confBracket) {
         isMySeries: false,
       });
       
-      // 更新下一轮槽位（NBA标准：1v8胜者vs4v5胜者，2v7胜者vs3v6胜者）
+      // 更新下一轮槽位（联盟规则：1v8胜者vs4v5胜者，2v7胜者vs3v6胜者）
       if (r < 2) {
         const nr = confBracket.rounds[r + 1];
         if (nr) {
@@ -487,7 +487,7 @@ function renderPlayoffs() {
   
   // ★ 附加赛结果修正种子：用附加赛晋级者替换原7/8号种子
   const bracket = buildPlayoffBracket(conf, pi2);
-  const otherConf = conf === 'EAST' ? 'WEST' : 'EAST';
+  const otherConf = conf === 'SOUTH' ? 'NORTH' : 'SOUTH';
   const otherBracket = buildPlayoffBracket(otherConf);
   
   // 自动模拟另一分区的季后赛（用户不能操作）
@@ -578,17 +578,17 @@ function renderPlayoffBracketUI() {
   // 选择要显示的分区对阵数据
   const activeBracket = isViewingOther ? STATE.season.otherBracket : bracket;
   if (!activeBracket) return;
-  const confName = activeBracket.conf === 'EAST' ? '东部' : '西部';
+  const confName = activeBracket.conf === 'SOUTH' ? '南方' : '北方';
   
   const pi = STATE.season.playInState;
   let h = `<div class="bv-wrap">`;
   
   // ===== 分区切换标签 =====
-  const myConfName = bracket.conf === 'EAST' ? '东部' : '西部';
-  const otherConfName = bracket.conf === 'EAST' ? '西部' : '东部';
+  const myConfName = bracket.conf === 'SOUTH' ? '南方' : '北方';
+  const otherConfName = bracket.conf === 'SOUTH' ? '北方' : '南方';
   h += `<div class="bv-conf-tabs">
     <button class="bv-conf-tab ${!isViewingOther ? 'bv-conf-tab-active' : ''}" onclick="switchPlayoffConf('${bracket.conf}')">🏀 ${myConfName}</button>
-    <button class="bv-conf-tab ${isViewingOther ? 'bv-conf-tab-active' : ''}" onclick="switchPlayoffConf('${bracket.conf === 'EAST' ? 'WEST' : 'EAST'}')">🏀 ${otherConfName}</button>
+    <button class="bv-conf-tab ${isViewingOther ? 'bv-conf-tab-active' : ''}" onclick="switchPlayoffConf('${bracket.conf === 'SOUTH' ? 'NORTH' : 'SOUTH'}')">🏀 ${otherConfName}</button>
   </div>`;
   
   h += `<div class="bv-header">
@@ -618,7 +618,7 @@ function renderPlayoffBracketUI() {
   const finalsSeries = bracket.rounds[3] && bracket.rounds[3][0];
   if (finalsSeries) {
     h += `<div class="bv-finals-stage">
-      <div class="bv-finals-title">🏆 NBA总决赛</div>
+      <div class="bv-finals-title">🏆 联盟总决赛</div>
       ${renderPlayoffTreeSeries(bracket, 3, 0)}
     </div>`;
   }
@@ -959,7 +959,7 @@ function simPlayoffSeries(round, seriesIdx) {
     };
     bracket.results.push(result);
     
-    // 更新下一轮对阵（NBA标准：1v8胜者vs4v5胜者，2v7胜者vs3v6胜者）
+    // 更新下一轮对阵（联盟规则：1v8胜者vs4v5胜者，2v7胜者vs3v6胜者）
     if (round < 2) {
       const nextRound = bracket.rounds[round + 1];
       if (nextRound) {
@@ -1049,7 +1049,7 @@ function simPlayoffSeries(round, seriesIdx) {
     // ★ 分区决赛完成 → 先设置总决赛 (第3轮) 对阵（在用户跳转前执行）
     if (round === 2 && allDone) {
       const otherBracket = STATE.season.otherBracket;
-      bracket.otherConfChampion = otherBracket?.confChampion || simOtherConference(bracket.conf === 'EAST' ? 'WEST' : 'EAST');
+      bracket.otherConfChampion = otherBracket?.confChampion || simOtherConference(bracket.conf === 'SOUTH' ? 'NORTH' : 'SOUTH');
       const finalsRound = bracket.rounds[3];
       if (finalsRound && finalsRound[0] === null) {
         finalsRound[0] = {
@@ -1071,10 +1071,10 @@ function simPlayoffSeries(round, seriesIdx) {
           STATE.season.isChampion = true;
           STATE.season.playoffsDone = true;
           STATE.season.awards = STATE.season.awards || [];
-          STATE.season.awards.push({ act: 'champion', label: '🏆 总冠军', winner: getHupuDisplayName(), winnerEN: '', team: STATE.careerTeam, isUser: true });
+          STATE.season.awards.push({ act: 'champion', label: '🏆 总冠军', winner: getMyPlayerDisplayName(), winnerId: '', team: STATE.careerTeam, isUser: true });
           var poStats = STATE.season.playoffStats || {};
           if (poStats.games > 0 && (poStats.pts || 0) / poStats.games >= 20) {
-            STATE.season.awards.push({ act: 'fmvp', label: '👑 总决赛MVP', winner: getHupuDisplayName(), winnerEN: '', team: STATE.careerTeam, isUser: true });
+            STATE.season.awards.push({ act: 'fmvp', label: '👑 总决赛MVP', winner: getMyPlayerDisplayName(), winnerId: '', team: STATE.careerTeam, isUser: true });
           }
           // ★ 成就系统：记录夺冠
           if (window.CONQUEST_API) {
@@ -1098,7 +1098,7 @@ function simPlayoffSeries(round, seriesIdx) {
     renderPlayoffBracketUI();
   });
 }
-/** 模拟另一分区的季后赛，返回冠军球队（使用NBA标准对阵：1v8/4v5/2v7/3v6） */
+/** 模拟另一分区的季后赛，返回冠军球队（使用联盟对阵：1v8/4v5/2v7/3v6） */
 function simOtherConference(conf) {
   const sorted = getConferenceSorted(conf);
   const teams = sorted.slice(0, 8).map(t => t.team);

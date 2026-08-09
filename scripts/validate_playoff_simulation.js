@@ -4,7 +4,6 @@ const parser = require('@babel/parser');
 
 const root = path.resolve(__dirname, '..');
 const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-const coreSource = fs.readFileSync(path.join(root, 'js/core_game_logic.js'), 'utf8');
 const playoffsSource = fs.readFileSync(path.join(root, 'js/playoffs.js'), 'utf8');
 
 function extractSimulation(source, label) {
@@ -15,10 +14,6 @@ function extractSimulation(source, label) {
 }
 
 const indexSimulation = extractSimulation(indexSource, 'index.html');
-const coreSimulation = extractSimulation(coreSource, 'js/core_game_logic.js');
-if (indexSimulation !== coreSimulation) {
-  throw new Error('index.html 与 js/core_game_logic.js 的比赛模拟函数不同步');
-}
 if (/predeterminedWinner|最终结果由预定胜者决定/.test(indexSimulation)) {
   throw new Error('比赛模拟仍然存在预定胜者逻辑');
 }
@@ -29,7 +24,7 @@ if (!/\[true, true, false, false, true, false, true\]/.test(playoffsSource)) {
   throw new Error('季后赛主场顺序不是 2-2-1-1-1');
 }
 
-for (const [source, label] of [[coreSource, 'js/core_game_logic.js'], [playoffsSource, 'js/playoffs.js']]) {
+for (const [source, label] of [[indexSimulation, 'index.html 比赛模拟'], [playoffsSource, 'js/playoffs.js']]) {
   try {
     parser.parse(source, { sourceType: 'script', plugins: ['optionalChaining', 'objectRestSpread'] });
   } catch (error) {
@@ -51,7 +46,7 @@ const simulateGame = new Function(
   'STATE',
   'getTeamName',
   'generateBoxScore',
-  `${coreSimulation}\nreturn simulateGameNew;`,
+  `${indexSimulation}\nreturn simulateGameNew;`,
 )(
   team => powers[team],
   { PACE: { base: 100, teamRange: 8 } },
@@ -227,15 +222,15 @@ function validateConferenceBracketMapping() {
 const bracketMapping = validateConferenceBracketMapping();
 
 function runRealRosterSmoke() {
-  const dataSource = fs.readFileSync(path.join(root, 'js/data/nba2k_players.js'), 'utf8');
+  const dataSource = fs.readFileSync(path.join(root, 'js/data/league_players.js'), 'utf8');
   const configSource = fs.readFileSync(
-    path.join(root, 'assets/activity-static.hoopchina.com.cn/files/2678-qlg35lrc-upload-1783494754597-24.js'),
+    path.join(root, 'js/data/simulation_config.js'),
     'utf8',
   );
-  const leagueData = new Function(`${dataSource}\nreturn { NBA2K_DATA, NBA2K_TEAMS };`)();
+  const leagueData = new Function(`${dataSource}\nreturn { LEAGUE_PLAYER_DATA, LEAGUE_TEAM_IDS };`)();
   const simConfig = new Function(`${configSource}\nreturn SIM_CONFIG;`)();
-  const engineStart = coreSource.indexOf('function getPlayerPositions');
-  const engineEnd = coreSource.indexOf('/** 属性→效率系数：递减曲线', engineStart);
+  const engineStart = indexSource.indexOf('function getPlayerPositions');
+  const engineEnd = indexSource.indexOf('/** 属性→效率系数：递减曲线', engineStart);
   if (engineStart < 0 || engineEnd < 0) throw new Error('无法定位真实名单比赛引擎代码');
   const realState = {
     careerTeam: null,
@@ -250,16 +245,16 @@ function runRealRosterSmoke() {
   };
   const af = value => Math.pow(attrFactor(value), 1.5);
   const realSimulate = new Function(
-    'NBA2K_DATA',
+    'LEAGUE_PLAYER_DATA',
     'SIM_CONFIG',
     'STATE',
-    'getHupuDisplayName',
+    'getMyPlayerDisplayName',
     'getTeamName',
     'getLeaguePlayerAge',
     'af',
-    `${coreSource.slice(engineStart, engineEnd)}\nreturn simulateGameNew;`,
+    `${indexSource.slice(engineStart, engineEnd)}\nreturn simulateGameNew;`,
   )(
-    leagueData.NBA2K_DATA,
+    leagueData.LEAGUE_PLAYER_DATA,
     simConfig,
     realState,
     () => '验证球员',

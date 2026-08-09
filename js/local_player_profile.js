@@ -2,7 +2,7 @@
   'use strict';
 
   var PROFILE_KEY = 'court_forge:profile';
-  var DEFAULT_AVATAR = 'js/data/player_logo.svg';
+  var DEFAULT_AVATAR = 'media/generated/players/avatar-00.png';
 
   function readProfile() {
     try {

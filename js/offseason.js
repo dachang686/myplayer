@@ -1,4 +1,4 @@
-﻿// ==================== 玩家流动性（被交易/被裁/不被续约） ====================
+// ==================== 玩家流动性（被交易/被裁/不被续约） ====================
 function getMobility() {
   var c = STATE.career;
   if (!c) return null;
@@ -98,7 +98,7 @@ function getTeamRenewalWillingness() {
 function pickTradeDestination() {
   var myPos = STATE.position;
   var candidates = [];
-  NBA2K_TEAMS.forEach(function(t) {
+  LEAGUE_TEAM_IDS.forEach(function(t) {
     if (t === STATE.careerTeam) return;
     var lineup = calcTeamLineup(t);
     var weak = null, weakOvr = 999;
@@ -119,7 +119,7 @@ function pickTradeDestination() {
     if (score > 0) candidates.push({ team: t, score: score });
   });
   if (candidates.length === 0) {
-    NBA2K_TEAMS.forEach(function(t) {
+    LEAGUE_TEAM_IDS.forEach(function(t) {
       if (t !== STATE.careerTeam) candidates.push({ team: t, score: 1 });
     });
   }
@@ -179,7 +179,7 @@ function chooseMobilityChoice(idx) {
 
 function doTradeUser(destTeam, done) {
   var old = STATE.careerTeam;
-  var displayName = getHupuDisplayName();
+  var displayName = getMyPlayerDisplayName();
   var m = getMobility();
   if ((m.teamInitiatedTrades || 0) >= 1) {
     if (done) done();
@@ -231,7 +231,7 @@ function doTradeUser(destTeam, done) {
 
 function doWaiveUser(done) {
   var old = STATE.careerTeam;
-  var displayName = getHupuDisplayName();
+  var displayName = getMyPlayerDisplayName();
   var m = getMobility();
   m.waived = (m.waived || 0) + 1;
   m.lastMove = 'waive';
@@ -302,7 +302,7 @@ function generateContractOffers() {
   var choice = STATE.career.flags && STATE.career.flags.freeAgentChoice;
   var bigMarket = ['LAL', 'NYK', 'GSW', 'MIA', 'CHI', 'BOS', 'DAL', 'HOU', 'PHI', 'TOR'];
 
-  NBA2K_TEAMS.forEach(function(t) {
+  LEAGUE_TEAM_IDS.forEach(function(t) {
     if (t === STATE.careerTeam) return;
     var lineup = calcTeamLineup(t);
     var currentStarter = lineup.starters[myPos];
@@ -310,7 +310,7 @@ function generateContractOffers() {
     if (!need) return;
     usedTeams[t] = true;
 
-    var roster = NBA2K_DATA[t] || [];
+    var roster = LEAGUE_PLAYER_DATA[t] || [];
     var sorted = roster.slice().sort(function(a, b) { return (b.ovr || 0) - (a.ovr || 0); });
     var topTwo = sorted.slice(0, 2);
 
@@ -336,7 +336,7 @@ function generateContractOffers() {
 
   var recruitTarget = STATE.career && STATE.career.flags ? STATE.career.flags.superstarRecruitTargetTeam : '';
   if (isSuperstarRecruitOfferTeam(recruitTarget) && recruitTarget !== STATE.careerTeam && !usedTeams[recruitTarget]) {
-    var rr = NBA2K_DATA[recruitTarget] || [];
+    var rr = LEAGUE_PLAYER_DATA[recruitTarget] || [];
     var rsortedTop = rr.slice().sort(function(a, b) { return (b.ovr || 0) - (a.ovr || 0); });
     var rYears = myAge <= 30 ? 2 : 1;
     if (choice === 'short') rYears = 2;
@@ -358,7 +358,7 @@ function generateContractOffers() {
   // 替补/轮换/底薪档：只有没有首发报价时才给，且最多 2 家
   if (offers.length === 0) {
     var benchCandidates = [];
-    NBA2K_TEAMS.forEach(function(t) {
+    LEAGUE_TEAM_IDS.forEach(function(t) {
       if (t === STATE.careerTeam || usedTeams[t]) return;
       var lineup = calcTeamLineup(t);
       var currentStarter = lineup.starters[myPos];
@@ -382,7 +382,7 @@ function generateContractOffers() {
       usedTeams[bt] = true;
       var blineup = calcTeamLineup(bt);
       var bStarter = blineup.starters[myPos];
-      var broster = NBA2K_DATA[bt] || [];
+      var broster = LEAGUE_PLAYER_DATA[bt] || [];
       var bsorted = broster.slice().sort(function(a, b) { return (b.ovr || 0) - (a.ovr || 0); });
       var byears = myAge <= 26 ? 2 : 1;
       if (choice === 'short') byears = 2;
@@ -396,10 +396,10 @@ function generateContractOffers() {
   var result = offers.slice(0, choice === 'short' ? 6 : 4);
   if (result.length === 0) {
     // 兜底：保证永远有下家
-    NBA2K_TEAMS.forEach(function(t) {
+    LEAGUE_TEAM_IDS.forEach(function(t) {
       if (t === STATE.careerTeam || usedTeams[t]) return;
       if (result.length >= 2) return;
-      var r = NBA2K_DATA[t] || [];
+      var r = LEAGUE_PLAYER_DATA[t] || [];
       var lineup2 = calcTeamLineup(t);
       var s2 = lineup2.starters[myPos];
       if (s2 && (myOvr - s2.ovr) > 3) return;
@@ -413,10 +413,10 @@ function generateContractOffers() {
     });
     if (result.length === 0) {
       // 极端情况兜底：保证永远有下家
-      NBA2K_TEAMS.forEach(function(t) {
+      LEAGUE_TEAM_IDS.forEach(function(t) {
         if (result.length >= 2) return;
         if (t === STATE.careerTeam || usedTeams[t]) return;
-        var r3 = NBA2K_DATA[t] || [];
+        var r3 = LEAGUE_PLAYER_DATA[t] || [];
         var sr3 = r3.slice().sort(function(a, b) { return (b.ovr || 0) - (a.ovr || 0); }).slice(0, 2);
         var eRecruit = isSuperstarRecruitOfferTeam(t);
         result.push({ team: t, topTwo: sr3, years: 2, role: '底薪/替补', needStrength: -10, score: -80 + (eRecruit ? 90 : 0), teamOvr: 0, bigMarket: false, superstarRecruit: eRecruit });
@@ -481,9 +481,9 @@ function showContractOffers() {
     var tn = getTeamName ? getTeamName(o.team) : o.team;
     var tp1 = o.topTwo[0];
     var tp2 = o.topTwo[1];
-    var tp1Name = tp1 ? (tp1.cname || tp1.name) : '—';
+    var tp1Name = tp1 ? (tp1.shortName || tp1.cname) : '—';
     var tp1Ovr = tp1 ? (tp1.ovr || '—') : '—';
-    var tp2Name = tp2 ? (tp2.cname || tp2.name) : '—';
+    var tp2Name = tp2 ? (tp2.shortName || tp2.cname) : '—';
     var tp2Ovr = tp2 ? (tp2.ovr || '—') : '—';
 
     html += '<div class="team-pick-card" style="cursor:pointer;margin-bottom:6px;text-align:left;padding:10px;" onclick="previewTeamRosterModal(\'' + o.team + '\', function(){ selectContractOption(\'' + o.team + '\', ' + o.years + '); }, ' + o.years + ')">';
@@ -675,11 +675,7 @@ function refreshSeasonTeamHeader() {
 
 // ==================== 休赛期联盟变动与新赛季入口 ====================
 function isHiddenRetiredPlayer(r) {
-  return !!(r && (r.nameEN === 'Kyle Lowry' || r.name === '凯尔-洛瑞'));
-}
-
-function isHiddenRetiredPlayerName(n) {
-  return n === 'Kyle Lowry' || n === '凯尔-洛瑞';
+  return !!(r && r.hidden);
 }
 
 function showOffSeasonModals() {
@@ -695,13 +691,14 @@ function showRetirementModal(callback) {
   html += '<div style="padding:8px 12px;max-height:60vh;overflow-y:auto;">';
   retired.forEach(function(r) {
     var teamCn = (typeof TEAM_NAMES_EV !== 'undefined' && TEAM_NAMES_EV[r.team]) ? TEAM_NAMES_EV[r.team] : r.team;
-    var hs = getPlayerHeadshotStyle(r.nameEN || r.playerName || r.name, 30);
+    var hs = getPlayerHeadshotStyle(r.playerId || '', 30);
     var avatarHtml = hs
       ? '<div class="bp-headshot" style="' + hs + ';width:30px;height:30px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;"></div>'
       : '<span style="color:var(--red);font-size:16px;">🔴</span>';
     html += '<div style="display:flex;align-items:center;gap:6px;padding:5px 2px;border-bottom:1px solid var(--border-light);font-size:13px;">';
     html += avatarHtml;
-    html += '<span style="flex:1;font-weight:600;">' + r.name + '</span>';
+    var retiredDisplayName = r.displayName || (typeof getPlayerShortNameById === 'function' ? getPlayerShortNameById(r.playerId) : '球员');
+    html += '<span style="flex:1;font-weight:600;">' + retiredDisplayName + '</span>';
     html += '<span style="color:var(--text-dim);font-size:11px;">' + teamCn + ' · ' + r.ovr + ' OVR</span>';
     html += '</div>';
   });
@@ -731,13 +728,14 @@ function showFAModal(callback) {
     signings.forEach(function(s) {
       var fromTn = getTeamName ? getTeamName(s.from) : s.from;
       var toTn = getTeamName ? getTeamName(s.to) : s.to;
-      var hs = getPlayerHeadshotStyle(s.nameEN || s.playerName || s.name, 30);
+      var hs = getPlayerHeadshotStyle(s.playerId || '', 30);
       var avatarHtml = hs
         ? '<div class="bp-headshot" style="' + hs + ';width:30px;height:30px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;"></div>'
         : '<span style="color:var(--orange);font-size:14px;">➡️</span>';
       html += '<div style="display:flex;align-items:center;gap:6px;padding:5px 2px;border-bottom:1px solid var(--border-light);font-size:13px;">';
       html += avatarHtml;
-      html += '<span style="flex:1;"><strong>' + s.name + '</strong> ' + fromTn + ' → ' + toTn + '</span>';
+      var signingDisplayName = s.name || (typeof getPlayerShortNameById === 'function' ? getPlayerShortNameById(s.playerId) : '球员');
+      html += '<span style="flex:1;"><strong>' + signingDisplayName + '</strong> ' + fromTn + ' → ' + toTn + '</span>';
       html += '<span style="color:var(--text-dim);font-size:11px;">OVR ' + s.ovr + '</span>';
       html += '</div>';
     });
@@ -769,8 +767,10 @@ function showTradesModal(callback) {
     var tb = getTeamName ? getTeamName(tr.to) : tr.to;
     html += '<div style="background:var(--bg-card);border:1.5px solid var(--border);border-radius:8px;padding:8px 10px;margin-bottom:6px;">';
     html += '<div style="font-family:var(--font-display);font-size:12px;color:var(--text);font-weight:600;margin-bottom:4px;">🔁 ' + ta + ' ⇄ ' + tb + '</div>';
-    html += '<div style="font-size:12px;color:var(--text-dim);padding:2px 0;">👤 ' + tr.playerB + ' → ' + tb + '</div>';
-    html += '<div style="font-size:12px;color:var(--text-dim);padding:2px 0;">👤 ' + tr.playerA + ' → ' + ta + '</div>';
+    var playerBDisplayName = typeof getPlayerShortNameById === 'function' ? getPlayerShortNameById(tr.playerB) : tr.playerB;
+    var playerADisplayName = typeof getPlayerShortNameById === 'function' ? getPlayerShortNameById(tr.playerA) : tr.playerA;
+    html += '<div style="font-size:12px;color:var(--text-dim);padding:2px 0;">👤 ' + playerBDisplayName + ' → ' + tb + '</div>';
+    html += '<div style="font-size:12px;color:var(--text-dim);padding:2px 0;">👤 ' + playerADisplayName + ' → ' + ta + '</div>';
     html += '</div>';
   });
   html += '</div>';
@@ -792,7 +792,7 @@ function showRosterReview() {
   var changes = STATE._leagueChanges || { retired: [], rookies: [], teamChanges: {} };
   var teamName = getTeamName ? getTeamName(STATE.careerTeam) : STATE.careerTeam;
   var prevRecord = (c.seasons.length > 0) ? (c.seasons[c.seasons.length - 1].wins + '-' + c.seasons[c.seasons.length - 1].losses) : '新赛季';
-  var displayName = getHupuDisplayName();
+  var displayName = getMyPlayerDisplayName();
 
   var lineup = calcTeamLineup(STATE.careerTeam);
   if (STATE.season) {
@@ -808,12 +808,12 @@ function showRosterReview() {
   function renderPlayer(p, isUser) {
     var pOvr = parseInt(p.ovr) || 0;
     var pPos = p.posCn || p.pos || '—';
-    var pName = p.cname || p.name;
+    var pName = p.shortName || p.cname;
     var imgHtml;
     if (isUser) {
       imgHtml = '<' + 'img style="border-radius:50%;border:2px solid var(--border);width:28px;height:28px;object-fit:cover;flex-shrink:0;" src="' + avatarUrl + '" onerror="this.onerror=null;this.src=\'' + defaultAvatar + '\'">';
     } else {
-      var hs = getPlayerHeadshotStyle(p.name, 28);
+      var hs = getPlayerHeadshotStyle(p.id, 28);
       imgHtml = hs ? '<div style="' + hs + ';border-radius:50%;border:2px solid var(--border);width:28px;height:28px;flex-shrink:0;"></div>' : '<div style="width:28px;height:28px;border-radius:50%;background:var(--border);flex-shrink:0;"></div>';
     }
     var starBadge = isUser ? '<span style="font-size:10px;margin-left:2px;">⭐</span>' : '';
@@ -901,7 +901,7 @@ function resetForNewSeason() {
 }
 
 function renderSeasonScreenDOM() {
-  var confName = getConference(STATE.careerTeam) === 'EAST' ? '东部' : '西部';
+  var confName = getConference(STATE.careerTeam) === 'SOUTH' ? '南方' : '北方';
   html('season-header').innerHTML = '';
 
   html('season-controls').innerHTML = '';
@@ -997,8 +997,8 @@ function draftPosToCode(pos) {
 }
 
 function applyDraftClass2026() {
-  if (!NBA2K_DATA || NBA2K_DATA._draftClass2026Applied) return;
-  NBA2K_DATA._draftClass2026Applied = true;
+  if (!LEAGUE_PLAYER_DATA || LEAGUE_PLAYER_DATA._draftClass2026Applied) return;
+  LEAGUE_PLAYER_DATA._draftClass2026Applied = true;
   var attrKeys = SIM_CONFIG.ATTR_LIST || ['threePT','MID','FIN','DNK','HAN','PAS','PDEF','IDEF','BLK','REB','ATH','STR','CLU'];
   var byTeam = {};
   DRAFT_CLASS_2026.forEach(function(p) {
@@ -1006,7 +1006,7 @@ function applyDraftClass2026() {
     byTeam[p.team].push(p);
   });
   Object.keys(byTeam).forEach(function(t) {
-    var roster = NBA2K_DATA[t];
+    var roster = LEAGUE_PLAYER_DATA[t];
     if (!roster) return;
     var picks = byTeam[t];
     picks.forEach(function(pk) {
@@ -1014,7 +1014,7 @@ function applyDraftClass2026() {
       while (pad.length < 2) pad = '0' + pad;
       var ovr = draftOvrByPick(pk.pick);
       var rookie = {
-        name: 'Draft2026_' + pad,
+        id: 'D26-' + pad,
         cname: pk.cn,
         pos: draftPosToCode(pk.pos),
         height: pk.height,
@@ -1036,7 +1036,7 @@ function saveStandings() {
   STATE._prevStandings = STATE.season.standings ? JSON.parse(JSON.stringify(STATE.season.standings)) : null;
   if (STATE._prevStandings) {
     if (!STATE._teamHistory) STATE._teamHistory = {};
-    NBA2K_TEAMS.forEach(function(t) {
+    LEAGUE_TEAM_IDS.forEach(function(t) {
       var st = STATE._prevStandings[t];
       if (!st) return;
       var pct = (st.wins + st.losses) > 0 ? st.wins / (st.wins + st.losses) : 0.5;
@@ -1051,7 +1051,7 @@ function processDraft() {
   if (!STATE._prevStandings) return;
   var st = STATE._prevStandings;
   // 按胜率排（差在前）
-  var teams = NBA2K_TEAMS.slice().sort(function(a, b) {
+  var teams = LEAGUE_TEAM_IDS.slice().sort(function(a, b) {
     var aw = (st[a] && st[a].wins) || 0, al = (st[a] && st[a].losses) || 0;
     var bw = (st[b] && st[b].wins) || 0, bl = (st[b] && st[b].losses) || 0;
     var ap = aw + al > 0 ? aw / (aw + al) : 0.5;
@@ -1077,11 +1077,11 @@ function processDraft() {
     else if (idx < 14) rookie.contract = 2 + Math.floor(rngNext() * 3);
     else rookie.contract = 1 + Math.floor(rngNext() * 3);
 
-    var roster = NBA2K_DATA[t];
+    var roster = LEAGUE_PLAYER_DATA[t];
     if (!roster) return;
     var lowestIdx = -1, lowestOvr = 999;
     roster.forEach(function(p, pi) {
-      if (p.name && p.name.indexOf('Rookie_') >= 0 && p.ovr < lowestOvr) {
+      if (p.id && p.id.indexOf('R') === 0 && p.ovr < lowestOvr) {
         lowestOvr = p.ovr; lowestIdx = pi;
       }
     });
@@ -1109,7 +1109,7 @@ function assignFreeAgents() {
 
   pool.sort(function(a, b) { return b.ovr - a.ovr; });
   var st = STATE._prevStandings;
-  var teams = NBA2K_TEAMS.slice().sort(function(a, b) {
+  var teams = LEAGUE_TEAM_IDS.slice().sort(function(a, b) {
     var aw = (st && st[a] && st[a].wins) || 0, al = (st && st[a] && st[a].losses) || 0;
     var bw = (st && st[b] && st[b].wins) || 0, bl = (st && st[b] && st[b].losses) || 0;
     return (aw + al > 0 ? aw / (aw + al) : 0.5) - (bw + bl > 0 ? bw / (bw + bl) : 0.5);
@@ -1119,7 +1119,7 @@ function assignFreeAgents() {
   var starSignedTeams = {};
 
   pool.forEach(function(fa) {
-    if (!fa._origTeam) console.log('[FA] 无_origTeam:', (fa.cname||fa.name), 'ovr:', fa.ovr);
+    if (!fa._origTeam) console.log('[FA] 无_origTeam:', (fa.cname || fa.id), 'ovr:', fa.ovr);
     var pos = (fa.pos || 'SF').split('/')[0].trim();
     // ★ 择队偏好：大牌球星(OVR>=85)优先考察强队/中游争冠队；角色球员偏好弱队寻找出场时间
     var targetTeams = teams.slice();
@@ -1134,22 +1134,22 @@ function assignFreeAgents() {
     }
     for (var ti = 0; ti < targetTeams.length; ti++) {
       var t = targetTeams[ti];
-      if (t === fa._origTeam) { console.log('[FA] 跳过回原队:', (fa.cname||fa.name), fa._origTeam); continue; }
+      if (t === fa._origTeam) { console.log('[FA] 跳过回原队:', (fa.cname || fa.id), fa._origTeam); continue; }
       // ★ 简化版薪资约束：任何球队 OVR≥85 球员不超过 3 名
       if (fa.ovr >= 82) {
-        var starCount = (NBA2K_DATA[t] || []).filter(function(p) { return !p._isUser && p.ovr >= 85; }).length;
+        var starCount = (LEAGUE_PLAYER_DATA[t] || []).filter(function(p) { return !p._isUser && p.ovr >= 85; }).length;
         if (starCount >= 3) continue;
       }
       if (fa.ovr > 86) {
-        if (starSignedTeams[t]) { console.log('[FA] 该队已签球星，跳过:', (fa.cname||fa.name), t); continue; }
+        if (starSignedTeams[t]) { console.log('[FA] 该队已签球星，跳过:', (fa.cname || fa.id), t); continue; }
         var hasStar = false;
-        (NBA2K_DATA[t] || []).forEach(function(p) {
+        (LEAGUE_PLAYER_DATA[t] || []).forEach(function(p) {
           // 全队范围检查：不论位置，只要有 OVR≥84 的球星就拦截
           if (p !== fa && !p._isUser && p.ovr >= 84) hasStar = true;
         });
         if (hasStar) continue;
       }
-      var roster = NBA2K_DATA[t];
+      var roster = LEAGUE_PLAYER_DATA[t];
       if (!roster || roster.length >= 18) continue;
       var posCount = 0;
       roster.forEach(function(p) {
@@ -1159,11 +1159,11 @@ function assignFreeAgents() {
         roster.push(fa);
         fa._justSigned = true;
         if (fa.ovr > 86) starSignedTeams[t] = true;
-        STATE._leagueChanges.freeSignings.push({ name: fa.cname || fa.name, nameEN: fa.name, from: fa._origTeam, to: t, ovr: fa.ovr });
+        STATE._leagueChanges.freeSignings.push({ name: fa.shortName || fa.cname, playerId: fa.id, from: fa._origTeam, to: t, ovr: fa.ovr });
         if (t === STATE.careerTeam) {
           if (!STATE._leagueChanges.teamChanges) STATE._leagueChanges.teamChanges = {};
           STATE._leagueChanges.teamChanges[t] = STATE._leagueChanges.teamChanges[t] || { retired: [], rookies: [] };
-          STATE._leagueChanges.teamChanges[t].rookies.push(fa.cname || fa.name);
+          STATE._leagueChanges.teamChanges[t].rookies.push(fa.shortName || fa.cname);
         }
         return;
       }
@@ -1171,21 +1171,21 @@ function assignFreeAgents() {
     // fallback
     for (var fi = 0; fi < teams.length; fi++) {
       var fb = teams[fi];
-      if (fb === fa._origTeam) { console.log('[FA] fallback跳过回原队:', (fa.cname||fa.name), fa._origTeam); continue; }
+      if (fb === fa._origTeam) { console.log('[FA] fallback跳过回原队:', (fa.cname || fa.id), fa._origTeam); continue; }
       if (fa.ovr > 86) {
         if (starSignedTeams[fb]) continue;
         var hasStarFB = false;
-        (NBA2K_DATA[fb] || []).forEach(function(p) {
+        (LEAGUE_PLAYER_DATA[fb] || []).forEach(function(p) {
           if (p !== fa && !p._isUser && p.ovr >= 84) hasStarFB = true;
         });
         if (hasStarFB) continue;
       }
-      var fbRoster = NBA2K_DATA[fb];
+      var fbRoster = LEAGUE_PLAYER_DATA[fb];
       if (fbRoster && fbRoster.length < 18) {
         fbRoster.push(fa);
         fa._justSigned = true;
         if (fa.ovr > 86) starSignedTeams[fb] = true;
-        STATE._leagueChanges.freeSignings.push({ name: fa.cname || fa.name, nameEN: fa.name, from: fa._origTeam, to: fb, ovr: fa.ovr });
+        STATE._leagueChanges.freeSignings.push({ name: fa.shortName || fa.cname, playerId: fa.id, from: fa._origTeam, to: fb, ovr: fa.ovr });
         break;
       }
     }
@@ -1201,7 +1201,7 @@ function findTradeCandidate(roster, pos, excludeOvr, tradedSet) {
     var p = roster[i];
     if (p._isUser) continue;
     if (p._justSigned) continue;
-    if (p.name && p.name.indexOf('Rookie_') >= 0) continue;
+    if (p.id && p.id.indexOf('R') === 0) continue;
     if (p.ovr > 92) continue;
     if (tradedSet && tradedSet.has(p)) continue;
     if (excludeOvr != null && Math.abs(p.ovr - excludeOvr) > 10) continue;
@@ -1213,8 +1213,8 @@ function findTradeCandidate(roster, pos, excludeOvr, tradedSet) {
 }
 
 function swapRosterPlayers(teamA, teamB, playerA, playerB) {
-  var rosterA = NBA2K_DATA[teamA];
-  var rosterB = NBA2K_DATA[teamB];
+  var rosterA = LEAGUE_PLAYER_DATA[teamA];
+  var rosterB = LEAGUE_PLAYER_DATA[teamB];
   var idxA = -1, idxB = -1;
   for (var i = 0; i < rosterA.length; i++) { if (rosterA[i] === playerB) { idxA = i; break; } }
   for (var j = 0; j < rosterB.length; j++) { if (rosterB[j] === playerA) { idxB = j; break; } }
@@ -1223,19 +1223,19 @@ function swapRosterPlayers(teamA, teamB, playerA, playerB) {
   rosterB[idxB] = playerB;
   STATE._leagueChanges.trades.push({
     from: teamA, to: teamB,
-    playerA: playerA.cname || playerA.name,
-    playerB: playerB.cname || playerB.name,
+    playerA: playerA.id,
+    playerB: playerB.id,
   });
 }
 
 function processTrades() {
-  if (!NBA2K_DATA) return;
+  if (!LEAGUE_PLAYER_DATA) return;
   if (!STATE._leagueChanges) STATE._leagueChanges = { retired: [], rookies: [], teamChanges: {}, trades: [] };
   if (!STATE._leagueChanges.trades) STATE._leagueChanges.trades = [];
 
   // 算每队需求位置
   var needs = {};
-  NBA2K_TEAMS.forEach(function(t) {
+  LEAGUE_TEAM_IDS.forEach(function(t) {
     var lineup = calcTeamLineup(t);
     var weakest = null, weakOvr = 999;
     ['PG','SG','SF','PF','C'].forEach(function(pos) {
@@ -1253,7 +1253,7 @@ function processTrades() {
   var tradedTeams = new Map(); // 改用 Map 支持计数
 
   // 打乱球队顺序，让交易分布更随机
-  var shuffled = NBA2K_TEAMS.slice().sort(function() { return rngNext() - 0.5; });
+  var shuffled = LEAGUE_TEAM_IDS.slice().sort(function() { return rngNext() - 0.5; });
 
   var tradeCount = 0;
   for (var ti = 0; ti < shuffled.length && tradeCount < 16; ti++) {
@@ -1272,8 +1272,8 @@ function processTrades() {
       if (!needB) continue;
       if (needA === needB) continue;
 
-      var rosterA = NBA2K_DATA[a];
-      var rosterB = NBA2K_DATA[b];
+      var rosterA = LEAGUE_PLAYER_DATA[a];
+      var rosterB = LEAGUE_PLAYER_DATA[b];
       if (!rosterA || !rosterB) continue;
 
       var playerForB = findTradeCandidate(rosterA, needB, null, tradedPlayers);
@@ -1281,7 +1281,7 @@ function processTrades() {
 
       if (playerForA && playerForB) {
         var diff = Math.abs(playerForA.ovr - playerForB.ovr);
-        console.log('[Trade] 配对:', a, needA, 'vs', b, needB, '候选人:', (playerForA.cname||playerForA.name), playerForA.ovr, (playerForB.cname||playerForB.name), playerForB.ovr, 'diff:', diff);
+        console.log('[Trade] 配对:', a, needA, 'vs', b, needB, '候选人:', (playerForA.cname || playerForA.id), playerForA.ovr, (playerForB.cname || playerForB.id), playerForB.ovr, 'diff:', diff);
         if (diff <= 15) { // 放宽至 <= 15，允许弱队出售大牌换潜力股
           tradedPlayers.add(playerForA);
           tradedPlayers.add(playerForB);
@@ -1340,85 +1340,55 @@ function loadPlayerAges() {
     if (data) {
       var rows = JSON.parse(data.textContent);
       rows.forEach(function(r) {
-        _playerAges[r.n] = r.a;
-        _playerGenes[r.n] = { v: r.v || (1 + Math.floor(rngNext() * 4)), l: r.l || (1 + Math.floor(rngNext() * 4)) };
+        _playerAges[r.id] = r.a;
+        _playerGenes[r.id] = { v: r.v || (1 + Math.floor(rngNext() * 4)), l: r.l || (1 + Math.floor(rngNext() * 4)) };
       });
     }
   } catch(e) {}
 }
 
-function getPlayerAge(playerName) {
+function getPlayerAge(playerId) {
   loadPlayerAges();
-  if (isLeBronJamesPlayer(playerName)) return LEBRON_JAMES_SPECIAL_RULE.initialAge;
-  return _playerAges && _playerAges[playerName] ? _playerAges[playerName] : null;
+  return _playerAges && _playerAges[playerId] ? _playerAges[playerId] : null;
 }
 
-function getPlayerGene(playerName) {
+function getPlayerGene(playerId) {
   loadPlayerAges();
-  if (_playerGenes && _playerGenes[playerName]) return _playerGenes[playerName];
+  if (_playerGenes && _playerGenes[playerId]) return _playerGenes[playerId];
   var g = { v: 1 + Math.floor(rngNext() * 4), l: 1 + Math.floor(rngNext() * 4) };
-  if (_playerGenes) _playerGenes[playerName] = g;
+  if (_playerGenes) _playerGenes[playerId] = g;
   return g;
 }
 
-function inferAge(playerName, ovr) {
-  if (isLeBronJamesPlayer(playerName)) return LEBRON_JAMES_SPECIAL_RULE.initialAge;
+function inferAge(playerId, ovr) {
   if (ovr >= 90) return 28;
   if (ovr >= 80) return 26;
   if (ovr >= 70) return 24;
   return 22;
 }
 
-var LEBRON_JAMES_SPECIAL_RULE = {
-  initialAge: 40,
-  protectedRetirementAge: 65
-};
-
-function normalizePlayerIdentityKey(value) {
-  return String(value || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
-
-function isLeBronJamesPlayer(player) {
-  var names = [];
-  if (typeof player === 'string') {
-    names.push(player);
-  } else if (player) {
-    names.push(player.name, player.nameEN, player.slug, player.id, player.playerId, player.cname);
-  }
-  for (var i = 0; i < names.length; i++) {
-    var key = normalizePlayerIdentityKey(names[i]);
-    if (key === 'lebron-james' || key === 'lebron') return true;
-  }
-  return false;
-}
-
 function getLeaguePlayerAge(player) {
   if (player && typeof player._age === 'number') return player._age;
-  var age = isLeBronJamesPlayer(player)
-    ? LEBRON_JAMES_SPECIAL_RULE.initialAge
-    : (getPlayerAge(player && player.name) || inferAge(player && player.name, player && player.ovr));
+  var age = getPlayerAge(player && player.id) || inferAge(player && player.id, player && player.ovr);
   if (player) player._age = age;
   return age;
 }
 
 function advanceSpecialLeaguePlayerAge(player, age) {
-  if (isLeBronJamesPlayer(player)) player._specialAge = (age || LEBRON_JAMES_SPECIAL_RULE.initialAge) + 1;
+  if (player && player._protectedRetirementAge) player._specialAge = (age || player._age || 40) + 1;
 }
 
 function evolveLeague() {
   STATE._leagueChanges = { retired: [], rookies: [], teamChanges: {}, trades: [] };
-  var teams = typeof NBA2K_TEAMS !== 'undefined' ? NBA2K_TEAMS : [];
+  var teams = typeof LEAGUE_TEAM_IDS !== 'undefined' ? LEAGUE_TEAM_IDS : [];
   teams.forEach(function(t) {
-    var roster = NBA2K_DATA[t];
+    var roster = LEAGUE_PLAYER_DATA[t];
     if (!roster || !roster.length) return;
     STATE._leagueChanges.teamChanges[t] = { before: roster.length, retired: [], rookies: [] };
     var newRoster = [];
     roster.forEach(function(p) {
       var age = getLeaguePlayerAge(p);
-      var gene = getPlayerGene(p.name);
+      var gene = getPlayerGene(p.id);
       var volatility = gene.v;
       var ageFactor = 0;
       if (age <= 22) ageFactor = 1 + rngNext() * 1.5;
@@ -1447,16 +1417,16 @@ function evolveLeague() {
         p.ovr = Math.round(newOvr);
       }
       var retireChance = 0;
-      if (isLeBronJamesPlayer(p) && age < LEBRON_JAMES_SPECIAL_RULE.protectedRetirementAge) {
+      if (p._protectedRetirementAge && age < p._protectedRetirementAge) {
         retireChance = 0;
       } else if (age >= 40) retireChance = 100;
       else if (age >= 38) retireChance = 50;
       else if (age >= 36) retireChance = 25;
       else if (age >= 34 && p.ovr < 75) retireChance = 35;
       if (rngNext() * 100 < retireChance) {
-        STATE._leagueChanges.retired.push({ name: p.cname || p.name, nameEN: p.name, ovr: p.ovr, team: t, age: age });
+        STATE._leagueChanges.retired.push({ displayName: p.shortName || p.cname, playerId: p.id, hidden: !!p._veteranTribute, ovr: p.ovr, team: t, age: age });
         if (t === STATE.careerTeam && STATE._leagueChanges.teamChanges[t]) {
-          STATE._leagueChanges.teamChanges[t].retired.push(p.cname || p.name);
+          STATE._leagueChanges.teamChanges[t].retired.push(p.shortName || p.cname);
         }
         return;
       }
@@ -1472,18 +1442,18 @@ function evolveLeague() {
         ? 68 + Math.floor(rngNext() * 7)
         : 60 + Math.floor(rngNext() * 8);
       newRoster.push(rk);
-      STATE._leagueChanges.rookies.push({ name: rk.cname || rk.name, team: t });
+      STATE._leagueChanges.rookies.push({ name: rk.shortName || rk.cname, playerId: rk.id, team: t });
       if (t === STATE.careerTeam && STATE._leagueChanges.teamChanges[t]) {
-        STATE._leagueChanges.teamChanges[t].rookies.push(rk.cname || rk.name);
+        STATE._leagueChanges.teamChanges[t].rookies.push(rk.shortName || rk.cname);
       }
     }
-    NBA2K_DATA[t] = newRoster;
+    LEAGUE_PLAYER_DATA[t] = newRoster;
   });
 
   // ── 合同初始化（一次性）──
   if (!STATE._contractsInited) {
-    NBA2K_TEAMS.forEach(function(t) {
-      (NBA2K_DATA[t] || []).forEach(function(p) {
+    LEAGUE_TEAM_IDS.forEach(function(t) {
+      (LEAGUE_PLAYER_DATA[t] || []).forEach(function(p) {
         if (p.contract === undefined) {
           var age = getLeaguePlayerAge(p);
           if (age <= 23) p.contract = 2 + Math.floor(rngNext() * 3);
@@ -1499,8 +1469,8 @@ function evolveLeague() {
 
   // ── 合同扣减 + 留队判定 + 到期剥离 ──
   var freeAgents = [];
-  NBA2K_TEAMS.forEach(function(t) {
-    var roster = NBA2K_DATA[t];
+  LEAGUE_TEAM_IDS.forEach(function(t) {
+    var roster = LEAGUE_PLAYER_DATA[t];
     if (!roster) return;
     var newRoster = [];
     roster.forEach(function(p) {
@@ -1532,19 +1502,19 @@ function evolveLeague() {
           p._justSigned = true;
           newRoster.push(p);
           STATE._leagueChanges.stayed = STATE._leagueChanges.stayed || [];
-          STATE._leagueChanges.stayed.push({ name: p.cname || p.name, team: t, years: p.contract });
+          STATE._leagueChanges.stayed.push({ name: p.shortName || p.cname, playerId: p.id, team: t, years: p.contract });
         } else {
           // 离队进自由池
           p._origTeam = t;
           freeAgents.push(p);
           STATE._leagueChanges.freeAgents = STATE._leagueChanges.freeAgents || [];
-          STATE._leagueChanges.freeAgents.push({ name: p.cname || p.name, ovr: p.ovr, team: t, age: age });
+          STATE._leagueChanges.freeAgents.push({ name: p.shortName || p.cname, playerId: p.id, ovr: p.ovr, team: t, age: age });
         }
       } else {
         newRoster.push(p);
       }
     });
-    NBA2K_DATA[t] = newRoster;
+    LEAGUE_PLAYER_DATA[t] = newRoster;
   });
   STATE._leagueChanges.freeAgentCount = freeAgents.length;
   STATE._freeAgentPool = freeAgents;

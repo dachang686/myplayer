@@ -89,7 +89,7 @@ var decayResist = ["threePT", "MID", "PAS", "HAN", "CLU"]; // 投射/球商几�
       if (t === fa._origTeam) continue;
 +     // ★ 简化版薪资约束：任何球队 OVR≥85 球员不超过 3 名
 +     if (fa.ovr >= 82) {
-+       var starCount = (NBA2K_DATA[t] || []).filter(function(p) { return !p._isUser && p.ovr >= 85; }).length;
++       var starCount = (LEAGUE_PLAYER_DATA[t] || []).filter(function(p) { return !p._isUser && p.ovr >= 85; }).length;
 +       if (starCount >= 3) continue;
 +     }
       if (fa.ovr > 86) {
@@ -112,7 +112,7 @@ var decayResist = ["threePT", "MID", "PAS", "HAN", "CLU"]; // 投射/球商几�
 if (fa.ovr > 86) {
   if (starSignedTeams[t]) continue;  // 本轮已签过球星
   var hasStar = false;
-  (NBA2K_DATA[t] || []).forEach(function(p) {
+  (LEAGUE_PLAYER_DATA[t] || []).forEach(function(p) {
     if (p !== fa && !p._isUser && canPlayPosition(p.pos || '', pos) && p.ovr >= 84) hasStar = true;
   });
   if (hasStar) continue;
@@ -132,7 +132,7 @@ if (fa.ovr > 86) {
 
 ```diff
   var hasStar = false;
-  (NBA2K_DATA[t] || []).forEach(function(p) {
+  (LEAGUE_PLAYER_DATA[t] || []).forEach(function(p) {
 -   if (p !== fa && !p._isUser && canPlayPosition(p.pos || '', pos) && p.ovr >= 84) hasStar = true;
 +   // 全队范围检查：不论位置，只要有 OVR≥84 的球星就拦截
 +   if (p !== fa && !p._isUser && p.ovr >= 84) hasStar = true;
@@ -197,7 +197,7 @@ while (newRoster.length < 18) {
 
 - **只支持 1换1**：不支持"1换2"、"球员+选秀权"等真实交易形式。
 - **OVR 差值不超过 8**：这意味着只能换到能力差不多的球员，无法实现"卖球星换潜力股"的重建操作。
-- **每赛季最多 10 笔**：且每队最多参与 1 笔（`tradedTeams` Set 控制），全联盟 30 支球队最多只有 20 支参与交易，远低于真实 NBA 交易的活跃度。
+- **每赛季最多 10 笔**：且每队最多参与 1 笔（`tradedTeams` Set 控制），全联盟 30 支球队最多只有 20 支参与交易，远低于真实职业篮球联盟交易的活跃度。
 - **无选秀权概念**：整个代码中不存在选秀权作为交易资产，重建球队无法通过出售即战力来囤积未来资产。
 
 **🔧 最小修复方案（放宽 OVR 差值上限至 15，每队可参与 2 笔交易）**：
@@ -233,7 +233,7 @@ while (newRoster.length < 18) {
 
 ### 📝 总结
 
-《BuildPlayer》当前的休赛期是一个**高度伪装的随机打乱系统**。它利用了"退役+强行补充新秀"、"概率离队+按弱队排序分配"勉强维持着联盟大名单的人数平衡。但在本质上，它缺乏**薪资、选秀权、属性针对性衰退**这三大 NBA 模拟游戏最核心的地基。
+《BuildPlayer》当前的休赛期是一个**高度伪装的随机打乱系统**。它利用了"退役+强行补充新秀"、"概率离队+按弱队排序分配"勉强维持着联盟大名单的人数平衡。但在本质上，它缺乏**薪资、选秀权、属性针对性衰退**这三大职业篮球模拟游戏最核心的地基。
 
 如果想要深入开发，以下是按优先级排列的重构路线图：
 

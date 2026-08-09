@@ -23,7 +23,11 @@ while ((match = scriptPattern.exec(html))) {
   }
 }
 
-for (const file of ['js/local_platform_runtime.js', 'js/local_player_profile.js']) {
+const localModules = Array.from(html.matchAll(/<script\s+src=["']([^"']+\.js)["'][^>]*><\/script>/gi))
+  .map(match => match[1])
+  .filter(file => !/^[a-z]+:/i.test(file));
+
+for (const file of localModules) {
   try {
     parser.parse(fs.readFileSync(file, 'utf8'), { sourceType: 'script' });
   } catch (error) {
@@ -33,4 +37,4 @@ for (const file of ['js/local_platform_runtime.js', 'js/local_player_profile.js'
 }
 
 if (failed) process.exit(1);
-console.log(`Parsed ${inlineCount} inline scripts and 2 local modules successfully.`);
+console.log(`Parsed ${inlineCount} inline scripts and ${localModules.length} local modules successfully.`);

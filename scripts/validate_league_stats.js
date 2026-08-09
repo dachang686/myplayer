@@ -16,19 +16,12 @@ inlineScripts.forEach((match, index) => {
   }
 });
 
-const dataSource = fs.readFileSync(path.join(root, 'js/data/nba2k_players.js'), 'utf8');
-const leagueData = new Function(`${dataSource}\nreturn { NBA2K_DATA, NBA2K_TEAMS };`)();
-const coreSource = fs.readFileSync(path.join(root, 'js/core_game_logic.js'), 'utf8');
-const blockStart = coreSource.indexOf('function leagueStatClamp');
-const blockEnd = coreSource.indexOf('/** 属性→效率系数：递减曲线', blockStart);
+const dataSource = fs.readFileSync(path.join(root, 'js/data/league_players.js'), 'utf8');
+const leagueData = new Function(`${dataSource}\nreturn { LEAGUE_PLAYER_DATA, LEAGUE_TEAM_IDS };`)();
+const blockStart = indexSource.indexOf('function leagueStatClamp');
+const blockEnd = indexSource.indexOf('/** 属性→效率系数：递减曲线', blockStart);
 
 if (blockStart < 0 || blockEnd < 0) throw new Error('无法定位联盟球员统计模拟代码');
-const indexBlockStart = indexSource.indexOf('function leagueStatClamp');
-const indexBlockEnd = indexSource.indexOf('/** 属性→效率系数：递减曲线', indexBlockStart);
-if (indexBlockStart < 0 || indexBlockEnd < 0) throw new Error('无法定位 index.html 中的联盟球员统计模拟代码');
-if (coreSource.slice(blockStart, blockEnd).trim() !== indexSource.slice(indexBlockStart, indexBlockEnd).trim()) {
-  throw new Error('index.html 与 js/core_game_logic.js 的联盟统计模拟代码不同步');
-}
 
 function loadUserStatsReader(source) {
   const start = source.indexOf('function generatePlayerStatsNew');
@@ -37,7 +30,7 @@ function loadUserStatsReader(source) {
   return new Function(`${source.slice(start, end)}\nreturn generatePlayerStatsNew;`)();
 }
 
-const userStatsReaders = [loadUserStatsReader(coreSource), loadUserStatsReader(indexSource)];
+const userStatsReaders = [loadUserStatsReader(indexSource)];
 const sharedBoxScoreSample = {
   boxScore: {
     WAS: [{ _isUser: true, pts: 27, reb: 4, ast: 9, stl: 2, blk: 1, tov: 3, fgm: 10, fga: 19, ftm: 3, fta: 4, threeM: 4, threeA: 9, mins: 36 }],
@@ -62,7 +55,7 @@ const canPlay = (rawPosition, position) => String(rawPosition || '')
   .includes(position);
 
 function calcTeamLineup(team) {
-  const allPlayers = (leagueData.NBA2K_DATA[team] || []).slice();
+  const allPlayers = (leagueData.LEAGUE_PLAYER_DATA[team] || []).slice();
   const starters = {};
   const assigned = new Set();
 
@@ -97,7 +90,7 @@ function calcTeamLineup(team) {
   return { starters, bench, allPlayers };
 }
 
-const simulationSource = coreSource.slice(blockStart, blockEnd);
+const simulationSource = indexSource.slice(blockStart, blockEnd);
 const simulation = new Function(
   'STATE',
   'af',
@@ -123,7 +116,7 @@ function runSeason(seed) {
   let invariantErrors = 0;
 
   try {
-    const teams = leagueData.NBA2K_TEAMS;
+    const teams = leagueData.LEAGUE_TEAM_IDS;
     for (let round = 0; round < 82; round++) {
       for (let pair = 0; pair < teams.length; pair += 2) {
         const teamA = teams[(pair + round) % teams.length];
@@ -139,9 +132,9 @@ function runSeason(seed) {
           teamAssistTotals.push(sum('ast'));
           rows.forEach(row => {
             if (row._isUser) return;
-            const key = `${team}:${row.name}`;
+            const key = `${team}:${row.playerId}`;
             const record = totals[key] || (totals[key] = {
-              name: row.name, team, gp: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0,
+              id: row.playerId, name: row.name, team, gp: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0,
             });
             record.gp++;
             ['pts', 'reb', 'ast', 'stl', 'blk'].forEach(field => { record[field] += row[field] || 0; });
@@ -177,30 +170,30 @@ function runSeason(seed) {
 }
 
 function topTenOverlap(first, second) {
-  const names = new Set(first.map(row => row.name));
-  return second.filter(row => names.has(row.name)).length;
+  const ids = new Set(first.map(row => row.id));
+  return second.filter(row => ids.has(row.id)).length;
 }
 
 function runUserSeason(seed) {
   const originalRandom = Math.random;
-  const originalRoster = leagueData.NBA2K_DATA.WAS;
+  const originalRoster = leagueData.LEAGUE_PLAYER_DATA.WAS;
   Math.random = seededRandom(seed);
   state.season = { isPlayoffs: false };
   const user = {
-    name: '__validation_user__', cname: '验证球员', pos: 'PG', ovr: 91, _isUser: true,
+    id: '__validation_user__', cname: '验证球员', pos: 'PG', ovr: 91, _isUser: true,
     threePT: 95, MID: 90, FIN: 88, DNK: 82, HAN: 94, PAS: 90,
     PDEF: 85, IDEF: 55, BLK: 45, REB: 55, ATH: 90, STR: 65, CLU: 90,
   };
-  leagueData.NBA2K_DATA.WAS = originalRoster.concat(user);
+  leagueData.LEAGUE_PLAYER_DATA.WAS = originalRoster.concat(user);
   const totals = { gp: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, mins: 0, bestPts: 0 };
   let invariantErrors = 0;
   let injuryRedistributionErrors = 0;
 
   try {
     for (let game = 0; game < 82; game++) {
-      const opponent = leagueData.NBA2K_TEAMS[(game + 1) % leagueData.NBA2K_TEAMS.length] === 'WAS'
+      const opponent = leagueData.LEAGUE_TEAM_IDS[(game + 1) % leagueData.LEAGUE_TEAM_IDS.length] === 'WAS'
         ? 'ATL'
-        : leagueData.NBA2K_TEAMS[(game + 1) % leagueData.NBA2K_TEAMS.length];
+        : leagueData.LEAGUE_TEAM_IDS[(game + 1) % leagueData.LEAGUE_TEAM_IDS.length];
       const teamScore = 102 + Math.floor(Math.random() * 21);
       const opponentScore = 102 + Math.floor(Math.random() * 21);
       const boxScore = simulation.generateBoxScore('WAS', opponent, teamScore, opponentScore);
@@ -225,7 +218,7 @@ function runUserSeason(seed) {
       }
     }
   } finally {
-    leagueData.NBA2K_DATA.WAS = originalRoster;
+    leagueData.LEAGUE_PLAYER_DATA.WAS = originalRoster;
     Math.random = originalRandom;
   }
 
@@ -265,7 +258,7 @@ const report = {
     .filter(row => row.team === 'WAS')
     .sort((a, b) => b.gp - a.gp)
     .slice(0, 12)
-    .map(row => ({ name: row.name, gp: row.gp, ppg: row.pts, rpg: row.reb, apg: row.ast })),
+    .map(row => ({ id: row.id, name: row.name, gp: row.gp, ppg: row.pts, rpg: row.reb, apg: row.ast })),
   userSeason,
 };
 

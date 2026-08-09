@@ -3,7 +3,7 @@
   relationship: { name: '恋爱', layer: 'life', unlocks: ['family', 'brand', 'controversy'] },
   family: { name: '家庭', layer: 'late_career', unlocks: ['retirement_choice', 'post_career'] },
   network: { name: '高尔夫 / 人脉', layer: 'career_power', unlocks: ['rich_paul', 'brand'] },
-  rich_paul: { name: 'Rich Paul / 经纪团队', layer: 'career_power', unlocks: ['transfer'] },
+  rich_paul: { name: '明星经纪团队', layer: 'career_power', unlocks: ['transfer'] },
   mentor: { name: '巨星导师', layer: 'growth', unlocks: ['rich_paul', 'signature_style'] },
   training: { name: '夏日训练', layer: 'growth', unlocks: ['signature_style', 'rich_paul'] },
   skill_training: { name: '专项训练', layer: 'growth', unlocks: ['signature_style', 'playoff_moment'] },
@@ -135,7 +135,7 @@ const BRANCH_EVENTS = [
           '凌晨的力量房里，詹姆斯一边训练一边和你聊如何照顾一个漫长职业生涯。他说天赋让人进联盟，习惯才决定你能待多久。',
           '你以为这是身体课，结果一半时间都在看录像。詹姆斯反复暂停同一个回合，问你：如果你是持球人，第三个选择在哪里？'
         ]);
-        var extra = agency ? '<br><br>隐藏结果：训练结束后，Rich Paul 的团队主动和你聊了几句。他们没有立刻谈合作，但你能感觉到，这条线以后可能会再出现。额外效果：传球+1。' : '';
+        var extra = agency ? '<br><br>隐藏结果：训练结束后，一支明星经纪团队主动和你聊了几句。他们没有立刻谈合作，但你能感觉到，这条线以后可能会再出现。额外效果：传球+1。' : '';
         if (great) return scene + '<br><br>特殊结果：你的身体适应速度超出预期，对抗后的起跳和二次发力都有提升。<br><br>效果：运动+2，力量+1，终结+1。' + extra;
         return scene + '<br><br>普通结果：你的核心力量和冲击篮筐稳定性提升，长赛季身体管理意识也更强。<br><br>效果：运动+1，力量+1，终结+1。' + extra;
       }},
@@ -301,7 +301,7 @@ const BRANCH_EVENTS = [
       return (STATE.career.currentAge || 22) >= 24 && ((STATE.finalOVR || 0) >= 85 || hasCareerHonor('全明星') || hasCareerHonor('总冠军'));
     },
     choices: [
-      { label: '参加高尔夫局', hint: '可能遇到 Rich Paul、库里团队或商业机会', apply: function() {
+      { label: '参加高尔夫局', hint: '可能遇到明星经纪团队、球星团队或商业机会', apply: function() {
         var c = STATE.career;
         c.flags = c.flags || {};
         advanceBranch('network', 1, { status: 'golf' });
@@ -314,7 +314,7 @@ const BRANCH_EVENTS = [
         ]);
         if (roll < 0.25) {
           c.flags.richPaulContact = true;
-          return intro + '<br><br>Rich Paul 线索：你和 Rich Paul 的团队在第九洞聊了很久。他们没有直接招募你，只说如果未来想管理更大的职业版图，可以再坐下来谈。<br><br>效果：记录 Rich Paul 接触线，未来可联动经纪团队/詹姆斯训练营。';
+          return intro + '<br><br>经纪团队线索：你和一支明星经纪团队在第九洞聊了很久。他们没有直接招募你，只说如果未来想管理更大的职业版图，可以再坐下来谈。<br><br>效果：记录经纪团队接触线，未来可联动经纪团队或球星训练营。';
         }
         if (roll < 0.48) {
           c.flags.curryCircle = true;
@@ -421,7 +421,7 @@ const STAGED_BRANCH_EVENTS = [
       { label: '继续不回归', hint: '进入国家队缺席方向', apply: function() {
         setBranchNode('china_team', 'national_team_distance', { status: 'long_absence', declinedCount: (getBranchState('china_team').declinedCount || 0) + 1 });
         addProfileDelta('chinaPopularity', -2);
-        return '你没有出现在名单里。久而久之，媒体每次讨论国家队都会提到你，但语气已经从期待变成了遗憾。<br><br>重点：你的 NBA 生涯仍在前进，但国家队这条路开始离你远去。<br><br>影响：中国球迷支持下降。';
+        return '你没有出现在名单里。久而久之，媒体每次讨论国家队都会提到你，但语气已经从期待变成了遗憾。<br><br>重点：你的职业联盟生涯仍在前进，但国家队这条路开始离你远去。<br><br>影响：中国球迷支持下降。';
       }}
     ]
   },
@@ -633,7 +633,7 @@ const STAGED_BRANCH_EVENTS = [
     title: '中国男篮：越来越远的名单',
     scenes: [
       '又一年国家队窗口，你没有把自己的名字放进名单。公布那天你翻了一遍，果然没有你。',
-      '一开始媒体还会争论，后来大家慢慢习惯把你放在另一条叙事里：NBA 成功，但国家队缺席。'
+      '一开始媒体还会争论，后来大家慢慢习惯把你放在另一条叙事里：职业联盟成功，但国家队缺席。'
     ],
     body: '长期拒绝国家队也应该有结局。它不是错误选择，但会留下缺口。',
     requires: function() { return getBranchNode('china_team') === 'national_team_distance'; },
@@ -647,7 +647,7 @@ const STAGED_BRANCH_EVENTS = [
         setBranchNode('china_team', 'national_team_absence', { finalRole: 'absent' });
         addProfileDelta('chinaPopularity', -2);
         addProfileDelta('legacyBonus', -1);
-        return '你继续专注 NBA。很多年后，每次国际大赛名单公布，还是会有人提起你的名字，但语气已经从期待变成遗憾。<br><br>重点：你的职业生涯很成功，但国家队篇章留下了空白。<br><br>影响：中国球迷支持下降；历史评价略受影响。';
+        return '你继续专注职业联盟。很多年后，每次国际大赛名单公布，还是会有人提起你的名字，但语气已经从期待变成遗憾。<br><br>重点：你的职业生涯很成功，但国家队篇章留下了空白。<br><br>影响：中国球迷支持下降；历史评价略受影响。';
       }}
     ]
   },
@@ -1016,10 +1016,10 @@ const STAGED_BRANCH_EVENTS = [
       return getBranchNode('network') === 'start' && (STATE.career.currentAge || 22) >= 24 && ((STATE.finalOVR || 0) >= 85 || hasCareerHonor('全明星') || hasCareerHonor('总冠军'));
     },
     choices: [
-      { label: '参加高尔夫局', hint: '开启人脉线，可能遇到 Rich Paul 或库里圈子', apply: function() {
+      { label: '参加高尔夫局', hint: '开启人脉线，可能遇到明星经纪团队或球星圈子', apply: function() {
         var c = STATE.career; c.flags = c.flags || {};
         setBranchNode('network', 'golf_meet', { status: 'golf' });
-        if (Math.random() < 0.5) { c.flags.richPaulContact = true; return '你和 Rich Paul 的团队在第九洞聊了很久。他们没有直接招募你，只说未来可以坐下来谈职业版图。<br><br>结果：记录 Rich Paul 接触；人脉线进入二阶段。'; }
+        if (Math.random() < 0.5) { c.flags.richPaulContact = true; return '你和一支明星经纪团队在第九洞聊了很久。他们没有直接招募你，只说未来可以坐下来谈职业版图。<br><br>结果：记录经纪团队接触；人脉线进入二阶段。'; }
         c.flags.curryCircle = true; addAttrDelta('threePT', 1); STATE.finalOVR = calcOVR(STATE.attrs);
         return '库里团队的人注意到你在果岭上的手感，玩笑说你的腕部控制像投篮。后来对方留下了联系方式。<br><br>效果：三分+1；记录库里圈子；人脉线进入二阶段。';
       }},
@@ -1718,7 +1718,7 @@ const STAGED_BRANCH_EVENTS = [
     branch: 'china_market', phase: 'offseason', slot: 'main', weight: 10,
     title: '中国市场：中国行',
     scenes: [
-      '机场出口的人群比你想象中更夸张。有人举着你国家队的照片，也有人穿着你 NBA 球队的球衣。',
+      '机场出口的人群比你想象中更夸张。有人举着你国家队的照片，也有人穿着你职业球队的球衣。',
       '你忽然意识到，这两种身份在这里重叠了。'
     ],
     body: '这趟中国行会消耗你的休赛期，但也会让你的影响力真正落到球迷面前。',
@@ -2683,7 +2683,7 @@ const STAGED_BRANCH_EVENTS = [
     id: 'child_future',
     branch: 'family_children', phases: ['offseason', 'season'], slot: 'main', weight: 9,
     title: '家人孩子：父子未来',
-    scenes: ['他问你：爸爸，我也能打 NBA 吗？你认真想了很久，才发现答案不是“能”，而是“你想不想”。'],
+    scenes: ['他问你：爸爸，我也能打职业联赛吗？你认真想了很久，才发现答案不是“能”，而是“你想不想”。'],
     body: '你希望把什么留给他？',
     requires: function() {
       var n = getBranchNode('family_children');
