@@ -3,7 +3,7 @@
 ## 启动
 
 ```bash
-python3 /tmp/games/serve.py
+python -m http.server 8000 --bind 127.0.0.1
 ```
 
 浏览器打开 `http://127.0.0.1:8000/index.html`。不要直接使用 `file://` 打开，
@@ -12,22 +12,17 @@ python3 /tmp/games/serve.py
 ## 内容
 
 - 入口：`index.html`
-- 原始页面：`source/__ai_app.original.html`
+- 本地运行适配器：`js/local_platform_runtime.js`
+- 本地玩家资料：`js/local_player_profile.js`
+- 游戏逻辑与数据：`js/`
 - 本地静态资源：`assets/`
-- 下载清单及 SHA-256：`manifest.json`
-- 运行时资源采集清单：`runtime_inventory.json`
-- 浏览器验证结果：`validation.json`
 
-共镜像 659 项资源，34,382,400 字节；下载失败 0，回退资源 0。
-
-已在完全阻断外网请求的无头浏览器中跑通：进入活动、选择位置、锁定 13 项
-属性、球员揭晓、选秀剧情、分配球队、签约、进入 82 场赛季模拟。验证期间无
-外部请求、无本地 4xx/5xx、无页面异常、无控制台错误。
+运行时使用同源静态文件和浏览器本地存储，不需要外部账号、云存储或上传服务。
+可以运行 `node scripts/check_inline_scripts.js` 检查页面内联脚本和本地适配器语法。
 
 ## 服务边界
 
-游戏创建和生涯模拟均在本地运行。账号体系、查看其他用户建模、发帖/分享上传、
-广告奖励等依赖服务端的能力无法在本地环境中提供；环境检测页会阻断这些外部接口
-和统计上报，不影响本地游戏主流程。
+游戏创建和生涯模拟均在本地运行。社区浏览、云端发帖和广告任务未接入；海报通过
+浏览器直接保存到本地，存档保存在当前浏览器的本地存储中。
 
 # myplayer
