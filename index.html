@@ -138,7 +138,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 #screen-rankings.screen.active{padding-bottom:calc(88px + var(--safe-b))}
 .season-team-page-card{margin:0 12px 20px;background:var(--bg-card);border:2px solid var(--border);border-radius:var(--radius);overflow:hidden}
 .season-team-page-card .modal-header{background:var(--bg-card-hover)}
-#screen-build.screen.active{display:flex!important;flex-direction:column;min-height:calc(100dvh - 32px - var(--safe-t) - var(--safe-b));overflow:visible;position:relative}
+#screen-build.screen.active{display:flex!important;flex-direction:column;min-height:calc(100dvh - 32px - var(--safe-t) - var(--safe-b));overflow:visible;position:relative;padding:22px 14px 34px}
 #screen-career.screen.active{display:flex!important;flex-direction:column;min-height:calc(100dvh - 32px - var(--safe-t) - var(--safe-b))}
 #screen-career.screen.active #career-area{flex:1;display:flex;flex-direction:column}
 #screen-career.screen.active #career-area>div{flex:1;display:flex;flex-direction:column}
@@ -194,37 +194,49 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 #screen-position .btn{margin-top:18px;min-height:52px;border-radius:12px;font-size:15px}
 #screen-position .btn::after{content:'→';font:800 18px var(--font-body)}
 @media(max-width:380px){#screen-position{padding-left:14px;padding-right:14px}.pos-grid{gap:8px;padding-left:12px;padding-right:12px}.pos-card{grid-template-columns:38px minmax(0,1fr);gap:7px;padding:8px}.pos-card .pos-code{width:36px;height:36px;font-size:15px}.pos-card .pos-label{font-size:11px}.pos-card .pos-role{font-size:8px}}
-#build-progress-area{flex-shrink:0}
-.build-progress{display:flex;align-items:center;gap:10px;padding:8px 16px;background:var(--bg-card);border:2px solid var(--border);border-radius:12px;margin:0 10px 6px}
-.progress-bar{flex:1;height:10px;background:var(--border);border-radius:5px;overflow:hidden}
-.progress-fill{height:100%;background:linear-gradient(90deg,var(--orange),var(--orange-light));border-radius:5px;transition:width .4s ease}
-.progress-text{font-family:var(--font-display);font-size:18px;color:var(--orange);min-width:36px;text-align:right}
-.build-split{display:flex;flex-direction:row;gap:8px;padding:0 8px;flex:none;min-height:unset;align-items:flex-start}
-.build-left{width:130px;flex-shrink:0;display:flex;flex-direction:column;gap:4px;min-height:unset}
-.bl-header{text-align:center;padding:8px 4px 6px;background:var(--bg-card);border:2px solid var(--border);border-radius:10px}
-.bl-ovr{display:block;font-family:var(--font-display);font-size:clamp(28px,7vw,36px);font-weight:700;color:var(--orange);line-height:1}
-.bl-label{font-family:var(--font-display);font-size:10px;color:var(--text-dim);letter-spacing:2px}
-.bl-attrs{display:flex;flex-direction:column;gap:3px;flex:none;overflow:visible;-webkit-overflow-scrolling:auto}
-.ba-slot{display:flex;align-items:center;gap:3px;padding:6px 6px;background:var(--bg-card);border:2px solid var(--border);border-radius:8px;transition:all .15s;cursor:default;min-height:36px}
-.ba-slot.locked{border-color:var(--gold);background:linear-gradient(135deg,rgba(247,166,0,0.06),rgba(247,166,0,0.02))}
-.ba-slot.clickable{cursor:pointer}.ba-slot.clickable:hover{border-color:var(--orange);background:var(--orange-bg)}
-.ba-slot.clickable:active{transform:scale(0.96)}
-.ba-slot .ba-label{font-family:var(--font-display);font-size:10px;font-weight:600;color:var(--text-dim);min-width:20px}
-.ba-slot .ba-grade{font-size:13px;font-weight:700;min-width:18px;text-align:center;font-family:var(--font-display)}
-.ba-slot .ba-owner{font-size:8px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;text-align:right;padding-left:2px}
-.ba-slot.locked .ba-owner{color:var(--gold);font-weight:700}.ba-slot .ba-empty{font-size:14px;color:var(--border);margin-left:auto}
+.build-header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px;padding:0 2px 16px;border-bottom:1px solid var(--border)}
+.build-kicker{display:block;margin-bottom:5px;color:var(--orange);font-size:10px;font-weight:800;letter-spacing:1.5px}
+.build-header h1{margin:0;color:var(--text);font:800 26px/1.1 var(--font-display);letter-spacing:-.7px}
+.build-identity{max-width:55%;padding:7px 10px;border:1px solid var(--border-light);border-radius:9px;color:var(--text-dim);font-size:11px;font-weight:700;line-height:1.25;text-align:right}
+.build-split{display:grid;grid-template-columns:188px minmax(0,1fr);gap:14px;align-items:start}
+.build-left{min-width:0;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.bl-header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 12px;border-bottom:1px solid var(--border)}
+.bl-header-copy{min-width:0}
+.bl-label{display:block;color:var(--text);font:750 12px/1.2 var(--font-body);letter-spacing:.2px}
+.bl-caption{display:block;margin-top:3px;color:var(--text-muted);font-size:8px;line-height:1.3}
+.bl-ovr{display:block;color:var(--orange);font:800 30px/1 var(--font-display);letter-spacing:-1px}
+.build-section-heading{padding:10px 11px 7px;color:var(--text-muted);font-size:9px;font-weight:750;letter-spacing:.8px;text-transform:uppercase}
+.bl-attrs{display:flex;flex-direction:column;padding:0 6px 7px}
+.ba-slot{display:grid;grid-template-columns:30px 30px minmax(0,1fr);align-items:center;gap:5px;min-height:38px;padding:6px 7px;border:1px solid transparent;border-radius:7px;background:transparent;cursor:default;transition:background .18s cubic-bezier(.16,1,.3,1),border-color .18s cubic-bezier(.16,1,.3,1),transform .18s cubic-bezier(.16,1,.3,1)}
+.ba-slot+.ba-slot{border-top-color:var(--border)}
+.ba-slot.locked{border-color:var(--orange-dim);background:var(--orange-bg)}
+.ba-slot.clickable{cursor:pointer}
+.ba-slot.clickable:hover,.ba-slot.clickable:focus-visible{border-color:var(--orange-dim);background:var(--bg-card-hover);outline:none}
+.ba-slot.clickable:active{transform:scale(.98)}
+.ba-slot .ba-label{color:var(--text-dim);font:700 10px var(--font-body)}
+.ba-slot .ba-grade{text-align:center;font:800 12px var(--font-display)}
+.ba-slot .ba-tail{display:flex;align-items:center;justify-content:flex-end;gap:5px;min-width:0}
+.ba-slot .ba-value{color:var(--text-dim);font:700 10px var(--font-body)}
+.ba-slot .ba-status{min-width:30px;padding:3px 4px;border:1px solid var(--border-light);border-radius:5px;color:var(--text-muted);font-size:7px;font-weight:800;letter-spacing:.2px;text-align:center;white-space:nowrap}
+.ba-slot.clickable .ba-status{border-color:var(--orange-dim);color:var(--orange)}
+.ba-slot.locked .ba-value{color:var(--text);font-weight:800}.ba-slot.locked .ba-status{border-color:transparent;background:var(--orange);color:var(--on-accent)}
+.ba-slot .ba-empty{grid-column:2/4;color:var(--text-muted);font-size:8px;text-align:right}
 .bl-footer{display:none}.team-logo{width:18px;height:18px;border-radius:4px;vertical-align:middle;object-fit:contain;flex-shrink:0}
-.build-right{flex:1;min-width:0;min-height:unset;display:flex;flex-direction:column;gap:6px;overflow:visible}
-#br-slot-area{flex-shrink:0}#br-roster-area{flex:none;overflow:visible;min-height:unset;-webkit-overflow-scrolling:auto}
-.br-slot-area{background:var(--bg-card);border:2px solid var(--border);border-radius:var(--radius-sm);padding:10px 8px 10px;text-align:center}
-.br-slot-label{font-family:var(--font-display);font-size:12px;color:var(--orange);font-weight:700;letter-spacing:1px;margin-bottom:8px}
-.br-slot-wrapper{display:flex;justify-content:center}
-.br-slot-machine{position:relative;width:100%;max-width:160px;background:var(--bg-elevated);border:3px solid var(--border);border-radius:12px;overflow:hidden;height:114px;box-shadow:inset 0 2px 12px rgba(0,0,0,0.22)}
-.br-slot-machine::before{content:'';position:absolute;left:0;right:0;top:38px;height:38px;background:rgba(255,107,53,0.05);border-top:2px dashed var(--orange-dim);border-bottom:2px dashed var(--orange-dim);z-index:2;pointer-events:none}
-.br-slot-reel{transition:transform 2.8s cubic-bezier(0.15,0.85,0.25,1);will-change:transform}
-.br-slot-reel.spinning{transition:transform 2.8s cubic-bezier(0.1,0.7,0.1,1)}
-.br-slot-item{height:38px;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-size:14px;font-weight:600;color:var(--text-dim);padding:0 10px;z-index:1}
-.br-slot-item.highlight{color:var(--text);font-size:16px;font-weight:700}
+.build-right{min-width:0;display:flex;flex-direction:column;gap:12px}
+#br-slot-area{flex-shrink:0}#br-roster-area{min-height:0;overflow:visible;-webkit-overflow-scrolling:auto}
+.br-slot-area{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:14px;text-align:left}
+.br-slot-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
+.br-slot-kicker,.br-roster-kicker{display:block;margin-bottom:3px;color:var(--orange);font-size:8px;font-weight:800;letter-spacing:1.1px}
+.br-slot-label{color:var(--text);font:750 15px/1.2 var(--font-body)}
+.br-slot-rule{max-width:120px;color:var(--text-muted);font-size:9px;line-height:1.4;text-align:right}
+.br-slot-layout{display:grid;grid-template-columns:minmax(0,1fr) 128px;gap:12px;align-items:stretch}
+.br-slot-wrapper{display:flex;align-items:center;justify-content:center}
+.br-slot-machine{position:relative;width:100%;max-width:180px;height:114px;overflow:hidden;border:1px solid var(--border-light);border-radius:10px;background:var(--bg-elevated);box-shadow:inset 0 3px 12px rgba(0,0,0,.18)}
+.br-slot-machine::before{content:'';position:absolute;z-index:2;left:0;right:0;top:38px;height:38px;border-top:1px solid var(--orange-dim);border-bottom:1px solid var(--orange-dim);background:var(--orange-bg);pointer-events:none}
+.br-slot-reel{transition:transform 2.8s cubic-bezier(.15,.85,.25,1);will-change:transform}
+.br-slot-reel.spinning{transition:transform 2.8s cubic-bezier(.1,.7,.1,1)}
+.br-slot-item{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;height:38px;padding:0 10px;color:var(--text-muted);font:650 12px var(--font-body)}
+.br-slot-item.highlight{color:var(--text);font-size:14px;font-weight:800}
 /* 生涯球队老虎机 — 5项可见 */
 .br-slot-machine.career-slot{height:190px}
 .br-slot-machine.career-slot::before{top:76px}
@@ -242,19 +254,38 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .team-pick-card img{display:block;width:32px;height:32px;object-fit:contain;border-radius:4px;margin-bottom:2px}
 .team-pick-card .tpc-abbr{font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--text);letter-spacing:1px}
 .team-pick-card .tpc-name{font-family:var(--font-body);font-size:8px;color:var(--text-dim);line-height:1.2;overflow:hidden;text-overflow:ellipsis;max-width:100%;white-space:nowrap}
-.br-slot-actions{display:flex;gap:6px;justify-content:center;margin-top:8px;flex-wrap:wrap}
-.br-slot-actions .slot-btn{font-family:var(--font-display);font-size:11px;font-weight:700;padding:7px 12px;border-radius:8px;border:2px solid var(--border);background:var(--bg-card);color:var(--text);cursor:pointer;transition:all .12s;min-height:36px;box-shadow:0 3px 0 var(--border)}
-.br-slot-actions .slot-btn:active:not(:disabled){transform:translateY(2px);box-shadow:0 1px 0 var(--border)}
-.br-slot-actions .slot-btn:disabled{opacity:.3;cursor:default;box-shadow:none}
-#br-roster-area .br-roster-list{display:flex;flex-direction:column;gap:5px}
-.br-player{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--bg-card);border:2px solid var(--border);border-radius:10px;cursor:pointer;transition:all .12s;min-height:48px}
-.br-player:active{transform:scale(0.97)}.br-player.selected{border-color:var(--orange);background:var(--orange-bg)}
-.br-player .bp-left{display:flex;align-items:center;gap:8px;min-width:0;flex:1}
-.br-player .bp-headshot{width:30px;height:30px;border-radius:50%;flex-shrink:0;border:2px solid var(--border)}
-.br-player .bp-name{font-family:var(--font-display);font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.br-player .bp-detail{font-family:var(--font-body);font-size:10px;color:var(--text-dim);font-weight:600}
-.br-player .bp-meta{display:flex;align-items:center;gap:6px;flex-shrink:0}
-.br-player .bp-ovr{font-family:var(--font-display);font-size:18px;color:var(--text);line-height:1}
+.br-slot-actions{display:flex;flex-direction:column;gap:7px;justify-content:center}
+.br-slot-actions .slot-btn{min-height:40px;padding:8px 10px;border:1px solid var(--border-light);border-radius:8px;background:var(--bg-elevated);color:var(--text);font:750 10px var(--font-body);cursor:pointer;transition:background .18s cubic-bezier(.16,1,.3,1),border-color .18s cubic-bezier(.16,1,.3,1),transform .18s cubic-bezier(.16,1,.3,1)}
+.br-slot-actions .slot-btn-primary{border-color:var(--orange);background:var(--orange);color:var(--on-accent)}
+.br-slot-actions .slot-btn:hover:not(:disabled),.br-slot-actions .slot-btn:focus-visible:not(:disabled){border-color:var(--orange);outline:none}
+.br-slot-actions .slot-btn:active:not(:disabled){transform:translateY(1px)}
+.br-slot-actions .slot-btn:disabled{opacity:.34;cursor:default}
+.br-slot-warn{min-height:14px;margin-top:8px;color:var(--orange);font-size:9px;line-height:1.4;text-align:right}
+#br-roster-area:not(:empty){padding:13px 14px 14px;border:1px solid var(--border);border-radius:12px;background:var(--bg-card)}
+.br-roster-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:9px}
+.br-roster-title{display:block;color:var(--text);font:750 14px/1.2 var(--font-body)}
+.br-roster-meta{display:block;margin-top:3px;color:var(--text-muted);font-size:9px}
+.br-roster-instruction{max-width:130px;color:var(--text-dim);font-size:9px;line-height:1.35;text-align:right}
+#br-roster-area .br-roster-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.br-player{display:flex;align-items:center;justify-content:space-between;width:100%;min-width:0;min-height:56px;padding:8px;border:1px solid var(--border);border-radius:9px;background:var(--bg-elevated);color:var(--text);text-align:left;cursor:pointer;transition:background .18s cubic-bezier(.16,1,.3,1),border-color .18s cubic-bezier(.16,1,.3,1),transform .18s cubic-bezier(.16,1,.3,1)}
+.br-player:last-child:nth-child(odd){grid-column:1/-1}
+.br-player:hover,.br-player:focus-visible{border-color:var(--border-light);background:var(--bg-card-hover);outline:none}
+.br-player:active{transform:scale(.98)}.br-player.selected{border-color:var(--orange);background:var(--orange-bg)}
+.br-player .bp-left{display:flex;align-items:center;gap:7px;min-width:0;flex:1}
+.br-player .bp-headshot{width:32px;height:32px;border-radius:50%;flex-shrink:0;border:2px solid var(--border)}
+.br-player .bp-copy{min-width:0}
+.br-player .bp-name{overflow:hidden;color:var(--text);font:700 11px var(--font-body);text-overflow:ellipsis;white-space:nowrap}
+.br-player .bp-detail{margin-top:2px;color:var(--text-muted);font-size:8px;font-weight:700}
+.br-player.selected .bp-detail{color:var(--orange)}
+.br-player .bp-meta{display:flex;flex-direction:column;align-items:flex-end;gap:1px;flex-shrink:0;padding-left:5px}
+.br-player .bp-ovr-label{color:var(--text-muted);font-size:7px;font-weight:750;letter-spacing:.7px}.br-player .bp-ovr{color:var(--text);font:800 16px/1 var(--font-display)}
+.br-roster-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-top:8px;color:var(--text-muted);font-size:8px;line-height:1.35}
+.br-roster-foot strong{color:var(--orange);font-size:9px;text-align:right}
+#screen-career .br-slot-area{text-align:center}
+#screen-career .br-slot-label{margin-bottom:10px;color:var(--orange);font:750 13px var(--font-body)}
+#screen-career .br-slot-actions{flex-direction:row;flex-wrap:wrap;justify-content:center}
+#screen-career .br-slot-actions .slot-btn{min-height:38px;padding:8px 12px}
+@media(max-width:480px){#screen-build.screen.active{padding:18px 12px 30px}.build-header{align-items:flex-start;margin-bottom:14px}.build-header h1{font-size:23px}.build-identity{max-width:58%;font-size:10px}.build-split{grid-template-columns:1fr}.build-right{order:1}.build-left{order:2}.bl-attrs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:0 7px 8px}.ba-slot+.ba-slot{border-top-color:transparent}.ba-slot{border-color:var(--border);min-height:40px}.br-slot-layout{grid-template-columns:minmax(0,1fr) 122px}.br-roster-instruction{max-width:110px}.br-player{min-height:54px}.br-player .bp-headshot{width:29px;height:29px}.br-player .bp-name{font-size:10px}}
 #build-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:100;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
 .build-toast-msg{background:var(--bg-card);border:2px solid var(--orange);border-radius:14px;padding:10px 20px;font-family:var(--font-display);font-size:14px;font-weight:600;color:var(--text);animation:slideUp .25s ease,fadeOut .3s ease 1.2s forwards;box-shadow:var(--shadow-lg)}
 @keyframes fadeOut{to{opacity:0;transform:translateY(-10px)}}
@@ -779,20 +810,25 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 
   <!-- ====== 建球员 ====== -->
   <div class="screen" id="screen-build">
-    <div class="section-title">
-      <h1>建球员</h1>
-      <!-- <button class="build-edit-btn" onclick="openEditProfile()" title="编辑个人信息">✏️</button> -->
+    <div class="build-header">
+      <div>
+        <span class="build-kicker">PLAYER WORKBENCH</span>
+        <h1>组合能力</h1>
+      </div>
+      <div class="build-identity" id="build-pos-indicator"></div>
     </div>
-    <div id="build-pos-indicator" style="text-align:center;padding:4px 0 2px;font-family:var(--font-display);font-size:13px;color:var(--text-dim);letter-spacing:0.5px;"></div>
-    <div id="build-progress-area"></div>
 
     <div class="build-split">
       <!-- Left: Player Attributes (persistent sidebar) -->
       <div class="build-left">
         <div class="bl-header">
+          <div class="bl-header-copy">
+            <span class="bl-label">预计总评</span>
+            <span class="bl-caption">随已锁定能力更新</span>
+          </div>
           <span class="bl-ovr" id="bl-ovr">--</span>
-          <span class="bl-label">OVR</span>
         </div>
+        <div class="build-section-heading">能力槽</div>
         <div class="bl-attrs" id="bl-attrs"></div>
         <div class="bl-footer" id="bl-footer"></div>
       </div>
@@ -1669,21 +1705,8 @@ function confirmPosition() {
 
 function renderBuildUI() {
   var pi = document.getElementById('build-pos-indicator');
-  if (pi) pi.textContent = '「' + getMyPlayerDisplayName() + '」 · ' + (SIM_CONFIG.POSITIONS[STATE.position] || STATE.position) + '（' + STATE.position + '）';
+  if (pi) pi.textContent = getMyPlayerDisplayName() + ' · ' + (SIM_CONFIG.POSITIONS[STATE.position] || STATE.position) + ' · ' + STATE.position;
   renderLeftAttrs();
-  renderProgress();
-}
-
-function renderProgress() {
-  const p = document.getElementById('build-progress-area');
-  if (!p) return;
-  const pct = Math.round((STATE.lockedCount / 13) * 100);
-  p.innerHTML = `
-    <div class="build-progress">
-      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
-      <div class="progress-text">${STATE.lockedCount}/13</div>
-    </div>
-  `;
 }
 
 /** Render left attribute sidebar */
@@ -1734,6 +1757,15 @@ function renderLeftAttrs() {
     else if (STATE.selectedPlayer) {
       cls += ' clickable';
       div.onclick = () => lockAttr(key);
+      div.tabIndex = 0;
+      div.setAttribute('role', 'button');
+      div.setAttribute('aria-label', '锁定' + attrCN(key));
+      div.onkeydown = event => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          lockAttr(key);
+        }
+      };
     }
     div.className = cls;
     
@@ -1741,11 +1773,15 @@ function renderLeftAttrs() {
       const g = getGrade(val);
       const slot = STATE.attrSlots[key];
       const hadPenalty = slot && slot.penalty < 1.0;
+      const sourceName = slot?.player ? getPlayerDisplayName(slot.player) : '';
+      const sourceTitle = [sourceName, hadPenalty ? `原始${slot.raw} × ${slot.penalty.toFixed(2)}` : ''].filter(Boolean).join(' · ');
       div.innerHTML = `
         <span class="ba-label">${attrCN(key)}</span>
         <span class="ba-grade" style="color:${g.color}">${g.letter}</span>
-        <span class="ba-owner" title="${hadPenalty ? `原始${slot.raw} × ${slot.penalty.toFixed(2)}` : ''}" 
-             style="${hadPenalty ? 'color:var(--accent);' : ''}">${slot?.player ? getPlayerDisplayName(slot.player) : ''}</span>
+        <span class="ba-tail" title="${sourceTitle}">
+          <span class="ba-value">${val}</span>
+          <span class="ba-status">已锁</span>
+        </span>
       `;
     } else if (STATE.selectedPlayer) {
       const pv = parseInt(STATE.selectedPlayer[key]) || 50;
@@ -1758,12 +1794,15 @@ function renderLeftAttrs() {
       div.innerHTML = `
         <span class="ba-label">${attrCN(key)}</span>
         <span class="ba-grade" style="color:${pg.color}">${pg.letter}</span>
-        <span class="ba-owner"${hasPenalty ? ` style="color:var(--accent);font-size:9px;"` : ''}>${hasPenalty ? `${adjustedVal}▼` : adjustedVal}</span>
+        <span class="ba-tail">
+          <span class="ba-value"${hasPenalty ? ` style="color:var(--accent);" title="跨位置折损：原始 ${pv}"` : ''}>${hasPenalty ? `${adjustedVal}▼` : adjustedVal}</span>
+          <span class="ba-status">锁定</span>
+        </span>
       `;
     } else {
       div.innerHTML = `
         <span class="ba-label">${attrCN(key)}</span>
-        <span class="ba-empty">+</span>
+        <span class="ba-empty">待选择球员</span>
       `;
     }
     container.appendChild(div);
@@ -1813,12 +1852,12 @@ function getRerollButtonHtml() {
   var hasTeam = !!STATE.currentTeam;
   if (STATE._rerollsLeft > 0) {
     // 计数器有次数 → 展示正常文案（未选队时禁用）
-    return '<button class="btn btn-sm slot-btn" onclick="rerollTeamPlayers()"' +
-      (hasTeam ? '' : ' disabled style="opacity:0.3;"') +
-      '>👥 更换球员 (' + STATE._rerollsLeft + ')</button>';
+    return '<button class="slot-btn" onclick="rerollTeamPlayers()"' +
+      (hasTeam ? '' : ' disabled') +
+      '>更换球员 · ' + STATE._rerollsLeft + '</button>';
   }
-  return '<button class="btn btn-sm slot-btn" disabled style="opacity:0.3;cursor:not-allowed;">' +
-    '👥 更换球员 (0)' +
+  return '<button class="slot-btn" disabled>' +
+    '更换球员 · 0' +
     '</button>';
 }
 
@@ -1834,16 +1873,15 @@ function updateSlotButtons() {
   const warnEl = slotArea.querySelector('.br-slot-warn');
   if (actionsEl) {
     actionsEl.innerHTML = `
-      <button class="btn btn-sm slot-btn" onclick="pullHandle()"
-        ${canSpin ? '' : 'disabled'}
-        style="background:var(--orange);color:var(--on-accent);${canSpin ? '' : 'opacity:0.3;'}">
-        🎲 随机球队
+      <button class="slot-btn slot-btn-primary" onclick="pullHandle()"
+        ${canSpin ? '' : 'disabled'}>
+        随机球队
       </button>
       ${getRerollButtonHtml()}
     `;
   }
   if (warnEl) {
-    warnEl.textContent = STATE._mustLockAfterSpin ? '⚠️ 先选择一名球员并锁定属性才能再次随机' : '';
+    warnEl.textContent = STATE._mustLockAfterSpin ? '请先选择球员并锁定一项能力' : '';
   }
 }
 
@@ -1852,23 +1890,29 @@ function buildSlotHTML(itemsHtml) {
   const canSpin = !STATE._mustLockAfterSpin && !_slotSpinning;
   return `
     <div class="br-slot-area">
-      <div class="br-slot-label">🎰 随机选队</div>
-      <div class="br-slot-wrapper">
-        <div class="br-slot-machine">
-          <div class="br-slot-reel" id="slot-reel">
-            ${itemsHtml}
+      <div class="br-slot-head">
+        <div>
+          <span class="br-slot-kicker">TEAM DRAW</span>
+          <div class="br-slot-label">抽取下一支球队</div>
+        </div>
+        <span class="br-slot-rule">选一名球员，再锁定一项能力</span>
+      </div>
+      <div class="br-slot-layout">
+        <div class="br-slot-wrapper">
+          <div class="br-slot-machine">
+            <div class="br-slot-reel" id="slot-reel">
+              ${itemsHtml}
+            </div>
           </div>
         </div>
+        <div class="br-slot-actions">
+          <button class="slot-btn slot-btn-primary" onclick="pullHandle()" ${canSpin ? '' : 'disabled'}>
+            随机球队
+          </button>
+          ${getRerollButtonHtml()}
+        </div>
       </div>
-      <div class="br-slot-actions">
-        <button class="btn btn-sm slot-btn" onclick="pullHandle()"
-          ${canSpin ? '' : 'disabled'}
-          style="background:var(--orange);color:var(--on-accent);${canSpin ? '' : 'opacity:0.3;'}">
-          🎲 随机球队
-        </button>
-        ${getRerollButtonHtml()}
-      </div>
-      <div class="br-slot-warn" style="font-size:10px;color:var(--orange);margin-top:6px;min-height:16px;">${STATE._mustLockAfterSpin ? '⚠️ 先选择一名球员并锁定属性才能再次随机' : ''}</div>
+      <div class="br-slot-warn" aria-live="polite">${STATE._mustLockAfterSpin ? '请先选择球员并锁定一项能力' : ''}</div>
     </div>
   `;
 }
@@ -1996,41 +2040,44 @@ function renderRosterPlayers(team, shown, allAvailable) {
   const rosterArea = document.getElementById('br-roster-area');
   if (!rosterArea) return;
   
-  let listHtml = `<div style="display:flex;align-items:center;gap:6px;padding-bottom:4px;flex-wrap:wrap;">
-    <span style="font-size:13px;font-weight:700;font-family:var(--font-display);letter-spacing:1px;">${getTeamName(team)}</span>
-    <span style="font-size:11px;color:var(--text-dim);">展示 ${shown.length}人 · 剩余 ${allAvailable.length}人</span>
-  </div><div class="br-roster-list" style="max-height:none;">`;
+  let listHtml = `<div class="br-roster-head">
+    <div>
+      <span class="br-roster-kicker">AVAILABLE PLAYERS</span>
+      <strong class="br-roster-title">${getTeamName(team)}</strong>
+      <span class="br-roster-meta">本轮 ${shown.length} 人 · 球队剩余 ${allAvailable.length} 人</span>
+    </div>
+    <span class="br-roster-instruction">选择一名球员，能力槽会显示可锁定数值</span>
+  </div><div class="br-roster-list">`;
   
   shown.forEach(p => {
     const sel = STATE.selectedPlayer?.id === p.id;
     const playerPos = getPlayerMainPos(p);
     const hsStyle = getPlayerHeadshotStyle(p.id, 32);
     const ovrGrade = getOvrGrade(parseInt(p.ovr) || 50);
-    listHtml += `<div class="br-player${sel ? ' selected' : ''}" onclick="pickPlayer('${p.id}')">
+    listHtml += `<button type="button" class="br-player${sel ? ' selected' : ''}" aria-pressed="${sel ? 'true' : 'false'}" onclick="pickPlayer('${p.id}')">
       <div class="bp-left">
         <div class="bp-headshot" style="${hsStyle}"></div>
-        <div>
+        <div class="bp-copy">
           <div class="bp-name">${p.cname}</div>
-          <div class="bp-detail">${playerPos}</div>
+          <div class="bp-detail">${playerPos}${sel ? ' · 已选' : ''}</div>
         </div>
       </div>
       <div class="bp-meta">
+        <span class="bp-ovr-label">OVR</span>
         <span class="bp-ovr">${p.ovr}</span>
       </div>
-    </div>`;
+    </button>`;
   });
   
   listHtml += '</div>';
   
   // 跨位置衰减提示 + 强制选择提示
   const hasAnyPenalty = shown.some(p => getPlayerMainPos(p) !== STATE.position);
-  listHtml += `<div style="display:flex;gap:6px;padding:4px 0;flex-wrap:wrap;align-items:center;">
-    <span style="font-size:9px;color:var(--text-dim);">
+  listHtml += `<div class="br-roster-foot">
+    <span>
       ${hasAnyPenalty ? '⚠️ 跨位置衰减生效' : '✅ 同位置属性无衰减'}
     </span>
-    <span style="font-size:10px;color:var(--accent);margin-left:auto;font-weight:600;">
-      👆 选球员 → 点击左侧属性锁定
-    </span>
+    <strong>选球员后点击能力槽锁定</strong>
   </div>`;
   
   rosterArea.innerHTML = listHtml;
@@ -2099,7 +2146,6 @@ function lockAttr(key) {
   
   if (STATE.lockedCount >= 13) {
     renderLeftAttrs();
-    renderProgress();
     setTimeout(() => { STATE._locking = false; revealPlayer(); }, 500);
     return;
   }
@@ -2117,7 +2163,6 @@ function lockAttr(key) {
     if (rosterArea) rosterArea.innerHTML = '';
     renderLeftAttrs();
     updateSlotButtons();
-    renderProgress();
   }, 700);
 }
 
@@ -8134,7 +8179,14 @@ function manualLoadGame(slot, options) {
           Object.assign(LEAGUE_PLAYER_DATA, snap.league);
         }
         _playerAges = snap.ages || {};
-        _playerGenes = snap.genes || {};
+        _playerGenes = {};
+        Object.keys(snap.genes || {}).forEach(function(playerId) {
+          _playerGenes[playerId] = {
+            v: snap.genes[playerId].v,
+            potential: snap.genes[playerId].potential
+          };
+        });
+        assignKnownPlayerPotentials();
         if (snap.rookieState) {
           _starRookieQueue = JSON.parse(JSON.stringify(snap.rookieState.starQueue || []));
           _usedRookieCandidateNames = Object.assign({}, snap.rookieState.usedCandidateNames || {});
@@ -8337,13 +8389,6 @@ function calcTrainingBreakdown() {
 
   if (parts.length === 0) parts.push('保底');
   return parts.join(' + ');
-}
-
-function getAgeInfo(age) {
-  if (age <= 22) return { desc:'涨球期 — 所有属性 +1', penalty:'涨球红利：加点后所有属性额外 +1' };
-  if (age <= 28) return { desc:'巅峰期 — 无被动变化', penalty:'' };
-  if (age <= 33) return { desc:'下滑期 — 身体机能下降', penalty:'ATH 和 STR 每年降 1 点' };
-  return { desc:'生涯末期 — 全面衰退', penalty:'所有属性降 1 点，ATH/STR 额外再降 2 点' };
 }
 
 function renderTrainingAttrs(tp) {

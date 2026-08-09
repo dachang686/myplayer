@@ -1341,8 +1341,9 @@ function loadPlayerAges() {
       var rows = JSON.parse(data.textContent);
       rows.forEach(function(r) {
         _playerAges[r.id] = r.a;
-        _playerGenes[r.id] = { v: r.v || (1 + Math.floor(rngNext() * 4)), l: r.l || (1 + Math.floor(rngNext() * 4)) };
+        _playerGenes[r.id] = { v: r.v || (1 + Math.floor(rngNext() * 4)) };
       });
+      assignKnownPlayerPotentials();
     }
   } catch(e) {}
 }
@@ -1352,12 +1353,53 @@ function getPlayerAge(playerId) {
   return _playerAges && _playerAges[playerId] ? _playerAges[playerId] : null;
 }
 
-function getPlayerGene(playerId) {
+function inferLeaguePlayerPotential(player, age) {
+  var ovr = Math.max(55, Math.min(99, Number(player && player.ovr) || 55));
+  var playerAge = Number(age) || inferAge(player && player.id, ovr);
+  if (playerAge >= 29) return ovr;
+
+  // 现实球员以当前能力相对同龄人的领先程度决定上限，年轻球员保留更多成长空间。
+  var ageRoom = Math.max(1, 29 - playerAge);
+  var ageBenchmark = Math.max(68, Math.min(88, 68 + Math.max(0, playerAge - 18) * 2));
+  var abilityBonus = Math.max(-2, Math.min(3, Math.round((ovr - ageBenchmark) / 5)));
+  var potential = ovr + Math.max(0, ageRoom + abilityBonus);
+  if (typeof isMvpStar === 'function' && isMvpStar(player)) potential = Math.max(potential, ovr + 10);
+  return Math.max(ovr, Math.min(99, potential));
+}
+
+function assignKnownPlayerPotentials() {
+  if (!_playerGenes || typeof LEAGUE_PLAYER_DATA === 'undefined') return;
+  Object.keys(LEAGUE_PLAYER_DATA).forEach(function(teamId) {
+    (LEAGUE_PLAYER_DATA[teamId] || []).forEach(function(player) {
+      var gene = _playerGenes[player.id];
+      if (!gene || typeof gene.potential === 'number') return;
+      var age = _playerAges[player.id] || player._age || inferAge(player.id, player.ovr);
+      gene.potential = inferLeaguePlayerPotential(player, age);
+    });
+  });
+}
+
+function getPlayerGene(player) {
   loadPlayerAges();
+  var playerId = player && typeof player === 'object' ? player.id : player;
+  var playerObject = player && typeof player === 'object' ? player : null;
   if (_playerGenes && _playerGenes[playerId]) return _playerGenes[playerId];
-  var g = { v: 1 + Math.floor(rngNext() * 4), l: 1 + Math.floor(rngNext() * 4) };
+  var age = playerObject ? getLeaguePlayerAge(playerObject) : null;
+  var g = {
+    v: 1 + Math.floor(rngNext() * 4),
+    potential: inferLeaguePlayerPotential(playerObject, age)
+  };
   if (_playerGenes) _playerGenes[playerId] = g;
   return g;
+}
+
+function getPotentialGrowthBias(potential, ovr, age) {
+  if (typeof potential !== 'number' || age > 28) return 0;
+  var room = potential - ovr;
+  if (room <= 0) return 0;
+  if (age <= 22) return Math.max(-0.25, Math.min(0.5, (room - 5) * 0.1));
+  if (age <= 26) return Math.max(-0.15, Math.min(0.35, (room - 3) * 0.08));
+  return Math.min(0.2, room * 0.05);
 }
 
 function inferAge(playerId, ovr) {
@@ -1388,7 +1430,7 @@ function evolveLeague() {
     var newRoster = [];
     roster.forEach(function(p) {
       var age = getLeaguePlayerAge(p);
-      var gene = getPlayerGene(p.id);
+      var gene = getPlayerGene(p);
       var volatility = gene.v;
       var ageFactor = 0;
       if (age <= 22) ageFactor = 1 + rngNext() * 1.5;
@@ -1398,8 +1440,10 @@ function evolveLeague() {
       var volFactor = (rngNext() - 0.5) * volatility * 0.6;
       var randFactor = (rngNext() - 0.5) * 1.5;
       var change = ageFactor * 0.5 + volFactor * 0.3 + randFactor * 0.2;
+      change += getPotentialGrowthBias(gene.potential, p.ovr, age);
       if (isMvpStar(p) && age <= 26) change += 0.6 + rngNext() * 0.8; // 重点新秀成长加速
-      change = Math.round(change * 2) / 2;
+      if (change > 0 && p.ovr >= gene.potential) change = 0;
+      change = Math.sign(change) * Math.round(Math.abs(change));
       var newOvr = Math.max(55, Math.min(99, p.ovr + change));
       if (newOvr !== p.ovr) {
         var baseRatio = Math.round(newOvr) / p.ovr;
