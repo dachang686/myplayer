@@ -4430,7 +4430,7 @@ function leagueStatNormal(mean, deviation) {
   return mean + z * deviation;
 }
 
-/** 每名 NPC 每赛季只生成一次状态，让爆发、低迷和耐久度跨场延续，但下赛季重新洗牌。 */
+/** 每名 NPC 每赛季保留伤病与耐久档案，竞技状态另按短周期刷新。 */
 function getNpcSeasonProfile(team, player) {
   var profiles = STATE.season._npcSeasonProfiles || (STATE.season._npcSeasonProfiles = {});
   var key = team + ':' + (player.id || 'unknown');
@@ -4442,19 +4442,15 @@ function getNpcSeasonProfile(team, player) {
   }
   var ovr = parseInt(player.ovr) || 70;
   var athletic = af(parseInt(player.ATH) || 50);
-  var baseForm = leagueStatClamp(leagueStatNormal(1, 0.09), 0.78, 1.22);
-  var scoring = leagueStatClamp(baseForm * leagueStatNormal(1, 0.08), 0.72, 1.30);
-  if (Math.random() < 0.08) scoring = leagueStatClamp(scoring * (1.12 + Math.random() * 0.12), 0.72, 1.34);
-  if (Math.random() < 0.08) scoring = leagueStatClamp(scoring * (0.78 + Math.random() * 0.10), 0.68, 1.34);
-
   var ageRisk = age >= 35 ? 1.55 : (age >= 31 ? 1.25 : (age <= 22 ? 1.10 : 1));
   var healthLuck = Math.random();
   var healthMultiplier = healthLuck < 0.10 ? 1.9 : (healthLuck > 0.90 ? 0.45 : 1);
   profiles[key] = {
-    scoring: scoring,
-    rebounding: leagueStatClamp(baseForm * leagueStatNormal(1, 0.10), 0.75, 1.28),
-    playmaking: leagueStatClamp(baseForm * leagueStatNormal(1, 0.11), 0.74, 1.30),
-    defense: leagueStatClamp(baseForm * leagueStatNormal(1, 0.10), 0.75, 1.28),
+    scoring: 1,
+    rebounding: 1,
+    playmaking: 1,
+    defense: 1,
+    formGamesLeft: 0,
     injuryRisk: leagueStatClamp((0.005 + Math.random() * 0.006) * ageRisk * healthMultiplier * (1.12 - athletic * 0.22), 0.002, 0.025),
     restChance: leagueStatClamp(0.010 + (ovr >= 88 ? 0.022 : 0.010) + (age >= 33 ? 0.014 : 0) + Math.random() * 0.010, 0.010, 0.065),
     injuryGamesLeft: 0,
@@ -4463,9 +4459,28 @@ function getNpcSeasonProfile(team, player) {
   return profiles[key];
 }
 
+/** 状态只持续 4-8 场；球星波动更小，避免一次低迷影响整个赛季。 */
+function refreshNpcShortTermForm(profile, player) {
+  if ((Number(profile.formGamesLeft) || 0) <= 0) {
+    var ovr = parseInt(player.ovr) || 70;
+    var elite = ovr >= 90;
+    var spread = elite ? 0.06 : 0.09;
+    var floor = elite ? 0.92 : 0.88;
+    var ceiling = elite ? 1.08 : 1.12;
+    var baseForm = leagueStatClamp(leagueStatNormal(1, spread), floor, ceiling);
+    profile.scoring = leagueStatClamp(baseForm * leagueStatNormal(1, spread * 0.55), floor, ceiling);
+    profile.rebounding = leagueStatClamp(baseForm * leagueStatNormal(1, spread * 0.55), floor, ceiling);
+    profile.playmaking = leagueStatClamp(baseForm * leagueStatNormal(1, spread * 0.55), floor, ceiling);
+    profile.defense = leagueStatClamp(baseForm * leagueStatNormal(1, spread * 0.55), floor, ceiling);
+    profile.formGamesLeft = 4 + Math.floor(Math.random() * 5);
+  }
+  profile.formGamesLeft--;
+}
+
 /** NPC 伤病以连续缺阵呈现，另有小概率轮休；季后赛只取消轮休，不会清除已有伤病。 */
 function shouldNpcPlayLeagueGame(team, player, roleRank) {
   var profile = getNpcSeasonProfile(team, player);
+  refreshNpcShortTermForm(profile, player);
   if (profile.injuryGamesLeft > 0) {
     profile.injuryGamesLeft--;
     profile.gamesMissed++;
