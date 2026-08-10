@@ -4682,9 +4682,10 @@ function generateBoxScore(teamA, teamB, totalA, totalB) {
       var cold = !hot && Math.random() < 0.08;
       var gameForm = hot ? 1.38 + Math.random() * 0.28 : (cold ? 0.68 + Math.random() * 0.16 : 0.84 + Math.random() * 0.32);
       var roleUsage = roleRanks[index] < 5 ? 1.08 : leagueStatClamp(0.88 - (roleRanks[index] - 5) * 0.055, 0.55, 0.88);
+      var starUsage = 1 + Math.pow(star * offSkill[index], 2) * 0.90;
       var shareCap = hot ? 0.37 : (0.235 + star * 0.065);
       scoreCaps[index] = Math.max(14, Math.min(hot ? 46 : 36, Math.round(totalPts * shareCap)));
-      return minutes[index] * (0.10 + Math.pow(offSkill[index], 1.65) * 1.55) * roleUsage * profiles[index].scoring * gameForm;
+      return minutes[index] * (0.10 + Math.pow(offSkill[index], 1.65) * 1.55) * roleUsage * starUsage * profiles[index].scoring * gameForm;
     });
     var points = allocateLeagueCountingTotal(totalPts, scoreWeights, scoreCaps);
 
@@ -4726,7 +4727,8 @@ function generateBoxScore(teamA, teamB, totalA, totalB) {
       var ftPct = leagueStatClamp(0.68 + clutchSkill * 0.18, 0.68, 0.90);
       var twoA = twoM ? Math.max(twoM, Math.round(twoM / twoPct)) : 0;
       var threeA = threeM ? Math.max(threeM, Math.round(threeM / threePct)) : 0;
-      var fta = ftm ? Math.max(ftm, Math.round(ftm / ftPct)) : 0;
+      var expectedFta = ftm / ftPct;
+      var fta = ftm ? Math.max(ftm, Math.floor(expectedFta) + (Math.random() < expectedFta % 1 ? 1 : 0)) : 0;
       return {
         name: player.cname || '球员',
         playerId: player.id || '',
