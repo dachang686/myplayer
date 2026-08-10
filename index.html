@@ -398,25 +398,31 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .season-team-view-tabs,.rankings-view-tabs{display:flex;gap:5px;padding:9px 12px 4px}
 .season-team-view-tab,.rankings-view-tab{flex:1;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--text-dim);padding:8px;font:600 11px var(--font-display);cursor:pointer}
 .season-team-view-tab.active,.rankings-view-tab.active{border-color:var(--orange);background:var(--orange-bg);color:var(--orange)}
-.season-team-roster{padding:8px 12px 12px}
-.season-team-section{padding:4px 2px 6px;color:var(--orange);font:700 12px var(--font-display);letter-spacing:.4px}
-.season-team-section.rotation{padding-top:10px;border-top:1px solid var(--border);margin-top:4px;color:var(--text-dim)}
-.season-team-player{display:flex;align-items:center;gap:7px;min-height:36px;padding:5px 6px;border-bottom:1px solid var(--border-light);font-size:12px}
-.season-team-player.is-user{background:var(--orange-bg);border:1px solid var(--orange);border-radius:8px;color:var(--orange);margin:2px 0}
+.season-team-roster{padding:8px 12px 12px;overflow-x:auto}
+.season-team-roster-table{width:100%;min-width:300px;border-collapse:separate;border-spacing:0;table-layout:fixed;font-variant-numeric:tabular-nums}
+.season-team-roster-table col.season-team-col-metric{width:36px}
+.season-team-roster-table col.season-team-col-ovr{width:40px}
+.season-team-roster-head th{padding:5px 4px 7px;border-bottom:1px solid var(--border);color:var(--text-muted);font-size:9px;font-weight:500;text-align:center}
+.season-team-roster-head th:first-child{padding-left:6px;text-align:left}
+.season-team-section-row th{padding:9px 4px 5px;color:var(--orange);font:700 11px var(--font-display);letter-spacing:.35px;text-align:left}
+.season-team-section-row.rotation th{padding-top:12px;border-top:1px solid var(--border);color:var(--text-dim)}
+.season-team-player td{height:38px;padding:5px 4px;border-bottom:1px solid var(--border-light);font-size:11px;text-align:center}
+.season-team-player.is-user td{border-top:1px solid var(--orange);border-bottom-color:var(--orange);background:var(--orange-bg);color:var(--orange)}
+.season-team-player.is-user td:first-child{border-left:1px solid var(--orange);border-radius:8px 0 0 8px}
+.season-team-player.is-user td:last-child{border-right:1px solid var(--orange);border-radius:0 8px 8px 0}
 .season-team-player.is-interactive,.season-team-stat-row.is-interactive,.st-row.is-interactive,.player-ranking-row.is-interactive{cursor:pointer;transition:background-color .18s ease-out,border-color .18s ease-out,transform .18s ease-out}
 .season-team-player.is-interactive:focus-visible,.season-team-stat-row.is-interactive:focus-visible,.st-row.is-interactive:focus-visible,.player-ranking-row.is-interactive:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
-@media (hover:hover){.season-team-player.is-interactive:hover,.season-team-stat-row.is-interactive:hover,.st-row.is-interactive:hover,.player-ranking-row.is-interactive:hover{border-color:var(--orange);background:var(--orange-bg)}}
+@media (hover:hover){.season-team-player.is-interactive:hover td,.season-team-stat-row.is-interactive:hover,.st-row.is-interactive:hover,.player-ranking-row.is-interactive:hover{border-color:var(--orange);background:var(--orange-bg)}}
+.season-team-player-cell{display:flex;align-items:center;gap:6px;min-width:0;text-align:left!important}
 .season-team-avatar{width:26px;height:26px;flex:0 0 26px;border-radius:50%;border:1px solid var(--border);background:var(--bg-elevated) center/cover no-repeat}
-.season-team-position{width:38px;flex:0 0 38px;color:var(--text-dim);font-size:10px}
+.season-team-position{flex:0 0 auto;color:var(--text-dim);font-size:9px;white-space:nowrap}
 .season-team-name{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
-.season-team-impact{flex:0 0 auto;display:flex;gap:3px;font:700 10px var(--font-display)}
-.season-team-impact span{min-width:34px;padding:2px 5px;border:1px solid var(--border);border-radius:999px;background:var(--bg-elevated);text-align:center;white-space:nowrap}
-.season-team-offense{color:var(--orange)}
-.season-team-defense{color:var(--green)}
-.season-team-loyalty{flex:0 0 auto;padding:2px 5px;border:1px solid var(--border);border-radius:999px;color:var(--text-dim);background:var(--bg-elevated);font-size:9px;white-space:nowrap}
-.season-team-ovr{font:700 13px var(--font-display);color:var(--text)}
+.season-team-offense{color:var(--orange);font:700 11px var(--font-display)}
+.season-team-defense{color:var(--green);font:700 11px var(--font-display)}
+.season-team-loyalty{color:var(--text-dim);font:500 10px var(--font-display)}
+.season-team-ovr{font:700 13px var(--font-display)!important;color:var(--text)}
 .season-team-player.is-user .season-team-ovr{color:var(--orange)}
-@media (max-width:420px){.season-team-player{gap:5px}.season-team-position{width:32px;flex-basis:32px}.season-team-impact span{min-width:30px;padding-inline:4px}.season-team-loyalty{display:none}}
+@media (max-width:420px){.season-team-roster{padding-inline:8px}.season-team-roster-table{min-width:287px}.season-team-roster-table col.season-team-col-metric{width:33px}.season-team-roster-table col.season-team-col-ovr{width:37px}.season-team-player-cell{gap:4px}.season-team-avatar{width:24px;height:24px;flex-basis:24px}}
 .season-team-stats{padding:8px 12px 12px;overflow-x:auto}
 .season-team-stats-head,.season-team-stat-row{display:grid;grid-template-columns:minmax(132px,1fr) 34px 48px repeat(3,42px);gap:5px;align-items:center;min-width:365px}
 .season-team-stats-head{padding:5px 6px;color:var(--text-muted);font-size:9px;text-align:right}
@@ -6222,25 +6228,31 @@ function showSeasonTeamModal(teamOverride) {
     var loyalty = !isUser && typeof getPlayerLoyalty === 'function' ? getPlayerLoyalty(player) : null;
     var loyaltyBasis = loyalty == null || typeof getPlayerLoyaltyBasis !== 'function' ? '' : getPlayerLoyaltyBasis(player);
     var loyaltyTitle = loyalty == null ? '' : getPlayerLoyaltyLabel(loyalty) + (loyaltyBasis ? ' · ' + loyaltyBasis : '');
-    var loyaltyHtml = loyalty == null ? '' : '<span class="season-team-loyalty" title="' + loyaltyTitle + '">忠 ' + loyalty + '</span>';
+    var loyaltyText = loyalty == null ? '—' : loyalty;
+    var loyaltyCellTitle = loyalty == null ? '暂无忠诚度' : loyaltyTitle;
     var impact = getLeaguePlayerImpactRatings(player);
-    var impactHtml = '<span class="season-team-impact" aria-label="进攻 ' + impact.offense + '，防守 ' + impact.defense + '" title="攻：进攻行为与组织综合；防：外防、内防、护框与篮板综合"><span class="season-team-offense">攻 ' + impact.offense + '</span><span class="season-team-defense">防 ' + impact.defense + '</span></span>';
-    return '<div class="season-team-player is-interactive' + (isUser ? ' is-user' : '') + '" data-season-player-team="' + team + '" data-season-player-id="' + playerId + '" role="button" tabindex="0" aria-label="查看' + name + '详细属性，进攻 ' + impact.offense + '，防守 ' + impact.defense + '" title="点击查看详细属性">' +
-      '<span class="season-team-avatar"' + avatarStyle + '></span>' +
-      '<span class="season-team-position">' + (player.posCn || player.pos || '—') + '</span>' +
-      '<span class="season-team-name">' + name + (isUser ? ' ⭐' : '') + '</span>' +
-      impactHtml +
-      loyaltyHtml +
-      '<span class="season-team-ovr">' + ovr + '</span>' +
-      '</div>';
+    return '<tr class="season-team-player is-interactive' + (isUser ? ' is-user' : '') + '" data-season-player-team="' + team + '" data-season-player-id="' + playerId + '" role="button" tabindex="0" aria-label="查看' + name + '详细属性，进攻 ' + impact.offense + '，防守 ' + impact.defense + '，忠诚 ' + loyaltyText + '，总评 ' + ovr + '" title="点击查看详细属性">' +
+      '<td class="season-team-player-cell"><span class="season-team-avatar"' + avatarStyle + '></span><span class="season-team-position">' + (player.posCn || player.pos || '—') + '</span><span class="season-team-name">' + name + (isUser ? ' ⭐' : '') + '</span></td>' +
+      '<td class="season-team-offense" title="进攻影响力">' + impact.offense + '</td>' +
+      '<td class="season-team-defense" title="防守影响力">' + impact.defense + '</td>' +
+      '<td class="season-team-loyalty" title="' + loyaltyCellTitle + '">' + loyaltyText + '</td>' +
+      '<td class="season-team-ovr">' + ovr + '</td>' +
+      '</tr>';
   }
 
-  var rosterHtml = '<div class="season-team-section">🏀 首发阵容</div>';
-  starters.forEach(function(player) { rosterHtml += renderPlayer(player); });
-  if (bench.length) {
-    rosterHtml += '<div class="season-team-section rotation">🔄 主要轮换</div>';
-    bench.forEach(function(player) { rosterHtml += renderPlayer(player); });
+  function renderRosterGroup(label, players, className) {
+    return '<tbody><tr class="season-team-section-row ' + (className || '') + '"><th colspan="5" scope="rowgroup">' + label + '</th></tr>' +
+      players.map(renderPlayer).join('') + '</tbody>';
   }
+
+  var rosterHtml = '<table class="season-team-roster-table">' +
+    '<colgroup><col><col class="season-team-col-metric"><col class="season-team-col-metric"><col class="season-team-col-metric"><col class="season-team-col-ovr"></colgroup>' +
+    '<thead><tr class="season-team-roster-head"><th scope="col">球员</th><th scope="col" title="进攻影响力">攻</th><th scope="col" title="防守影响力">防</th><th scope="col" title="球员忠诚度">忠</th><th scope="col">总评</th></tr></thead>' +
+    renderRosterGroup('🏀 首发阵容', starters, '');
+  if (bench.length) {
+    rosterHtml += renderRosterGroup('🔄 主要轮换', bench, 'rotation');
+  }
+  rosterHtml += '</table>';
 
   function renderPlayerStat(player) {
     var isUser = !!player._isUser;
