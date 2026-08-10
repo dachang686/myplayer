@@ -6234,6 +6234,35 @@ function getMyCardCareerStats() {
   };
 }
 
+function getMyCardPlayoffStats() {
+  var careerStats = (STATE.career && STATE.career.playoffStats) || {};
+  var seasonStats = (STATE.season && STATE.season.playoffStats) || {};
+  var totals = {};
+  var fields = ['pts','reb','ast','stl','blk','tov','fgm','fga','ftm','fta','threeM','threeA','games','mins'];
+  fields.forEach(function(field) {
+    totals[field] = Number(careerStats[field]) || 0;
+    if (!STATE._careerSaved) totals[field] += Number(seasonStats[field]) || 0;
+  });
+
+  var games = totals.games || 0;
+  var divisor = Math.max(games, 1);
+  return {
+    games: games,
+    pts: Math.round(totals.pts / divisor * 10) / 10,
+    reb: Math.round(totals.reb / divisor * 10) / 10,
+    ast: Math.round(totals.ast / divisor * 10) / 10,
+    stl: Math.round(totals.stl / divisor * 10) / 10,
+    blk: Math.round(totals.blk / divisor * 10) / 10,
+    tov: Math.round(totals.tov / divisor * 10) / 10,
+    fgm: Math.round(totals.fgm / divisor * 10) / 10,
+    fga: Math.round(totals.fga / divisor * 10) / 10,
+    ftm: Math.round(totals.ftm / divisor * 10) / 10,
+    fta: Math.round(totals.fta / divisor * 10) / 10,
+    threeM: Math.round(totals.threeM / divisor * 10) / 10,
+    threeA: Math.round(totals.threeA / divisor * 10) / 10,
+  };
+}
+
 function getMyCardAwardItems() {
   var career = STATE.career || {};
   var items = [];
@@ -6424,6 +6453,10 @@ function renderMyCard(isFinal, activeTab) {
   const careerPct = careerAvg.fga > 0 ? (careerAvg.fgm / careerAvg.fga * 100).toFixed(1) : '—';
   const careerThreePct = careerAvg.threeA > 0 ? (careerAvg.threeM / careerAvg.threeA * 100).toFixed(1) : '—';
   const careerFtPct = careerAvg.fta > 0 ? (careerAvg.ftm / careerAvg.fta * 100).toFixed(1) : '—';
+  const playoffAvg = getMyCardPlayoffStats();
+  const playoffPct = playoffAvg.fga > 0 ? (playoffAvg.fgm / playoffAvg.fga * 100).toFixed(1) : '—';
+  const playoffThreePct = playoffAvg.threeA > 0 ? (playoffAvg.threeM / playoffAvg.threeA * 100).toFixed(1) : '—';
+  const playoffFtPct = playoffAvg.fta > 0 ? (playoffAvg.ftm / playoffAvg.fta * 100).toFixed(1) : '—';
   
   // 属性紧凑网格
   let attrHtml = '';
@@ -6519,6 +6552,21 @@ function renderMyCard(isFinal, activeTab) {
         <div class="mc-stat"><span class="mc-stat-val">${careerAvg.tov}</span><span class="mc-stat-lbl">失误</span></div>
       </div>
       <div class="mc-pct-line">投篮 ${careerAvg.fgm}-${careerAvg.fga} (${careerPct}%) · 三分 ${careerAvg.threeM}-${careerAvg.threeA} (${careerThreePct}%) · 罚球 ${careerAvg.ftm}-${careerAvg.fta} (${careerFtPct}%)</div>
+    </div>
+
+    <div class="mc-section">
+      <div class="mc-section-title">🏀 季后赛场均 · 生涯 ${playoffAvg.games} 场</div>
+      ${playoffAvg.games > 0 ? `
+        <div class="mc-stats-grid">
+          <div class="mc-stat"><span class="mc-stat-val">${playoffAvg.pts}</span><span class="mc-stat-lbl">得分</span></div>
+          <div class="mc-stat"><span class="mc-stat-val">${playoffAvg.reb}</span><span class="mc-stat-lbl">篮板</span></div>
+          <div class="mc-stat"><span class="mc-stat-val">${playoffAvg.ast}</span><span class="mc-stat-lbl">助攻</span></div>
+          <div class="mc-stat"><span class="mc-stat-val">${playoffAvg.stl}</span><span class="mc-stat-lbl">抢断</span></div>
+          <div class="mc-stat"><span class="mc-stat-val">${playoffAvg.blk}</span><span class="mc-stat-lbl">盖帽</span></div>
+          <div class="mc-stat"><span class="mc-stat-val">${playoffAvg.tov}</span><span class="mc-stat-lbl">失误</span></div>
+        </div>
+        <div class="mc-pct-line">投篮 ${playoffAvg.fgm}-${playoffAvg.fga} (${playoffPct}%) · 三分 ${playoffAvg.threeM}-${playoffAvg.threeA} (${playoffThreePct}%) · 罚球 ${playoffAvg.ftm}-${playoffAvg.fta} (${playoffFtPct}%)</div>
+      ` : '<div class="mc-empty">暂无季后赛出场记录</div>'}
     </div>
 
     <div class="mc-section">
