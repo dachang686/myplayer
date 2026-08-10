@@ -8704,6 +8704,8 @@ function confirmTraining() {
 
 function continueCareerAfterTraining() {
   if (STATE.career && STATE.career.retired) return;
+  // 上一休赛期的签约/新秀保护到此结束；本轮新签球员会在后续流程重新标记。
+  clearPreviousOffseasonTransactionFlags();
   evolveLeague();
   saveStandings();
   processDraft();

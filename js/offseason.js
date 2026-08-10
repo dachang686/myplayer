@@ -1071,6 +1071,8 @@ function processDraft() {
     else ovrRange = { min: 60, max: 70 };
 
     var rookie = generateRookie();
+    // 当届新秀只在本次休赛期受交易保护，下一休赛期会统一解除。
+    rookie._justSigned = true;
     var targetOvr = ovrRange.min + Math.floor(rngNext() * (ovrRange.max - ovrRange.min + 1));
     rookie.ovr = targetOvr;
     attrKeys.forEach(function(k) { rookie[k] = Math.max(25, Math.min(99, targetOvr + Math.floor(rngNext() * 16) - 8)); });
@@ -1216,13 +1218,21 @@ function assignFreeAgents() {
 }
 
 // ==================== 交易系统 ====================
+function clearPreviousOffseasonTransactionFlags() {
+  if (typeof LEAGUE_TEAM_IDS === 'undefined' || typeof LEAGUE_PLAYER_DATA === 'undefined') return;
+  LEAGUE_TEAM_IDS.forEach(function(team) {
+    (LEAGUE_PLAYER_DATA[team] || []).forEach(function(player) {
+      if (player && player._justSigned) delete player._justSigned;
+    });
+  });
+}
+
 function findTradeCandidate(roster, pos, excludeOvr, tradedSet) {
   var best = null;
   for (var i = 0; i < roster.length; i++) {
     var p = roster[i];
     if (p._isUser) continue;
     if (p._justSigned) continue;
-    if (p.id && p.id.indexOf('R') === 0) continue;
     if (p.ovr > 92) continue;
     if (tradedSet && tradedSet.has(p)) continue;
     if (excludeOvr != null && Math.abs(p.ovr - excludeOvr) > 10) continue;
@@ -1624,6 +1634,8 @@ function evolveLeague() {
     while (newRoster.length < 18) { // 休赛期名单补齐到 18 人
       draftSlot++;
       var rk = generateRookie();
+      // 补位新秀与选秀新秀一致，只保护当前休赛期，避免刚加入就被交易。
+      rk._justSigned = true;
       // 前3个空位（更弱的队）：OVR 68-74（彩票区球员）；之后：OVR 60-67（次轮/末签）
       rk.ovr = draftSlot <= 3
         ? 68 + Math.floor(rngNext() * 7)
