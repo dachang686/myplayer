@@ -5811,7 +5811,7 @@ function renderConferenceStandings(conf) {
   var leader = sorted[0] || { wins: 0, losses: 0 };
   var zoneLabels = ['🏀 季后赛区', '🔥 附加赛区', '📋 乐透区'];
   var zoneIndex = 0;
-  var html = '<div class="st-hdr"><span>排名</span><span>球队</span><span>OVR<small class="st-hdr-ovr">首发 / 轮换</small></span><span title="中立场阵容基准，不含主场、战绩、伤病与疲劳修正">战力<small class="st-hdr-ovr">中立场</small></span><span>胜</span><span>负</span><span>胜差</span><span>近况</span></div>';
+  var html = '<div class="st-hdr"><span>排名</span><span>球队</span><span title="首发与主要轮换的平均总评">总评</span><span title="阵容基准战力，不含主场、战绩、伤病与疲劳修正">战力</span><span>胜</span><span>负</span><span>胜差</span><span>近况</span></div>';
   sorted.forEach(function(row, index) {
     if (index === 0 || index === 6 || index === 10) html += '<div class="season-zone">' + zoneLabels[zoneIndex++] + '</div>';
     var gb = index === 0 ? '-' : ((leader.wins - row.wins + row.losses - leader.losses) / 2).toFixed(1);
