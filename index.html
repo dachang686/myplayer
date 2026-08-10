@@ -6370,6 +6370,10 @@ function showSeasonPlayerDetail(team, playerId) {
   var name = escapeSeasonUiText(isUser ? getMyPlayerDisplayName() : player.cname);
   var position = escapeSeasonUiText(player.posCn || player.pos || '—');
   var height = player.height ? ' · ' + escapeSeasonUiText(player.height) : '';
+  var age = isUser
+    ? Number(STATE.career && STATE.career.currentAge)
+    : (typeof getLeaguePlayerAge === 'function' ? Number(getLeaguePlayerAge(player)) : Number(player._age));
+  var ageText = age > 0 ? ' · ' + age + '岁' : '';
   var type = player.type ? '<div class="season-player-detail-meta">' + escapeSeasonUiText(player.type) + '</div>' : '';
   var ovr = isUser ? (STATE.finalOVR || player.ovr || 0) : (parseInt(player.ovr) || 0);
   var headshot = !isUser && typeof getPlayerHeadshotStyle === 'function' ? getPlayerHeadshotStyle(player.id, 52) : '';
@@ -6403,7 +6407,7 @@ function showSeasonPlayerDetail(team, playerId) {
       '<div class="modal-header"><div id="season-player-detail-title" style="font:700 14px var(--font-display);">球员详细属性</div><button class="modal-close" onclick="closeSeasonPlayerDetail()" aria-label="关闭球员详情">✕</button></div>' +
       '<div class="season-player-detail-hero">' +
         '<span class="season-player-detail-avatar"' + avatarStyle + '>' + avatarContent + '</span>' +
-        '<div style="min-width:0;"><div class="season-player-detail-name">' + name + (isUser ? ' ⭐' : '') + '</div><div class="season-player-detail-meta">' + getTeamLogo(team, 14) + ' ' + getTeamName(team) + ' · ' + position + height + '</div>' + type + '</div>' +
+        '<div style="min-width:0;"><div class="season-player-detail-name">' + name + (isUser ? ' ⭐' : '') + '</div><div class="season-player-detail-meta">' + getTeamLogo(team, 14) + ' ' + getTeamName(team) + ' · ' + position + height + ageText + '</div>' + type + '</div>' +
         '<div class="season-player-detail-ovr">' + ovr + '<small>OVR</small></div>' +
       '</div>' +
       '<div class="season-player-detail-section"><div class="season-player-detail-title">本赛季 · ' + statRow.gp + ' 场</div><div class="season-player-season-stats">' + statItems + '</div></div>' +
