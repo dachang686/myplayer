@@ -1000,7 +1000,6 @@ function draftPosToCode(pos) {
 function applyDraftClass2026() {
   if (!LEAGUE_PLAYER_DATA || LEAGUE_PLAYER_DATA._draftClass2026Applied) return;
   LEAGUE_PLAYER_DATA._draftClass2026Applied = true;
-  var attrKeys = SIM_CONFIG.ATTR_LIST || ['threePT','MID','FIN','DNK','HAN','PAS','PDEF','IDEF','BLK','REB','ATH','STR','CLU'];
   var byTeam = {};
   DRAFT_CLASS_2026.forEach(function(p) {
     byTeam[p.team] = byTeam[p.team] || [];
@@ -1026,9 +1025,7 @@ function applyDraftClass2026() {
         loyalty: inferPlayerLoyalty('D26-' + pad),
         _awardStreak: {},
       };
-      attrKeys.forEach(function(k) {
-        rookie[k] = Math.max(25, Math.min(99, ovr + Math.floor(Math.random() * 16) - 8));
-      });
+      applyRookieAttributeProfile(rookie, ovr, Math.random);
       roster.push(rookie);
     });
   });
@@ -1060,8 +1057,6 @@ function processDraft() {
     var bp = bw + bl > 0 ? bw / (bw + bl) : 0.5;
     return ap - bp;
   });
-  var attrKeys = SIM_CONFIG.ATTR_LIST || ['threePT','MID','FIN','DNK','HAN','PAS','PDEF','IDEF','BLK','REB','ATH','STR','CLU'];
-
   teams.forEach(function(t, idx) {
     var ovrRange;
     if (idx === 0) ovrRange = { min: 75, max: 82 };
@@ -1075,7 +1070,7 @@ function processDraft() {
     rookie._justSigned = true;
     var targetOvr = ovrRange.min + Math.floor(rngNext() * (ovrRange.max - ovrRange.min + 1));
     rookie.ovr = targetOvr;
-    attrKeys.forEach(function(k) { rookie[k] = Math.max(25, Math.min(99, targetOvr + Math.floor(rngNext() * 16) - 8)); });
+    applyRookieAttributeProfile(rookie, targetOvr, rngNext);
     // 新秀合同
     if (idx < 5) rookie.contract = 3 + Math.floor(rngNext() * 2);
     else if (idx < 14) rookie.contract = 2 + Math.floor(rngNext() * 3);
@@ -1110,13 +1105,44 @@ function getTeamHistoricalWinPct(teamId, standings) {
   return wins + losses > 0 ? wins / (wins + losses) : 0.5;
 }
 
+function getFreeAgentRoleOpportunityScore(player, teamId) {
+  if (!player || typeof calcTeamLineup !== 'function') return 0;
+  var lineup = calcTeamLineup(teamId);
+  var positions = ['PG','SG','SF','PF','C'].filter(function(pos) {
+    return canPlayPosition(player.pos || '', pos);
+  });
+  if (!positions.length) positions = [(player.pos || 'SF').split('/')[0].trim()];
+  var bestGap = -20;
+  positions.forEach(function(pos) {
+    var starter = lineup && lineup.starters ? lineup.starters[pos] : null;
+    var gap = starter ? (Number(player.ovr) || 0) - (Number(starter.ovr) || 0) : 20;
+    if (gap > bestGap) bestGap = gap;
+  });
+  var ovr = Number(player.ovr) || 70;
+  if (ovr >= 88) {
+    if (bestGap >= 2) return 0.22;
+    if (bestGap >= 0) return 0.14;
+    if (bestGap >= -3) return -0.08;
+    return -0.22;
+  }
+  if (ovr >= 84) {
+    if (bestGap >= 1) return 0.15;
+    if (bestGap >= -2) return 0.05;
+    if (bestGap >= -5) return -0.07;
+    return -0.14;
+  }
+  if (bestGap >= 0) return 0.08;
+  if (bestGap <= -7) return -0.08;
+  return 0;
+}
+
 function getFreeAgentTeamPreferenceScore(player, teamId, standings, noise) {
   var winPct = getTeamHistoricalWinPct(teamId, standings);
   var score = player.ovr >= 85 ? winPct : 1 - winPct;
   if (teamId === player._origTeam) {
-    score += (getPlayerLoyalty(player) - 50) * 0.007;
+    score += (getPlayerLoyalty(player) - 50) * 0.005;
   }
-  return score + (Number(noise) || 0);
+  return score + getFreeAgentRoleOpportunityScore(player, teamId) + (Number(noise) || 0);
 }
 
 function assignFreeAgents() {
@@ -1171,7 +1197,9 @@ function assignFreeAgents() {
       roster.forEach(function(p) {
         if (canPlayPosition(p.pos || '', pos)) posCount++;
       });
-      if (posCount < 2) {
+      var roleOpportunity = getFreeAgentRoleOpportunityScore(fa, t);
+      var roleFits = fa.ovr >= 82 ? roleOpportunity >= 0 : posCount < 2;
+      if (roleFits) {
         roster.push(fa);
         fa._justSigned = true;
         fa.contract = randomContractByAge(getLeaguePlayerAge(fa));
@@ -1189,8 +1217,8 @@ function assignFreeAgents() {
       }
     }
     // fallback
-    for (var fi = 0; fi < teams.length; fi++) {
-      var fb = teams[fi];
+    for (var fi = 0; fi < targetTeams.length; fi++) {
+      var fb = targetTeams[fi];
       if (fa.ovr > 86) {
         if (fb !== fa._origTeam && starSignedTeams[fb]) continue;
         var hasStarFB = false;
@@ -1358,6 +1386,179 @@ function calcOVR(attrs, pos) {
   return count > 0 ? Math.round(sum / count) : 50;
 }
 
+function isGeneratedLeaguePlayer(player) {
+  if (!player) return false;
+  var id = String(player.id || '');
+  return !!player._prospectId || /^R\d+$/.test(id) || /^D\d{2}-\d+$/.test(id);
+}
+
+var ROOKIE_ATTRIBUTE_PROFILE_VERSION = 2;
+var ROOKIE_ATTRIBUTE_PROFILES = {
+  PG: [
+    { id: 'playmaker', label: '组织核心', strengths: ['HAN','PAS','ATH'], weaknesses: ['IDEF','BLK','REB','STR'] },
+    { id: 'scoring_guard', label: '进攻后卫', strengths: ['threePT','MID','HAN','CLU'], weaknesses: ['IDEF','BLK','REB','STR'] }
+  ],
+  SG: [
+    { id: 'perimeter_scorer', label: '外线得分手', strengths: ['threePT','MID','FIN','HAN'], weaknesses: ['IDEF','BLK','REB','STR'] },
+    { id: 'two_way_slasher', label: '双向突破手', strengths: ['FIN','DNK','PDEF','ATH'], weaknesses: ['IDEF','BLK','REB','PAS'] }
+  ],
+  SF: [
+    { id: 'two_way_wing', label: '双向锋线', strengths: ['FIN','PDEF','ATH','STR'], weaknesses: ['PAS','BLK','REB','MID'] },
+    { id: 'point_forward', label: '组织前锋', strengths: ['HAN','PAS','FIN','PDEF'], weaknesses: ['BLK','REB','threePT','STR'] }
+  ],
+  PF: [
+    { id: 'interior_forward', label: '内线前锋', strengths: ['FIN','IDEF','REB','STR'], weaknesses: ['threePT','MID','HAN','PAS'] },
+    { id: 'stretch_four', label: '空间四号位', strengths: ['threePT','MID','PDEF','IDEF'], weaknesses: ['HAN','PAS','BLK','DNK'] }
+  ],
+  C: [
+    { id: 'rim_protector', label: '护框中锋', strengths: ['FIN','IDEF','BLK','REB','STR'], weaknesses: ['threePT','MID','HAN','PAS','PDEF'] },
+    { id: 'skilled_big', label: '技术型内线', strengths: ['FIN','MID','IDEF','REB','PAS'], weaknesses: ['threePT','HAN','PDEF','ATH','DNK'] }
+  ]
+};
+
+function getGeneratedPlayerMainPos(player) {
+  var pos = String(player && player.pos || '').split('/')[0].trim();
+  return ROOKIE_ATTRIBUTE_PROFILES[pos] ? pos : 'SF';
+}
+
+function getRookieProfile(player, randomFn) {
+  var profiles = ROOKIE_ATTRIBUTE_PROFILES[getGeneratedPlayerMainPos(player)] || ROOKIE_ATTRIBUTE_PROFILES.SF;
+  for (var i = 0; i < profiles.length; i++) {
+    if (profiles[i].id === player._rookieProfile) return profiles[i];
+  }
+  var random = typeof randomFn === 'function' ? randomFn : Math.random;
+  return profiles[Math.floor(random() * profiles.length) % profiles.length];
+}
+
+function clampLeagueAttribute(value) {
+  return Math.max(25, Math.min(99, Math.round(value)));
+}
+
+function normalizeRookieAttributesToOvr(player, targetOvr) {
+  var pos = getGeneratedPlayerMainPos(player);
+  var target = Math.max(55, Math.min(99, Math.round(Number(targetOvr) || 55)));
+  var current = calcOVR(player, pos);
+  var correction = target - current;
+  if (correction) {
+    ATTR_KEYS.forEach(function(key) {
+      player[key] = clampLeagueAttribute((Number(player[key]) || 50) + correction);
+    });
+  }
+  var guard = 0;
+  current = calcOVR(player, pos);
+  while (current !== target && guard++ < 12) {
+    var step = current < target ? 1 : -1;
+    var changed = false;
+    ATTR_KEYS.forEach(function(key) {
+      var next = clampLeagueAttribute((Number(player[key]) || 50) + step);
+      if (next !== player[key]) changed = true;
+      player[key] = next;
+    });
+    if (!changed) break;
+    current = calcOVR(player, pos);
+  }
+  player.ovr = calcOVR(player, pos);
+  return player.ovr;
+}
+
+function getCurrentLeagueSeasonNumber() {
+  return Math.max(1, ((STATE && STATE.career && STATE.career.seasonCount) || 0) + 1);
+}
+
+function refreshGeneratedPlayerType(player) {
+  if (!isGeneratedLeaguePlayer(player)) return false;
+  var profile = getRookieProfile(player);
+  var currentSeason = getCurrentLeagueSeasonNumber();
+  var nextType = currentSeason <= (Number(player._rookieSeason) || currentSeason) ? '新秀' : profile.label;
+  if (player.type === nextType) return false;
+  player.type = nextType;
+  return true;
+}
+
+function applyRookieAttributeProfile(player, targetOvr, randomFn) {
+  var random = typeof randomFn === 'function' ? randomFn : Math.random;
+  var profile = getRookieProfile(player, random);
+  player._rookieProfile = profile.id;
+  player._rookieGenerationVersion = ROOKIE_ATTRIBUTE_PROFILE_VERSION;
+  if (!player._rookieSeason) player._rookieSeason = getCurrentLeagueSeasonNumber();
+  ATTR_KEYS.forEach(function(key) {
+    var offset;
+    if (profile.strengths.indexOf(key) >= 0) offset = 7 + Math.floor(random() * 5);
+    else if (profile.weaknesses.indexOf(key) >= 0) offset = -(10 + Math.floor(random() * 6));
+    else offset = Math.floor(random() * 7) - 3;
+    player[key] = clampLeagueAttribute((Number(targetOvr) || 55) + offset);
+  });
+  normalizeRookieAttributesToOvr(player, targetOvr);
+  refreshGeneratedPlayerType(player);
+  return player;
+}
+
+function createGeneratedPlayerMigrationRandom(player) {
+  var text = [player.id || '', player._prospectId || '', player.pos || '', player.ovr || ''].join(':');
+  var seed = 2166136261;
+  for (var i = 0; i < text.length; i++) {
+    seed ^= text.charCodeAt(i);
+    seed = Math.imul(seed, 16777619) >>> 0;
+  }
+  return function() {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    return seed / 4294967296;
+  };
+}
+
+function rebalanceLegacyGeneratedPlayer(player) {
+  if (!isGeneratedLeaguePlayer(player) || player._rookieGenerationVersion >= ROOKIE_ATTRIBUTE_PROFILE_VERSION) return false;
+  var targetOvr = Math.max(55, Math.min(99, Math.round(Number(player.ovr) || 70)));
+  if (!player._rookieSeason) {
+    var age = Number(player._age) || 20;
+    player._rookieSeason = Math.max(1, getCurrentLeagueSeasonNumber() - Math.max(0, age - 20));
+  }
+  applyRookieAttributeProfile(player, targetOvr, createGeneratedPlayerMigrationRandom(player));
+  return true;
+}
+
+function evolveGeneratedPlayerAttributes(player, oldOvr, newOvr) {
+  if (!isGeneratedLeaguePlayer(player)) return false;
+  if (player._rookieGenerationVersion < ROOKIE_ATTRIBUTE_PROFILE_VERSION) rebalanceLegacyGeneratedPlayer(player);
+  var profile = getRookieProfile(player);
+  var delta = Math.round(newOvr) - Math.round(oldOvr);
+  if (!delta) return false;
+  ATTR_KEYS.forEach(function(key) {
+    var attrDelta = delta;
+    if (delta > 0 && profile.strengths.indexOf(key) >= 0) attrDelta = delta + 1;
+    else if (delta > 0 && profile.weaknesses.indexOf(key) >= 0) attrDelta = Math.max(0, delta - 1);
+    else if (delta < 0 && profile.weaknesses.indexOf(key) >= 0) attrDelta = delta - 1;
+    player[key] = clampLeagueAttribute((Number(player[key]) || 50) + attrDelta);
+  });
+  normalizeRookieAttributesToOvr(player, newOvr);
+  return true;
+}
+
+function syncGeneratedLeaguePlayerOvr(player) {
+  if (!isGeneratedLeaguePlayer(player)) return false;
+  var pos = String(player.pos || '').split('/')[0].trim();
+  if (!SIM_CONFIG || !SIM_CONFIG.OVR_WEIGHTS || !SIM_CONFIG.OVR_WEIGHTS[pos]) return false;
+  var nextOvr = calcOVR(player, pos);
+  if (player.ovr === nextOvr) return false;
+  player.ovr = nextOvr;
+  return true;
+}
+
+function syncGeneratedLeaguePlayerOvrs() {
+  if (typeof LEAGUE_PLAYER_DATA === 'undefined' || typeof LEAGUE_TEAM_IDS === 'undefined') return 0;
+  var changed = 0;
+  LEAGUE_TEAM_IDS.forEach(function(teamId) {
+    (LEAGUE_PLAYER_DATA[teamId] || []).forEach(function(player) {
+      var playerChanged = rebalanceLegacyGeneratedPlayer(player);
+      if (refreshGeneratedPlayerType(player)) playerChanged = true;
+      if (syncGeneratedLeaguePlayerOvr(player)) playerChanged = true;
+      if (playerChanged) changed++;
+    });
+  });
+  if (changed && typeof clearLineupCache === 'function') clearLineupCache();
+  return changed;
+}
+
 // ==================== 联盟演变 ====================
 var _playerAges = null;
 var _playerGenes = null;
@@ -1421,6 +1622,7 @@ function ensurePlayerLoyaltyGene(gene, player) {
   } else if (typeof gene.loyalty !== 'number') {
     gene.loyalty = inferPlayerLoyalty(player);
   }
+  if (typeof gene.roleUnderuseSeasons !== 'number') gene.roleUnderuseSeasons = 0;
   return gene;
 }
 
@@ -1483,6 +1685,11 @@ function getPlayerLoyaltyBasis(player) {
   var publishedBasis = typeof PLAYER_LOYALTY_BASIS !== 'undefined' ? PLAYER_LOYALTY_BASIS[playerId] : '';
   var gene = _playerGenes && _playerGenes[playerId];
   var dynamicBasis = gene && gene.loyaltyLastEvent ? '游戏内：' + gene.loyaltyLastEvent : '';
+  var roleBasis = gene && gene.lastRoleSample && !gene.lastRoleStarter
+    ? '上季替补 ' + Math.round(gene.lastRoleMpg) + ' 分钟'
+    : '';
+  if (dynamicBasis && roleBasis) dynamicBasis += ' · ' + roleBasis;
+  else if (roleBasis) dynamicBasis = roleBasis;
   if (publishedBasis) return publishedBasis + (dynamicBasis ? ' · ' + dynamicBasis : '');
   var id = String(playerId || '');
   if ((player && player.type === '新秀') || /^R\d/.test(id) || /^D\d{2}-/.test(id)) {
@@ -1522,7 +1729,8 @@ function getPlayerGene(player) {
     loyaltyVersion: PLAYER_LOYALTY_GENE_VERSION,
     loyaltyRenewals: 0,
     loyaltyLastEvent: '',
-    loyaltyTeam: ''
+    loyaltyTeam: '',
+    roleUnderuseSeasons: 0
   };
   if (_playerGenes) _playerGenes[playerId] = g;
   return g;
@@ -1551,7 +1759,56 @@ function getLeaguePlayerAge(player) {
   return age;
 }
 
-function calculateContractStayRate(player, history) {
+function getLeaguePlayerRoleStayAdjustment(player, roleContext) {
+  if (!player || !roleContext || !roleContext.hasSample || roleContext.isStarter) return 0;
+  var ovr = Number(roleContext.ovr != null ? roleContext.ovr : player.ovr) || 70;
+  var mpg = Number(roleContext.mpg) || 0;
+  if (ovr >= 88) {
+    if (mpg >= 26) return -0.08;
+    if (mpg >= 20) return -0.20;
+    return -0.32;
+  }
+  if (ovr >= 84) {
+    if (mpg >= 24) return -0.04;
+    if (mpg >= 18) return -0.12;
+    return -0.22;
+  }
+  if (ovr >= 80) {
+    if (mpg >= 18) return 0;
+    if (mpg >= 14) return -0.06;
+    return -0.12;
+  }
+  return mpg < 10 ? -0.05 : 0;
+}
+
+function getLeaguePlayerSeasonRoleContext(teamId, player, lineup) {
+  var stats = STATE.season && STATE.season.leaguePlayerSeasonStats;
+  var row = stats && stats[teamId + ':' + player.id];
+  var gp = Number(row && row.gp) || 0;
+  var mpg = gp > 0 ? (Number(row.min) || 0) / gp : 0;
+  var starters = lineup && lineup.starters ? Object.values(lineup.starters) : [];
+  return {
+    gp: gp,
+    mpg: mpg,
+    ovr: Number(player.ovr) || 70,
+    hasSample: gp >= 10,
+    isStarter: starters.indexOf(player) >= 0
+  };
+}
+
+function updatePlayerRoleSatisfactionHistory(player, roleContext) {
+  var gene = getPlayerGene(player);
+  var adjustment = getLeaguePlayerRoleStayAdjustment(player, roleContext);
+  if (roleContext && roleContext.hasSample) {
+    gene.roleUnderuseSeasons = adjustment <= -0.12 ? (Number(gene.roleUnderuseSeasons) || 0) + 1 : 0;
+    gene.lastRoleMpg = Number(roleContext.mpg) || 0;
+    gene.lastRoleStarter = !!roleContext.isStarter;
+    gene.lastRoleSample = true;
+  }
+  return gene.roleUnderuseSeasons || 0;
+}
+
+function calculateContractStayRate(player, history, roleContext) {
   var avgPct = 0.5;
   if (history && history.length > 0) {
     var sum = 0;
@@ -1565,8 +1822,13 @@ function calculateContractStayRate(player, history) {
     if (history[0] - history[1] < -0.02 && history[1] - history[2] < -0.02) trendFactor = 0.85;
     else if (history[0] - history[1] > 0.02 && history[1] - history[2] > 0.02) trendFactor = 1.1;
   }
-  var loyaltyBonus = (getPlayerLoyalty(player) - 50) * 0.006;
-  return Math.max(0.1, Math.min(0.96, 0.80 * teamFactor * starFactor * trendFactor + loyaltyBonus));
+  var loyaltyBonus = (getPlayerLoyalty(player) - 50) * 0.004;
+  var roleAdjustment = getLeaguePlayerRoleStayAdjustment(player, roleContext);
+  var gene = getPlayerGene(player);
+  var repeatedUnderusePenalty = roleAdjustment <= -0.12 && gene.roleUnderuseSeasons >= 2 ? -0.10 : 0;
+  var contenderRefund = roleAdjustment < 0 ? (avgPct >= 0.65 ? 0.08 : avgPct >= 0.55 ? 0.04 : 0) : 0;
+  var stayRate = 0.80 * teamFactor * starFactor * trendFactor + loyaltyBonus + roleAdjustment + repeatedUnderusePenalty + contenderRefund;
+  return Math.max(0.1, Math.min(0.96, stayRate));
 }
 
 function advanceSpecialLeaguePlayerAge(player, age) {
@@ -1576,6 +1838,17 @@ function advanceSpecialLeaguePlayerAge(player, age) {
 function evolveLeague() {
   STATE._leagueChanges = { retired: [], rookies: [], teamChanges: {}, trades: [] };
   var teams = typeof LEAGUE_TEAM_IDS !== 'undefined' ? LEAGUE_TEAM_IDS : [];
+  syncGeneratedLeaguePlayerOvrs();
+  var seasonRoleContexts = {};
+  teams.forEach(function(t) {
+    var roleRoster = LEAGUE_PLAYER_DATA[t] || [];
+    var lineup = typeof calcTeamLineup === 'function' ? calcTeamLineup(t) : null;
+    roleRoster.forEach(function(player) {
+      var context = getLeaguePlayerSeasonRoleContext(t, player, lineup);
+      updatePlayerRoleSatisfactionHistory(player, context);
+      seasonRoleContexts[t + ':' + player.id] = context;
+    });
+  });
   teams.forEach(function(t) {
     var roster = LEAGUE_PLAYER_DATA[t];
     if (!roster || !roster.length) return;
@@ -1599,19 +1872,22 @@ function evolveLeague() {
       change = Math.sign(change) * Math.round(Math.abs(change));
       var newOvr = Math.max(55, Math.min(99, p.ovr + change));
       if (newOvr !== p.ovr) {
-        var baseRatio = Math.round(newOvr) / p.ovr;
-        var decayFast    = ['ATH', 'STR', 'PDEF'];
-        var decayResist  = ['threePT', 'MID', 'PAS', 'HAN', 'CLU'];
-        SIM_CONFIG.ATTR_LIST.forEach(function(attrKey) {
-          if (p[attrKey] == null) return;
-          var r = baseRatio;
-          if (baseRatio < 1) {
-            if (decayFast.indexOf(attrKey) >= 0)   r = 1 - (1 - baseRatio) * 1.5; // 运动衰退放大
-            if (decayResist.indexOf(attrKey) >= 0) r = 1 - (1 - baseRatio) * 0.3; // 投射/球商几乎不退
-          }
-          p[attrKey] = Math.max(25, Math.min(99, Math.round(p[attrKey] * r)));
-        });
-        p.ovr = Math.round(newOvr);
+        var oldOvr = p.ovr;
+        if (!evolveGeneratedPlayerAttributes(p, oldOvr, newOvr)) {
+          var baseRatio = Math.round(newOvr) / oldOvr;
+          var decayFast    = ['ATH', 'STR', 'PDEF'];
+          var decayResist  = ['threePT', 'MID', 'PAS', 'HAN', 'CLU'];
+          SIM_CONFIG.ATTR_LIST.forEach(function(attrKey) {
+            if (p[attrKey] == null) return;
+            var r = baseRatio;
+            if (baseRatio < 1) {
+              if (decayFast.indexOf(attrKey) >= 0)   r = 1 - (1 - baseRatio) * 1.5; // 运动衰退放大
+              if (decayResist.indexOf(attrKey) >= 0) r = 1 - (1 - baseRatio) * 0.3; // 投射/球商几乎不退
+            }
+            p[attrKey] = Math.max(25, Math.min(99, Math.round(p[attrKey] * r)));
+          });
+          p.ovr = Math.round(newOvr);
+        }
       }
       var retireChance = 0;
       if (p._protectedRetirementAge && age < p._protectedRetirementAge) {
@@ -1628,6 +1904,7 @@ function evolveLeague() {
         return;
       }
       p._age = age + 1; // 临时实验：球员年龄真实上涨，每年 +1
+      refreshGeneratedPlayerType(p);
       newRoster.push(p);
     });
     var draftSlot = 0;
@@ -1637,9 +1914,11 @@ function evolveLeague() {
       // 补位新秀与选秀新秀一致，只保护当前休赛期，避免刚加入就被交易。
       rk._justSigned = true;
       // 前3个空位（更弱的队）：OVR 68-74（彩票区球员）；之后：OVR 60-67（次轮/末签）
-      rk.ovr = draftSlot <= 3
+      var fillerOvr = draftSlot <= 3
         ? 68 + Math.floor(rngNext() * 7)
         : 60 + Math.floor(rngNext() * 8);
+      rk.ovr = fillerOvr;
+      applyRookieAttributeProfile(rk, fillerOvr, rngNext);
       rk.contract = draftSlot <= 3 ? 3 : 2;
       rk.loyalty = getRookieContractLoyalty(rk.contract);
       newRoster.push(rk);
@@ -1681,7 +1960,8 @@ function evolveLeague() {
         // 留队判定
         var age = getLeaguePlayerAge(p);
         var hist = STATE._teamHistory ? STATE._teamHistory[t] : null;
-        var stayRate = calculateContractStayRate(p, hist);
+        var roleContext = seasonRoleContexts[t + ':' + p.id];
+        var stayRate = calculateContractStayRate(p, hist, roleContext);
 
         if (rngNext() < stayRate) {
           // 留队续约

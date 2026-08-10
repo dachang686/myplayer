@@ -162,6 +162,80 @@ function validatePlayInCompletion() {
 
 const playInCompletion = validatePlayInCompletion();
 
+function validateStandingsTiebreakers() {
+  const sourceStart = indexSource.indexOf('function getCompletedRegularSeasonGames');
+  const sourceEnd = indexSource.indexOf('// ==================== 6.', sourceStart);
+  if (sourceStart < 0 || sourceEnd < 0) throw new Error('无法定位常规赛 tie-break 排名代码');
+
+  const tiebreakState = { careerTeam: null, season: { standings: {}, games: [], _leagueGameLog: [] } };
+  const conference = { NORTH: [], SOUTH: [] };
+  const functions = new Function(
+    'STATE',
+    'SIM_CONFIG',
+    'getConference',
+    `${indexSource.slice(sourceStart, sourceEnd)}\nreturn { sortConferenceStandingsRows, getConferenceSorted, getConferenceSeed };`,
+  )(
+    tiebreakState,
+    { CONFERENCE: conference },
+    team => conference.NORTH.includes(team) ? 'NORTH' : 'SOUTH',
+  );
+
+  function runScenario(rows, leagueGames, userGames, careerTeam) {
+    conference.NORTH = rows.map(row => row.team);
+    tiebreakState.careerTeam = careerTeam || null;
+    tiebreakState.season.standings = Object.fromEntries(rows.map(row => [row.team, { wins: row.wins, losses: row.losses }]));
+    tiebreakState.season._leagueGameLog = leagueGames || [];
+    tiebreakState.season.games = userGames || [];
+    return functions.getConferenceSorted('NORTH').map(row => row.team);
+  }
+
+  const tiedRows = [
+    { team: 'A', wins: 47, losses: 35 },
+    { team: 'B', wins: 47, losses: 35 },
+  ];
+  const headToHead = runScenario(tiedRows, [], [{
+    game: { opponent: 'B', home: true },
+    result: { scoreA: 90, scoreB: 100, won: false },
+  }], 'A');
+  const headToHeadSeeds = {
+    B: functions.getConferenceSeed('B'),
+    A: functions.getConferenceSeed('A'),
+  };
+
+  const multiTeam = runScenario([
+    { team: 'A', wins: 47, losses: 35 },
+    { team: 'B', wins: 47, losses: 35 },
+    { team: 'C', wins: 47, losses: 35 },
+  ], [
+    { home: 'A', away: 'B', won: false, scoreHome: 90, scoreAway: 100 },
+    { home: 'A', away: 'C', won: false, scoreHome: 90, scoreAway: 100 },
+    { home: 'B', away: 'C', won: true, scoreHome: 100, scoreAway: 90 },
+  ]);
+
+  const conferenceRecord = runScenario([
+    { team: 'A', wins: 47, losses: 35 },
+    { team: 'Z', wins: 47, losses: 35 },
+    { team: 'C', wins: 30, losses: 52 },
+  ], [
+    { home: 'A', away: 'Z', won: true, scoreHome: 100, scoreAway: 90 },
+    { home: 'Z', away: 'A', won: true, scoreHome: 100, scoreAway: 90 },
+    { home: 'A', away: 'C', won: false, scoreHome: 90, scoreAway: 100 },
+    { home: 'Z', away: 'C', won: true, scoreHome: 100, scoreAway: 90 },
+  ]).slice(0, 2);
+
+  const pointDifferential = runScenario([
+    { team: 'A', wins: 47, losses: 35 },
+    { team: 'Z', wins: 47, losses: 35 },
+  ], [
+    { home: 'A', away: 'Z', won: true, scoreHome: 100, scoreAway: 95 },
+    { home: 'Z', away: 'A', won: true, scoreHome: 120, scoreAway: 90 },
+  ]);
+
+  return { headToHead, headToHeadSeeds, multiTeam, conferenceRecord, pointDifferential };
+}
+
+const standingsTiebreakers = validateStandingsTiebreakers();
+
 for (const [source, label] of [[indexSimulation, 'index.html 比赛模拟'], [playoffsSource, 'js/playoffs.js']]) {
   try {
     parser.parse(source, { sourceType: 'script', plugins: ['optionalChaining', 'objectRestSpread'] });
@@ -537,6 +611,7 @@ const realRosterSmoke = runRealRosterSmoke();
 const report = {
   playInRouting,
   playInCompletion,
+  standingsTiebreakers,
   equalNeutral,
   equalHome,
   equalAway,
@@ -600,6 +675,19 @@ if (!Object.values(playInRouting.qualifiedEntry).every(Boolean)) {
 }
 if (!Object.values(playInCompletion).every(Boolean)) {
   failures.push(`附加赛完成条件错误：${JSON.stringify(playInCompletion)}`);
+}
+if (JSON.stringify(standingsTiebreakers.headToHead) !== JSON.stringify(['B', 'A'])
+  || standingsTiebreakers.headToHeadSeeds.B !== 1 || standingsTiebreakers.headToHeadSeeds.A !== 2) {
+  failures.push(`两队相互交手 tie-break 错误：${JSON.stringify(standingsTiebreakers)}`);
+}
+if (JSON.stringify(standingsTiebreakers.multiTeam) !== JSON.stringify(['B', 'C', 'A'])) {
+  failures.push(`多队相互交手 tie-break 错误：${JSON.stringify(standingsTiebreakers.multiTeam)}`);
+}
+if (JSON.stringify(standingsTiebreakers.conferenceRecord) !== JSON.stringify(['Z', 'A'])) {
+  failures.push(`联盟战绩 tie-break 错误：${JSON.stringify(standingsTiebreakers.conferenceRecord)}`);
+}
+if (JSON.stringify(standingsTiebreakers.pointDifferential) !== JSON.stringify(['Z', 'A'])) {
+  failures.push(`净胜分 tie-break 错误：${JSON.stringify(standingsTiebreakers.pointDifferential)}`);
 }
 const progression = bracketMapping.roundProgression;
 if (progression.afterFirstRound.currentRound !== 1 || progression.afterFirstRound.results !== 4 || !progression.afterFirstRound.semifinalistsReady || progression.afterFirstRound.champion) {

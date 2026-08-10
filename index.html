@@ -409,9 +409,14 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .season-team-avatar{width:26px;height:26px;flex:0 0 26px;border-radius:50%;border:1px solid var(--border);background:var(--bg-elevated) center/cover no-repeat}
 .season-team-position{width:38px;flex:0 0 38px;color:var(--text-dim);font-size:10px}
 .season-team-name{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.season-team-impact{flex:0 0 auto;display:flex;gap:3px;font:700 10px var(--font-display)}
+.season-team-impact span{min-width:34px;padding:2px 5px;border:1px solid var(--border);border-radius:999px;background:var(--bg-elevated);text-align:center;white-space:nowrap}
+.season-team-offense{color:var(--orange)}
+.season-team-defense{color:var(--green)}
 .season-team-loyalty{flex:0 0 auto;padding:2px 5px;border:1px solid var(--border);border-radius:999px;color:var(--text-dim);background:var(--bg-elevated);font-size:9px;white-space:nowrap}
 .season-team-ovr{font:700 13px var(--font-display);color:var(--text)}
 .season-team-player.is-user .season-team-ovr{color:var(--orange)}
+@media (max-width:420px){.season-team-player{gap:5px}.season-team-position{width:32px;flex-basis:32px}.season-team-impact span{min-width:30px;padding-inline:4px}.season-team-loyalty{display:none}}
 .season-team-stats{padding:8px 12px 12px;overflow-x:auto}
 .season-team-stats-head,.season-team-stat-row{display:grid;grid-template-columns:minmax(132px,1fr) 34px 48px repeat(3,42px);gap:5px;align-items:center;min-width:365px}
 .season-team-stats-head{padding:5px 6px;color:var(--text-muted);font-size:9px;text-align:right}
@@ -425,7 +430,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .season-rankings-heading{padding:3px 2px 10px;font:700 20px var(--font-display);color:var(--text)}
 .season-rankings-heading small{display:block;margin-top:4px;color:var(--text-muted);font:400 10px var(--font-body)}
 .rankings-view-tabs{padding:0 0 10px}
-.season-ranking-panel{background:var(--bg-card);border:1.5px solid var(--border);border-radius:12px;padding:12px}
+.season-ranking-panel{container-type:inline-size;background:var(--bg-card);border:1.5px solid var(--border);border-radius:12px;padding:12px}
 .player-ranking-tabs{display:flex;gap:5px;margin-bottom:9px}
 .player-ranking-tab{flex:1;border:1px solid var(--border);border-radius:7px;background:transparent;color:var(--text-dim);padding:7px 5px;font:600 11px var(--font-display);cursor:pointer}
 .player-ranking-tab.active{border-color:var(--orange);background:var(--orange-bg);color:var(--orange)}
@@ -480,6 +485,19 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .st-team-cell{display:block;min-width:0;line-height:1.15}.st-team-name{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%}.st-ovr-cell{display:flex;flex-direction:row;align-items:center;justify-content:flex-end;gap:8px;color:var(--text);font-size:10px;font-weight:700;line-height:1.15;white-space:nowrap}.st-ovr-cell small{margin-right:3px;color:var(--text-muted);font-size:8px;font-weight:400}.st-power-cell{color:var(--text);font-weight:800;font-variant-numeric:tabular-nums}
 .st-w{color:var(--green)}.st-l{color:var(--red)}
 .st-streak{font-size:11px;color:var(--text-dim)}
+@container (max-width:500px){
+  .st-hdr,.st-row{grid-template-columns:18px minmax(76px,1fr) 44px 38px 21px 21px 30px 26px;gap:2px;min-width:0}
+  .st-hdr{padding-inline:5px;font-size:9px}
+  .st-row{padding-inline:5px;font-size:12px}
+  .st-ovr-cell{gap:1px;font-size:10px}
+  .st-ovr-cell small{display:none}
+  .st-ovr-cell>span+span::before{content:'/';margin-right:1px;color:var(--text-muted);font-weight:400}
+  .st-streak{font-size:10px}
+}
+@container (max-width:320px){
+  .st-hdr,.st-row{grid-template-columns:minmax(72px,1fr) 42px 36px 20px 20px 28px 24px}
+  .st-hdr>span:first-child,.st-row>span:first-child{display:none}
+}
 .bv-wrap{padding:0 6px 20px}
 .bv-header{text-align:center;padding:8px 0 6px;border-bottom:2px solid var(--border);margin-bottom:8px}
 .bv-header-title{font-family:var(--font-display);font-size:clamp(16px,4vw,20px);font-weight:700}
@@ -3443,35 +3461,148 @@ function toggleTeamLogos() {
   else if (id === 'screen-achievements' && window.CONQUEST_API && typeof CONQUEST_API.show === 'function') CONQUEST_API.show();
 }
 
+/** 汇总已完成的常规赛结果，统一为主队、客队和实际比分。 */
+function getCompletedRegularSeasonGames() {
+  const games = [];
+  const season = STATE.season || {};
+  (season._leagueGameLog || []).forEach(function(game) {
+    if (!game || !game.home || !game.away) return;
+    games.push({
+      home: game.home,
+      away: game.away,
+      scoreHome: game.scoreHome == null ? NaN : Number(game.scoreHome),
+      scoreAway: game.scoreAway == null ? NaN : Number(game.scoreAway),
+      homeWon: typeof game.won === 'boolean' ? game.won : Number(game.scoreHome) > Number(game.scoreAway),
+    });
+  });
+  (season.games || []).forEach(function(entry) {
+    const game = entry && entry.game;
+    const result = entry && entry.result;
+    if (!game || !result || !game.opponent || !STATE.careerTeam) return;
+    const userIsHome = !!game.home;
+    games.push({
+      home: userIsHome ? STATE.careerTeam : game.opponent,
+      away: userIsHome ? game.opponent : STATE.careerTeam,
+      scoreHome: result.scoreA == null || result.scoreB == null ? NaN : Number(userIsHome ? result.scoreA : result.scoreB),
+      scoreAway: result.scoreA == null || result.scoreB == null ? NaN : Number(userIsHome ? result.scoreB : result.scoreA),
+      homeWon: userIsHome ? !!result.won : !result.won,
+    });
+  });
+  return games;
+}
+
+function getStandingsTiebreakMetrics(team, tiedTeams, conf, completedGames) {
+  let headToHeadWins = 0, headToHeadGames = 0;
+  let conferenceWins = 0, conferenceGames = 0;
+  let pointDiff = 0, scoredGames = 0;
+  completedGames.forEach(function(game) {
+    if (game.home !== team && game.away !== team) return;
+    const isHome = game.home === team;
+    const opponent = isHome ? game.away : game.home;
+    const won = isHome ? game.homeWon : !game.homeWon;
+    if (tiedTeams.has(opponent)) {
+      headToHeadGames++;
+      if (won) headToHeadWins++;
+    }
+    if (getConference(opponent) === conf) {
+      conferenceGames++;
+      if (won) conferenceWins++;
+    }
+    if (Number.isFinite(game.scoreHome) && Number.isFinite(game.scoreAway)) {
+      pointDiff += isHome ? game.scoreHome - game.scoreAway : game.scoreAway - game.scoreHome;
+      scoredGames++;
+    }
+  });
+  return {
+    headToHeadPct: headToHeadGames > 0 ? headToHeadWins / headToHeadGames : null,
+    conferencePct: conferenceGames > 0 ? conferenceWins / conferenceGames : null,
+    pointDiff: scoredGames > 0 ? pointDiff : null,
+  };
+}
+
+/** 同战绩球队依次比较相互交手、联盟战绩、净胜分；部分解开后对子组重新开始比较。 */
+function rankStandingsTieGroup(rows, conf, completedGames, criterionIndex) {
+  if (rows.length <= 1) return rows.slice();
+  const tiedTeams = new Set(rows.map(function(row) { return row.team; }));
+  const metrics = {};
+  rows.forEach(function(row) {
+    metrics[row.team] = getStandingsTiebreakMetrics(row.team, tiedTeams, conf, completedGames);
+  });
+  const criteria = [
+    function(row) { return metrics[row.team].headToHeadPct; },
+    function(row) { return metrics[row.team].conferencePct; },
+    function(row) { return metrics[row.team].pointDiff; },
+  ];
+  const index = criterionIndex || 0;
+  if (index >= criteria.length) {
+    return rows.slice().sort(function(a, b) {
+      return String(a.team) < String(b.team) ? -1 : String(a.team) > String(b.team) ? 1 : 0;
+    });
+  }
+  const getValue = criteria[index];
+  const values = rows.map(getValue);
+  if (values.some(function(value) { return value == null || !Number.isFinite(value); })) {
+    return rankStandingsTieGroup(rows, conf, completedGames, index + 1);
+  }
+  const sorted = rows.slice().sort(function(a, b) { return getValue(b) - getValue(a); });
+  const groups = [];
+  sorted.forEach(function(row) {
+    const value = getValue(row);
+    const last = groups[groups.length - 1];
+    if (!last || Math.abs(last.value - value) > 0.0000001) groups.push({ value: value, rows: [row] });
+    else last.rows.push(row);
+  });
+  if (groups.length === 1) return rankStandingsTieGroup(rows, conf, completedGames, index + 1);
+  return groups.reduce(function(result, group) {
+    return result.concat(group.rows.length > 1
+      ? rankStandingsTieGroup(group.rows, conf, completedGames, 0)
+      : group.rows);
+  }, []);
+}
+
+function sortConferenceStandingsRows(rows, conf) {
+  const completedGames = getCompletedRegularSeasonGames();
+  const sorted = rows.slice().sort(function(a, b) {
+    const gamesA = (a.wins || 0) + (a.losses || 0);
+    const gamesB = (b.wins || 0) + (b.losses || 0);
+    const pctA = gamesA > 0 ? (a.wins || 0) / gamesA : 0;
+    const pctB = gamesB > 0 ? (b.wins || 0) / gamesB : 0;
+    return pctB - pctA || (b.wins || 0) - (a.wins || 0);
+  });
+  const ranked = [];
+  for (let index = 0; index < sorted.length;) {
+    const first = sorted[index];
+    const firstGames = (first.wins || 0) + (first.losses || 0);
+    const firstPct = firstGames > 0 ? (first.wins || 0) / firstGames : 0;
+    let end = index + 1;
+    while (end < sorted.length) {
+      const row = sorted[end];
+      const games = (row.wins || 0) + (row.losses || 0);
+      const pct = games > 0 ? (row.wins || 0) / games : 0;
+      if (Math.abs(pct - firstPct) > 0.0000001) break;
+      end++;
+    }
+    ranked.push.apply(ranked, rankStandingsTieGroup(sorted.slice(index, end), conf, completedGames, 0));
+    index = end;
+  }
+  return ranked;
+}
+
 /** 获取球队在联盟中的种子排名（1-15） */
 function getConferenceSeed(team) {
-  const conf = getConference(team);
-  const teams = conf === 'SOUTH' ? SIM_CONFIG.CONFERENCE.SOUTH : SIM_CONFIG.CONFERENCE.NORTH;
-  const standings = STATE.season.standings;
-  if (!standings) return 99;
-  const sorted = teams
-    .map(t => ({ team: t, ...standings[t] }))
-    .sort((a, b) => {
-      const apct = a.wins + a.losses > 0 ? a.wins / (a.wins + a.losses) : 0;
-      const bpct = b.wins + b.losses > 0 ? b.wins / (b.wins + b.losses) : 0;
-      return bpct - apct || b.wins - a.wins;
-    });
-  const idx = sorted.findIndex(s => s.team === team);
+  const sorted = getConferenceSorted(getConference(team));
+  const idx = sorted.findIndex(function(row) { return row.team === team; });
   return idx >= 0 ? idx + 1 : 99;
 }
 
-/** 获取同分区所有球队按种子排序的列表 */
+/** 获取同分区所有球队按正式 tie-break 规则排序的列表 */
 function getConferenceSorted(conf) {
   const teams = conf === 'SOUTH' ? SIM_CONFIG.CONFERENCE.SOUTH : SIM_CONFIG.CONFERENCE.NORTH;
   const standings = STATE.season.standings;
   if (!standings) return [];
-  return teams
-    .map(t => ({ team: t, wins: standings[t]?.wins || 0, losses: standings[t]?.losses || 0 }))
-    .sort((a, b) => {
-      const apct = a.wins + a.losses > 0 ? a.wins / (a.wins + a.losses) : 0;
-      const bpct = b.wins + b.losses > 0 ? b.wins / (b.wins + b.losses) : 0;
-      return bpct - apct || b.wins - a.wins;
-    });
+  return sortConferenceStandingsRows(teams.map(function(team) {
+    return { team: team, wins: standings[team]?.wins || 0, losses: standings[team]?.losses || 0 };
+  }), conf);
 }
 
 // ==================== 6. 赛季模拟（新引擎）====================
@@ -4429,6 +4560,17 @@ function getLeagueDefenseImpact(player) {
   var possession = skill('REB') * 0.52 + skill('IDEF') * 0.28 + skill('STR') * 0.20;
   var options = [perimeter, interior, possession].sort(function(a, b) { return b - a; });
   return options[0] * 0.55 + options[1] * 0.30 + options[2] * 0.15;
+}
+
+function getLeaguePlayerImpactRatings(player) {
+  function toRating(value) {
+    var normalized = leagueStatClamp(Number(value) || 0, 0, 1);
+    return leagueStatClamp(Math.round(25 + 74 * Math.pow(normalized, 1 / 1.275)), 25, 99);
+  }
+  return {
+    offense: toRating(getLeagueOffenseProfile(player).impact),
+    defense: toRating(getLeagueDefenseImpact(player)),
+  };
 }
 
 function allocateLeagueRotationMinutes(players, roleRanks) {
@@ -5851,16 +5993,14 @@ function getSeasonPlayerStatRows() {
 function renderConferenceStandings(conf) {
   var standings = STATE.season && STATE.season.standings || {};
   var teams = conf === 'SOUTH' ? SIM_CONFIG.CONFERENCE.SOUTH : SIM_CONFIG.CONFERENCE.NORTH;
-  var sorted = teams.map(function(team) {
+  var sorted = sortConferenceStandingsRows(teams.map(function(team) {
     var row = standings[team] || {};
     return { team: team, wins: row.wins || 0, losses: row.losses || 0, streak: row.streak || '', streakLen: row.streakLen || 0 };
-  }).sort(function(a, b) {
-    return (b.wins - b.losses) - (a.wins - a.losses) || b.wins - a.wins;
-  });
+  }), conf);
   var leader = sorted[0] || { wins: 0, losses: 0 };
   var zoneLabels = ['🏀 季后赛区', '🔥 附加赛区', '📋 乐透区'];
   var zoneIndex = 0;
-  var html = '<div class="st-hdr"><span>排名</span><span>球队</span><span title="首发与主要轮换的平均总评">总评</span><span title="阵容基准战力，不含主场、战绩、伤病与疲劳修正">战力</span><span>胜</span><span>负</span><span>胜差</span><span>近况</span></div>';
+  var html = '<div class="st-hdr"><span>排名</span><span>球队</span><span title="首发与主要轮换的平均总评">总评<small class="st-hdr-ovr">首 / 轮</small></span><span title="阵容基准战力，不含主场、战绩、伤病与疲劳修正">战力</span><span>胜</span><span>负</span><span>胜差</span><span>近况</span></div>';
   sorted.forEach(function(row, index) {
     if (index === 0 || index === 6 || index === 10) html += '<div class="season-zone">' + zoneLabels[zoneIndex++] + '</div>';
     var gb = index === 0 ? '-' : ((leader.wins - row.wins + row.losses - leader.losses) / 2).toFixed(1);
@@ -6083,10 +6223,13 @@ function showSeasonTeamModal(teamOverride) {
     var loyaltyBasis = loyalty == null || typeof getPlayerLoyaltyBasis !== 'function' ? '' : getPlayerLoyaltyBasis(player);
     var loyaltyTitle = loyalty == null ? '' : getPlayerLoyaltyLabel(loyalty) + (loyaltyBasis ? ' · ' + loyaltyBasis : '');
     var loyaltyHtml = loyalty == null ? '' : '<span class="season-team-loyalty" title="' + loyaltyTitle + '">忠 ' + loyalty + '</span>';
-    return '<div class="season-team-player is-interactive' + (isUser ? ' is-user' : '') + '" data-season-player-team="' + team + '" data-season-player-id="' + playerId + '" role="button" tabindex="0" aria-label="查看' + name + '详细属性" title="点击查看详细属性">' +
+    var impact = getLeaguePlayerImpactRatings(player);
+    var impactHtml = '<span class="season-team-impact" aria-label="进攻 ' + impact.offense + '，防守 ' + impact.defense + '" title="攻：进攻行为与组织综合；防：外防、内防、护框与篮板综合"><span class="season-team-offense">攻 ' + impact.offense + '</span><span class="season-team-defense">防 ' + impact.defense + '</span></span>';
+    return '<div class="season-team-player is-interactive' + (isUser ? ' is-user' : '') + '" data-season-player-team="' + team + '" data-season-player-id="' + playerId + '" role="button" tabindex="0" aria-label="查看' + name + '详细属性，进攻 ' + impact.offense + '，防守 ' + impact.defense + '" title="点击查看详细属性">' +
       '<span class="season-team-avatar"' + avatarStyle + '></span>' +
       '<span class="season-team-position">' + (player.posCn || player.pos || '—') + '</span>' +
       '<span class="season-team-name">' + name + (isUser ? ' ⭐' : '') + '</span>' +
+      impactHtml +
       loyaltyHtml +
       '<span class="season-team-ovr">' + ovr + '</span>' +
       '</div>';
@@ -8308,7 +8451,7 @@ function buildManualSaveSnapshot() {
     rawState.season._processedDays = Array.from(STATE.season._processedDays);
   }
   return {
-    v: 3,
+    v: 4,
     savedAt: Date.now(),
     label: (STATE.career ? '第' + (STATE.career.seasonCount + 1) + '赛季 · ' + STATE.career.currentAge + '岁' : '未开始'),
     screen: (document.querySelector('.screen.active') || {}).id || '',
@@ -8499,6 +8642,7 @@ function manualLoadGame(slot, options) {
         if (snap.league && typeof LEAGUE_PLAYER_DATA !== 'undefined') {
           Object.keys(LEAGUE_PLAYER_DATA).forEach(function(k) { delete LEAGUE_PLAYER_DATA[k]; });
           Object.assign(LEAGUE_PLAYER_DATA, snap.league);
+          if (typeof syncGeneratedLeaguePlayerOvrs === 'function') syncGeneratedLeaguePlayerOvrs();
         }
         _playerAges = snap.ages || {};
         _playerGenes = {};
@@ -8510,7 +8654,11 @@ function manualLoadGame(slot, options) {
             loyaltyVersion: snap.genes[playerId].loyaltyVersion,
             loyaltyRenewals: snap.genes[playerId].loyaltyRenewals,
             loyaltyLastEvent: snap.genes[playerId].loyaltyLastEvent,
-            loyaltyTeam: snap.genes[playerId].loyaltyTeam
+            loyaltyTeam: snap.genes[playerId].loyaltyTeam,
+            roleUnderuseSeasons: snap.genes[playerId].roleUnderuseSeasons,
+            lastRoleMpg: snap.genes[playerId].lastRoleMpg,
+            lastRoleStarter: snap.genes[playerId].lastRoleStarter,
+            lastRoleSample: snap.genes[playerId].lastRoleSample
           };
         });
         assignKnownPlayerPotentials();
@@ -9319,8 +9467,6 @@ function generateRookie() {
     _age: 19 + Math.floor(rngNext() * 3),
     loyalty: 60,
   };
-  var attrKeys = SIM_CONFIG.ATTR_LIST || ['threePT','MID','FIN','DNK','HAN','PAS','PDEF','IDEF','BLK','REB','ATH','STR','CLU'];
-  attrKeys.forEach(function(k) { p[k] = Math.max(25, Math.min(99, ovr + Math.floor(rngNext() * 16) - 8)); });
   return p;
 }
 

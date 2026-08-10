@@ -102,8 +102,61 @@ const tradedRenewal = vm.runInContext(`(() => {
 })()`, context);
 if (tradedRenewal.renewals !== 1 || tradedRenewal.team !== 'BOS') failures.push('被交易后没有重置原队连续续约次数');
 
+const roleImpact = vm.runInContext(`(() => {
+  function seed(id, streak) {
+    _playerGenes[id] = {
+      v: 1, potential: 90, loyalty: 90,
+      loyaltyVersion: PLAYER_LOYALTY_GENE_VERSION,
+      loyaltyRenewals: 0, loyaltyLastEvent: '', loyaltyTeam: '',
+      roleUnderuseSeasons: streak || 0
+    };
+  }
+  seed('ROLE_STARTER', 0);
+  seed('ROLE_BENCH_22', 0);
+  seed('ROLE_BENCH_18', 0);
+  seed('ROLE_REPEAT', 2);
+  const history = [0.5];
+  return {
+    starter: calculateContractStayRate({ id: 'ROLE_STARTER', ovr: 88 }, history, { hasSample: true, isStarter: true, mpg: 31 }),
+    bench22: calculateContractStayRate({ id: 'ROLE_BENCH_22', ovr: 88 }, history, { hasSample: true, isStarter: false, mpg: 22 }),
+    bench18: calculateContractStayRate({ id: 'ROLE_BENCH_18', ovr: 88 }, history, { hasSample: true, isStarter: false, mpg: 18 }),
+    repeated: calculateContractStayRate({ id: 'ROLE_REPEAT', ovr: 88 }, history, { hasSample: true, isStarter: false, mpg: 18 })
+  };
+})()`, context);
+if (!(roleImpact.starter > roleImpact.bench22 && roleImpact.bench22 > roleImpact.bench18)) failures.push('首发身份和场均时间没有分层影响续约率');
+if (!(roleImpact.repeated < roleImpact.bench18)) failures.push('连续两个低角色赛季没有追加续约惩罚');
+if (Math.abs(roleImpact.starter - 0.882) > 0.001 || Math.abs(roleImpact.bench22 - 0.682) > 0.001) failures.push('88总评、90忠诚度的目标续约率偏离设计值');
+
+const roleHistory = vm.runInContext(`(() => {
+  const player = { id: 'ROLE_HISTORY', ovr: 88 };
+  _playerGenes.ROLE_HISTORY = {
+    v: 1, potential: 90, loyalty: 70,
+    loyaltyVersion: PLAYER_LOYALTY_GENE_VERSION,
+    loyaltyRenewals: 0, loyaltyLastEvent: '', loyaltyTeam: '', roleUnderuseSeasons: 0
+  };
+  updatePlayerRoleSatisfactionHistory(player, { hasSample: true, isStarter: false, mpg: 18 });
+  updatePlayerRoleSatisfactionHistory(player, { hasSample: true, isStarter: false, mpg: 18 });
+  const afterTwo = getPlayerGene(player).roleUnderuseSeasons;
+  updatePlayerRoleSatisfactionHistory(player, { hasSample: true, isStarter: true, mpg: 31 });
+  return { afterTwo, afterStarter: getPlayerGene(player).roleUnderuseSeasons };
+})()`, context);
+if (roleHistory.afterTwo !== 2 || roleHistory.afterStarter !== 0) failures.push('低角色赛季累计或恢复首发后的重置异常');
+
+const freeAgentRole = vm.runInContext(`(() => {
+  this.canPlayPosition = function(playerPos, targetPos) { return String(playerPos).indexOf(targetPos) >= 0; };
+  this.calcTeamLineup = function(teamId) {
+    return { starters: { PG: { ovr: teamId === 'OPEN' ? 80 : 94 } }, bench: [] };
+  };
+  const player = { id: 'FA_ROLE', pos: 'PG', ovr: 88, _origTeam: 'OTHER' };
+  return {
+    open: getFreeAgentTeamPreferenceScore(player, 'OPEN', { OPEN: { wins: 41, losses: 41 } }, 0),
+    blocked: getFreeAgentTeamPreferenceScore(player, 'BLOCKED', { BLOCKED: { wins: 41, losses: 41 } }, 0)
+  };
+})()`, context);
+if (!(freeAgentRole.open > freeAgentRole.blocked + 0.3)) failures.push('自由市场择队没有显著偏向可获得首发机会的球队');
+
 const indexText = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-for (const field of ['loyaltyVersion', 'loyaltyRenewals', 'loyaltyLastEvent', 'loyaltyTeam']) {
+for (const field of ['loyaltyVersion', 'loyaltyRenewals', 'loyaltyLastEvent', 'loyaltyTeam', 'roleUnderuseSeasons', 'lastRoleMpg', 'lastRoleStarter', 'lastRoleSample']) {
   if (!indexText.includes(`snap.genes[playerId].${field}`)) failures.push(`存档恢复缺少 ${field}`);
 }
 
