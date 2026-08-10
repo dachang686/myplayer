@@ -413,13 +413,14 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .season-team-ovr{font:700 13px var(--font-display);color:var(--text)}
 .season-team-player.is-user .season-team-ovr{color:var(--orange)}
 .season-team-stats{padding:8px 12px 12px;overflow-x:auto}
-.season-team-stats-head,.season-team-stat-row{display:grid;grid-template-columns:minmax(132px,1fr) 34px repeat(3,42px);gap:5px;align-items:center;min-width:330px}
+.season-team-stats-head,.season-team-stat-row{display:grid;grid-template-columns:minmax(132px,1fr) 34px 48px repeat(3,42px);gap:5px;align-items:center;min-width:365px}
 .season-team-stats-head{padding:5px 6px;color:var(--text-muted);font-size:9px;text-align:right}
 .season-team-stats-head span:first-child{text-align:left}
 .season-team-stat-row{min-height:38px;padding:6px;border-bottom:1px solid var(--border-light);font:600 11px var(--font-display);text-align:right}
 .season-team-stat-row.is-user{background:var(--orange-bg);border:1px solid var(--orange);border-radius:8px;color:var(--orange)}
 .season-team-stat-player{min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .season-team-stat-player small{margin-right:5px;color:var(--text-muted);font-size:9px}
+@media (max-width:420px){.season-team-stats-head,.season-team-stat-row{grid-template-columns:minmax(100px,1fr) 30px 43px repeat(3,35px);gap:3px;min-width:293px}}
 .season-rankings-page{padding:10px 10px 20px}
 .season-rankings-heading{padding:3px 2px 10px;font:700 20px var(--font-display);color:var(--text)}
 .season-rankings-heading small{display:block;margin-top:4px;color:var(--text-muted);font:400 10px var(--font-body)}
@@ -5774,6 +5775,7 @@ function createSeasonPlayerStatRow(raw, meta) {
     isUser: !!meta.isUser,
     gp: gp,
     pts: totals.pts, reb: totals.reb, ast: totals.ast, stl: totals.stl, blk: totals.blk,
+    mpg: seasonAverage(totals.min, gp),
     ppg: seasonAverage(totals.pts, gp),
     rpg: seasonAverage(totals.reb, gp),
     apg: seasonAverage(totals.ast, gp),
@@ -6068,6 +6070,7 @@ function showSeasonTeamModal(teamOverride) {
     return '<div class="season-team-stat-row is-interactive ' + (isUser ? 'is-user' : '') + '" data-season-player-team="' + team + '" data-season-player-id="' + playerId + '" role="button" tabindex="0" aria-label="查看' + name + '详细属性" title="点击查看详细属性">' +
       '<span class="season-team-stat-player"><small>' + (player.posCn || player.pos || '-') + '</small>' + name + (isUser ? ' ⭐' : '') + '</span>' +
       '<span>' + statRow.gp + '</span>' +
+      '<span>' + statRow.mpg.toFixed(1) + '</span>' +
       '<span>' + statRow.ppg.toFixed(1) + '</span>' +
       '<span>' + statRow.rpg.toFixed(1) + '</span>' +
       '<span>' + statRow.apg.toFixed(1) + '</span>' +
@@ -6075,7 +6078,7 @@ function showSeasonTeamModal(teamOverride) {
   }
 
   var statsHtml = '<div class="season-team-stats">' +
-    '<div class="season-team-stats-head"><span>球员</span><span>场次</span><span>得分</span><span>篮板</span><span>助攻</span></div>' +
+    '<div class="season-team-stats-head"><span>球员</span><span>场次</span><span title="场均上场时间">上场时间</span><span>得分</span><span>篮板</span><span>助攻</span></div>' +
     starters.concat(bench).map(renderPlayerStat).join('') +
   '</div>';
 
