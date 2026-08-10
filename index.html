@@ -4388,15 +4388,64 @@ function allocateLeagueCountingTotal(total, weights, caps) {
   return allocated;
 }
 
+/** 用球员最擅长的进攻行为评估影响力；位置不限制投射、突破、扣篮或背身。 */
+function getLeagueOffenseProfile(player) {
+  function skill(key) { return af(parseInt(player[key]) || 50); }
+  var three = skill('threePT');
+  var mid = skill('MID');
+  var finish = skill('FIN');
+  var dunk = skill('DNK');
+  var handle = skill('HAN');
+  var pass = skill('PAS');
+  var athletic = skill('ATH');
+  var strength = skill('STR');
+  var clutch = skill('CLU');
+  var actions = {
+    threePoint: three * 0.60 + handle * 0.24 + athletic * 0.10 + clutch * 0.06,
+    midrange: mid * 0.58 + handle * 0.24 + clutch * 0.10 + strength * 0.08,
+    drive: handle * 0.30 + athletic * 0.25 + finish * 0.23 + strength * 0.14 + dunk * 0.08,
+    rim: finish * 0.34 + dunk * 0.28 + athletic * 0.22 + strength * 0.16,
+    post: strength * 0.34 + finish * 0.28 + mid * 0.23 + handle * 0.15,
+    transition: athletic * 0.35 + finish * 0.28 + dunk * 0.25 + handle * 0.12,
+  };
+  var scoringOptions = Object.keys(actions).map(function(key) { return actions[key]; }).sort(function(a, b) { return b - a; });
+  var twoPointOptions = [actions.midrange, actions.drive, actions.rim, actions.post, actions.transition].sort(function(a, b) { return b - a; });
+  var scoring = scoringOptions[0] * 0.50 + scoringOptions[1] * 0.30 + scoringOptions[2] * 0.20;
+  var playmaking = pass * 0.55 + handle * 0.30 + clutch * 0.15;
+  return {
+    scoring: scoring,
+    impact: scoring * 0.78 + playmaking * 0.22,
+    threePoint: actions.threePoint,
+    twoPoint: twoPointOptions[0] * 0.65 + twoPointOptions[1] * 0.35,
+    rimPressure: Math.max(actions.drive, actions.rim, actions.post, actions.transition),
+  };
+}
+
+/** 防守影响力同样取球员最擅长的防守方式，避免防守核心因低使用率丢失分钟。 */
+function getLeagueDefenseImpact(player) {
+  function skill(key) { return af(parseInt(player[key]) || 50); }
+  var perimeter = skill('PDEF') * 0.65 + skill('ATH') * 0.25 + skill('STR') * 0.10;
+  var interior = skill('IDEF') * 0.44 + skill('BLK') * 0.32 + skill('STR') * 0.14 + skill('REB') * 0.10;
+  var possession = skill('REB') * 0.52 + skill('IDEF') * 0.28 + skill('STR') * 0.20;
+  var options = [perimeter, interior, possession].sort(function(a, b) { return b - a; });
+  return options[0] * 0.55 + options[1] * 0.30 + options[2] * 0.15;
+}
+
 function allocateLeagueRotationMinutes(players, roleRanks) {
-  var starterBase = [35, 34, 33, 32, 30];
   var benchBase = [24, 20, 17, 14, 11, 8, 6];
   var isPlayoffs = !!(STATE.season && STATE.season.isPlayoffs);
   var raw = players.map(function(player, index) {
     var rank = roleRanks[index];
-    var base = rank < 5 ? starterBase[rank] : (benchBase[rank - 5] || 6);
-    if (isPlayoffs) base += rank < 5 ? 2 : -1;
-    return Math.max(5, base + ((parseInt(player.ovr) || 70) - 75) * 0.07 + leagueStatNormal(0, 1.6));
+    var ovr = parseInt(player.ovr) || 70;
+    var base;
+    if (rank < 5) {
+      var offense = getLeagueOffenseProfile(player);
+      var twoWayImpact = offense.impact * 0.55 + getLeagueDefenseImpact(player) * 0.45;
+      base = 30.5 + (ovr - 75) * 0.16 + twoWayImpact * 2.2 + (isPlayoffs ? 2 : 0);
+    } else {
+      base = (benchBase[rank - 5] || 6) + (ovr - 75) * 0.07 - (isPlayoffs ? 1 : 0);
+    }
+    return Math.max(5, base + leagueStatNormal(0, 1.6));
   });
   var rawTotal = raw.reduce(function(sum, value) { return sum + value; }, 0) || 1;
   var minutes = raw.map(function(value) { return Math.max(4, Math.round(value * 240 / rawTotal)); });
@@ -4454,9 +4503,8 @@ function generateBoxScore(teamA, teamB, totalA, totalB) {
       return { scoring: leagueStatClamp(userSeasonForm, 0.90, 1.10), rebounding: 1, playmaking: 1, defense: 1 };
     });
     var pos = players.map(function(player) { return (player.pos || 'SF').split('/')[0].trim(); });
-    var offSkill = players.map(function(player) {
-      return af(parseInt(player.threePT) || 50) * 0.34 + af(parseInt(player.FIN) || 50) * 0.30 + af(parseInt(player.MID) || 50) * 0.20 + af(parseInt(player.HAN) || 50) * 0.16;
-    });
+    var offenseProfiles = players.map(function(player) { return getLeagueOffenseProfile(player); });
+    var offSkill = offenseProfiles.map(function(profile) { return profile.scoring; });
     var rebSkill = players.map(function(player) { return af(parseInt(player.REB) || 50); });
     var passSkill = players.map(function(player) { return af(parseInt(player.PAS) || 50) * 0.68 + af(parseInt(player.HAN) || 50) * 0.24 + af(parseInt(player.CLU) || 50) * 0.08; });
     var stealSkill = players.map(function(player) { return af(parseInt(player.PDEF) || 50) * 0.72 + af(parseInt(player.ATH) || 50) * 0.28; });
@@ -4486,9 +4534,9 @@ function generateBoxScore(teamA, teamB, totalA, totalB) {
     var teamBlocks = leagueStatClamp(Math.round(leagueStatNormal(3.0 + minuteWeighted(blockSkill) * 3.0, 1.25)), 1, 11);
     var teamTurnovers = leagueStatClamp(Math.round(leagueStatNormal(13.2 + minuteWeighted(offSkill) * 1.5, 2.1)), 8, 21);
 
-    var rebPos = { PG:0.78, SG:0.85, SF:1.00, PF:1.12, C:1.25 };
+    var rebPos = { PG:0.78, SG:0.85, SF:1.00, PF:1.12, C:1.10 };
     var astPos = { PG:1.35, SG:1.10, SF:1.00, PF:0.82, C:0.78 };
-    var stlPos = { PG:1.05, SG:1.05, SF:1.00, PF:0.92, C:0.88 };
+    var stlPos = { PG:1.00, SG:1.00, SF:1.00, PF:0.92, C:0.88 };
     var blkPos = { PG:0.45, SG:0.55, SF:0.85, PF:1.25, C:1.60 };
     var reboundWeights = players.map(function(player, i) { return minutes[i] * (0.42 + Math.pow(rebSkill[i], 1.35) * 1.30) * (rebPos[pos[i]] || 1) * profiles[i].rebounding * (0.88 + Math.random() * 0.24); });
     var assistWeights = players.map(function(player, i) { return minutes[i] * (0.20 + Math.pow(passSkill[i], 1.55) * 1.40) * (astPos[pos[i]] || 1) * profiles[i].playmaking * (0.84 + Math.random() * 0.32); });
@@ -4503,16 +4551,15 @@ function generateBoxScore(teamA, teamB, totalA, totalB) {
 
     return players.map(function(player, i) {
       var pts = points[i];
-      var threeSkill = af(parseInt(player.threePT) || 50);
-      var finishSkill = af(parseInt(player.FIN) || 50);
+      var offenseProfile = offenseProfiles[i];
       var clutchSkill = af(parseInt(player.CLU) || 50);
-      var ftm = Math.min(pts, Math.max(0, Math.round(pts * (0.10 + finishSkill * 0.08) * (0.82 + Math.random() * 0.36))));
-      var threeM = Math.min(Math.floor((pts - ftm) / 3), Math.max(0, Math.round(pts * (0.08 + threeSkill * 0.12) / 3)));
+      var ftm = Math.min(pts, Math.max(0, Math.round(pts * (0.07 + offenseProfile.rimPressure * 0.11) * (0.82 + Math.random() * 0.36))));
+      var threeM = Math.min(Math.floor((pts - ftm) / 3), Math.max(0, Math.round(pts * (0.05 + offenseProfile.threePoint * 0.16) / 3)));
       var remainingPoints = pts - ftm - threeM * 3;
       if (remainingPoints % 2 !== 0 && ftm < pts) { ftm++; remainingPoints--; }
       var twoM = Math.max(0, Math.floor(remainingPoints / 2));
-      var twoPct = leagueStatClamp(0.43 + finishSkill * 0.12, 0.43, 0.60);
-      var threePct = leagueStatClamp(0.29 + threeSkill * 0.11, 0.29, 0.43);
+      var twoPct = leagueStatClamp(0.41 + offenseProfile.twoPoint * 0.15, 0.41, 0.58);
+      var threePct = leagueStatClamp(0.29 + offenseProfile.threePoint * 0.11, 0.29, 0.43);
       var ftPct = leagueStatClamp(0.68 + clutchSkill * 0.18, 0.68, 0.90);
       var twoA = twoM ? Math.max(twoM, Math.round(twoM / twoPct)) : 0;
       var threeA = threeM ? Math.max(threeM, Math.round(threeM / threePct)) : 0;

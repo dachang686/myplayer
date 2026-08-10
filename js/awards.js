@@ -236,21 +236,6 @@ function build2026RookieAwards() {
   ];
 }
 
-function pickLeagueDPOY() {
-  var best = null, bestTeam = '', bestScore = -1;
-  for (var _dt = 0; _dt < LEAGUE_TEAM_IDS.length; _dt++) {
-    var roster = (LEAGUE_PLAYER_DATA && LEAGUE_PLAYER_DATA[LEAGUE_TEAM_IDS[_dt]]) || [];
-    for (var _dp = 0; _dp < roster.length; _dp++) {
-      var p = roster[_dp];
-      if (p._isUser) continue;
-      if (getPlayerAwardStreak(p, 'dpoy') >= 2) continue;
-      var score = ((parseInt(p.PDEF) || 60) * 0.5) + ((parseInt(p.IDEF) || 60) * 0.5) + ((parseInt(p.BLK) || 50) * 0.8) + ((parseInt(p.ovr) || 70) * 0.3);
-      if (score > bestScore) { bestScore = score; best = p; bestTeam = LEAGUE_TEAM_IDS[_dt]; }
-    }
-  }
-  return best ? { player: best, team: bestTeam } : null;
-}
-
 function computeSixthManRank(avgPts) {
   var scores = [];
   for (var _st2 = 0; _st2 < LEAGUE_TEAM_IDS.length; _st2++) {
@@ -416,6 +401,21 @@ function calcSeasonAwards() {
     };
     candidates.push(userCandidate);
 
+    // 防守数据榜名次用于 DPOY 加成；并列数据共享同一名次。
+    ['reb', 'stl', 'blk'].forEach(function(statKey) {
+      var eligible = candidates.filter(function(c) { return c.stats.gp >= 50; });
+      eligible.sort(function(a, b) { return (b.stats[statKey] || 0) - (a.stats[statKey] || 0); });
+      var lastValue = null;
+      var lastRank = 0;
+      eligible.forEach(function(c, idx) {
+        var value = c.stats[statKey] || 0;
+        if (lastValue === null || value < lastValue) lastRank = idx + 1;
+        c._defStatRanks = c._defStatRanks || {};
+        c._defStatRanks[statKey] = lastRank;
+        lastValue = value;
+      });
+    });
+
     // ---------- 2. 评分函数 ----------
     function calcMVPScore(c) {
       if (c.stats.gp < 58) return -999;
@@ -453,22 +453,32 @@ function calcSeasonAwards() {
         idef = parseInt(p.IDEF) || 60;
         blkAttr = parseInt(p.BLK) || 50;
       }
+      // DPOY 以本赛季场上产出为主；属性只作为能力底盘，球队战绩仅小幅加成。
+      var defenseAttr = (pdef + idef + blkAttr) / 3;
       var score =
-        pdef * 0.30 +
-        idef * 0.22 +
-        blkAttr * 0.20 +
-        s.stl * 1.35 +
-        s.blk * 1.55 +
-        (c.ovr || 70) * 0.08 +
-        getSeedBonus(c.team) * 0.6;
+        defenseAttr * 0.08 +
+        s.reb * 0.40 +
+        s.stl * 6.00 +
+        s.blk * 7.00 +
+        getSeedBonus(c.team);
 
-      if (c.pos === 'C' || c.pos === 'PF') score += 2.5;
-      if (!c.isUser && c.raw && getPlayerAwardStreak(c.raw, 'dpoy') >= 2) score *= 0.85;
-      if (c.isUser) {
-        var uObj = getUserPlayerObject();
-        if (uObj && getPlayerAwardStreak(uObj, 'dpoy') >= 2) score *= 0.88;
-      }
+      var ranks = c._defStatRanks || {};
+      if (ranks.blk === 1) score += 4;
+      else if (ranks.blk <= 3) score += 2;
+      if (ranks.stl === 1) score += 4;
+      else if (ranks.stl <= 3) score += 2;
+      if (ranks.reb === 1) score += 2;
+      else if (ranks.reb <= 3) score += 1;
+      if (ranks.blk === 1 && (ranks.reb === 1 || ranks.stl === 1)) score += 3;
       return score;
+    }
+
+    function compareDefenseCandidates(a, b) {
+      return calcDefenseScore(b) - calcDefenseScore(a)
+        || (b.stats.blk || 0) - (a.stats.blk || 0)
+        || (b.stats.stl || 0) - (a.stats.stl || 0)
+        || (b.stats.reb || 0) - (a.stats.reb || 0)
+        || (b.stats.gp || 0) - (a.stats.gp || 0);
     }
 
     function calcAllLeagueScore(c) {
@@ -510,9 +520,7 @@ function calcSeasonAwards() {
 
     // ---------- 4. DPOY ----------
     (function() {
-      var ranked = candidates.slice().sort(function(a, b) {
-        return calcDefenseScore(b) - calcDefenseScore(a);
-      });
+      var ranked = candidates.slice().sort(compareDefenseCandidates);
       var winner = ranked[0];
       var userIdx = ranked.findIndex(function(x) { return x.isUser; });
       var userRank = '未进入前五';
@@ -592,9 +600,7 @@ function calcSeasonAwards() {
 
     // ---------- 6. 最佳防守阵容一/二队 ----------
     (function() {
-      var ranked = candidates.slice().sort(function(a, b) {
-        return calcAllDefScore(b) - calcAllDefScore(a);
-      });
+      var ranked = candidates.slice().sort(compareDefenseCandidates);
 
       var dpoy = STATE._seasonDPOY;
       if (dpoy) {
@@ -604,32 +610,8 @@ function calcSeasonAwards() {
         ranked.unshift(dpoy);
       }
 
-      var teams = [[], []];
-      var posUsed = [{}, {}];
-
-      function tryPlace(c, teamIdx) {
-        if (teams[teamIdx].length >= 5) return false;
-        var used = posUsed[teamIdx][c.pos] || 0;
-        if (used >= 1 && teams[teamIdx].length < 4) return false;
-        teams[teamIdx].push(c);
-        posUsed[teamIdx][c.pos] = used + 1;
-        return true;
-      }
-
-      for (var i = 0; i < ranked.length; i++) {
-        var c = ranked[i];
-        var placed = false;
-        for (var t = 0; t < 2; t++) {
-          if (tryPlace(c, t)) { placed = true; break; }
-        }
-        if (!placed) {
-          var minT = teams[0].length <= teams[1].length ? 0 : 1;
-          if (teams[minT].length < 5) {
-            teams[minT].push(c);
-            posUsed[minT][c.pos] = (posUsed[minT][c.pos] || 0) + 1;
-          }
-        }
-      }
+      // 最佳防守阵容与 DPOY 使用同一排序口径，并采用不限位置的前五/后五。
+      var teams = [ranked.slice(0, 5), ranked.slice(5, 10)];
 
       var labels = ['最佳防守阵容一队', '最佳防守阵容二队'];
       var acts = ['allDef1', 'allDef2'];
