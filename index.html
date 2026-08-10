@@ -403,6 +403,9 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .season-team-section.rotation{padding-top:10px;border-top:1px solid var(--border);margin-top:4px;color:var(--text-dim)}
 .season-team-player{display:flex;align-items:center;gap:7px;min-height:36px;padding:5px 6px;border-bottom:1px solid var(--border-light);font-size:12px}
 .season-team-player.is-user{background:var(--orange-bg);border:1px solid var(--orange);border-radius:8px;color:var(--orange);margin:2px 0}
+.season-team-player.is-interactive,.season-team-stat-row.is-interactive,.st-row.is-interactive,.player-ranking-row.is-interactive{cursor:pointer;transition:background-color .18s ease-out,border-color .18s ease-out,transform .18s ease-out}
+.season-team-player.is-interactive:focus-visible,.season-team-stat-row.is-interactive:focus-visible,.st-row.is-interactive:focus-visible,.player-ranking-row.is-interactive:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+@media (hover:hover){.season-team-player.is-interactive:hover,.season-team-stat-row.is-interactive:hover,.st-row.is-interactive:hover,.player-ranking-row.is-interactive:hover{border-color:var(--orange);background:var(--orange-bg)}}
 .season-team-avatar{width:26px;height:26px;flex:0 0 26px;border-radius:50%;border:1px solid var(--border);background:var(--bg-elevated) center/cover no-repeat}
 .season-team-position{width:38px;flex:0 0 38px;color:var(--text-dim);font-size:10px}
 .season-team-name{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
@@ -437,6 +440,26 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .player-ranking-more{display:flex;justify-content:center;padding-top:10px}
 .player-ranking-more .btn{width:100%}
 .ranking-empty{padding:30px 12px;text-align:center;color:var(--text-muted);font-size:12px}
+.season-player-detail-overlay{z-index:320}
+.season-player-detail-modal{max-width:400px;max-height:82vh}
+.season-player-detail-hero{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:10px;align-items:center;padding:13px 14px;background:var(--orange-bg);border-bottom:1px solid var(--border)}
+.season-player-detail-avatar{width:52px;height:52px;border-radius:50%;border:2px solid var(--border);background:var(--bg-elevated) center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-size:20px}
+.season-player-detail-name{font:700 17px/1.2 var(--font-display);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.season-player-detail-meta{margin-top:4px;color:var(--text-dim);font-size:10px;line-height:1.45}
+.season-player-detail-ovr{text-align:center;color:var(--orange);font:800 26px/1 var(--font-display)}
+.season-player-detail-ovr small{display:block;margin-top:4px;color:var(--text-muted);font:400 8px var(--font-body)}
+.season-player-detail-section{padding:12px 14px;border-bottom:1px solid var(--border)}
+.season-player-detail-section:last-child{border-bottom:none}
+.season-player-detail-title{margin-bottom:8px;color:var(--orange);font:700 12px var(--font-display);letter-spacing:.4px}
+.season-player-season-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+.season-player-season-stat{padding:7px 3px;border-radius:8px;background:var(--orange-bg);text-align:center}
+.season-player-season-stat strong{display:block;font:700 15px/1 var(--font-display)}
+.season-player-season-stat span{display:block;margin-top:4px;color:var(--text-muted);font-size:8px}
+.season-player-attrs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.season-player-attr{display:flex;align-items:baseline;justify-content:space-between;gap:4px;min-width:0;padding:8px;border:1px solid var(--border-light);border-radius:8px;background:var(--bg-card)}
+.season-player-attr span{min-width:0;color:var(--text-dim);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.season-player-attr strong{font:700 16px/1 var(--font-display)}
+.season-player-attr small{font-size:8px}
 .modal-header{display:flex;align-items:center;justify-content:space-between;padding:12px 14px;border-bottom:1px solid var(--border)}
 .modal-close{width:30px;height:30px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg-card);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--text-dim);transition:all .1s}
 .modal-close:active{border-color:var(--orange);color:var(--orange)}
@@ -5779,7 +5802,7 @@ function renderConferenceStandings(conf) {
     var gb = index === 0 ? '-' : ((leader.wins - row.wins + row.losses - leader.losses) / 2).toFixed(1);
     var isMyTeam = row.team === STATE.careerTeam;
     var lineupOvr = getTeamLineupOvr(row.team);
-    html += '<div class="st-row ' + (isMyTeam ? 'st-my' : '') + '">' +
+    html += '<div class="st-row is-interactive ' + (isMyTeam ? 'st-my' : '') + '" data-season-team="' + row.team + '" role="button" tabindex="0" aria-label="查看' + getTeamName(row.team) + '球队阵容" title="点击查看球队阵容">' +
       '<span>' + (index + 1) + '</span>' +
       '<span class="st-team-cell"><span class="st-team-name">' + getTeamLogo(row.team, 16) + ' ' + getTeamName(row.team) + (isMyTeam ? ' ⭐' : '') + '</span></span>' +
       '<span class="st-ovr-cell"><span><small>首发</small>' + lineupOvr.starter + '</span><span><small>轮换</small>' + lineupOvr.rotation + '</span></span>' +
@@ -5861,9 +5884,9 @@ function renderSeasonRankingsPage() {
     var visibleLimit = Math.max(10, Number(STATE._playerRankingLimit) || 10);
     var visibleRows = rows.slice(0, visibleLimit);
     var rowsHtml = visibleRows.length ? visibleRows.map(function(row, index) {
-      return '<div class="player-ranking-row ' + (row.isUser ? 'is-user' : '') + '">' +
+      return '<div class="player-ranking-row is-interactive ' + (row.isUser ? 'is-user' : '') + '" data-season-player-team="' + row.teamId + '" data-season-player-id="' + row.playerId + '" role="button" tabindex="0" aria-label="查看' + escapeSeasonUiText(row.playerName) + '详细属性" title="点击查看球员详细属性">' +
         '<span>' + (index + 1) + '</span>' +
-        '<span class="player-ranking-name">' + row.playerName + (row.isUser ? ' ⭐' : '') + '</span>' +
+        '<span class="player-ranking-name">' + escapeSeasonUiText(row.playerName) + (row.isUser ? ' ⭐' : '') + '</span>' +
         '<span>' + row.teamId + '</span>' +
         '<span>' + row.gp + '</span>' +
         '<span class="player-ranking-value">' + row[config.key].toFixed(1) + '</span>' +
@@ -5895,7 +5918,39 @@ function renderSeasonRankingsPage() {
       '<button class="rankings-view-tab ' + (view === 'teams' ? 'active' : '') + '" onclick="setSeasonRankingsView(\'teams\')">球队战绩</button>' +
       '<button class="rankings-view-tab ' + (view === 'players' ? 'active' : '') + '" onclick="setSeasonRankingsView(\'players\')">球员统计</button>' +
     '</div>' + bodyHtml +
-  '</div>';
+    '</div>';
+  bindSeasonRankingInteractions(target);
+}
+
+function escapeSeasonUiText(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, function(char) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char];
+  });
+}
+
+function bindSeasonRankingInteractions(target) {
+  function activate(row) {
+    var team = row.getAttribute('data-season-team');
+    if (team) {
+      STATE._teamPageView = 'roster';
+      showSeasonTeamModal(team);
+      return;
+    }
+    var playerId = row.getAttribute('data-season-player-id');
+    var playerTeam = row.getAttribute('data-season-player-team');
+    if (playerId && playerTeam) showSeasonPlayerDetail(playerTeam, playerId);
+  }
+  target.onclick = function(event) {
+    var row = event.target.closest('[data-season-team],[data-season-player-id]');
+    if (row && target.contains(row)) activate(row);
+  };
+  target.onkeydown = function(event) {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    var row = event.target.closest('[data-season-team],[data-season-player-id]');
+    if (!row || !target.contains(row)) return;
+    event.preventDefault();
+    activate(row);
+  };
 }
 
 function setSeasonTeamPageView(view) {
@@ -5906,8 +5961,9 @@ function setSeasonTeamPageView(view) {
 
 function showSeasonTeamPage() {
   if (!STATE.season || !STATE.careerTeam) return;
+  STATE._selectedSeasonTeam = STATE.careerTeam;
   showScreen('screen-team');
-  showSeasonTeamModal();
+  showSeasonTeamModal(STATE.careerTeam);
   var overlay = document.getElementById('season-team-modal-overlay');
   var modal = overlay && overlay.querySelector('.modal-content');
   var target = document.getElementById('season-team-page-content');
@@ -5918,15 +5974,28 @@ function showSeasonTeamPage() {
   target.innerHTML = '<div class="season-team-page-card">' + modal.innerHTML + '</div>';
   var backButton = target.querySelector('.modal-close');
   if (backButton) backButton.remove();
+  target.onclick = function(event) {
+    var row = event.target.closest('[data-season-player-id]');
+    if (row && target.contains(row)) showSeasonPlayerDetail(row.getAttribute('data-season-player-team'), row.getAttribute('data-season-player-id'));
+  };
+  target.onkeydown = function(event) {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    var row = event.target.closest('[data-season-player-id]');
+    if (!row || !target.contains(row)) return;
+    event.preventDefault();
+    showSeasonPlayerDetail(row.getAttribute('data-season-player-team'), row.getAttribute('data-season-player-id'));
+  };
   overlay.remove();
 }
 
-function showSeasonTeamModal() {
+function showSeasonTeamModal(teamOverride) {
   var old = document.getElementById('season-team-modal-overlay');
   if (old) old.remove();
   if (!STATE.season || !STATE.careerTeam) return;
 
-  var team = STATE.careerTeam;
+  var team = teamOverride || STATE._selectedSeasonTeam || STATE.careerTeam;
+  if (!LEAGUE_PLAYER_DATA[team]) team = STATE.careerTeam;
+  STATE._selectedSeasonTeam = team;
   var lineup = calcTeamLineup(team);
   var posOrder = ['PG', 'SG', 'SF', 'PF', 'C'];
   var starters = posOrder.map(function(pos) { return lineup.starters[pos]; }).filter(Boolean);
@@ -5938,7 +6007,8 @@ function showSeasonTeamModal() {
 
   function renderPlayer(player) {
     var isUser = !!player._isUser;
-    var name = isUser ? getMyPlayerDisplayName() : (player.cname);
+    var name = escapeSeasonUiText(isUser ? getMyPlayerDisplayName() : (player.cname));
+    var playerId = isUser ? '__user__' : player.id;
     var ovr = isUser ? (STATE.finalOVR || 0) : (parseInt(player.ovr) || 0);
     var headshot = !isUser && typeof getPlayerHeadshotStyle === 'function' ? getPlayerHeadshotStyle(player.id, 26) : '';
     var avatarStyle = headshot ? ' style="' + headshot + '"' : '';
@@ -5946,7 +6016,7 @@ function showSeasonTeamModal() {
     var loyaltyBasis = loyalty == null || typeof getPlayerLoyaltyBasis !== 'function' ? '' : getPlayerLoyaltyBasis(player);
     var loyaltyTitle = loyalty == null ? '' : getPlayerLoyaltyLabel(loyalty) + (loyaltyBasis ? ' · ' + loyaltyBasis : '');
     var loyaltyHtml = loyalty == null ? '' : '<span class="season-team-loyalty" title="' + loyaltyTitle + '">忠 ' + loyalty + '</span>';
-    return '<div class="season-team-player' + (isUser ? ' is-user' : '') + '">' +
+    return '<div class="season-team-player is-interactive' + (isUser ? ' is-user' : '') + '" data-season-player-team="' + team + '" data-season-player-id="' + playerId + '" role="button" tabindex="0" aria-label="查看' + name + '详细属性" title="点击查看详细属性">' +
       '<span class="season-team-avatar"' + avatarStyle + '></span>' +
       '<span class="season-team-position">' + (player.posCn || player.pos || '—') + '</span>' +
       '<span class="season-team-name">' + name + (isUser ? ' ⭐' : '') + '</span>' +
@@ -5964,6 +6034,7 @@ function showSeasonTeamModal() {
 
   function renderPlayerStat(player) {
     var isUser = !!player._isUser;
+    var playerId = isUser ? '__user__' : player.id;
     var statRow = seasonStatRows.find(function(row) {
       return isUser ? row.isUser : (!row.isUser && row.teamId === team && row.playerId === player.id);
     });
@@ -5975,8 +6046,8 @@ function showSeasonTeamModal() {
         isUser: isUser,
       });
     }
-    var name = isUser ? getMyPlayerDisplayName() : (player.cname);
-    return '<div class="season-team-stat-row ' + (isUser ? 'is-user' : '') + '">' +
+    var name = escapeSeasonUiText(isUser ? getMyPlayerDisplayName() : (player.cname));
+    return '<div class="season-team-stat-row is-interactive ' + (isUser ? 'is-user' : '') + '" data-season-player-team="' + team + '" data-season-player-id="' + playerId + '" role="button" tabindex="0" aria-label="查看' + name + '详细属性" title="点击查看详细属性">' +
       '<span class="season-team-stat-player"><small>' + (player.posCn || player.pos || '-') + '</small>' + name + (isUser ? ' ⭐' : '') + '</span>' +
       '<span>' + statRow.gp + '</span>' +
       '<span>' + statRow.ppg.toFixed(1) + '</span>' +
@@ -5994,11 +6065,11 @@ function showSeasonTeamModal() {
   overlay.id = 'season-team-modal-overlay';
   overlay.className = 'modal-overlay';
   overlay.innerHTML =
-    '<div class="modal-content season-team-modal">' +
+    '<div class="modal-content season-team-modal" role="dialog" aria-modal="true" aria-labelledby="season-team-modal-title">' +
       '<div class="modal-header">' +
         '<div style="display:flex;align-items:center;gap:8px;min-width:0;">' +
           getTeamLogo(team, 26) +
-          '<div style="min-width:0;"><div style="font:700 16px var(--font-display);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + getTeamName(team) + '</div><div style="font-size:10px;color:var(--text-dim);">我的球队</div></div>' +
+          '<div style="min-width:0;"><div id="season-team-modal-title" style="font:700 16px var(--font-display);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + getTeamName(team) + '</div><div style="font-size:10px;color:var(--text-dim);">' + (team === STATE.careerTeam ? '我的球队' : (getConference(team) === 'NORTH' ? '北方联盟' : '南方联盟')) + ' · 点击球员查看属性</div></div>' +
         '</div>' +
         '<button class="modal-close" onclick="closeSeasonTeamModal()" aria-label="关闭球队信息">✕</button>' +
       '</div>' +
@@ -6009,11 +6080,110 @@ function showSeasonTeamModal() {
       '</div>' +
       (activeView === 'stats' ? statsHtml : '<div class="season-team-roster">' + rosterHtml + '</div>') +
     '</div>';
-  overlay.onclick = function(event) { if (event.target === overlay) closeSeasonTeamModal(); };
+  function activatePlayer(event) {
+    var row = event.target.closest('[data-season-player-id]');
+    if (!row || !overlay.contains(row)) return;
+    showSeasonPlayerDetail(row.getAttribute('data-season-player-team'), row.getAttribute('data-season-player-id'));
+  }
+  overlay.onclick = function(event) {
+    if (event.target === overlay) closeSeasonTeamModal();
+    else activatePlayer(event);
+  };
+  overlay.onkeydown = function(event) {
+    if (event.key !== 'Enter' && event.key !== ' ') return;
+    var row = event.target.closest('[data-season-player-id]');
+    if (!row || !overlay.contains(row)) return;
+    event.preventDefault();
+    activatePlayer(event);
+  };
   document.body.appendChild(overlay);
 }
 
+function findSeasonPlayerForDetail(team, playerId) {
+  if (playerId === '__user__' && team === STATE.careerTeam) {
+    var userLineup = calcTeamLineup(team);
+    var userPlayers = Object.values(userLineup.starters || {}).concat(userLineup.bench || []);
+    var userPlayer = userPlayers.find(function(player) { return player && player._isUser; });
+    if (userPlayer) return { player: userPlayer, team: team };
+  }
+  var player = (LEAGUE_PLAYER_DATA[team] || []).find(function(item) { return item && item.id === playerId; });
+  if (player) return { player: player, team: team };
+  for (var i = 0; i < LEAGUE_TEAM_IDS.length; i++) {
+    var fallbackTeam = LEAGUE_TEAM_IDS[i];
+    player = (LEAGUE_PLAYER_DATA[fallbackTeam] || []).find(function(item) { return item && item.id === playerId; });
+    if (player) return { player: player, team: fallbackTeam };
+  }
+  return null;
+}
+
+function showSeasonPlayerDetail(team, playerId) {
+  var existing = document.getElementById('season-player-detail-overlay');
+  if (existing) existing.remove();
+  var resolved = findSeasonPlayerForDetail(team, playerId);
+  if (!resolved) {
+    if (typeof showToast === 'function') showToast('暂时无法读取该球员属性');
+    return;
+  }
+
+  var player = resolved.player;
+  team = resolved.team;
+  var isUser = !!player._isUser;
+  var name = escapeSeasonUiText(isUser ? getMyPlayerDisplayName() : player.cname);
+  var position = escapeSeasonUiText(player.posCn || player.pos || '—');
+  var height = player.height ? ' · ' + escapeSeasonUiText(player.height) : '';
+  var type = player.type ? '<div class="season-player-detail-meta">' + escapeSeasonUiText(player.type) + '</div>' : '';
+  var ovr = isUser ? (STATE.finalOVR || player.ovr || 0) : (parseInt(player.ovr) || 0);
+  var headshot = !isUser && typeof getPlayerHeadshotStyle === 'function' ? getPlayerHeadshotStyle(player.id, 52) : '';
+  var avatarStyle = headshot ? ' style="' + headshot + '"' : '';
+  var avatarContent = isUser ? '⭐' : '';
+  var statRow = getSeasonPlayerStatRows().find(function(row) {
+    return isUser ? row.isUser : (!row.isUser && row.playerId === player.id);
+  }) || createSeasonPlayerStatRow({}, {
+    playerId: isUser ? '__user__' : player.id,
+    playerName: name,
+    teamId: team,
+    isUser: isUser,
+  });
+  var statItems = [
+    ['得分', statRow.ppg], ['篮板', statRow.rpg], ['助攻', statRow.apg], ['抢断', statRow.spg], ['盖帽', statRow.bpg]
+  ].map(function(item) {
+    return '<div class="season-player-season-stat"><strong>' + Number(item[1] || 0).toFixed(1) + '</strong><span>' + item[0] + '</span></div>';
+  }).join('');
+  var attrsHtml = ATTR_KEYS.map(function(key) {
+    var value = parseInt(player[key]);
+    if (isNaN(value)) value = 50;
+    var grade = getGrade(value);
+    return '<div class="season-player-attr" title="' + escapeSeasonUiText((SIM_CONFIG.ATTR_DESC && SIM_CONFIG.ATTR_DESC[key]) || attrCN(key)) + '"><span>' + attrCN(key) + '</span><strong style="color:' + grade.color + '">' + value + ' <small>' + grade.letter + '</small></strong></div>';
+  }).join('');
+
+  var overlay = document.createElement('div');
+  overlay.id = 'season-player-detail-overlay';
+  overlay.className = 'modal-overlay season-player-detail-overlay';
+  overlay.innerHTML =
+    '<div class="modal-content season-player-detail-modal" role="dialog" aria-modal="true" aria-labelledby="season-player-detail-title">' +
+      '<div class="modal-header"><div id="season-player-detail-title" style="font:700 14px var(--font-display);">球员详细属性</div><button class="modal-close" onclick="closeSeasonPlayerDetail()" aria-label="关闭球员详情">✕</button></div>' +
+      '<div class="season-player-detail-hero">' +
+        '<span class="season-player-detail-avatar"' + avatarStyle + '>' + avatarContent + '</span>' +
+        '<div style="min-width:0;"><div class="season-player-detail-name">' + name + (isUser ? ' ⭐' : '') + '</div><div class="season-player-detail-meta">' + getTeamLogo(team, 14) + ' ' + getTeamName(team) + ' · ' + position + height + '</div>' + type + '</div>' +
+        '<div class="season-player-detail-ovr">' + ovr + '<small>OVR</small></div>' +
+      '</div>' +
+      '<div class="season-player-detail-section"><div class="season-player-detail-title">本赛季 · ' + statRow.gp + ' 场</div><div class="season-player-season-stats">' + statItems + '</div></div>' +
+      '<div class="season-player-detail-section"><div class="season-player-detail-title">详细属性</div><div class="season-player-attrs">' + attrsHtml + '</div></div>' +
+    '</div>';
+  overlay.onclick = function(event) { if (event.target === overlay) closeSeasonPlayerDetail(); };
+  overlay.onkeydown = function(event) { if (event.key === 'Escape') closeSeasonPlayerDetail(); };
+  document.body.appendChild(overlay);
+  var closeButton = overlay.querySelector('.modal-close');
+  if (closeButton) closeButton.focus();
+}
+
+function closeSeasonPlayerDetail() {
+  var overlay = document.getElementById('season-player-detail-overlay');
+  if (overlay) overlay.remove();
+}
+
 function closeSeasonTeamModal() {
+  closeSeasonPlayerDetail();
   var overlay = document.getElementById('season-team-modal-overlay');
   if (overlay) overlay.remove();
   syncSeasonNavigation(document.querySelector('.screen.active')?.id || '');
