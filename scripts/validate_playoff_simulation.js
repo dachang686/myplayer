@@ -36,6 +36,132 @@ if (!/repairPlayoffBracketState\(\)/.test(playoffsSource)) {
   throw new Error('季后赛页面没有修复旧存档分区状态');
 }
 
+function validatePlayInRouting() {
+  const flowStart = playoffsSource.indexOf('function renderPlayoffs');
+  const flowEnd = playoffsSource.indexOf('function getPlayoffTreeSeriesResult', flowStart);
+  if (flowStart < 0 || flowEnd < 0) throw new Error('无法定位附加赛入口流程');
+
+  const calls = { playIn: 0, save: 0, bracket: 0 };
+  const staleBracket = { conf: 'NORTH', teams: Array.from({ length: 8 }, (_, index) => ({ team: `T${index + 1}` })) };
+  const routeState = {
+    careerTeam: 'T9',
+    season: {
+      standings: {},
+      isPlayoffs: true,
+      playoffBracket: staleBracket,
+      otherBracket: { conf: 'SOUTH' },
+      playoffSeed: 9,
+      _viewConf: 'NORTH',
+    },
+  };
+  const playoffFlow = new Function(
+    'STATE',
+    'trackEvent',
+    'showScreen',
+    'getConferenceSeed',
+    'getConference',
+    'getConferenceSorted',
+    'renderPlayInUI',
+    'queueSeasonAutoSave',
+    'buildPlayoffBracket',
+    'getOtherPlayoffConference',
+    'renderPlayoffBracketUI',
+    `${playoffsSource.slice(flowStart, flowEnd)}\nreturn { renderPlayoffs, resumePlayoffs };`,
+  )(
+    routeState,
+    () => {},
+    () => {},
+    team => Number(team.slice(1)),
+    () => 'NORTH',
+    () => Array.from({ length: 15 }, (_, index) => ({ team: `T${index + 1}`, wins: 60 - index, losses: 22 + index })),
+    () => { calls.playIn++; },
+    () => { calls.save++; },
+    () => { calls.bracket++; return staleBracket; },
+    () => 'SOUTH',
+    () => {},
+  );
+
+  playoffFlow.renderPlayoffs();
+  const freshEntry = {
+    playInRendered: calls.playIn === 1,
+    bracketNotBuilt: calls.bracket === 0,
+    playInInitialized: routeState.season.playInState?.seed9?.team === 'T9',
+    staleBracketCleared: routeState.season.playoffBracket === null && routeState.season.otherBracket === null,
+    playoffFlagCleared: routeState.season.isPlayoffs === false,
+  };
+
+  routeState.season.isPlayoffs = true;
+  routeState.season.playoffBracket = staleBracket;
+  routeState.season.otherBracket = { conf: 'SOUTH' };
+  routeState.season.playoffSeed = 9;
+  calls.playIn = 0;
+  playoffFlow.resumePlayoffs();
+  const legacyResume = {
+    playInRendered: calls.playIn === 1,
+    staleBracketCleared: routeState.season.playoffBracket === null && routeState.season.otherBracket === null,
+    bracketNotBuilt: calls.bracket === 0,
+  };
+
+  routeState.season.playInState.gameAResult = { winner: 'T7', loser: 'T8' };
+  routeState.season.playInState.gameBResult = { winner: 'T9', loser: 'T10' };
+  routeState.season.playInState.gameCResult = { winner: 'T9', loser: 'T8' };
+  routeState.season.playInState.playoffSeed = 8;
+  calls.playIn = 0;
+  playoffFlow.renderPlayoffs();
+  const qualifiedEntry = {
+    playInNotRendered: calls.playIn === 0,
+    bothConferenceBracketsBuilt: calls.bracket === 2,
+    playoffFlagSet: routeState.season.isPlayoffs === true,
+  };
+
+  return { freshEntry, legacyResume, qualifiedEntry };
+}
+
+const playInRouting = validatePlayInRouting();
+
+function validatePlayInCompletion() {
+  const autoStart = playoffsSource.indexOf('function autoSimNonUserPlayInGames');
+  const autoEnd = playoffsSource.indexOf('function simPlayInGame', autoStart);
+  const checkStart = playoffsSource.indexOf('function checkPlayInComplete');
+  const checkEnd = playoffsSource.indexOf('// ==================== 赛季结束', checkStart);
+  if (autoStart < 0 || autoEnd < 0 || checkStart < 0 || checkEnd < 0) {
+    throw new Error('无法定位附加赛完成条件');
+  }
+
+  const completionState = {
+    careerTeam: 'T7',
+    season: {
+      playInState: {
+        seed7: { team: 'T7' }, seed8: { team: 'T8' },
+        seed9: { team: 'T9' }, seed10: { team: 'T10' },
+        gameAResult: { winner: 'T7', loser: 'T8' },
+        gameBResult: { winner: 'T9', loser: 'T10' },
+        gameCResult: null,
+        isEliminated: false,
+        playoffSeed: 7,
+      },
+    },
+  };
+  const simulatedGames = [];
+  const completionFns = new Function(
+    'STATE',
+    'simPlayInGame',
+    `${playoffsSource.slice(autoStart, autoEnd)}\n${playoffsSource.slice(checkStart, checkEnd)}\nreturn { autoSimNonUserPlayInGames, checkPlayInComplete };`,
+  )(completionState, gameId => simulatedGames.push(gameId));
+
+  const incompleteBeforeGameC = !completionFns.checkPlayInComplete();
+  completionFns.autoSimNonUserPlayInGames();
+  completionState.season.playInState.gameCResult = { winner: 'T8', loser: 'T9' };
+  const completeAfterGameC = completionFns.checkPlayInComplete();
+  return {
+    incompleteBeforeGameC,
+    autoSimulatedGameC: simulatedGames.length === 1 && simulatedGames[0] === 'C',
+    completeAfterGameC,
+  };
+}
+
+const playInCompletion = validatePlayInCompletion();
+
 for (const [source, label] of [[indexSimulation, 'index.html 比赛模拟'], [playoffsSource, 'js/playoffs.js']]) {
   try {
     parser.parse(source, { sourceType: 'script', plugins: ['optionalChaining', 'objectRestSpread'] });
@@ -389,6 +515,8 @@ function runRealRosterSmoke() {
 const realRosterSmoke = runRealRosterSmoke();
 
 const report = {
+  playInRouting,
+  playInCompletion,
   equalNeutral,
   equalHome,
   equalAway,
@@ -431,6 +559,18 @@ if (inferredRegularSeasonContext.isHomeA !== false || inferredRegularSeasonConte
 if (!bracketMapping.correctSemifinals || bracketMapping.champion !== 'T1') failures.push(`季后赛半区映射错误：${JSON.stringify(bracketMapping)}`);
 if (JSON.stringify(bracketMapping.homePattern) !== JSON.stringify([true, true, false, false])) {
   failures.push(`季后赛主场顺序错误：${JSON.stringify(bracketMapping.homePattern)}`);
+}
+if (!Object.values(playInRouting.freshEntry).every(Boolean)) {
+  failures.push(`附加赛新入口路由错误：${JSON.stringify(playInRouting.freshEntry)}`);
+}
+if (!Object.values(playInRouting.legacyResume).every(Boolean)) {
+  failures.push(`附加赛旧存档恢复错误：${JSON.stringify(playInRouting.legacyResume)}`);
+}
+if (!Object.values(playInRouting.qualifiedEntry).every(Boolean)) {
+  failures.push(`附加赛晋级后入口错误：${JSON.stringify(playInRouting.qualifiedEntry)}`);
+}
+if (!Object.values(playInCompletion).every(Boolean)) {
+  failures.push(`附加赛完成条件错误：${JSON.stringify(playInCompletion)}`);
 }
 const progression = bracketMapping.roundProgression;
 if (progression.afterFirstRound.currentRound !== 1 || progression.afterFirstRound.results !== 4 || !progression.afterFirstRound.semifinalistsReady || progression.afterFirstRound.champion) {

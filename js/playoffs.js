@@ -149,7 +149,7 @@ function renderPlayInUI() {
 /** 自动模拟不涉及玩家的附加赛比赛 */
 function autoSimNonUserPlayInGames() {
   const pi = STATE.season.playInState;
-  if (!pi || pi.isEliminated || pi.playoffSeed) return;
+  if (!pi || pi.isEliminated) return;
   
   const myTeam = STATE.careerTeam;
   const inA = pi.seed7 && (pi.seed7.team === myTeam || pi.seed8.team === myTeam);
@@ -177,6 +177,16 @@ function autoSimNonUserPlayInGames() {
   if (pi.gameBResult && !pi.gameAResult && pi.seed7 && pi.seed8 && pi.gameBResult.winner) {
     simPlayInGame('A');
     return;
+  }
+
+  // 玩家已通过 7v8 直接晋级时，自动完成不涉及玩家的败者组决赛，
+  // 确保季后赛第 8 号种子来自真实附加赛结果。
+  if (pi.gameAResult && pi.gameBResult && !pi.gameCResult) {
+    const gameCTeamA = pi.gameAResult.loser;
+    const gameCTeamB = pi.gameBResult.winner;
+    if (gameCTeamA !== myTeam && gameCTeamB !== myTeam) {
+      simPlayInGame('C');
+    }
   }
 }
 
@@ -253,15 +263,8 @@ function checkPlayInComplete() {
   if (!pi) return false;
   if (pi.isEliminated) return false;
   
-  // 已经通过Game A直接晋级
-  if (pi.playoffSeed === 7) return true;
-  
-  // Game A + Game B完成后，Game C也完成则晋级
-  if (pi.gameAResult && pi.gameBResult && pi.gameCResult) {
-    if (pi.playoffSeed === 8) return true;
-  }
-  
-  return false;
+  // 三场结果齐全后，7/8 号种子才都能正确写入季后赛树。
+  return pi.playoffSeed != null && !!(pi.gameAResult && pi.gameBResult && pi.gameCResult);
 }
 
 // ==================== 赛季结束 ====================
@@ -480,7 +483,6 @@ function repairPlayoffBracketState() {
 }
 
 function renderPlayoffs() {
-  STATE.season.isPlayoffs = true;
   trackEvent({act:"click",blk:"BMC098",pos:"TC10",label:"进入季后赛"});
   showScreen('screen-playoffs');
   
@@ -494,10 +496,10 @@ function renderPlayoffs() {
   const seed = getConferenceSeed(STATE.careerTeam);
   let pi = STATE.season.playInState;
   const playInNeeded = seed >= 7 && seed <= 10;
-  const playInComplete = pi?.playoffSeed != null && !pi?.isEliminated;
-  const playInEliminated = pi?.isEliminated;
+  let playInComplete = pi?.playoffSeed != null && !pi?.isEliminated &&
+    !!(pi?.gameAResult && pi?.gameBResult && pi?.gameCResult);
   
-  if (playInNeeded && !playInComplete && !playInEliminated && (!pi || !pi.seed7)) {
+  if (playInNeeded && !playInComplete && !pi?.isEliminated && (!pi || !pi.seed7)) {
     // 初始化附加赛状态
     const conf = getConference(STATE.careerTeam);
     const sorted = getConferenceSorted(conf);
@@ -516,7 +518,23 @@ function renderPlayoffs() {
       isEliminated: false, playoffSeed: null,
     };
     pi = STATE.season.playInState;
+    playInComplete = false;
   }
+
+  // 第 7-10 种子必须先完成附加赛。旧版本会在这里直接创建前八名
+  // 季后赛树，导致玩家球队不在任何系列赛中而无法继续。
+  if (playInNeeded && !playInComplete) {
+    STATE.season.isPlayoffs = false;
+    STATE.season.playoffBracket = null;
+    STATE.season.otherBracket = null;
+    STATE.season.playoffSeed = null;
+    STATE.season._viewConf = null;
+    renderPlayInUI();
+    if (typeof queueSeasonAutoSave === 'function') queueSeasonAutoSave();
+    return;
+  }
+
+  STATE.season.isPlayoffs = true;
   
   // 季后赛流程
   const pi2 = STATE.season.playInState;
@@ -539,6 +557,14 @@ function renderPlayoffs() {
 
 function resumePlayoffs() {
   showScreen('screen-playoffs');
+  const seed = getConferenceSeed(STATE.careerTeam);
+  const pi = STATE.season?.playInState;
+  const hasPendingPlayIn = seed >= 7 && seed <= 10 && !(pi?.playoffSeed != null && !pi?.isEliminated &&
+    pi?.gameAResult && pi?.gameBResult && pi?.gameCResult);
+  if (hasPendingPlayIn) {
+    renderPlayoffs();
+    return;
+  }
   if (STATE.season && STATE.season.playoffBracket) {
     renderPlayoffBracketUI();
   } else {
