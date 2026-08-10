@@ -175,6 +175,8 @@ const powers = {
   EQUAL_B: { offense: 78, defense: 68, athletic: 76, clutch: 75, depth: 84 },
   STRONG: { offense: 84, defense: 74, athletic: 84, clutch: 86, depth: 90 },
   WEAK: { offense: 76, defense: 64, athletic: 72, clutch: 66, depth: 80 },
+  PLAYOFF_FAVORITE: { offense: 87.95, defense: 87.95, athletic: 87.95, clutch: 87.95, depth: 87.95 },
+  PLAYOFF_UNDERDOG: { offense: 82.4, defense: 82.4, athletic: 82.4, clutch: 82.4, depth: 82.4 },
 };
 
 const state = { season: { schedule: [] } };
@@ -270,6 +272,22 @@ function runSeries(seed, teamA, teamB, seriesCount) {
   });
 }
 
+function runSeriesWithRecords(seed, favoriteRecord, underdogRecord) {
+  const previousIsPlayoffs = state.season.isPlayoffs;
+  const previousStandings = state.season.standings;
+  state.season.isPlayoffs = true;
+  state.season.standings = {
+    PLAYOFF_FAVORITE: favoriteRecord,
+    PLAYOFF_UNDERDOG: underdogRecord,
+  };
+  try {
+    return runSeries(seed, 'PLAYOFF_FAVORITE', 'PLAYOFF_UNDERDOG', 10000);
+  } finally {
+    state.season.isPlayoffs = previousIsPlayoffs;
+    state.season.standings = previousStandings;
+  }
+}
+
 const equalNeutral = runGames({ seed: 1101, teamA: 'EQUAL_A', teamB: 'EQUAL_B', isHomeA: null });
 const equalHome = runGames({ seed: 2202, teamA: 'EQUAL_A', teamB: 'EQUAL_B', isHomeA: true });
 const equalAway = runGames({ seed: 3303, teamA: 'EQUAL_A', teamB: 'EQUAL_B', isHomeA: false });
@@ -277,6 +295,8 @@ const strongNeutral = runGames({ seed: 4404, teamA: 'STRONG', teamB: 'WEAK', isH
 const injuredEqual = runGames({ seed: 5505, teamA: 'EQUAL_A', teamB: 'EQUAL_B', isHomeA: null, probMultiplier: 0.86 });
 const equalSeries = runSeries(6606, 'EQUAL_A', 'EQUAL_B', 6000);
 const strongSeries = runSeries(7707, 'STRONG', 'WEAK', 6000);
+const wideRecordSeries = runSeriesWithRecords(7717, { wins: 52, losses: 30 }, { wins: 38, losses: 44 });
+const closeRecordSeries = runSeriesWithRecords(7727, { wins: 53, losses: 29 }, { wins: 51, losses: 31 });
 
 const deterministicA = withSeed(8808, () => simulateGame('STRONG', 'WEAK', 0, null, { isHomeA: true, isB2B: false }));
 const deterministicB = withSeed(8808, () => simulateGame('STRONG', 'WEAK', 0, null, { isHomeA: true, isB2B: false }));
@@ -524,6 +544,10 @@ const report = {
   injuredEqual,
   equalSeries,
   strongSeries,
+  playoffRecordCalibration: {
+    wideRecordSeries,
+    closeRecordSeries,
+  },
   deterministic: {
     same: JSON.stringify(deterministicA) === JSON.stringify(deterministicB),
     score: `${deterministicA.scoreA}-${deterministicA.scoreB}`,
@@ -552,6 +576,11 @@ if (outside(strongNeutral.winRateA, 0.74, 0.86)) failures.push(`强队中立场�
 if (outside(injuredEqual.winRateA, 0.32, 0.44)) failures.push(`重伤修正后的胜率异常：${injuredEqual.winRateA}`);
 if (outside(equalSeries, 0.515, 0.58)) failures.push(`同实力高种子系列赛胜率异常：${equalSeries}`);
 if (outside(strongSeries, 0.90, 0.995)) failures.push(`强队系列赛胜率异常：${strongSeries}`);
+if (outside(wideRecordSeries, 0.93, 0.96)) failures.push(`明显战绩优势系列赛胜率异常：${wideRecordSeries}`);
+if (outside(closeRecordSeries, 0.86, 0.91)) failures.push(`接近战绩系列赛胜率异常：${closeRecordSeries}`);
+if (wideRecordSeries - closeRecordSeries < 0.04) {
+  failures.push(`常规赛战绩差没有形成足够区分：${JSON.stringify({ wideRecordSeries, closeRecordSeries })}`);
+}
 if (!report.deterministic.same) failures.push('相同随机种子没有产生相同结果');
 if (inferredRegularSeasonContext.isHomeA !== false || inferredRegularSeasonContext.fatigueMarginDelta !== -1) {
   failures.push(`常规赛主客场/背靠背推断错误：${JSON.stringify(inferredRegularSeasonContext)}`);

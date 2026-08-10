@@ -394,7 +394,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .modal-overlay{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .2s ease;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
 .modal-content{background:var(--bg);border:2px solid var(--border);border-radius:16px;width:100%;max-width:380px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 48px rgba(0,0,0,0.25);animation:slideUp .25s ease}
 .season-team-modal{max-width:390px;max-height:78vh}
-.season-team-summary{display:flex;justify-content:center;gap:12px;padding:8px 14px;color:var(--text-dim);font-size:11px;border-bottom:1px solid var(--border)}
+.season-team-summary{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 12px;padding:8px 14px;color:var(--text-dim);font-size:11px;border-bottom:1px solid var(--border)}
 .season-team-view-tabs,.rankings-view-tabs{display:flex;gap:5px;padding:9px 12px 4px}
 .season-team-view-tab,.rankings-view-tab{flex:1;border:1px solid var(--border);border-radius:8px;background:transparent;color:var(--text-dim);padding:8px;font:600 11px var(--font-display);cursor:pointer}
 .season-team-view-tab.active,.rankings-view-tab.active{border-color:var(--orange);background:var(--orange-bg);color:var(--orange)}
@@ -469,14 +469,14 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .build-edit-btn{position:absolute;top:10px;right:16px;z-index:10;width:32px;height:32px;border:none;border-radius:50%;background:var(--bg-card);border:1.5px solid var(--border);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all .15s;box-shadow:var(--shadow)}
 .build-edit-btn:active{transform:scale(0.92);border-color:var(--orange)}
 .modal-body{padding:8px 10px 12px;overflow-x:auto}
-.st-hdr,.st-row{display:grid;grid-template-columns:32px minmax(120px,1fr) 76px 36px 36px 46px 40px;gap:5px;align-items:center;min-width:416px}
+.st-hdr,.st-row{display:grid;grid-template-columns:32px minmax(120px,1fr) 76px 46px 36px 36px 46px 40px;gap:5px;align-items:center;min-width:467px}
 .st-hdr{padding:4px 8px 6px;font-family:var(--font-display);font-size:10px;color:var(--text-muted)}
 .st-hdr span{width:auto;text-align:right}.st-hdr span:first-child{text-align:center}.st-hdr span:nth-child(2){text-align:left}.st-hdr-ovr{display:block;margin-top:2px;font-size:8px;color:var(--text-muted);font-weight:400}
 .st-row{padding:7px 8px;font-family:var(--font-display);font-size:13px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;margin-bottom:2px}
 .st-row.st-my{border-color:var(--orange);background:var(--orange-bg)}
 .st-row>span{width:auto;text-align:right}.st-row>span:first-child{text-align:center;color:var(--text-dim)}
 .st-row>span:nth-child(2){min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
-.st-team-cell{display:block;min-width:0;line-height:1.15}.st-team-name{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%}.st-ovr-cell{display:flex;flex-direction:row;align-items:center;justify-content:flex-end;gap:8px;color:var(--text);font-size:10px;font-weight:700;line-height:1.15;white-space:nowrap}.st-ovr-cell small{margin-right:3px;color:var(--text-muted);font-size:8px;font-weight:400}
+.st-team-cell{display:block;min-width:0;line-height:1.15}.st-team-name{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%}.st-ovr-cell{display:flex;flex-direction:row;align-items:center;justify-content:flex-end;gap:8px;color:var(--text);font-size:10px;font-weight:700;line-height:1.15;white-space:nowrap}.st-ovr-cell small{margin-right:3px;color:var(--text-muted);font-size:8px;font-weight:400}.st-power-cell{color:var(--text);font-weight:800;font-variant-numeric:tabular-nums}
 .st-w{color:var(--green)}.st-l{color:var(--red)}
 .st-streak{font-size:11px;color:var(--text-dim)}
 .bv-wrap{padding:0 6px 20px}
@@ -4126,6 +4126,13 @@ function calcTeamPowerWithPlayer(team) {
   };
 }
 
+/** 比赛引擎使用的中立场阵容战力；主场、战绩、伤病和疲劳在单场模拟时另行计算。 */
+function getTeamBattlePower(team) {
+  const power = calcTeamPowerWithPlayer(team);
+  const rating = power.offense * 0.45 + power.defense * 0.45 + power.depth * 0.10;
+  return Math.round(rating * 10) / 10;
+}
+
 /** 比赛模拟 — 逐节生成真实比分，最终比分直接决定胜负。 */
 function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
   const powerA = calcTeamPowerWithPlayer(teamA);
@@ -4156,11 +4163,19 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
     : !!(currentScheduleGame && previousScheduleGame
       && Number(currentScheduleGame.day) - Number(previousScheduleGame.day) === 1);
 
-  // 实力差决定预期分差；种子差仅保留为很小的赛季表现修正，主场承担主要高种子优势。
+  // 实力差决定预期分差；季后赛用真实常规赛胜率差表示赛季表现，缺少战绩时兼容旧种子修正。
   const rosterEdge = (powerA.offense - powerB.offense) * 0.45
                    + (powerA.defense - powerB.defense) * 0.45
                    + (powerA.depth - powerB.depth) * 0.10;
-  const seasonFormEdge = clamp((seedBonus || 0) * 0.25, -0.8, 0.8);
+  const standings = STATE.season?.standings || {};
+  const recordA = standings[teamA];
+  const recordB = standings[teamB];
+  const gamesA = (recordA?.wins || 0) + (recordA?.losses || 0);
+  const gamesB = (recordB?.wins || 0) + (recordB?.losses || 0);
+  const hasPlayoffRecords = !!STATE.season?.isPlayoffs && gamesA > 0 && gamesB > 0;
+  const seasonFormEdge = hasPlayoffRecords
+    ? clamp((((recordA.wins || 0) / gamesA) - ((recordB.wins || 0) / gamesB)) * 12, -2.5, 2.5)
+    : clamp((seedBonus || 0) * 0.25, -0.8, 0.8);
   const homeCourtEdge = isHomeA === true ? 2.2 : (isHomeA === false ? -2.2 : 0);
   // 兼容现有带伤接口：把概率乘数转换成预期分差惩罚，不再直接篡改胜率。
   const availabilityEdge = Number.isFinite(options.availabilityEdge)
@@ -5796,16 +5811,18 @@ function renderConferenceStandings(conf) {
   var leader = sorted[0] || { wins: 0, losses: 0 };
   var zoneLabels = ['🏀 季后赛区', '🔥 附加赛区', '📋 乐透区'];
   var zoneIndex = 0;
-  var html = '<div class="st-hdr"><span>排名</span><span>球队</span><span>OVR<small class="st-hdr-ovr">首发 / 轮换</small></span><span>胜</span><span>负</span><span>胜差</span><span>近况</span></div>';
+  var html = '<div class="st-hdr"><span>排名</span><span>球队</span><span>OVR<small class="st-hdr-ovr">首发 / 轮换</small></span><span title="中立场阵容基准，不含主场、战绩、伤病与疲劳修正">战力<small class="st-hdr-ovr">中立场</small></span><span>胜</span><span>负</span><span>胜差</span><span>近况</span></div>';
   sorted.forEach(function(row, index) {
     if (index === 0 || index === 6 || index === 10) html += '<div class="season-zone">' + zoneLabels[zoneIndex++] + '</div>';
     var gb = index === 0 ? '-' : ((leader.wins - row.wins + row.losses - leader.losses) / 2).toFixed(1);
     var isMyTeam = row.team === STATE.careerTeam;
     var lineupOvr = getTeamLineupOvr(row.team);
+    var battlePower = getTeamBattlePower(row.team);
     html += '<div class="st-row is-interactive ' + (isMyTeam ? 'st-my' : '') + '" data-season-team="' + row.team + '" role="button" tabindex="0" aria-label="查看' + getTeamName(row.team) + '球队阵容" title="点击查看球队阵容">' +
       '<span>' + (index + 1) + '</span>' +
       '<span class="st-team-cell"><span class="st-team-name">' + getTeamLogo(row.team, 16) + ' ' + getTeamName(row.team) + (isMyTeam ? ' ⭐' : '') + '</span></span>' +
       '<span class="st-ovr-cell"><span><small>首发</small>' + lineupOvr.starter + '</span><span><small>轮换</small>' + lineupOvr.rotation + '</span></span>' +
+      '<span class="st-power-cell" title="中立场阵容战力">' + battlePower.toFixed(1) + '</span>' +
       '<span class="st-w">' + row.wins + '</span>' +
       '<span class="st-l">' + row.losses + '</span>' +
       '<span>' + gb + '</span>' +
@@ -6001,6 +6018,7 @@ function showSeasonTeamModal(teamOverride) {
   var starters = posOrder.map(function(pos) { return lineup.starters[pos]; }).filter(Boolean);
   var bench = (lineup.bench || []).slice(0, 7);
   var lineupOvr = getTeamLineupOvr(team);
+  var battlePower = getTeamBattlePower(team);
   var standing = STATE.season.standings && STATE.season.standings[team] || { wins: 0, losses: 0 };
   var activeView = STATE._teamPageView === 'stats' ? 'stats' : 'roster';
   var seasonStatRows = getSeasonPlayerStatRows();
@@ -6073,7 +6091,7 @@ function showSeasonTeamModal(teamOverride) {
         '</div>' +
         '<button class="modal-close" onclick="closeSeasonTeamModal()" aria-label="关闭球队信息">✕</button>' +
       '</div>' +
-      '<div class="season-team-summary"><span>战绩 ' + standing.wins + '-' + standing.losses + '</span><span>首发 OVR ' + lineupOvr.starter + '</span><span>轮换 OVR ' + lineupOvr.rotation + '</span></div>' +
+      '<div class="season-team-summary"><span>战绩 ' + standing.wins + '-' + standing.losses + '</span><span>首发 OVR ' + lineupOvr.starter + '</span><span>轮换 OVR ' + lineupOvr.rotation + '</span><span title="中立场阵容基准，不含主场、战绩、伤病与疲劳修正">战力 ' + battlePower.toFixed(1) + '</span></div>' +
       '<div class="season-team-view-tabs">' +
         '<button class="season-team-view-tab ' + (activeView === 'roster' ? 'active' : '') + '" onclick="setSeasonTeamPageView(\'roster\')">阵容</button>' +
         '<button class="season-team-view-tab ' + (activeView === 'stats' ? 'active' : '') + '" onclick="setSeasonTeamPageView(\'stats\')">球员统计</button>' +
