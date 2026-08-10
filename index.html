@@ -4699,13 +4699,12 @@ function generateBoxScore(teamA, teamB, totalA, totalB) {
     var teamTurnovers = leagueStatClamp(Math.round(leagueStatNormal(13.2 + minuteWeighted(offSkill) * 1.5, 2.1)), 8, 21);
 
     var rebPos = { PG:0.78, SG:0.85, SF:1.00, PF:1.12, C:1.10 };
-    var astPos = { PG:1.35, SG:1.10, SF:1.00, PF:0.82, C:0.78 };
     var stlPos = { PG:1.00, SG:1.00, SF:1.00, PF:0.92, C:0.88 };
     var blkPos = { PG:0.45, SG:0.55, SF:0.85, PF:1.25, C:1.60 };
     var reboundWeights = players.map(function(player, i) { return minutes[i] * (0.42 + Math.pow(rebSkill[i], 1.35) * 1.30) * (rebPos[pos[i]] || 1) * profiles[i].rebounding * (0.88 + Math.random() * 0.24); });
-    var assistWeights = players.map(function(player, i) { return minutes[i] * (0.20 + Math.pow(passSkill[i], 1.55) * 1.40) * (astPos[pos[i]] || 1) * profiles[i].playmaking * (0.84 + Math.random() * 0.32); });
+    var assistWeights = players.map(function(player, i) { return minutes[i] * (0.08 + Math.pow(passSkill[i], 2.30) * 1.65) * (1 + Math.pow(passSkill[i], 8) * 0.35) * profiles[i].playmaking * (0.84 + Math.random() * 0.32); });
     var stealWeights = players.map(function(player, i) { return minutes[i] * (0.38 + Math.pow(stealSkill[i], 1.35) * 0.75) * (stlPos[pos[i]] || 1) * profiles[i].defense * (0.80 + Math.random() * 0.40); });
-    var blockWeights = players.map(function(player, i) { return minutes[i] * (0.12 + Math.pow(blockSkill[i], 1.70) * 1.15) * (blkPos[pos[i]] || 1) * profiles[i].defense * (0.78 + Math.random() * 0.44); });
+    var blockWeights = players.map(function(player, i) { return minutes[i] * (0.12 + Math.pow(blockSkill[i], 1.70) * 1.15) * (1 + Math.pow(blockSkill[i], 8) * 0.60) * (blkPos[pos[i]] || 1) * profiles[i].defense * (0.78 + Math.random() * 0.44); });
     var turnoverWeights = players.map(function(player, i) { return minutes[i] * (0.10 + offSkill[i] * 0.55 + passSkill[i] * 0.42) * (1.12 - handleSkill[i] * 0.28); });
     var rebounds = allocateLeagueCountingTotal(teamRebounds, reboundWeights, players.map(function() { return 24; }));
     var assists = allocateLeagueCountingTotal(teamAssists, assistWeights, players.map(function() { return 17; }));

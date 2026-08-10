@@ -269,14 +269,16 @@ const limits = {
   reb: { first: 16, tenth: 13 },
   ast: { first: 12, tenth: 10 },
   stl: { first: 2.8, tenth: 2.2 },
-  blk: { first: 3.2, tenth: 2.3 },
+  blk: { first: 4, tenth: 2.3 },
 };
+const minimums = { ast: 10, blk: 2.8 };
 const failures = [];
 seasons.forEach((season, index) => {
   if (season.invariantErrors > 0) failures.push(`赛季 ${index + 1} 存在 ${season.invariantErrors} 个总量守恒错误`);
   if (season.full82 < 5 || season.full82 > 50) failures.push(`赛季 ${index + 1} 打满 82 场人数异常：${season.full82}`);
   if (season.averageTeamAssists < 23 || season.averageTeamAssists > 29) failures.push(`赛季 ${index + 1} 球队场均助攻异常：${season.averageTeamAssists}`);
   fields.forEach(field => {
+    if (minimums[field] && season.leaders[field][0][field] < minimums[field]) failures.push(`赛季 ${index + 1} ${field} 榜首过低`);
     if (season.leaders[field][0][field] > limits[field].first) failures.push(`赛季 ${index + 1} ${field} 榜首过高`);
     if (season.leaders[field][9][field] > limits[field].tenth) failures.push(`赛季 ${index + 1} ${field} 第十名过高`);
     if (season.leaders[field].filter(row => row.gp === 82).length > 4) failures.push(`赛季 ${index + 1} ${field} 前十中打满 82 场的人数过多`);
