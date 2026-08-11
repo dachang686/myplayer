@@ -6520,6 +6520,11 @@ function getMyCardCareerStats() {
   var divisor = Math.max(games, 1);
   return {
     games: games,
+    totalPts: Math.round(totals.pts),
+    totalReb: Math.round(totals.reb),
+    totalAst: Math.round(totals.ast),
+    totalStl: Math.round(totals.stl),
+    totalBlk: Math.round(totals.blk),
     pts: Math.round(totals.pts / divisor * 10) / 10,
     reb: Math.round(totals.reb / divisor * 10) / 10,
     ast: Math.round(totals.ast / divisor * 10) / 10,
@@ -6859,6 +6864,18 @@ function renderMyCard(isFinal, activeTab) {
         <div class="mc-stat"><span class="mc-stat-val">${careerAvg.tov}</span><span class="mc-stat-lbl">失误</span></div>
       </div>
       <div class="mc-pct-line">投篮 ${careerAvg.fgm}-${careerAvg.fga} (${careerPct}%) · 三分 ${careerAvg.threeM}-${careerAvg.threeA} (${careerThreePct}%) · 罚球 ${careerAvg.ftm}-${careerAvg.fta} (${careerFtPct}%)</div>
+    </div>
+
+    <div class="mc-section">
+      <div class="mc-section-title">🧮 职业生涯总数据 · ${careerAvg.games} 场</div>
+      <div class="mc-stats-grid">
+        <div class="mc-stat"><span class="mc-stat-val">${careerAvg.totalPts}</span><span class="mc-stat-lbl">总得分</span></div>
+        <div class="mc-stat"><span class="mc-stat-val">${careerAvg.totalReb}</span><span class="mc-stat-lbl">总篮板</span></div>
+        <div class="mc-stat"><span class="mc-stat-val">${careerAvg.totalAst}</span><span class="mc-stat-lbl">总助攻</span></div>
+        <div class="mc-stat"><span class="mc-stat-val">${careerAvg.totalStl}</span><span class="mc-stat-lbl">总抢断</span></div>
+        <div class="mc-stat"><span class="mc-stat-val">${careerAvg.totalBlk}</span><span class="mc-stat-lbl">总盖帽</span></div>
+        <div class="mc-stat"><span class="mc-stat-val">${careerAvg.games}</span><span class="mc-stat-lbl">出场数</span></div>
+      </div>
     </div>
 
     <div class="mc-section">
