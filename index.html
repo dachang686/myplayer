@@ -1491,7 +1491,7 @@ function getPosPenalty(userPos, srcPos, attrKey) {
 }
 
 /** 从球员的 pos 字段提取全部有效位置（'PG / SG' → ['PG', 'SG']） */
-function getPlayerPositions(player) {
+function getBuildPlayerPositions(player) {
   const positions = String(player && player.pos || 'SG')
     .split('/')
     .map(pos => pos.trim())
@@ -1501,11 +1501,11 @@ function getPlayerPositions(player) {
 
 /** 从球员的 pos 字段提取主位置（'PG / SG' → 'PG'） */
 function getPlayerMainPos(player) {
-  return getPlayerPositions(player)[0];
+  return getBuildPlayerPositions(player)[0];
 }
 
 function playerCanPlayPosition(player, position) {
-  return getPlayerPositions(player).includes(position);
+  return getBuildPlayerPositions(player).includes(position);
 }
 
 /** 任一登记位置匹配时不折损，否则仍按主位置计算跨位置折损。 */
@@ -2215,7 +2215,7 @@ function renderRosterPlayers(team, shown, allAvailable) {
   
   shown.forEach(p => {
     const sel = STATE.selectedPlayer?.id === p.id;
-    const playerPos = getPlayerPositions(p).join(' / ');
+    const playerPos = getBuildPlayerPositions(p).join(' / ');
     const hsStyle = getPlayerHeadshotStyle(p.id, 32);
     const ovrGrade = getOvrGrade(parseInt(p.ovr) || 50);
     listHtml += `<button type="button" class="br-player${sel ? ' selected' : ''}" aria-pressed="${sel ? 'true' : 'false'}" onclick="pickPlayer('${p.id}')">

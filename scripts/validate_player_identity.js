@@ -78,7 +78,7 @@ if (positionLogicStart < 0 || positionLogicEnd < 0) {
   vm.createContext(positionContext);
   runSource(html.slice(positionLogicStart, positionLogicEnd), 'index.html:position-penalty', positionContext);
   const multiPositionPenaltyWorks = vm.runInContext(
-    "getPlayerPositions({ pos: 'C / PF' }).join(',') === 'C,PF' && " +
+    "getBuildPlayerPositions({ pos: 'C / PF' }).join(',') === 'C,PF' && " +
     "getPlayerMainPos({ pos: 'C / PF' }) === 'C' && " +
     "playerCanPlayPosition({ pos: 'C / PF' }, 'PF') && " +
     "towns && towns.pos === 'C / PF' && getPlayerPosPenalty('PF', towns, 'REB') === 1 && " +
