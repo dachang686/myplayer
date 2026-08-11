@@ -7320,8 +7320,6 @@ function applyAnnualAttributeDrift() {
   if (c.annualChangeSeason === seasonKey) return c.lastAnnualChanges || [];
   var age = c.currentAge || 22;
   var changes = [];
-  var fastDecline = ['ATH', 'DNK', 'PDEF', 'BLK', 'IDEF', 'REB'];
-  var midDecline = ['FIN', 'STR'];
   var slowTech = ['threePT', 'MID', 'HAN', 'PAS', 'CLU'];
 
   function applyList(list, minDelta, maxDelta, label) {
@@ -7334,31 +7332,28 @@ function applyAnnualAttributeDrift() {
     });
   }
 
+  function applyPartialDecline(minDelta, maxDelta, label) {
+    var selected = ATTR_KEYS.filter(function() { return Math.random() < 0.5; });
+    if (selected.length === 0) {
+      selected.push(ATTR_KEYS[Math.floor(Math.random() * ATTR_KEYS.length)]);
+    } else if (selected.length === ATTR_KEYS.length) {
+      selected.splice(Math.floor(Math.random() * selected.length), 1);
+    }
+    applyList(selected, minDelta, maxDelta, label);
+  }
+
   if (age <= 25) {
     applyList(slowTech.concat(['FIN', 'ATH']), 0, 1, '成长');
   } else if (age <= 30) {
-    ATTR_KEYS.forEach(function(k) {
-      if (Math.random() < 0.3) {
-        var d = Math.random() < 0.45 ? 1 : -1;
-        addAttrDelta(k, d);
-        changes.push((d > 0 ? '+' : '') + d + ' ' + attrCN(k) + '（状态波动）');
-      }
-    });
+    // 巅峰期：属性保持稳定，不进行年度增减。
   } else if (age <= 33) {
-    applyList(fastDecline, -2, -1, '明显下滑');
-    applyList(slowTech, 0, 0, '技术维持');
+    applyPartialDecline(-2, -1, '明显下滑');
   } else if (age <= 36) {
-    applyList(fastDecline, -4, -3, '年龄下滑');
-    applyList(midDecline, -3, -2, '年龄影响');
-    applyList(slowTech, -3, -2, '技术衰减');
+    applyPartialDecline(-4, -2, '年龄下滑');
   } else if (age <= 39) {
-    applyList(fastDecline, -6, -4, '老将下滑');
-    applyList(midDecline, -5, -3, '老将下滑');
-    applyList(slowTech, -5, -3, '老将下滑');
+    applyPartialDecline(-6, -3, '老将下滑');
   } else {
-    applyList(fastDecline, -8, -6, '生涯末期');
-    applyList(midDecline, -7, -5, '生涯末期');
-    applyList(slowTech, -6, -4, '生涯末期');
+    applyPartialDecline(-8, -4, '生涯末期');
   }
 
   STATE.finalOVR = calcOVR(STATE.attrs);
@@ -9115,7 +9110,6 @@ function shouldOfferPlayerRetirement() {
   var age = c.currentAge || 22;
   if (c.retired) return false;
   if (c.flags && (c.flags.countdownDone || c.flags.playOneMore)) return true;
-  if (age >= 40) return true;
   if (age >= 38) return Math.random() < 0.65;
   if (age >= 37 && (STATE.finalOVR || 0) < 84) return Math.random() < 0.45;
   if (age >= 37 && countCareerHonor('总冠军') + countCareerHonor('MVP') >= 3) return Math.random() < 0.25;

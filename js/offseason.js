@@ -1892,8 +1892,7 @@ function evolveLeague() {
       var retireChance = 0;
       if (p._protectedRetirementAge && age < p._protectedRetirementAge) {
         retireChance = 0;
-      } else if (age >= 40) retireChance = 100;
-      else if (age >= 38) retireChance = 50;
+      } else if (age >= 38) retireChance = 50;
       else if (age >= 36) retireChance = 25;
       else if (age >= 34 && p.ovr < 75) retireChance = 35;
       if (rngNext() * 100 < retireChance) {
