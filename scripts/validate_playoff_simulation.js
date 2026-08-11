@@ -260,6 +260,7 @@ const simulateGame = new Function(
   'STATE',
   'getTeamName',
   'generateBoxScore',
+  'getActiveEventTeamEdge',
   `${indexSimulation}\nreturn simulateGameNew;`,
 )(
   team => powers[team],
@@ -270,6 +271,7 @@ const simulateGame = new Function(
     [teamA]: [{ pts: scoreA, mins: 240 }],
     [teamB]: [{ pts: scoreB, mins: 240 }],
   }),
+  () => 0,
 );
 
 function seededRandom(seed) {

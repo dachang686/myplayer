@@ -1157,7 +1157,7 @@ const STATE = {
     standings: {},      // { team: { wins, losses } }
     isPlayoffs: false,
     playoffBracket: null,
-    events: { suspensionGamesLeft: 0, suspensionReason: '', injuryGamesLeft: 0, injuryReason: '', triggeredIds: [], storyTimeline: [], lastTriggerGameNum: null, playoffEventCount: 0, injuryRiskBonus: 0, majorInjuryThisSeason: false, playThroughPrompted: {}, regularPlayThroughPromptCount: 0 },
+    events: createSeasonEventState(0),
   },
 
   // 生涯
@@ -1218,6 +1218,48 @@ function updateSeasonBadge(activeId) {
   var label = '2025-26赛季';
   try { label = getCurrentSeasonLabel(); } catch(e) {}
   el.innerHTML = '<span style="display:inline-block;background:var(--bg-card);border:1px solid var(--border);border-radius:999px;padding:4px 12px;box-shadow:var(--shadow);">🏀 ' + label + '</span>';
+}
+
+/** 赛季事件状态统一入口；新增字段均在 ensureSeasonEventState 中兼容旧存档。 */
+function createSeasonEventState(injuryRiskBonus) {
+  return {
+    version: 2,
+    suspensionGamesLeft: 0,
+    suspensionReason: '',
+    injuryGamesLeft: 0,
+    injuryReason: '',
+    triggeredIds: [],
+    storyTimeline: [],
+    lastTriggerGameNum: null,
+    lastTriggerByLane: {},
+    eventCounts: {},
+    playoffEventCount: 0,
+    injuryRiskBonus: Number(injuryRiskBonus) || 0,
+    majorInjuryThisSeason: false,
+    playThroughPrompted: {},
+    regularPlayThroughPromptCount: 0,
+    opponentHistory: {},
+    activeEffects: []
+  };
+}
+
+function ensureSeasonEventState() {
+  if (!STATE.season) STATE.season = {};
+  var current = STATE.season.events || {};
+  var defaults = createSeasonEventState(current.injuryRiskBonus || 0);
+  Object.keys(defaults).forEach(function(key) {
+    if (current[key] == null) current[key] = defaults[key];
+  });
+  if (!Array.isArray(current.triggeredIds)) current.triggeredIds = [];
+  if (!Array.isArray(current.storyTimeline)) current.storyTimeline = [];
+  if (!Array.isArray(current.activeEffects)) current.activeEffects = [];
+  if (!current.lastTriggerByLane || typeof current.lastTriggerByLane !== 'object') current.lastTriggerByLane = {};
+  if (!current.eventCounts || typeof current.eventCounts !== 'object') current.eventCounts = {};
+  if (!current.opponentHistory || typeof current.opponentHistory !== 'object') current.opponentHistory = {};
+  if (!current.playThroughPrompted || typeof current.playThroughPrompted !== 'object') current.playThroughPrompted = {};
+  current.version = 2;
+  STATE.season.events = current;
+  return current;
 }
 
 // 每个赛季内页面只在这里声明所属底部菜单，避免页面函数各自维护高亮状态。
@@ -1574,7 +1616,7 @@ function initGame() {
     careerTeam: null,
     gameId: generateGameId(),
     career: createFreshCareer(),
-  season: { games: [], wins: 0, losses: 0, playerStats: {}, leaguePlayerSeasonStats: {}, leaguePlayerGameStats: [], _recordedLeagueGameIds: {}, playoffStats: { pts:0, reb:0, ast:0, stl:0, blk:0, tov:0, fgm:0, fga:0, ftm:0, fta:0, threeM:0, threeA:0, mins:0, games:0 }, awards: [], playoffResult: null, playoffEliminated: false, standings: {}, isPlayoffs: false, playoffBracket: null, otherBracket: null, _viewConf: null },
+  season: { games: [], wins: 0, losses: 0, playerStats: {}, leaguePlayerSeasonStats: {}, leaguePlayerGameStats: [], _recordedLeagueGameIds: {}, playoffStats: { pts:0, reb:0, ast:0, stl:0, blk:0, tov:0, fgm:0, fga:0, ftm:0, fta:0, threeM:0, threeA:0, mins:0, games:0 }, awards: [], playoffResult: null, playoffEliminated: false, standings: {}, isPlayoffs: false, playoffBracket: null, otherBracket: null, _viewConf: null, events: createSeasonEventState(0) },
   });
   delete STATE._tpPending;
   delete STATE._careerSaved;
@@ -1612,6 +1654,7 @@ var _helpPage = 0;
 var _helpPages = [
   { title: '建球员', content: '选择我的位置后进入抽签选队，随机抽取球队后从该队球员列表中选一人，点击左侧属性槽锁定一项属性。锁定后自动进入下一轮，可继续抽新球队选人锁属性。每局限换三次球员，用完只能重新随机球队。跨位置选人会触发属性衰减，集满十三项属性后自动揭晓总评、模板风格和相似球员。' },
   { title: '赛季', content: '抽签决定我的生涯球队后进入赛季。系统根据我与队内同位置球员的总评比较判定首发或替补。每场比赛可点单场推进，也可点击日历日期批量模拟到当天。比赛数据根据属性和位置动态生成，方差较大，有爆发也有低迷。赛季中可随时点我的数据查看场均表现。' },
+  { title: '生涯事件', content: '赛季事件分为伤病、纪律、职业剧情和生活花絮，各自拥有独立概率、冷却和赛季名额。部分事件会根据单场表现、球队战绩、合同阶段和季后赛形势触发，并提供会影响信任、声望、伤病风险或未来数场球队气势的选择。同一随机事件不会在一个赛季内重复，所有结果可在“我的数据—事件”中回看。' },
   { title: '季后赛', content: '常规赛结束后根据排名决定季后赛或附加赛资格。附加赛在七到十名之间进行，逐场淘汰。季后赛每轮七场四胜，我的系列赛会一场一场模拟，每场生成简报。点击简报可展开查看详细比分、我的数据和全队数据。一路赢下去直到总冠军。' },
   { title: '海报分享', content: '赛季结果页或我的数据页中点生成海报可生成球员纪念海报，包含总评、赛季数据、模板风格和最终属性。海报支持一键分享，每次分享都会带上我的专属标签。' },
   { title: '征服联盟', content: '荣誉墙支持我挑战带领全部30支联盟球队夺冠的终极目标。每次我赢得总冠军，系统会自动记录该球队、赛季数据、季后赛数据以及我的最终属性和模板。已夺冠的球队会在荣誉墙上以金色边框和队标展示，点击可查看历次夺冠详情。' },
@@ -3639,7 +3682,7 @@ function startSeason() {
     _gamesPlayed: {},
     _leagueGameLog: [],
     rankings: null,
-    events: { suspensionGamesLeft: 0, suspensionReason: '', injuryGamesLeft: 0, injuryReason: '', triggeredIds: [], storyTimeline: [], lastTriggerGameNum: null, playoffEventCount: 0, injuryRiskBonus: getNextSeasonMods().injuryRiskBonus || 0, majorInjuryThisSeason: false, playThroughPrompted: {}, regularPlayThroughPromptCount: 0 },
+    events: createSeasonEventState(getNextSeasonMods().injuryRiskBonus || 0),
   };
   
   initStandings();
@@ -4271,6 +4314,19 @@ function getTeamBattlePower(team) {
   return Math.round(rating * 10) / 10;
 }
 
+/** 事件选择可在有限场次内改变球队气势；仅玩家所在球队参与时生效。 */
+function getActiveEventTeamEdge(teamA, teamB) {
+  if (!STATE.season || !STATE.careerTeam) return 0;
+  var events = ensureSeasonEventState();
+  var side = teamA === STATE.careerTeam ? 1 : (teamB === STATE.careerTeam ? -1 : 0);
+  if (!side) return 0;
+  var edge = events.activeEffects.reduce(function(total, effect) {
+    if (!effect || (effect.gamesLeft || 0) <= 0) return total;
+    return total + (Number(effect.teamEdge) || 0);
+  }, 0);
+  return Math.max(-2.5, Math.min(2.5, edge)) * side;
+}
+
 /** 比赛模拟 — 逐节生成真实比分，最终比分直接决定胜负。 */
 function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
   const powerA = calcTeamPowerWithPlayer(teamA);
@@ -4320,8 +4376,9 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
     ? options.availabilityEdge
     : (probMultiplier != null ? (probMultiplier - 1) * 25 : 0);
   const fatigueEdge = isB2B ? -1.0 : 0;
+  const eventTeamEdge = getActiveEventTeamEdge(teamA, teamB);
   const expectedMargin = clamp(
-    rosterEdge + seasonFormEdge + homeCourtEdge + availabilityEdge + fatigueEdge,
+    rosterEdge + seasonFormEdge + homeCourtEdge + availabilityEdge + fatigueEdge + eventTeamEdge,
     -18,
     18
   );
@@ -4414,6 +4471,7 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
     possPerQ,
     isHomeA,
     expectedMargin,
+    eventTeamEdge,
     estimatedWinProb,
     boxScore: generateBoxScore(teamA, teamB, scoreA, scoreB),
   };
@@ -6577,12 +6635,15 @@ function getMyCardEventItems() {
   (career.seasons || []).forEach(function(season) {
     var seasonNum = Math.max(1, parseInt(season.seasonNum, 10) || 1);
     (season.events || []).forEach(function(event) {
+      var timelineDesc = event.choice
+        ? '选择：' + event.choice + (event.result ? ' · ' + String(event.result).replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '') : '')
+        : (event.desc || '');
       addEvent({
         key: 'timeline|' + seasonNum + '|' + (event.gameNum || 0) + '|' + (event.title || ''),
         title: event.title || '赛季事件',
-        desc: event.desc || '',
+        desc: timelineDesc,
         emoji: event.emoji || '📌',
-        seasonLabel: getSeasonLabel(seasonNum) + ' · 第' + (event.gameNum || 0) + '场',
+        seasonLabel: getSeasonLabel(seasonNum) + (event.phase === 'playoffs' ? ' · 季后赛第' : ' · 第') + (event.gameNum || 0) + '场',
         rank: seasonNum + (event.gameNum || 0) / 1000,
       });
     });
@@ -6591,12 +6652,15 @@ function getMyCardEventItems() {
   var currentSeasonNum = Math.max(1, (career.seasonCount || 0) + (STATE._careerSaved ? 0 : 1));
   var currentTimeline = (STATE.season && STATE.season.events && STATE.season.events.storyTimeline) || [];
   currentTimeline.forEach(function(event) {
+    var timelineDesc = event.choice
+      ? '选择：' + event.choice + (event.result ? ' · ' + String(event.result).replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '') : '')
+      : (event.desc || '');
     addEvent({
       key: 'timeline|' + currentSeasonNum + '|' + (event.gameNum || 0) + '|' + (event.title || ''),
       title: event.title || '赛季事件',
-      desc: event.desc || '',
+      desc: timelineDesc,
       emoji: event.emoji || '📌',
-      seasonLabel: getSeasonLabel(currentSeasonNum) + ' · 第' + (event.gameNum || 0) + '场',
+      seasonLabel: getSeasonLabel(currentSeasonNum) + (event.phase === 'playoffs' ? ' · 季后赛第' : ' · 第') + (event.gameNum || 0) + '场',
       rank: currentSeasonNum + (event.gameNum || 0) / 1000,
     });
   });
@@ -8665,6 +8729,7 @@ function manualLoadGame(slot, options) {
         // STATE 与 LEAGUE_PLAYER_DATA 是 const，只能原地清空后填充，保证所有引用仍然有效
         Object.keys(STATE).forEach(function(k) { delete STATE[k]; });
         Object.assign(STATE, snap.state);
+        ensureSeasonEventState();
         // 页面刷新后原来的模拟定时器已不存在，恢复为可手动继续的状态。
         STATE._calendarAutoSimulating = false;
         if (STATE.season) STATE.season.leaguePlayerGameStats = [];
@@ -9532,24 +9597,55 @@ function showEventModal(data, callback) {
   var overlay = document.createElement('div');
   overlay.className = 'awards-overlay';
   overlay.id = 'eventOverlay';
-  overlay.innerHTML =
-    '<div class="awards-card" style="animation:flyInRight .45s ease">' +
-      '<div class="awards-card-header" style="padding:32px 24px 24px;">' +
-        '<span style="font-size:44px;display:block;margin-bottom:8px;">' + (data.emoji || '📌') + '</span>' +
-        '<div class="awards-badge">' + data.title + '</div>' +
-      '</div>' +
-      '<div class="awards-card-body" style="padding:20px 24px 24px;">' +
-        '<div style="font-size:14px;color:var(--text);line-height:1.7;margin-bottom:6px;">' + data.body.replace(/\n/g, '<br>') + '</div>' +
-        (data.detail ? '<div class="awards-divider"></div><div style="font-size:13px;color:var(--text-muted);margin:6px 0 8px;">' + data.detail + '</div>' : '') +
-        '<div class="awards-divider" style="margin-bottom:12px;"></div>' +
-        '<button class="awards-next" id="eventCloseBtn">' + (data.btnText || '我知道了') + '</button>' +
-      '</div>' +
-    '</div>';
   document.body.appendChild(overlay);
-  document.getElementById('eventCloseBtn').onclick = function() {
+
+  function closeEvent() {
     overlay.remove();
     if (callback) callback();
-  };
+  }
+
+  function render(outcome) {
+    var choicesHtml = '';
+    if (!outcome && Array.isArray(data.choices) && data.choices.length) {
+      choicesHtml += '<div style="font-size:11px;color:var(--orange);font-weight:700;margin:14px 0 7px;">你的选择</div>';
+      data.choices.forEach(function(choice, index) {
+        choicesHtml += '<button class="btn btn-secondary btn-sm event-choice-btn" data-choice="' + index + '" style="width:100%;margin-bottom:8px;justify-content:flex-start;text-align:left;">' +
+          '<span>' + choice.label + (choice.hint ? '<small style="display:block;margin-top:3px;font-family:var(--font-body);font-weight:400;opacity:.72;">' + choice.hint + '</small>' : '') + '</span>' +
+        '</button>';
+      });
+    }
+    overlay.innerHTML =
+      '<div class="awards-card" style="animation:flyInRight .45s ease">' +
+        '<div class="awards-card-header" style="padding:32px 24px 24px;">' +
+          '<span style="font-size:44px;display:block;margin-bottom:8px;">' + (data.emoji || '📌') + '</span>' +
+          '<div class="awards-badge">' + data.title + '</div>' +
+        '</div>' +
+        '<div class="awards-card-body" style="padding:20px 24px 24px;">' +
+          '<div style="font-size:14px;color:var(--text);line-height:1.7;margin-bottom:6px;">' + String(data.body || '').replace(/\n/g, '<br>') + '</div>' +
+          (data.detail && !outcome ? '<div class="awards-divider"></div><div style="font-size:13px;color:var(--text-muted);line-height:1.6;margin:6px 0 8px;">' + data.detail + '</div>' : '') +
+          choicesHtml +
+          (outcome ? '<div class="awards-divider"></div><div style="font-size:11px;color:var(--orange);font-weight:700;margin:10px 0 6px;">结果</div><div style="font-size:13px;color:var(--text);line-height:1.65;margin-bottom:12px;">' + outcome + '</div>' : '') +
+          ((!data.choices || !data.choices.length || outcome) ? '<div class="awards-divider" style="margin-bottom:12px;"></div><button class="awards-next" id="eventCloseBtn">' + (data.btnText || '继续') + '</button>' : '') +
+        '</div>' +
+      '</div>';
+
+    var closeBtn = document.getElementById('eventCloseBtn');
+    if (closeBtn) closeBtn.onclick = closeEvent;
+    Array.prototype.forEach.call(overlay.querySelectorAll('.event-choice-btn'), function(button) {
+      button.onclick = function() {
+        var choice = data.choices[parseInt(button.getAttribute('data-choice'), 10)];
+        if (!choice || data._choiceResolved) return;
+        data._choiceResolved = true;
+        var resultText = '';
+        try { resultText = choice.apply ? choice.apply() : (choice.result || '你做出了决定。'); }
+        catch (e) { resultText = '选择已经记录，但结算出现异常。'; }
+        finalizeRandomEventChoice(data, choice, resultText);
+        render(resultText || '你的选择已经影响了接下来的生涯。');
+      };
+    });
+  }
+
+  render('');
 }
 
 function getInjuryPlaySeverity(ev) {
@@ -9715,10 +9811,15 @@ function resolveEventVars(str, ctx, evData) {
   var topPlayer = teamAbbr ? getTeamTopPlayer(teamAbbr) : null;
   var playerName = topPlayer ? (topPlayer.cname) : '对手球员';
   var teamName = teamAbbr ? (TEAM_NAMES_EV[teamAbbr] || teamAbbr) : '对手球队';
+  var teammateName = typeof getBondedTeammateName === 'function' ? getBondedTeammateName() : '一位队友';
+  if (teammateName === '那位队友') teammateName = '一位队友';
+  var rivalry = STATE.career && STATE.career.flags && STATE.career.flags.eventRivalry;
+  var rivalName = rivalry && rivalry.playerName ? rivalry.playerName : playerName;
   return str
     .replace(/\{对手球员\}/g, playerName)
     .replace(/\{对手球队\}/g, teamName)
-    .replace(/\{队友\}/g, playerName)
+    .replace(/\{队友\}/g, teammateName)
+    .replace(/\{宿敌\}/g, rivalName)
     .replace(/\{n\}/g, (evData && evData._games) || '');
 }
 
@@ -9773,6 +9874,198 @@ function isSuspensionEventDef(e) {
   return !!(e && e.id && e.id.indexOf('susp_') === 0);
 }
 
+function getRandomEventLane(def) {
+  if (def && def.lane) return def.lane;
+  if (isInjuryEventDef(def)) return 'injury';
+  if (isSuspensionEventDef(def) || (def && def.id && def.id.indexOf('fight_') === 0)) return 'discipline';
+  return 'story';
+}
+
+function getEventGameNumber() {
+  if (!STATE.season) return 0;
+  if (STATE.season.isPlayoffs) return 1000 + ((STATE.season.playoffStats && STATE.season.playoffStats.games) || 0);
+  return (STATE.season.games || []).length;
+}
+
+function getEventCountKey(lane) {
+  return (STATE.season && STATE.season.isPlayoffs ? 'playoff:' : 'regular:') + lane;
+}
+
+function getRandomEventLaneCap(lane) {
+  var playoff = !!(STATE.season && STATE.season.isPlayoffs);
+  var regularCaps = { injury: 2, discipline: 1, career: 2, story: 4 };
+  var playoffCaps = { injury: 2, discipline: 1, career: 2, story: 1 };
+  return (playoff ? playoffCaps : regularCaps)[lane] || 0;
+}
+
+function getRandomEventLaneCooldown(lane) {
+  var playoff = !!(STATE.season && STATE.season.isPlayoffs);
+  if (playoff) return lane === 'story' ? 3 : (lane === 'career' ? 2 : 2);
+  if (lane === 'injury') return 10;
+  if (lane === 'discipline') return 18;
+  if (lane === 'career') return 12;
+  return 7;
+}
+
+function getRandomEventLaneRate(lane, candidates) {
+  if (lane === 'injury') return getSeasonInjuryEventRate();
+  if (lane === 'discipline') return STATE.season && STATE.season.isPlayoffs ? 0.8 : 0.55;
+  if (lane === 'story') return STATE.season && STATE.season.isPlayoffs ? 3 : 7;
+  var rate = 18;
+  (candidates || []).forEach(function(def) {
+    if (Number(def.eventRate) > rate) rate = Number(def.eventRate);
+  });
+  return Math.min(90, rate);
+}
+
+function getEventScoreDiff(ctx) {
+  if (!ctx || !ctx.result) return 99;
+  return Math.abs((Number(ctx.result.scoreA) || 0) - (Number(ctx.result.scoreB) || 0));
+}
+
+function isOffCourtEventId(id) {
+  return [
+    'date_netcelebrity','poker_on_plane','coach_suit','team_dinner','veteran_dinner','music_war','game_night',
+    'missing_shoes','friend_security','charity','crypto_loss','lambo_ticket','sponsor_car','relatives_tickets',
+    'pet_dog','learn_guitar','movie_cameo','lucky_socks','flight_delay','lucky_bracelet'
+  ].indexOf(id) >= 0;
+}
+
+/** 为旧事件补上与比赛、地位和生涯阶段相关的触发条件。 */
+function meetsRandomEventContext(def, ctx) {
+  if (!def || !def.id) return false;
+  var id = def.id;
+  var stats = (ctx && ctx.stats) || {};
+  var result = (ctx && ctx.result) || {};
+  var gameNum = getEventGameNumber();
+  var playoff = !!(STATE.season && STATE.season.isPlayoffs);
+  var profile = STATE.career && STATE.career.profile ? STATE.career.profile : {};
+  var fame = Number(profile.fame) || 0;
+  if (isOffCourtEventId(id) && (playoff || gameNum < 8)) return false;
+  if ((id.indexOf('trash_') === 0 || id.indexOf('fight_') === 0) && getEventScoreDiff(ctx) > 15) return false;
+  if (id === 'trash_bench_dance' && (!result.won || getEventScoreDiff(ctx) < 10)) return false;
+  if (id === 'behind_the_back' && ((stats.ast || 0) < 8 || !result.won)) return false;
+  if (id === 'record_milestone_ball' && (stats.pts || 0) < 40 && (stats.reb || 0) < 18 && (stats.ast || 0) < 15) return false;
+  if (id === 'three_point_celebration' && (stats.threeM || 0) < 5) return false;
+  if (id === 'towel_celebration' && (!result.won || (stats.pts || 0) < 25)) return false;
+  if (id === 'gamemom_call' && (stats.pts || 0) < 35) return false;
+  if (id === 'kendrick_perkins' && result.won && (stats.pts || 0) >= 18) return false;
+  if (id === 'stephen_a' && (!result.won || (stats.pts || 0) < 25)) return false;
+  if (['sponsor_car','movie_cameo','date_netcelebrity'].indexOf(id) >= 0 && fame < 4 && (STATE.finalOVR || 0) < 86) return false;
+  if (id === 'charity' && gameNum < 16) return false;
+  try { return !def.condition || def.condition(ctx); } catch (e) { return false; }
+}
+
+function updateEventOpponentHistory(ctx) {
+  var events = ensureSeasonEventState();
+  var opponent = ctx && ctx.game && ctx.game.opponent;
+  if (!opponent) return;
+  var item = events.opponentHistory[opponent] || { games: 0, wins: 0, losses: 0, closeGames: 0, lastGame: 0 };
+  item.games++;
+  if (ctx.result && ctx.result.won) item.wins++;
+  else item.losses++;
+  if (getEventScoreDiff(ctx) <= 6) item.closeGames++;
+  item.lastGame = getEventGameNumber();
+  events.opponentHistory[opponent] = item;
+}
+
+function tickActiveEventEffects() {
+  var events = ensureSeasonEventState();
+  events.activeEffects.forEach(function(effect) {
+    if (effect && effect.gamesLeft > 0) effect.gamesLeft--;
+  });
+  events.activeEffects = events.activeEffects.filter(function(effect) { return effect && effect.gamesLeft > 0; });
+}
+
+function addActiveEventEffect(id, label, teamEdge, games) {
+  var events = ensureSeasonEventState();
+  events.activeEffects = events.activeEffects.filter(function(effect) { return effect && effect.id !== id; });
+  events.activeEffects.push({ id: id, label: label, teamEdge: Number(teamEdge) || 0, gamesLeft: Math.max(1, parseInt(games, 10) || 1) });
+}
+
+function appendEventDetail(data, text) {
+  if (!text) return;
+  data.detail = data.detail ? data.detail + '<br>' + text : text;
+}
+
+/** 旧事件默认只给克制的小幅影响，避免花絮反复永久加属性。 */
+function applyAutomaticEventImpact(def, data) {
+  if (!def || !data || (data.choices && data.choices.length)) return;
+  var id = def.id || '';
+  var notes = [];
+  if (data._consequence === 'suspension') {
+    addProfileDelta('controversy', data._games >= 4 ? 2 : 1);
+    addProfileDelta('coachTrust', -1);
+    notes.push('争议上升，教练信任下降');
+  } else if (id.indexOf('fight_') === 0) {
+    addProfileDelta('controversy', 1);
+    notes.push('争议略有上升');
+  }
+  if (['team_dinner','veteran_dinner','game_night','friend_security'].indexOf(id) >= 0) {
+    addProfileDelta('lockerRoomTrust', 1);
+    notes.push('更衣室信任提升');
+  }
+  if (['behind_the_back','record_milestone_ball','three_point_celebration','stephen_a','tiktok_dance'].indexOf(id) >= 0) {
+    addProfileDelta('fame', 1);
+    addProfileDelta('fanSupport', 1);
+    notes.push('名气与球迷支持提升');
+  }
+  if (['like_controversy','ig_live_leak','game_live_curse'].indexOf(id) >= 0) {
+    addProfileDelta('mediaTrust', -1);
+    addProfileDelta('controversy', 1);
+    notes.push('媒体信任下降，争议上升');
+  }
+  if (id === 'charity') {
+    addProfileDelta('fanSupport', 2);
+    addProfileDelta('legacyBonus', 1);
+    notes.push('球迷支持与生涯声望提升');
+  }
+  if (['sponsor_car','movie_cameo'].indexOf(id) >= 0) {
+    addProfileDelta('businessValue', 1);
+    notes.push('商业价值提升');
+  }
+  if (id === 'flight_delay') {
+    var events = ensureSeasonEventState();
+    events.injuryRiskBonus = Math.min(12, (events.injuryRiskBonus || 0) + 0.25);
+    notes.push('旅途疲劳使本赛季伤病风险略升');
+  }
+  if (notes.length) appendEventDetail(data, '影响：' + notes.join('；') + '。');
+}
+
+function recordRandomEvent(def, data) {
+  var events = ensureSeasonEventState();
+  var lane = getRandomEventLane(def);
+  var countKey = getEventCountKey(lane);
+  var gameNum = getEventGameNumber();
+  events.triggeredIds.push(def.id);
+  events.lastTriggerGameNum = gameNum;
+  events.lastTriggerByLane[countKey] = gameNum;
+  events.eventCounts[countKey] = (events.eventCounts[countKey] || 0) + 1;
+  if (STATE.season.isPlayoffs) events.playoffEventCount = (events.playoffEventCount || 0) + 1;
+  var timelineItem = {
+    id: def.id,
+    lane: lane,
+    gameNum: STATE.season.isPlayoffs ? ((STATE.season.playoffStats && STATE.season.playoffStats.games) || 0) : (STATE.season.games || []).length,
+    phase: STATE.season.isPlayoffs ? 'playoffs' : 'regular',
+    title: data.title,
+    desc: data.desc || '',
+    emoji: data.emoji || '📌'
+  };
+  events.storyTimeline.push(timelineItem);
+  data._timelineIndex = events.storyTimeline.length - 1;
+  data._eventId = def.id;
+  data._eventLane = lane;
+}
+
+function finalizeRandomEventChoice(data, choice, resultText) {
+  var events = ensureSeasonEventState();
+  var item = events.storyTimeline[data._timelineIndex];
+  if (!item || item.id !== data._eventId) return;
+  item.choice = choice.label;
+  item.result = resultText || '';
+  item.desc = (item.desc ? item.desc + ' · ' : '') + '选择：' + choice.label;
+}
+
 function pickWeightedEvent(candidates) {
   if (!candidates || candidates.length === 0) return null;
   var totalWeight = 0;
@@ -9789,70 +10082,67 @@ function pickWeightedEvent(candidates) {
 }
 
 function checkRandomEvents(game, result, stats) {
-  var ev = STATE.season.events;
-  if (!ev) return null;
-  if (ev.suspensionGamesLeft > 0 || ev.injuryGamesLeft > 0) return null;
-
-  // 常规赛最多触发 2 个伤病事件
-  if (!STATE.season.isPlayoffs && ev.storyTimeline.length >= 2) return null;
-  // 季后赛最多触发 2 个伤病事件
-  if (STATE.season.isPlayoffs && ev.playoffEventCount >= 2) return null;
-
-  // 冷却检查：距上次事件至少间隔 10 场
-  if (ev.lastTriggerGameNum != null) {
-    var gamesSince = STATE.season.games.length - ev.lastTriggerGameNum;
-    if (gamesSince < 10) return null;
-  }
-
-  _lastGameCtx = { game: game, result: result, stats: stats };
+  var ev = ensureSeasonEventState();
+  tickActiveEventEffects();
+  _lastGameCtx = { game: game, result: result, stats: stats || {} };
   var ctx = _lastGameCtx;
-
-  var candidates = [];
-  var majorCandidates = [];
-  for (var i = 0; i < EVENT_REGISTRY.length; i++) {
-    var e = EVENT_REGISTRY[i];
-    try {
-      if (!isInjuryEventDef(e)) continue;
-      if (!e.condition(ctx)) continue;
-      if (isMajorInjuryEventDef(e)) majorCandidates.push(e);
-      else candidates.push(e);
-    } catch(ex) {}
-  }
-  if (candidates.length === 0 && majorCandidates.length === 0) return null;
-
-  // 伤病事件单独调控：年轻期基础为 0，随年龄增加；休赛期选项只影响这颗伤病骰子。
-  var injuryRate = getSeasonInjuryEventRate();
-  if (Math.random() * 100 >= injuryRate) return null;
-  var canMajor = majorCandidates.length > 0 && !ev.majorInjuryThisSeason;
-  var majorRate = canMajor ? getMajorInjuryEventRate() : 0;
+  updateEventOpponentHistory(ctx);
+  var gameNum = getEventGameNumber();
+  var lanes = ['injury', 'discipline', 'career', 'story'];
   var picked = null;
-  if (canMajor && Math.random() * 100 < majorRate) {
-    picked = pickWeightedEvent(majorCandidates);
-  } else {
-    picked = pickWeightedEvent(candidates);
+
+  for (var li = 0; li < lanes.length && !picked; li++) {
+    var lane = lanes[li];
+    if ((lane === 'injury' || lane === 'discipline') && (ev.suspensionGamesLeft > 0 || ev.injuryGamesLeft > 0)) continue;
+    var countKey = getEventCountKey(lane);
+    if ((ev.eventCounts[countKey] || 0) >= getRandomEventLaneCap(lane)) continue;
+    var last = ev.lastTriggerByLane[countKey];
+    if (last != null && gameNum - last < getRandomEventLaneCooldown(lane)) continue;
+    var candidates = EVENT_REGISTRY.filter(function(def) {
+      if (getRandomEventLane(def) !== lane) return false;
+      if (ev.triggeredIds.indexOf(def.id) >= 0) return false;
+      return meetsRandomEventContext(def, ctx);
+    });
+    if (!candidates.length) continue;
+    var rate = getRandomEventLaneRate(lane, candidates);
+    if (Math.random() * 100 >= rate) continue;
+    if (lane === 'injury') {
+      var majorCandidates = candidates.filter(isMajorInjuryEventDef);
+      var minorCandidates = candidates.filter(function(def) { return !isMajorInjuryEventDef(def); });
+      var canMajor = majorCandidates.length > 0 && !ev.majorInjuryThisSeason;
+      picked = canMajor && Math.random() * 100 < getMajorInjuryEventRate()
+        ? pickWeightedEvent(majorCandidates)
+        : pickWeightedEvent(minorCandidates.length ? minorCandidates : majorCandidates);
+    } else {
+      picked = pickWeightedEvent(candidates);
+    }
   }
 
-  if (picked) {
-      var d = picked.execute(ctx);
-      if (d) {
-        // Resolve event variables
-        d.title = resolveEventVars(d.title, ctx, d);
-        d.body = resolveEventVars(d.body, ctx, d);
-        d.desc = resolveEventVars(d.desc, ctx, d);
-        STATE.season.events.storyTimeline.push({ gameNum: STATE.season.games.length, title: d.title, desc: d.desc, emoji: d.emoji });
-        // 记录触发场次（冷却用）
-        STATE.season.events.lastTriggerGameNum = STATE.season.games.length;
-        // 季后赛事件计数
-        if (STATE.season.isPlayoffs) STATE.season.events.playoffEventCount++;
-        // 处理后果
-        if (d._consequence === 'injury' && d._games) {
-          STATE.season.events.injuryGamesLeft += d._games;
-          if (d._majorInjury) STATE.season.events.majorInjuryThisSeason = true;
-        }
-        return d;
+  if (!picked) return null;
+  var data = null;
+  try { data = picked.execute(ctx); } catch (e) { return null; }
+  if (!data) return null;
+  data.title = resolveEventVars(data.title, ctx, data);
+  data.body = resolveEventVars(data.body, ctx, data);
+  data.desc = resolveEventVars(data.desc, ctx, data);
+  applyAutomaticEventImpact(picked, data, ctx);
+  if (data._consequence === 'injury' && data._games) {
+    ev.injuryGamesLeft += data._games;
+    ev.injuryReason = data.desc || data.title;
+    if (data._majorInjury) {
+      ev.majorInjuryThisSeason = true;
+      if (STATE.career) {
+        STATE.career.flags = STATE.career.flags || {};
+        STATE.career.flags.majorInjuryPendingComeback = true;
+        STATE.career.flags.lastMajorInjurySeason = STATE.career.seasonCount || 0;
       }
+    }
+  } else if (data._consequence === 'suspension' && data._games) {
+    ev.suspensionGamesLeft += data._games;
+    ev.suspensionReason = data.desc || data.title;
   }
-  return null;
+  recordRandomEvent(picked, data);
+  return data;
 }
 
 
@@ -10965,6 +11255,296 @@ EVENT_REGISTRY.push({
     var games = getSeasonEndingInjuryGamesLeft();
     return { emoji:'🚑', title:'膝盖半月板手术', body:'你在一次急停转身后坐在地上很久没有起来。队友围过来时，你只是摇头。检查结果出来后，更衣室安静得可怕：半月板撕裂，需要手术处理。球队随后宣布你将缺席本赛季剩余比赛，接下来的一切都从康复室重新开始。', desc:'膝盖半月板手术', _consequence:'injury', _games:games, _majorInjury:true };
   },
+});
+
+// ━━━ 类别 10：🏀 职业篮球动态事件（现实联盟生态启发，不对应具体真人）━━━
+
+EVENT_REGISTRY.push({
+  id: 'career_rivalry_spark',
+  lane: 'career',
+  name: '宿敌线：第一次交锋',
+  weight: 28,
+  eventRate: 48,
+  condition: function(ctx) {
+    if (STATE.season.isPlayoffs || getEventGameNumber() < 8 || getEventGameNumber() > 72) return false;
+    if (STATE.career && STATE.career.flags && STATE.career.flags.eventRivalry) return false;
+    var stats = ctx.stats || {};
+    return getEventScoreDiff(ctx) <= 6 && ((stats.pts || 0) >= 25 || (stats.ast || 0) >= 10 || (stats.reb || 0) >= 15);
+  },
+  execute: function(ctx) {
+    var opponent = ctx.game && ctx.game.opponent;
+    var top = getTeamTopPlayer(opponent);
+    var rivalName = top && top.cname ? top.cname : '对方核心';
+    function bindRival(tone, heat) {
+      STATE.career.flags = STATE.career.flags || {};
+      STATE.career.flags.eventRivalry = {
+        team: opponent,
+        playerId: top && top.id,
+        playerName: rivalName,
+        tone: tone,
+        heat: heat,
+        sinceGame: getEventGameNumber(),
+        sinceSeason: STATE.career.seasonCount || 0
+      };
+    }
+    return {
+      emoji: '⚔️',
+      title: '针锋相对的一夜',
+      body: '终场前的几个回合，你和' + rivalName + '连续对位。暂停时他经过你的替补席，低声说：“下一次不会让你这么舒服。”赛后记者把这句话递到你面前，所有镜头都在等你的回应。',
+      desc: '与' + rivalName + '形成宿敌关系',
+      choices: [
+        { label: '公开回应挑战', hint: '提高关注度，也会升高火药味', apply: function() {
+          bindRival('fire', 3); addProfileDelta('fame', 1); addProfileDelta('controversy', 1);
+          addActiveEventEffect('rivalry-fire', '宿敌刺激', 0.5, 2);
+          return '你直视镜头回应：“让他准备好。”这段采访迅速传播。影响：名气与争议上升；未来两场气势略升。';
+        }},
+        { label: '让比赛替我说话', hint: '获得教练认可，保持竞争强度', apply: function() {
+          bindRival('competitive', 2); addProfileDelta('coachTrust', 1);
+          addActiveEventEffect('rivalry-focus', '专注回应', 0.7, 2);
+          return '你没有提供标题，只说会认真准备下一场。教练喜欢这种回应。影响：教练信任提升；未来两场气势提升。';
+        }},
+        { label: '主动表达尊重', hint: '可能发展为惺惺相惜的竞争', apply: function() {
+          bindRival('respect', 1); addProfileDelta('mediaTrust', 1); addProfileDelta('legacyBonus', 1);
+          return '你称赞了他的竞争心，也承认这类对决让双方都变得更好。影响：媒体信任与生涯声望提升。';
+        }}
+      ]
+    };
+  }
+});
+
+EVENT_REGISTRY.push({
+  id: 'career_rivalry_rematch',
+  lane: 'career',
+  name: '宿敌线：再次相遇',
+  weight: 34,
+  eventRate: 68,
+  condition: function(ctx) {
+    var rivalry = STATE.career && STATE.career.flags && STATE.career.flags.eventRivalry;
+    if (!rivalry || !ctx.game || ctx.game.opponent !== rivalry.team) return false;
+    if (getEventGameNumber() - (rivalry.sinceGame || 0) < 8) return false;
+    return rivalry.lastRematchSeason !== (STATE.career.seasonCount || 0);
+  },
+  execute: function() {
+    var rivalry = STATE.career.flags.eventRivalry;
+    return {
+      emoji: '🔥',
+      title: '宿敌再会',
+      body: '赛前热身时，{宿敌}从另一侧球场看了你很久。上一次交锋的片段又被节目反复播放，这场普通赛程已经被包装成全国直播焦点。终场后，你们在中圈再次碰面。',
+      desc: '宿敌关系进入新阶段',
+      choices: [
+        { label: '继续把对抗推高', hint: '球迷热度最高，但争议也会增加', apply: function() {
+          rivalry.heat = Math.min(6, (rivalry.heat || 0) + 2); rivalry.lastRematchSeason = STATE.career.seasonCount || 0;
+          addProfileDelta('fanSupport', 2); addProfileDelta('controversy', 1);
+          addActiveEventEffect('rivalry-rematch', '宿敌大战余温', 0.9, 2);
+          return '你们只碰了一下拳，谁也没有笑。影响：球迷支持明显提升、争议略升；未来两场气势提升。';
+        }},
+        { label: '交换球衣致意', hint: '让竞争沉淀为彼此尊重', apply: function() {
+          rivalry.tone = 'respect'; rivalry.heat = Math.max(1, (rivalry.heat || 1) - 1); rivalry.lastRematchSeason = STATE.career.seasonCount || 0;
+          addProfileDelta('mediaTrust', 1); addProfileDelta('legacyBonus', 2);
+          return '你们交换了球衣，并约定季后赛再见。影响：媒体信任提升，生涯声望明显提升。';
+        }},
+        { label: '不制造额外话题', hint: '保持专注并赢得教练认可', apply: function() {
+          rivalry.lastRematchSeason = STATE.career.seasonCount || 0; addProfileDelta('coachTrust', 1);
+          addActiveEventEffect('rivalry-calm', '冷静备战', 0.6, 3);
+          return '你绕开镜头回到更衣室，把注意力留给下一场。影响：教练信任提升；未来三场气势略升。';
+        }}
+      ]
+    };
+  }
+});
+
+EVENT_REGISTRY.push({
+  id: 'career_coach_role_meeting',
+  lane: 'career',
+  name: '教练角色会议',
+  weight: 24,
+  eventRate: 36,
+  condition: function() {
+    if (STATE.season.isPlayoffs || getEventGameNumber() < 15 || getEventGameNumber() > 48) return false;
+    var flags = STATE.career && STATE.career.flags ? STATE.career.flags : {};
+    if (flags.coachRoleMeetingSeason === (STATE.career.seasonCount || 0)) return false;
+    var avg = typeof getUserAvg === 'function' ? getUserAvg() : { pts: 0, ast: 0 };
+    return !STATE.season.isUserStarter || avg.pts >= 21 || avg.ast >= 8 || (getCareerProfile().coachTrust || 0) <= 0;
+  },
+  execute: function() {
+    function mark() { STATE.career.flags = STATE.career.flags || {}; STATE.career.flags.coachRoleMeetingSeason = STATE.career.seasonCount || 0; }
+    return {
+      emoji: '📋', title: '关上门的角色会议',
+      body: '教练把你叫进录像室，桌上放着你的回合占有率、无球跑动和防守对位报告。他说球队需要更清楚地知道你想承担什么，而你也有权听到教练组的真实计划。',
+      desc: '与教练讨论球队角色',
+      choices: [
+        { label: '接受球队需要的角色', hint: '强化信任与稳定性', apply: function() {
+          mark(); addProfileDelta('coachTrust', 2); addProfileDelta('leadership', 1);
+          addActiveEventEffect('coach-role-team', '角色明确', 0.8, 4);
+          return '你同意从防守、掩护和组织做起。影响：教练信任明显提升、领导力提升；未来四场球队气势提升。';
+        }},
+        { label: '要求更多球权', hint: '提升个人声量，但可能损害教练关系', apply: function() {
+          mark(); addProfileDelta('fame', 1); addProfileDelta('coachTrust', -2); addProfileDelta('controversy', 1);
+          addActiveEventEffect('coach-role-usage', '证明自己', 0.3, 3);
+          return '你明确表示自己有能力成为第一进攻选择。影响：名气上升，教练信任下降，争议略升。';
+        }},
+        { label: '要求明确考核标准', hint: '以表现争取更大角色', apply: function() {
+          mark(); addProfileDelta('coachTrust', 1); addProfileDelta('lockerRoomTrust', 1);
+          addActiveEventEffect('coach-role-standards', '明确目标', 0.6, 5);
+          return '你们把防守、失误和关键回合目标逐项写下。影响：教练与更衣室信任提升；未来五场气势略升。';
+        }}
+      ]
+    };
+  }
+});
+
+EVENT_REGISTRY.push({
+  id: 'career_trade_deadline_rumor',
+  lane: 'career',
+  name: '交易截止日前夜',
+  weight: 22,
+  eventRate: 42,
+  condition: function() {
+    if (STATE.season.isPlayoffs || getEventGameNumber() < 38 || getEventGameNumber() > 56) return false;
+    var flags = STATE.career && STATE.career.flags ? STATE.career.flags : {};
+    if (flags.tradeRumorSeason === (STATE.career.seasonCount || 0)) return false;
+    var total = (STATE.season.wins || 0) + (STATE.season.losses || 0);
+    var winPct = total ? (STATE.season.wins || 0) / total : 1;
+    return winPct < 0.48 || (STATE.career.contract || 0) <= 1 || (getCareerProfile().fame || 0) >= 7;
+  },
+  execute: function() {
+    function mark() { STATE.career.flags = STATE.career.flags || {}; STATE.career.flags.tradeRumorSeason = STATE.career.seasonCount || 0; }
+    return {
+      emoji: '📞', title: '交易截止日前夜',
+      body: '经纪人来电说，几支球队已经向管理层询价。球队没有承诺会留下你，也没有说一定会交易。距离截止时间只剩一天，记者守在训练馆门口。',
+      desc: '交易流言进入公开阶段',
+      choices: [
+        { label: '公开承诺留队', hint: '强化忠诚与本地球迷关系', apply: function() {
+          mark(); addProfileDelta('loyalty', 2); addProfileDelta('fanSupport', 2); addProfileDelta('businessValue', -1);
+          addActiveEventEffect('deadline-stay', '稳定军心', 0.8, 4);
+          return '你表示希望和现有队友完成这个赛季。影响：忠诚与球迷支持明显提升，谈判空间略降；未来四场球队气势提升。';
+        }},
+        { label: '让经纪人保持开放', hint: '保留选择并提高商业议价能力', apply: function() {
+          mark(); addProfileDelta('businessValue', 2); addProfileDelta('mediaTrust', -1);
+          return '你的团队没有否认任何可能。影响：商业价值提升，但媒体信任略降。';
+        }},
+        { label: '主动要求交易', hint: '开启强硬的球员自主路线', apply: function() {
+          mark(); STATE.career.flags.tradeRequested = true; addProfileDelta('loyalty', -3); addProfileDelta('controversy', 2); addProfileDelta('businessValue', 1);
+          addActiveEventEffect('deadline-demand', '交易风波', -0.8, 4);
+          return '交易申请很快泄露，更衣室不得不面对持续追问。影响：忠诚明显下降、争议上升；未来四场球队气势受损。';
+        }}
+      ]
+    };
+  }
+});
+
+EVENT_REGISTRY.push({
+  id: 'career_playoff_adjustment',
+  lane: 'career',
+  name: '季后赛录像调整',
+  weight: 40,
+  eventRate: 72,
+  condition: function(ctx) {
+    if (!STATE.season.isPlayoffs || !ctx.result || ctx.result.won) return false;
+    var events = ensureSeasonEventState();
+    return !events.playoffAdjustmentDone && ((STATE.season.playoffStats && STATE.season.playoffStats.games) || 0) >= 1;
+  },
+  execute: function() {
+    function mark() { ensureSeasonEventState().playoffAdjustmentDone = true; }
+    return {
+      emoji: '🎞️', title: '输球后的录像室',
+      body: '教练组把上一场每次失误和错位防守剪成了十几分钟。对手正在改变防守方式：夹击更早、换防更坚决，也在逼你做最不舒服的选择。下一场必须给出回应。',
+      desc: '针对季后赛对手调整策略',
+      choices: [
+        { label: '提前出球，相信队友', hint: '提升整体进攻稳定性', apply: function() {
+          mark(); addProfileDelta('leadership', 1); addProfileDelta('lockerRoomTrust', 1);
+          addActiveEventEffect('playoff-pass', '季后赛提前出球', 1.2, 2);
+          return '你决定用更快的传导惩罚夹击。影响：领导力与更衣室信任提升；未来两场球队预期分差提升。';
+        }},
+        { label: '主动寻找错位强攻', hint: '承担核心责任，风险也更集中', apply: function() {
+          mark(); addProfileDelta('fame', 1); addProfileDelta('coachTrust', 1);
+          addActiveEventEffect('playoff-attack', '季后赛错位强攻', 0.8, 2);
+          ensureSeasonEventState().injuryRiskBonus = Math.min(12, (ensureSeasonEventState().injuryRiskBonus || 0) + 0.35);
+          return '你要求球队主动制造换防。影响：名气与教练信任提升；未来两场气势提升，但身体负荷略增。';
+        }},
+        { label: '从防守端改变系列赛', hint: '降低个人曝光，强化赢球方式', apply: function() {
+          mark(); addProfileDelta('leadership', 2); addProfileDelta('fame', -1);
+          addActiveEventEffect('playoff-defense', '季后赛防守调整', 1.4, 2);
+          return '你主动接下最困难的外线对位。影响：领导力明显提升；未来两场球队预期分差明显提升。';
+        }}
+      ]
+    };
+  }
+});
+
+EVENT_REGISTRY.push({
+  id: 'career_major_injury_comeback',
+  lane: 'career',
+  name: '重伤后的回归计划',
+  weight: 45,
+  eventRate: 78,
+  condition: function() {
+    var flags = STATE.career && STATE.career.flags ? STATE.career.flags : {};
+    return !!flags.majorInjuryPendingComeback && ensureSeasonEventState().injuryGamesLeft <= 0;
+  },
+  execute: function() {
+    function clearPending() { STATE.career.flags.majorInjuryPendingComeback = false; STATE.career.flags.comebackSeason = STATE.career.seasonCount || 0; }
+    return {
+      emoji: '🩺', title: '回归后的负荷计划',
+      body: '医疗团队确认你已经可以比赛，但“可以上场”不等于“恢复到过去”。教练、训练师和经纪人围着同一张负荷表，等待你决定接下来几周的方式。',
+      desc: '重伤后的复出计划',
+      choices: [
+        { label: '严格执行时间限制', hint: '最稳妥，降低再次受伤风险', apply: function() {
+          clearPending(); var events = ensureSeasonEventState(); events.injuryRiskBonus = Math.max(-4, (events.injuryRiskBonus || 0) - 1.5);
+          addProfileDelta('coachTrust', 1); addActiveEventEffect('comeback-limited', '谨慎复出', -0.25, 5);
+          return '你接受循序渐进的时间限制。影响：伤病风险下降、教练信任提升；未来五场球队气势略受限制。';
+        }},
+        { label: '正常轮换，边打边找状态', hint: '平衡竞技状态和健康', apply: function() {
+          clearPending(); addProfileDelta('leadership', 1); addActiveEventEffect('comeback-balanced', '稳步找回状态', 0.35, 4);
+          return '你选择正常参与轮换，并把恢复情况每天反馈给团队。影响：领导力提升；未来四场气势略升。';
+        }},
+        { label: '立即恢复核心负荷', hint: '回归声量最大，再伤风险也最高', apply: function() {
+          clearPending(); var events = ensureSeasonEventState(); events.injuryRiskBonus = Math.min(12, (events.injuryRiskBonus || 0) + 1.5);
+          addProfileDelta('fame', 2); addProfileDelta('fanSupport', 1); addActiveEventEffect('comeback-full', '强势复出', 0.9, 3);
+          return '你拒绝保守计划，宣布自己已经完全回归。影响：名气明显提升、球迷支持提升；未来三场气势提升，但伤病风险上升。';
+        }}
+      ]
+    };
+  }
+});
+
+EVENT_REGISTRY.push({
+  id: 'career_award_race_pressure',
+  lane: 'career',
+  name: '赛季奖项舆论战',
+  weight: 18,
+  eventRate: 32,
+  condition: function() {
+    if (STATE.season.isPlayoffs || getEventGameNumber() < 55) return false;
+    var flags = STATE.career && STATE.career.flags ? STATE.career.flags : {};
+    if (flags.awardPressureSeason === (STATE.career.seasonCount || 0)) return false;
+    var avg = typeof getUserAvg === 'function' ? getUserAvg() : { pts: 0, reb: 0, ast: 0 };
+    return avg.pts >= 22 || avg.reb >= 11 || avg.ast >= 9 || (STATE.finalOVR || 0) >= 90;
+  },
+  execute: function() {
+    function mark() { STATE.career.flags = STATE.career.flags || {}; STATE.career.flags.awardPressureSeason = STATE.career.seasonCount || 0; }
+    return {
+      emoji: '🏅', title: '奖项选票上的名字',
+      body: '赛季进入最后阶段，节目每天都在比较候选人的数据、战绩和高光回合。记者直接问你是否认为自己应该获奖，这个回答会被所有投票者听见。',
+      desc: '进入赛季奖项舆论讨论',
+      choices: [
+        { label: '明确为自己拉票', hint: '提高曝光，也可能被认为过于自我', apply: function() {
+          mark(); addProfileDelta('fame', 2); addProfileDelta('controversy', 1);
+          addActiveEventEffect('award-campaign', '奖项冲刺', 0.5, 3);
+          return '你列出了自己的表现，并说竞争者就该相信自己。影响：名气明显提升、争议略升；未来三场气势略升。';
+        }},
+        { label: '把功劳归给球队', hint: '强化更衣室和媒体关系', apply: function() {
+          mark(); addProfileDelta('lockerRoomTrust', 2); addProfileDelta('mediaTrust', 1); addProfileDelta('leadership', 1);
+          return '你反复提到队友、教练和球队战绩。影响：更衣室信任明显提升，媒体信任与领导力提升。';
+        }},
+        { label: '拒绝讨论个人奖项', hint: '保持专注但减少曝光', apply: function() {
+          mark(); addProfileDelta('coachTrust', 1); addProfileDelta('fame', -1);
+          addActiveEventEffect('award-silence', '专注收官', 0.7, 4);
+          return '你说所有讨论留到赛季结束。影响：教练信任提升、名气略降；未来四场气势提升。';
+        }}
+      ]
+    };
+  }
 });
 
 </script>
