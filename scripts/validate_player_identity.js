@@ -58,6 +58,38 @@ const starIdentityWorks = vm.runInContext(
 if (!starIdentityWorks) failures.push('明星新秀未按来源 ID 正确识别');
 
 const html = read('index.html');
+const positionLogicStart = html.indexOf('// ==================== 跨位置衰减 ====================');
+const positionLogicEnd = html.indexOf('// ==================== 初始化 ====================', positionLogicStart);
+if (positionLogicStart < 0 || positionLogicEnd < 0) {
+  failures.push('未找到跨位置折损逻辑');
+} else {
+  const positionContext = {
+    towns: JSON.parse(JSON.stringify(players.find((player) => player.cname === '唐斯') || null)),
+    SIM_CONFIG: {
+      POS_AVG: {
+        PG: { REB: 60 },
+        SG: { REB: 65 },
+        SF: { REB: 70 },
+        PF: { REB: 80 },
+        C: { REB: 90 }
+      }
+    }
+  };
+  vm.createContext(positionContext);
+  runSource(html.slice(positionLogicStart, positionLogicEnd), 'index.html:position-penalty', positionContext);
+  const multiPositionPenaltyWorks = vm.runInContext(
+    "getPlayerPositions({ pos: 'C / PF' }).join(',') === 'C,PF' && " +
+    "getPlayerMainPos({ pos: 'C / PF' }) === 'C' && " +
+    "playerCanPlayPosition({ pos: 'C / PF' }, 'PF') && " +
+    "towns && towns.pos === 'C / PF' && getPlayerPosPenalty('PF', towns, 'REB') === 1 && " +
+    "getPlayerPosPenalty('PF', { pos: 'C / PF' }, 'REB') === 1 && " +
+    "getPlayerPosPenalty('C', { pos: 'C / PF' }, 'REB') === 1 && " +
+    "getPlayerPosPenalty('PF', { pos: 'C' }, 'REB') < 1 && " +
+    "getPlayerPosPenalty('PG', { pos: 'C / PF' }, 'REB') === getPosPenalty('PG', 'C', 'REB')",
+    positionContext
+  );
+  if (!multiPositionPenaltyWorks) failures.push('多位置球员的跨位置折损规则错误');
+}
 const ageMatch = html.match(/<script id=['"]player-age-data['"] type=['"]application\/json['"]>([\s\S]*?)<\/script>/);
 if (!ageMatch) {
   failures.push('未找到球员年龄数据');
