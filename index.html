@@ -138,7 +138,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 #screen-rankings.screen.active{padding-bottom:calc(88px + var(--safe-b))}
 .season-team-page-card{margin:0 12px 20px;background:var(--bg-card);border:2px solid var(--border);border-radius:var(--radius);overflow:hidden}
 .season-team-page-card .modal-header{background:var(--bg-card-hover)}
-#screen-build.screen.active{display:flex!important;flex-direction:column;min-height:calc(100dvh - 32px - var(--safe-t) - var(--safe-b));overflow:visible;position:relative;padding:22px 14px 34px}
+#screen-build.screen.active,#screen-build-legacy.screen.active{display:flex!important;flex-direction:column;min-height:calc(100dvh - 32px - var(--safe-t) - var(--safe-b));overflow:visible;position:relative;padding:22px 14px 34px}
 #screen-career.screen.active{display:flex!important;flex-direction:column;min-height:calc(100dvh - 32px - var(--safe-t) - var(--safe-b))}
 #screen-career.screen.active #career-area{flex:1;display:flex;flex-direction:column}
 #screen-career.screen.active #career-area>div{flex:1;display:flex;flex-direction:column}
@@ -199,6 +199,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .build-header h1{margin:0;color:var(--text);font:800 26px/1.1 var(--font-display);letter-spacing:-.7px}
 .build-identity{max-width:55%;padding:7px 10px;border:1px solid var(--border-light);border-radius:9px;color:var(--text-dim);font-size:11px;font-weight:700;line-height:1.25;text-align:right}
 .build-split{display:grid;grid-template-columns:188px minmax(0,1fr);gap:14px;align-items:start}
+.point-build-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(7,minmax(0,1fr));grid-auto-flow:column;gap:0 14px;padding:0 2px}
+.point-build-row{display:grid;grid-template-columns:minmax(0,1fr) 34px 34px 34px;gap:7px;align-items:center;min-width:0;padding:7px 0;border-bottom:1px solid var(--border-light)}
 .build-left{min-width:0;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
 .bl-header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 12px;border-bottom:1px solid var(--border)}
 .bl-header-copy{min-width:0}
@@ -285,7 +287,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 #screen-career .br-slot-label{margin-bottom:10px;color:var(--orange);font:750 13px var(--font-body)}
 #screen-career .br-slot-actions{flex-direction:row;flex-wrap:wrap;justify-content:center}
 #screen-career .br-slot-actions .slot-btn{min-height:38px;padding:8px 12px}
-@media(max-width:480px){#screen-build.screen.active{padding:18px 12px 30px}.build-header{align-items:flex-start;margin-bottom:14px}.build-header h1{font-size:23px}.build-identity{max-width:58%;font-size:10px}.build-split{grid-template-columns:1fr}.build-right{order:1}.build-left{order:2}.bl-attrs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:0 7px 8px}.ba-slot+.ba-slot{border-top-color:transparent}.ba-slot{border-color:var(--border);min-height:40px}.br-slot-layout{grid-template-columns:minmax(0,1fr) 122px}.br-roster-instruction{max-width:110px}.br-player{min-height:54px}.br-player .bp-headshot{width:29px;height:29px}.br-player .bp-name{font-size:10px}}
+@media(max-width:480px){#screen-build.screen.active,#screen-build-legacy.screen.active{padding:18px 12px 30px}.build-header{align-items:flex-start;margin-bottom:14px}.build-header h1{font-size:23px}.build-identity{max-width:58%;font-size:10px}.build-split{grid-template-columns:1fr}.build-right{order:1}.build-left{order:2}.bl-attrs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:0 7px 8px}.ba-slot+.ba-slot{border-top-color:transparent}.ba-slot{border-color:var(--border);min-height:40px}.point-build-list{grid-template-columns:1fr;grid-template-rows:none;grid-auto-flow:row;gap:0}.br-slot-layout{grid-template-columns:minmax(0,1fr) 122px}.br-roster-instruction{max-width:110px}.br-player{min-height:54px}.br-player .bp-headshot{width:29px;height:29px}.br-player .bp-name{font-size:10px}}
 #build-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:100;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
 .build-toast-msg{background:var(--bg-card);border:2px solid var(--orange);border-radius:14px;padding:10px 20px;font-family:var(--font-display);font-size:14px;font-weight:600;color:var(--text);animation:slideUp .25s ease,fadeOut .3s ease 1.2s forwards;box-shadow:var(--shadow-lg)}
 @keyframes fadeOut{to{opacity:0;transform:translateY(-10px)}}
@@ -857,16 +859,28 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     <button class="btn btn-primary" onclick="trackEvent({act:'click',blk:'BMC098',pos:'TC2',label:'确认位置'});confirmPosition()">进入能力分配</button>
   </div>
 
-  <!-- ====== 建球员 ====== -->
+  <!-- ====== 自由建人 ====== -->
   <div class="screen" id="screen-build">
     <div class="build-header">
       <div>
-        <span class="build-kicker">PLAYER WORKBENCH</span>
-        <h1>组合能力</h1>
+        <span class="build-kicker">ATTRIBUTE POINTS</span>
+        <h1>自由分配能力</h1>
       </div>
       <div class="build-identity" id="build-pos-indicator"></div>
     </div>
+    <div id="point-build-area"></div>
+    <div id="point-build-note"></div>
+  </div>
 
+  <!-- ====== 经典建人（旧版） ====== -->
+  <div class="screen" id="screen-build-legacy">
+    <div class="build-header">
+      <div>
+        <span class="build-kicker">CLASSIC BUILDER</span>
+        <h1>组合能力</h1>
+      </div>
+      <div class="build-identity" id="legacy-build-pos-indicator"></div>
+    </div>
     <div class="build-split">
       <!-- Left: Player Attributes (persistent sidebar) -->
       <div class="build-left">
@@ -1048,6 +1062,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 <script src="js/data/legacy_text.js"></script>
 <script src="js/data/career_biography_text.js"></script>
 <script src="js/playoffs.js"></script>
+<script src="js/career_legacy_records.js"></script>
 <script>
 // ── Storage 工具 ──
 var Storage = {
@@ -1169,6 +1184,7 @@ const STATE = {
     contract: 4,
     seasons: [],
     totalStats: { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, fgm: 0, fga: 0, ftm: 0, fta: 0, threeM: 0, threeA: 0, games: 0, mins: 0 },
+    legacyRecords: null,
     playoffStats: { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, fgm: 0, fga: 0, ftm: 0, fta: 0, threeM: 0, threeA: 0, games: 0, mins: 0 },
     honors: [],
     offseasonHistory: [],
@@ -1603,6 +1619,7 @@ function createFreshCareer() {
     contract: 4,
     seasons: [],
     totalStats: { pts:0, reb:0, ast:0, stl:0, blk:0, tov:0, fgm:0, fga:0, ftm:0, fta:0, threeM:0, threeA:0, games:0, mins:0 },
+    legacyRecords: typeof createDefaultCareerLegacyRecords === 'function' ? createDefaultCareerLegacyRecords() : null,
     playoffStats: { pts:0, reb:0, ast:0, stl:0, blk:0, tov:0, fgm:0, fga:0, ftm:0, fta:0, threeM:0, threeA:0, games:0, mins:0 },
     honors: [],
     offseasonHistory: [],
@@ -1742,7 +1759,7 @@ function renderModeSelect() {
         </div>
         <span class="home-mode-tag">本地模式</span>
       </div>
-      <p class="home-launch-desc">创建一名球员，从能力抽取开始，完整经历选秀、常规赛、季后赛和休赛期。</p>
+      <p class="home-launch-desc">创建一名球员，分配能力点，完整经历选秀、常规赛、季后赛和休赛期。</p>
       <div class="home-launch-actions">
         <button class="home-primary-action" id="start-activity-btn" type="button">
           <span class="home-action-title">新建球员</span>
@@ -1752,6 +1769,11 @@ function renderModeSelect() {
         <button class="home-secondary-action" id="continue-activity-btn" type="button">
           <span class="home-action-title">继续生涯</span>
           <span class="home-action-note">读取最近自动存档</span>
+          <span class="home-action-arrow">→</span>
+        </button>
+        <button class="home-secondary-action" id="legacy-builder-btn" type="button">
+          <span class="home-action-title">经典建人（旧版）</span>
+          <span class="home-action-note">抽球队并锁定属性</span>
           <span class="home-action-arrow">→</span>
         </button>
       </div>
@@ -1772,6 +1794,12 @@ function renderModeSelect() {
   continueButton.onclick = function() {
     manualLoadGame(1, { destination: 'player' });
   };
+  var legacyButton = document.getElementById('legacy-builder-btn');
+  legacyButton.onclick = function() {
+    trackEvent({act:'click',blk:'BMC098',pos:'TC1',label:'经典建人旧版'});
+    STATE.mode = 'legacy';
+    startGame();
+  };
 
   STATE.mode = 'current';
   refreshContinueActivityButton();
@@ -1779,7 +1807,7 @@ function renderModeSelect() {
 
 function startGame() {
   ensureLocalPlayerProfile(true);
-  if (STATE.mode === 'current' || STATE.mode === 'legend') {
+  if (STATE.mode === 'current' || STATE.mode === 'legend' || STATE.mode === 'legacy') {
     // 输出孟菲斯(MEM)和波士顿(BOS)全阵容
     console.log('========== 🏀 孟菲斯河熊(MEM) 全阵容 ==========');
     (LEAGUE_PLAYER_DATA['MEM'] || []).forEach(function(p) {
@@ -1863,6 +1891,25 @@ function confirmPosition() {
     return;
   }
   syncPlayerName();
+  if (STATE.mode === 'legacy') {
+    STATE.attrs = {};
+    STATE.attrSlots = {};
+    ATTR_KEYS.forEach(key => { STATE.attrs[key] = null; STATE.attrSlots[key] = null; });
+    STATE.lockedCount = 0;
+    STATE.usedPlayers = [];
+    STATE._rerollsLeft = SIM_CONFIG.BUILD.CLASSIC_REROLLS;
+    STATE._teamsVisited = [];
+    STATE._shownThisTeam = [];
+    STATE._mustLockAfterSpin = false;
+    STATE.buildPointsTotal = 0;
+    STATE.buildPointsRemaining = 0;
+    STATE.selectedPlayer = null;
+    STATE.currentTeam = null;
+    showScreen('screen-build-legacy');
+    renderBuildUI();
+    renderTeamPicker();
+    return;
+  }
   const buildConfig = SIM_CONFIG.BUILD;
   const baseAttr = buildConfig.POINT_BUILD_BASE_ATTR;
   STATE.attrs = {};
@@ -1883,6 +1930,8 @@ function confirmPosition() {
 function renderBuildUI() {
   var pi = document.getElementById('build-pos-indicator');
   if (pi) pi.textContent = getMyPlayerDisplayName() + ' · ' + (SIM_CONFIG.POSITIONS[STATE.position] || STATE.position) + ' · ' + STATE.position;
+  var legacyPi = document.getElementById('legacy-build-pos-indicator');
+  if (legacyPi) legacyPi.textContent = getMyPlayerDisplayName() + ' · ' + (SIM_CONFIG.POSITIONS[STATE.position] || STATE.position) + ' · ' + STATE.position;
   renderLeftAttrs();
 }
 
@@ -2047,15 +2096,21 @@ function renderTeamPicker() {
   if (rosterArea) rosterArea.innerHTML = '';
 }
 
-function changePointBuildAttr(key, delta) {
+var _pointBuildPressTimer = null;
+var _pointBuildLongPress = false;
+
+function changePointBuildAttr(key, delta, event) {
+  if (event) event.preventDefault();
   if (!isPointBuildActive()) return;
+  const pageScrollTop = window.scrollY;
   const min = SIM_CONFIG.BUILD.POINT_BUILD_BASE_ATTR;
   const max = SIM_CONFIG.BUILD.ATTR_MAX;
   const current = Number(STATE.attrs[key]) || min;
   if (delta > 0) {
     if (STATE.buildPointsRemaining <= 0 || current >= max) return;
-    STATE.attrs[key] = current + 1;
-    STATE.buildPointsRemaining--;
+    const amount = Math.min(Math.floor(delta), STATE.buildPointsRemaining, max - current);
+    STATE.attrs[key] = current + amount;
+    STATE.buildPointsRemaining -= amount;
   } else {
     if (current <= min) return;
     STATE.attrs[key] = current - 1;
@@ -2064,6 +2119,32 @@ function changePointBuildAttr(key, delta) {
   STATE.finalOVR = 0;
   renderBuildUI();
   renderTeamPicker();
+  requestAnimationFrame(() => {
+    window.scrollTo({ top: pageScrollTop, left: 0, behavior: 'instant' });
+  });
+}
+
+function startPointBuildIncrease(key, event) {
+  event.preventDefault();
+  clearTimeout(_pointBuildPressTimer);
+  _pointBuildLongPress = false;
+  _pointBuildPressTimer = setTimeout(function() {
+    _pointBuildLongPress = true;
+    changePointBuildAttr(key, 5);
+  }, 350);
+}
+
+function endPointBuildIncrease(key, event) {
+  if (event) event.preventDefault();
+  clearTimeout(_pointBuildPressTimer);
+  if (!_pointBuildLongPress) changePointBuildAttr(key, 1);
+  _pointBuildLongPress = false;
+}
+
+function cancelPointBuildIncrease(event) {
+  if (event) event.preventDefault();
+  clearTimeout(_pointBuildPressTimer);
+  _pointBuildLongPress = false;
 }
 
 function finishPointBuild() {
@@ -2073,8 +2154,8 @@ function finishPointBuild() {
 }
 
 function renderPointBuildAllocator() {
-  const slotArea = document.getElementById('br-slot-area');
-  const rosterArea = document.getElementById('br-roster-area');
+  const slotArea = document.getElementById('point-build-area');
+  const rosterArea = document.getElementById('point-build-note');
   if (!slotArea) return;
   const baseAttr = SIM_CONFIG.BUILD.POINT_BUILD_BASE_ATTR;
   const maxAttr = SIM_CONFIG.BUILD.ATTR_MAX;
@@ -2083,18 +2164,18 @@ function renderPointBuildAllocator() {
     const value = Number(STATE.attrs[key]) || baseAttr;
     const canLower = value > baseAttr;
     const canRaise = STATE.buildPointsRemaining > 0 && value < maxAttr;
-    return '<div style="display:grid;grid-template-columns:1fr 34px 34px 34px;gap:7px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border-light);">'
+    return '<div class="point-build-row">'
       + '<span style="font-size:13px;font-weight:700;">' + attrCN(key) + '</span>'
       + '<b style="text-align:center;font-family:var(--font-display);font-size:15px;">' + value + '</b>'
-      + '<button type="button" aria-label="降低' + attrCN(key) + '" onclick="changePointBuildAttr(\'' + key + '\', -1)" ' + (canLower ? '' : 'disabled') + ' style="height:30px;border:1px solid var(--border);border-radius:7px;background:var(--bg-card);color:var(--text);font-weight:800;cursor:pointer;">−</button>'
-      + '<button type="button" aria-label="提高' + attrCN(key) + '" onclick="changePointBuildAttr(\'' + key + '\', 1)" ' + (canRaise ? '' : 'disabled') + ' style="height:30px;border:0;border-radius:7px;background:var(--orange);color:#fff;font-weight:800;cursor:pointer;">+</button>'
+      + '<button type="button" aria-label="降低' + attrCN(key) + '" onmousedown="event.preventDefault()" onclick="changePointBuildAttr(\'' + key + '\', -1, event)" ' + (canLower ? '' : 'disabled') + ' style="height:30px;border:1px solid var(--border);border-radius:7px;background:var(--bg-card);color:var(--text);font-weight:800;cursor:pointer;">−</button>'
+      + '<button type="button" aria-label="提高' + attrCN(key) + '，长按加五点" onpointerdown="startPointBuildIncrease(\'' + key + '\', event)" onpointerup="endPointBuildIncrease(\'' + key + '\', event)" onpointercancel="cancelPointBuildIncrease(event)" onclick="if (event.detail === 0) changePointBuildAttr(\'' + key + '\', 1, event)" ' + (canRaise ? '' : 'disabled') + ' style="height:30px;border:0;border-radius:7px;background:var(--orange);color:#fff;font-weight:800;cursor:pointer;">+</button>'
       + '</div>';
   }).join('');
   slotArea.innerHTML = '<div class="br-slot-area">'
     + '<div class="br-slot-head"><div><span class="br-slot-kicker">ATTRIBUTE POINTS</span><div class="br-slot-label">自由分配能力</div></div><span class="br-slot-rule">单项最高 ' + maxAttr + '</span></div>'
     + '<div style="display:flex;align-items:baseline;justify-content:space-between;padding:10px 12px;border-radius:10px;background:var(--orange-bg);margin-bottom:8px;"><span style="font-size:12px;color:var(--text-dim);">可分配点数</span><strong style="font-family:var(--font-display);font-size:24px;color:var(--orange);">' + STATE.buildPointsRemaining + ' <small style="font-size:12px;color:var(--text-dim);">/ ' + STATE.buildPointsTotal + '</small></strong></div>'
-    + '<div style="max-height:52vh;overflow-y:auto;padding:0 2px;">' + rows + '</div>'
-    + '<button class="slot-btn slot-btn-primary" type="button" onclick="finishPointBuild()" ' + (canFinish ? '' : 'disabled') + ' style="width:100%;margin-top:12px;">' + (canFinish ? '确认属性，揭晓球员' : '请用完全部点数') + '</button>'
+    + '<div id="point-build-list" class="point-build-list">' + rows + '</div>'
+    + '<button class="slot-btn slot-btn-primary" type="button" onclick="finishPointBuild()" ' + (canFinish ? '' : 'disabled') + ' style="width:100%;min-height:48px;margin-top:12px;">' + (canFinish ? '确认属性，揭晓球员' : '请用完全部点数') + '</button>'
     + '</div>';
   if (rosterArea) rosterArea.innerHTML = '<div class="br-hint" style="padding:10px 4px;">14 项属性均从 ' + baseAttr + ' 开始；加点将实时更新预计总评。</div>';
 }
@@ -3934,6 +4015,12 @@ function quickSimAllGames(targetDay) {
           psH.threeM += hurtStats.threeM; psH.threeA += hurtStats.threeA;
           psH.mins = (psH.mins || 0) + hurtStats.mins;
           psH.games++;
+          if (typeof recordCareerLegacyAfterRegularGame === 'function') {
+            recordCareerLegacyAfterRegularGame({
+              gameId: 'regular:' + ((STATE.career && STATE.career.seasonCount) || 0) + ':' + (g.gameNum || g.day || gi) + ':' + g.opponent,
+              teamId: STATE.careerTeam
+            });
+          }
           STATE.season.games.push({ result: hurtResult, stats: hurtStats, game: g, playedThroughInjury: true });
           var worsenText = maybeWorsenInjuryAfterPlaying(ev, severity);
           simDayLeagueGames(g.day);
@@ -3976,6 +4063,12 @@ function quickSimAllGames(targetDay) {
       ps.threeM += stats.threeM; ps.threeA += stats.threeA;
       ps.mins = (ps.mins || 0) + stats.mins;
       ps.games++;
+      if (typeof recordCareerLegacyAfterRegularGame === 'function') {
+        recordCareerLegacyAfterRegularGame({
+          gameId: 'regular:' + ((STATE.career && STATE.career.seasonCount) || 0) + ':' + (g.gameNum || g.day || gi) + ':' + g.opponent,
+          teamId: STATE.careerTeam
+        });
+      }
 
       STATE.season.games.push({ result: result, stats: stats, game: g });
       simDayLeagueGames(g.day);
@@ -6991,6 +7084,7 @@ function renderMyCard(isFinal, activeTab) {
         <div class="mc-stat"><span class="mc-stat-val">${careerAvg.totalBlk}</span><span class="mc-stat-lbl">总盖帽</span></div>
         <div class="mc-stat"><span class="mc-stat-val">${careerAvg.games}</span><span class="mc-stat-lbl">出场数</span></div>
       </div>
+      <button class="btn btn-secondary btn-sm" style="width:100%;margin-top:10px;" onclick="showCareerStats(3)">🏛️ 查看历史殿堂与传奇纪录</button>
     </div>
 
     <div class="mc-section">
@@ -7053,7 +7147,7 @@ function showCareerStats(tab) {
   saveCurrentSeasonToCareer();
   var c = STATE.career;
   tab = tab || 0;
-  var subText = tab === 0 ? (getCurrentSeasonLabel() + ' · ' + STATE.finalPosition + ' · OVR ' + STATE.finalOVR) : (tab === 1 ? ('生涯共 ' + c.honors.length + ' 项荣誉') : ('休赛期纪事 ' + ((c.offseasonHistory || []).length) + ' 条'));
+  var subText = tab === 0 ? (getCurrentSeasonLabel() + ' · ' + STATE.finalPosition + ' · OVR ' + STATE.finalOVR) : (tab === 1 ? ('生涯共 ' + c.honors.length + ' 项荣誉') : (tab === 2 ? ('休赛期纪事 ' + ((c.offseasonHistory || []).length) + ' 条') : '原创联盟历史基准 · 常规赛累计'));
   document.getElementById('career-stats-sub').textContent = subText;
 
   var html = '';
@@ -7062,14 +7156,17 @@ function showCareerStats(tab) {
   html += '<button class="' + (tab === 0 ? 'active' : '') + '" onclick="showCareerStats(0)">📊 生涯数据</button>';
   html += '<button class="' + (tab === 1 ? 'active' : '') + '" onclick="showCareerStats(1)">🏆 荣誉墙</button>';
   html += '<button class="' + (tab === 2 ? 'active' : '') + '" onclick="showCareerStats(2)">📖 休赛期</button>';
+  html += '<button class="' + (tab === 3 ? 'active' : '') + '" onclick="showCareerStats(3)">🏛️ 历史殿堂</button>';
   html += '</div>';
 
   if (tab === 0) {
     html += renderCareerStatsTab();
   } else if (tab === 1) {
     html += renderCareerHonorsTab();
-  } else {
+  } else if (tab === 2) {
     html += renderOffseasonHistoryTab();
+  } else {
+    html += typeof renderCareerLegacyHall === 'function' ? renderCareerLegacyHall() : '';
   }
 
   html += '<div style="display:flex;flex-direction:column;gap:6px;align-items:center;margin-top:6px;">';
@@ -7324,6 +7421,7 @@ function saveCurrentSeasonToCareer() {
 
   honorList.forEach(function(h) { c.honors.push(h); });
   STATE._careerSaved = true;
+  if (typeof reconcileCareerLegacyRecords === 'function') reconcileCareerLegacyRecords({ silent: true });
 }
 
 function showSeasonDetail(idx) {
@@ -8863,9 +8961,10 @@ function manualLoadGame(slot, options) {
         if (!Number.isFinite(Number(STATE.attrs.STL))) STATE.attrs.STL = Number(STATE.attrs.PDEF) || 50;
         if (!Object.prototype.hasOwnProperty.call(STATE.attrSlots, 'STL')) STATE.attrSlots.STL = null;
         STATE.lockedCount = ATTR_KEYS.filter(function(key) { return STATE.attrs[key] !== null && STATE.attrs[key] !== undefined; }).length;
-        STATE.finalOVR = calcOVR(STATE.attrs, STATE.position);
-        ensureSeasonEventState();
-        // 页面刷新后原来的模拟定时器已不存在，恢复为可手动继续的状态。
+         STATE.finalOVR = calcOVR(STATE.attrs, STATE.position);
+         ensureSeasonEventState();
+        if (typeof reconcileCareerLegacyRecords === 'function') reconcileCareerLegacyRecords({ silent: true });
+         // 页面刷新后原来的模拟定时器已不存在，恢复为可手动继续的状态。
         STATE._calendarAutoSimulating = false;
         if (STATE.season) STATE.season.leaguePlayerGameStats = [];
         if (STATE.season && STATE.season._processedDays && !(STATE.season._processedDays instanceof Set)) {

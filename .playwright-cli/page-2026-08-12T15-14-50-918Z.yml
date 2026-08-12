@@ -1,0 +1,47 @@
+- generic [ref=f1e2]:
+  - generic [ref=f1e3]:
+    - generic [ref=f1e4]:
+      - generic "篮坛造星局 Court Forge" [ref=f1e5]:
+        - generic [ref=f1e6]: CF
+        - generic [ref=f1e8]:
+          - generic [ref=f1e9]: 篮坛造星局
+          - generic [ref=f1e10]: COURT FORGE
+      - button "? 玩法说明" [ref=f1e11] [cursor=pointer]:
+        - generic [ref=f1e12]: "?"
+        - text: 玩法说明
+    - main [ref=f1e13]:
+      - generic [ref=f1e14]:
+        - generic [ref=f1e15]: 本地单机生涯模拟
+        - heading "自由建人， 打完整个生涯" [level=1] [ref=f1e16]: 自由建人，打完整个生涯
+        - paragraph [ref=f1e17]: 分配十四项能力，把独一无二的新秀带进漫长赛季。
+      - generic "游戏流程" [ref=f1e18]:
+        - generic [ref=f1e19]:
+          - generic [ref=f1e20]: "01"
+          - strong [ref=f1e21]: 选位置
+          - generic [ref=f1e22]: 确定场上角色
+        - generic [ref=f1e23]:
+          - generic [ref=f1e24]: "02"
+          - strong [ref=f1e25]: 分配能力
+          - generic [ref=f1e26]: 自由加点十四项属性
+        - generic [ref=f1e27]:
+          - generic [ref=f1e28]: "03"
+          - strong [ref=f1e29]: 跑生涯
+          - generic [ref=f1e30]: 赛季、季后赛与休赛期
+      - region "开始游戏" [ref=f1e31]:
+        - generic [ref=f1e32]:
+          - generic [ref=f1e33]:
+            - generic [ref=f1e34]:
+              - generic [ref=f1e35]: 当前开放
+              - heading "球员生涯" [level=2] [ref=f1e36]
+            - generic [ref=f1e37]: 本地模式
+          - paragraph [ref=f1e38]: 创建一名球员，从能力抽取开始，完整经历选秀、常规赛、季后赛和休赛期。
+          - button "新建球员 从名字与位置开始 ↗" [ref=f1e40] [cursor=pointer]:
+            - generic [ref=f1e41]: 新建球员
+            - generic [ref=f1e42]: 从名字与位置开始
+            - generic [ref=f1e43]: ↗
+    - generic "游戏特性" [ref=f1e44]:
+      - generic [ref=f1e45]: 30 支球队
+      - generic [ref=f1e47]: 14 项能力
+      - generic [ref=f1e49]: IndexedDB 本地存档
+  - text: →
+  - generic [ref=f1e50]: 原创虚构篮球联盟 · 本地单机游戏

@@ -1,0 +1,62 @@
+- main [ref=e3]:
+  - complementary "功能导航" [ref=e4]:
+    - generic [ref=e5]: 侠
+    - generic [ref=e6]:
+      - strong [ref=e7]: 无名小侠
+      - generic [ref=e8]: Lv. 1
+      - generic "0/100" [ref=e9]
+    - button "🗺️ 江湖故事" [ref=e11] [cursor=pointer]:
+      - generic [ref=e12]: 🗺️
+      - text: 江湖故事
+    - button "🎒 背包" [ref=e13] [cursor=pointer]:
+      - generic [ref=e14]: 🎒
+      - text: 背包
+    - button "📜 图鉴" [ref=e15] [cursor=pointer]:
+      - generic [ref=e16]: 📜
+      - text: 图鉴
+    - button "⚙️ 设置" [ref=e17] [cursor=pointer]:
+      - generic [ref=e18]: ⚙️
+      - text: 设置
+  - generic [ref=e19]:
+    - generic [ref=e20]: 一把菜刀也能闯江湖！
+    - generic [ref=e21]:
+      - button "⌂ 关于游戏" [ref=e22] [cursor=pointer]
+      - button "? 玩法说明" [ref=e23] [cursor=pointer]
+  - generic [ref=e24]:
+    - paragraph [ref=e25]: 搞笑武侠，轻松江湖
+    - heading "菜刀闯江湖" [level=1] [ref=e26]
+    - paragraph [ref=e27]: 单机版
+    - generic [ref=e28]:
+      - button "⚔ 开始游戏 闯荡江湖，从菜刀起" [ref=e29] [cursor=pointer]:
+        - generic [ref=e30]: ⚔
+        - generic [ref=e31]:
+          - text: 开始游戏
+          - generic [ref=e32]: 闯荡江湖，从菜刀起
+      - button "📜 继续旅程 还没有江湖旧梦" [disabled] [ref=e33]:
+        - generic [ref=e34]: 📜
+        - generic [ref=e35]:
+          - text: 继续旅程
+          - generic [ref=e36]: 还没有江湖旧梦
+      - button "▤ 新手教程 菜刀也能成大虾" [ref=e37] [cursor=pointer]:
+        - generic [ref=e38]: ▤
+        - generic [ref=e39]:
+          - text: 新手教程
+          - generic [ref=e40]: 菜刀也能成大虾
+      - button "☯ 更多玩法 彩蛋、挑战、成就" [ref=e41] [cursor=pointer]:
+        - generic [ref=e42]: ☯
+        - generic [ref=e43]:
+          - text: 更多玩法
+          - generic [ref=e44]: 彩蛋、挑战、成就
+  - complementary [ref=e45]:
+    - generic [ref=e46]: ✓ 单机，无需联网
+    - generic [ref=e47]: ✓ 无需注册
+    - generic [ref=e48]: ✓ 轻松有趣
+    - generic [ref=e49]: ✓ 适合所有年龄
+  - generic [ref=e50]: 小虾米
+  - generic [ref=e53]:
+    - generic [ref=e54]: 少侠，你这刀…… 真是有够霸气的！
+    - generic [ref=e55]: 不正经老头
+  - generic [ref=e56]:
+    - button "🔊 背景音乐：开" [ref=e57] [cursor=pointer]
+    - generic [ref=e58]: ⟵ 一个人，也能玩出整个江湖！ ⟶
+    - generic [ref=e59]: 江湖虽小，快乐很大

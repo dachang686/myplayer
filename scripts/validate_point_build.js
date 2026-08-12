@@ -24,10 +24,12 @@ if (build.POINT_BUILD_BASE_ATTR < build.ATTR_MIN || build.POINT_BUILD_BASE_ATTR 
 const requiredFragments = [
   'STATE.buildPointsTotal = buildConfig.POINT_BUILD_MIN_POINTS',
   'STATE.buildPointsRemaining = STATE.buildPointsTotal',
-  'function changePointBuildAttr(key, delta)',
+  'function changePointBuildAttr(key, delta, event)',
   'function finishPointBuild()',
   'STATE.buildPointsRemaining !== 0',
   'value < maxAttr',
+  "id=\"point-build-list\"",
+  'window.scrollTo({ top: pageScrollTop',
 ];
 requiredFragments.forEach((fragment) => {
   if (!indexSource.includes(fragment)) throw new Error(`缺少自由建人逻辑：${fragment}`);

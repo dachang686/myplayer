@@ -1,0 +1,145 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e2]:
+    - generic [ref=f1e51]: 🏀 2034-35赛季
+    - text: →
+    - generic [ref=f1e53]:
+      - generic [ref=f1e54]:
+        - heading "📊 生涯数据" [level=1] [ref=f1e55]
+        - generic [ref=f1e56]: 原创联盟历史基准 · 常规赛累计
+      - generic [ref=f1e57]:
+        - generic [ref=f1e202]:
+          - button "📊 生涯数据" [ref=f1e203] [cursor=pointer]
+          - button "🏆 荣誉墙" [ref=f1e204] [cursor=pointer]
+          - button "📖 休赛期" [ref=f1e205] [cursor=pointer]
+          - button "🏛️ 历史殿堂" [ref=f1e206] [cursor=pointer]
+        - generic [ref=f1e207]:
+          - generic [ref=f1e208]:
+            - text: 🏛️ 原创虚构联盟内置历史基准（非 NBA 官方统计）。榜单与进度按生涯
+            - strong [ref=f1e209]: 常规赛累计
+            - text: 计算，季后赛数据单独保存且不计入本页。
+          - tablist "历史榜单分类" [ref=f1e210]:
+            - button "总得分" [ref=f1e211] [cursor=pointer]
+            - button "总篮板" [ref=f1e212] [cursor=pointer]
+            - button "总助攻" [ref=f1e213] [cursor=pointer]
+            - button "总抢断" [ref=f1e214] [cursor=pointer]
+            - button "总盖帽" [ref=f1e215] [cursor=pointer]
+          - generic [ref=f1e216]:
+            - generic [ref=f1e217]: 🏆 联盟历史 总得分 前五
+            - generic [ref=f1e218]:
+              - generic [ref=f1e219]:
+                - generic [ref=f1e220]: "1"
+                - generic [ref=f1e221]:
+                  - generic [ref=f1e222]: 自建球员 · 你
+                  - generic [ref=f1e223]: 现役 · 2034-35赛季
+                - generic [ref=f1e224]: 40,000
+              - generic [ref=f1e225]:
+                - generic [ref=f1e226]: "2"
+                - generic [ref=f1e227]:
+                  - generic [ref=f1e228]: 远航者·一号
+                  - generic [ref=f1e229]: 内置联盟历史基准 · 联盟历史基准
+                - generic [ref=f1e230]: 28,640
+              - generic [ref=f1e231]:
+                - generic [ref=f1e232]: "3"
+                - generic [ref=f1e233]:
+                  - generic [ref=f1e234]: 北境火种
+                  - generic [ref=f1e235]: 内置联盟历史基准 · 联盟历史基准
+                - generic [ref=f1e236]: 26,480
+              - generic [ref=f1e237]:
+                - generic [ref=f1e238]: "4"
+                - generic [ref=f1e239]:
+                  - generic [ref=f1e240]: 城市灯塔
+                  - generic [ref=f1e241]: 内置联盟历史基准 · 联盟历史基准
+                - generic [ref=f1e242]: 24,720
+              - generic [ref=f1e243]:
+                - generic [ref=f1e244]: "5"
+                - generic [ref=f1e245]:
+                  - generic [ref=f1e246]: 海港左手
+                  - generic [ref=f1e247]: 内置联盟历史基准 · 联盟历史基准
+                - generic [ref=f1e248]: 22,960
+            - generic [ref=f1e249]:
+              - text: 你的生涯常规赛累计为
+              - strong [ref=f1e250]: 40,000
+              - text: ，当前位列历史第一。
+          - generic [ref=f1e251]:
+            - generic [ref=f1e252]: 🌟 411 工程 · 已达成
+            - generic [ref=f1e253]:
+              - generic [ref=f1e255]:
+                - generic [ref=f1e256]: 40000 分 ✅
+                - generic [ref=f1e257]: 40,000 / 40,000
+              - generic [ref=f1e261]:
+                - generic [ref=f1e262]: 10000 篮板 ✅
+                - generic [ref=f1e263]: 10,000 / 10,000
+              - generic [ref=f1e267]:
+                - generic [ref=f1e268]: 10000 助攻 ✅
+                - generic [ref=f1e269]: 10,000 / 10,000
+            - generic [ref=f1e272]: 达成于 2034-35赛季 · 2026-08-12
+          - generic [ref=f1e273]:
+            - generic [ref=f1e274]: 🗞️ 最近纪录事件
+            - generic [ref=f1e275]:
+              - generic [ref=f1e276]:
+                - generic [ref=f1e277]: 🌟 411 工程全部达成
+                - generic [ref=f1e278]: 你完成了 40000 分、10000 篮板、10000 助攻的传奇三项工程。2034-35赛季 · 2026-08-12
+              - generic [ref=f1e279]:
+                - generic [ref=f1e280]: ✨ 411 工程完成 40000 分
+                - generic [ref=f1e281]: 生涯常规赛累计达到 40000，411 工程再完成一项。2034-35赛季 · 2026-08-12
+              - generic [ref=f1e282]:
+                - generic [ref=f1e283]: ✨ 411 工程完成 10000 助攻
+                - generic [ref=f1e284]: 生涯常规赛累计达到 10000，411 工程再完成一项。2034-35赛季 · 2026-08-12
+              - generic [ref=f1e285]:
+                - generic [ref=f1e286]: ✨ 411 工程完成 10000 篮板
+                - generic [ref=f1e287]: 生涯常规赛累计达到 10000，411 工程再完成一项。2034-35赛季 · 2026-08-12
+              - generic [ref=f1e288]:
+                - generic [ref=f1e289]: 📈 历史盖帽榜跻身历史前五
+                - generic [ref=f1e290]: 生涯常规赛累计 2000 盖帽，当前位列联盟历史第 5 名，超越 最后的高墙。2034-35赛季 · 2026-08-12
+              - generic [ref=f1e291]:
+                - generic [ref=f1e292]: 📈 历史抢断榜跻身历史前五
+                - generic [ref=f1e293]: 生涯常规赛累计 2000 抢断，当前位列联盟历史第 4 名，超越 抢断钟摆。2034-35赛季 · 2026-08-12
+              - generic [ref=f1e294]:
+                - generic [ref=f1e295]: 🏅 历史助攻榜杀入历史前三
+                - generic [ref=f1e296]: 生涯常规赛累计 10000 助攻，当前位列联盟历史第 3 名，超越 球场地图。2034-35赛季 · 2026-08-12
+              - generic [ref=f1e297]:
+                - generic [ref=f1e298]: 📈 历史助攻榜跻身历史前五
+                - generic [ref=f1e299]: 生涯常规赛累计 10000 助攻，当前位列联盟历史第 3 名，超越 白线魔术师。2034-35赛季 · 2026-08-12
+              - generic [ref=f1e300]:
+                - generic [ref=f1e301]: 📈 历史篮板榜跻身历史前五
+                - generic [ref=f1e302]: 生涯常规赛累计 10000 篮板，当前位列联盟历史第 5 名，超越 海岸巨人。2034-35赛季 · 2026-08-12
+              - generic [ref=f1e303]:
+                - generic [ref=f1e304]: 👑 历史得分榜登顶历史第一
+                - generic [ref=f1e305]: 生涯常规赛累计 29000 得分，当前位列联盟历史第 1 名，超越 远航者·一号。2034-35赛季 · 2026-08-12
+              - generic [ref=f1e306]:
+                - generic [ref=f1e307]: 🏅 历史得分榜杀入历史前三
+                - generic [ref=f1e308]: 生涯常规赛累计 29000 得分，当前位列联盟历史第 1 名，超越 城市灯塔。2034-35赛季 · 2026-08-12
+              - generic [ref=f1e309]:
+                - generic [ref=f1e310]: 📈 历史得分榜跻身历史前五
+                - generic [ref=f1e311]: 生涯常规赛累计 29000 得分，当前位列联盟历史第 1 名，超越 金色第六人。2034-35赛季 · 2026-08-12
+          - generic [ref=f1e312]:
+            - generic [ref=f1e313]: 🎖️ 纪录与传奇勋章
+            - generic [ref=f1e314]:
+              - generic [ref=f1e315]: 📈 历史得分前五
+              - generic [ref=f1e316]: 🏅 历史得分前三
+              - generic [ref=f1e317]: 👑 历史得分第一
+              - generic [ref=f1e318]: 📈 历史篮板前五
+              - generic [ref=f1e319]: 📈 历史助攻前五
+              - generic [ref=f1e320]: 🏅 历史助攻前三
+              - generic [ref=f1e321]: 📈 历史抢断前五
+              - generic [ref=f1e322]: 📈 历史盖帽前五
+              - generic [ref=f1e323]: ✨ 411 工程 · 10000 篮板
+              - generic [ref=f1e324]: ✨ 411 工程 · 10000 助攻
+              - generic [ref=f1e325]: ✨ 411 工程 · 40000 分
+              - generic [ref=f1e326]: 🌟 411 传奇工程
+        - button "📋 返回休赛期面板" [ref=f1e328] [cursor=pointer]
+    - generic [ref=f1e50]: 原创虚构篮球联盟 · 本地单机游戏
+  - navigation "赛季导航" [ref=f1e176]:
+    - button "我的球员" [ref=f1e177] [cursor=pointer]:
+      - generic [ref=f1e178]: 🧍
+    - button "球队" [ref=f1e180] [cursor=pointer]:
+      - generic [ref=f1e181]: 🏀
+    - button "赛程" [ref=f1e183] [cursor=pointer]:
+      - generic [ref=f1e184]: 📅
+    - button "排行榜" [ref=f1e186] [cursor=pointer]:
+      - generic [ref=f1e187]: 📊
+  - generic:
+    - button "下一步 🧍 返回我的球员" [ref=f1e189] [cursor=pointer]:
+      - generic [ref=f1e190]: 下一步
+      - generic [ref=f1e191]: 🧍 返回我的球员
+    - button "手动保存进度" [ref=f1e192] [cursor=pointer]: 💾
