@@ -293,9 +293,14 @@ const SIM_CONFIG = {
   },
   /**
    * OVR 分层模型：先把 13 项属性折算为篮球能力维度，再按主/副位置组合。
-   * 位置校准参数由当前联盟名单拟合，只负责把维度分映射到现有 OVR 标尺。
+   * 现实球员缺少 2K 的投篮智商、稳定性、传球视野等完整属性，因此以已审核
+   * OVR 为基准，属性公式只计算后续成长/衰退差值；自建与生成球员直接使用公式分。
    */
   OVR_MODEL: {
+    sourceAnchor: {
+      version: 1,
+      attributeDeltaScale: 1
+    },
     secondaryPositionWeight: 0.2,
     eliteThreshold: 80,
     positionWeights: {

@@ -5,16 +5,6 @@
     return Math.max(min, Math.min(max, value));
   }
 
-  function hashSeed(value) {
-    var text = String(value == null ? '' : value);
-    var hash = 2166136261;
-    for (var i = 0; i < text.length; i++) {
-      hash ^= text.charCodeAt(i);
-      hash = Math.imul(hash, 16777619);
-    }
-    return hash >>> 0;
-  }
-
   function nextRandom(state) {
     var value = (Number(state.rngState) >>> 0) || 0x9e3779b9;
     value = (value + 0x6D2B79F5) >>> 0;
@@ -83,17 +73,243 @@
     };
   }
 
+  var MAX_TRADE_PLAYERS = 3;
+  var MIN_ROSTER_SIZE = 10;
+  var MAX_ROSTER_SIZE = 25;
+
+  function playerTradeValue(player) {
+    var overall = Number(player && player.ovr) || 0;
+    var skills = ['threePT', 'FIN', 'PAS', 'PDEF', 'IDEF', 'REB'].reduce(function(sum, key) {
+      return sum + (Number(player && player[key]) || 0);
+    }, 0) / 6;
+    var coreValue = Math.pow(Math.max(0, overall - 55), 1.35) * 1.2;
+    return Math.round((coreValue + skills * 0.12) * 10) / 10;
+  }
+
+  function packageTradeValue(players) {
+    return Math.round((players || []).reduce(function(sum, player) {
+      return sum + playerTradeValue(player);
+    }, 0) * 10) / 10;
+  }
+
+  function normalizeTradePackage(playerIds, sideLabel) {
+    var ids = typeof playerIds === 'string' ? [playerIds] : playerIds;
+    if (!Array.isArray(ids) || !ids.length) {
+      return { valid: false, reason: '请至少选择 1 名' + sideLabel + '球员。' };
+    }
+    if (ids.length > MAX_TRADE_PLAYERS) {
+      return { valid: false, reason: sideLabel + '球员最多选择 ' + MAX_TRADE_PLAYERS + ' 名。' };
+    }
+    var unique = {};
+    for (var index = 0; index < ids.length; index++) {
+      var playerId = ids[index];
+      if (typeof playerId !== 'string' || !playerId || unique[playerId]) {
+        return { valid: false, reason: sideLabel + '球员选择无效或重复。' };
+      }
+      unique[playerId] = true;
+    }
+    return { valid: true, ids: ids.slice() };
+  }
+
+  function playerPositions(player) {
+    return global.ManagerState.eligiblePositions(player);
+  }
+
+  function sharesPosition(first, second) {
+    var firstPositions = playerPositions(first);
+    var secondPositions = playerPositions(second);
+    return firstPositions.some(function(position) { return secondPositions.indexOf(position) >= 0; });
+  }
+
+  function positionNeed(roster, player) {
+    var options = roster.filter(function(candidate) { return sharesPosition(candidate, player); }).sort(function(a, b) {
+      return (Number(b.ovr) || 0) - (Number(a.ovr) || 0);
+    });
+    var quality = options.slice(0, 3).reduce(function(sum, candidate) { return sum + (Number(candidate.ovr) || 0); }, 0) / Math.max(1, Math.min(3, options.length));
+    var depthNeed = Math.max(0, 3 - options.length) * 2;
+    return Math.round((Math.max(0, 78 - quality) * 0.18 + depthNeed) * 10) / 10;
+  }
+
+  function findPlayerLocation(state, playerId) {
+    var teams = Object.keys(state.leagueData || {});
+    for (var teamIndex = 0; teamIndex < teams.length; teamIndex++) {
+      var teamId = teams[teamIndex];
+      var roster = state.leagueData[teamId] || [];
+      for (var playerIndex = 0; playerIndex < roster.length; playerIndex++) {
+        if (roster[playerIndex] && roster[playerIndex].id === playerId) {
+          return { teamId: teamId, playerIndex: playerIndex, player: roster[playerIndex] };
+        }
+      }
+    }
+    return null;
+  }
+
+  function tradeSnapshot(player) {
+    return {
+      id: player.id,
+      name: player.cname || player.name || player.id,
+      pos: player.pos || '',
+      ovr: Number(player.ovr) || 0
+    };
+  }
+
+  function evaluateTrade(state, outgoingIds, incomingIds) {
+    if (!state || !state.leagueData || !state.selectedTeam) {
+      return { valid: false, accepted: false, reason: '经理状态无效，无法评估交易。' };
+    }
+    if (!state.season || state.season.phase !== 'regular') {
+      return { valid: false, accepted: false, reason: '交易窗口已关闭，只能在常规赛期间交易。' };
+    }
+    var outgoingPackage = normalizeTradePackage(outgoingIds, '送出');
+    var incomingPackage = normalizeTradePackage(incomingIds, '得到');
+    if (!outgoingPackage.valid) return { valid: false, accepted: false, reason: outgoingPackage.reason };
+    if (!incomingPackage.valid) return { valid: false, accepted: false, reason: incomingPackage.reason };
+    var outgoing = outgoingPackage.ids.map(function(playerId) { return findPlayerLocation(state, playerId); });
+    var incoming = incomingPackage.ids.map(function(playerId) { return findPlayerLocation(state, playerId); });
+    if (outgoing.some(function(location) { return !location; }) || incoming.some(function(location) { return !location; })) {
+      return { valid: false, accepted: false, reason: '交易球员不存在。' };
+    }
+    if (outgoing.some(function(location) { return location.teamId !== state.selectedTeam; })) {
+      return { valid: false, accepted: false, reason: '只能送出本队球员。' };
+    }
+    var partnerTeam = incoming[0].teamId;
+    if (partnerTeam === state.selectedTeam || incoming.some(function(location) { return location.teamId !== partnerTeam; })) {
+      return { valid: false, accepted: false, reason: '得到的球员必须全部来自同一支其他球队。' };
+    }
+    var userRoster = state.leagueData[state.selectedTeam] || [];
+    var partnerRoster = state.leagueData[partnerTeam] || [];
+    var userRosterSize = userRoster.length - outgoing.length + incoming.length;
+    var partnerRosterSize = partnerRoster.length - incoming.length + outgoing.length;
+    if (userRosterSize < MIN_ROSTER_SIZE || userRosterSize > MAX_ROSTER_SIZE || partnerRosterSize < MIN_ROSTER_SIZE || partnerRosterSize > MAX_ROSTER_SIZE) {
+      return { valid: false, accepted: false, reason: '这笔交易会让球队名单超出 ' + MIN_ROSTER_SIZE + ' 至 ' + MAX_ROSTER_SIZE + ' 人范围。' };
+    }
+
+    var incomingIdsByKey = {};
+    incoming.forEach(function(location) { incomingIdsByKey[location.player.id] = true; });
+    var partnerRosterAfterSending = partnerRoster.filter(function(player) { return !incomingIdsByKey[player.id]; });
+    var sentPlayers = outgoing.map(function(location) { return location.player; });
+    var receivedPlayers = incoming.map(function(location) { return location.player; });
+    var sentValue = packageTradeValue(sentPlayers);
+    var receivedValue = packageTradeValue(receivedPlayers);
+    var partnerNeedForIncoming = sentPlayers.reduce(function(sum, player) { return sum + positionNeed(partnerRosterAfterSending, player); }, 0);
+    var partnerNeedForOutgoing = receivedPlayers.reduce(function(sum, player) { return sum + positionNeed(partnerRosterAfterSending, player); }, 0);
+    var rosterPressure = Math.max(0, outgoing.length - incoming.length) * 1.25;
+    var acceptedMargin = Math.round((sentValue - receivedValue + (partnerNeedForIncoming - partnerNeedForOutgoing) * 1.5 - rosterPressure) * 10) / 10;
+    var accepted = acceptedMargin >= -1;
+    return {
+      valid: true,
+      accepted: accepted,
+      reason: accepted ? '对方接受这笔 ' + outgoing.length + ' 换 ' + incoming.length + ' 报价。' : '对方认为回报不足，暂不接受这笔报价。',
+      outgoing: outgoing,
+      incoming: incoming,
+      partnerTeam: partnerTeam,
+      outgoingValue: sentValue,
+      incomingValue: receivedValue,
+      acceptedMargin: acceptedMargin,
+      partnerNeedForIncoming: partnerNeedForIncoming,
+      partnerNeedForOutgoing: partnerNeedForOutgoing,
+      rosterPressure: rosterPressure
+    };
+  }
+
+  function tradeTargets(state, outgoingIds, partnerTeamId) {
+    var roster = state && state.leagueData && state.leagueData[partnerTeamId];
+    if (!Array.isArray(roster) || partnerTeamId === state.selectedTeam) return [];
+    return roster.map(function(player) {
+      return evaluateTrade(state, outgoingIds, [player.id]);
+    }).filter(function(proposal) { return proposal.valid; }).sort(function(first, second) {
+      return Number(second.accepted) - Number(first.accepted) || second.acceptedMargin - first.acceptedMargin || first.incomingValue - second.incomingValue || String(first.incoming[0].player.id).localeCompare(String(second.incoming[0].player.id));
+    });
+  }
+
+  function restoreRotationAfterTrade(state, outgoingPlayers, incomingPlayers) {
+    var previous = state.rotation || {};
+    var next = {};
+    var outgoingByRole = outgoingPlayers.slice().sort(function(first, second) {
+      var firstRole = previous[first.id] || {};
+      var secondRole = previous[second.id] || {};
+      return Number(secondRole.starter) - Number(firstRole.starter) || (Number(secondRole.minutes) || 0) - (Number(firstRole.minutes) || 0) || (Number(second.ovr) || 0) - (Number(first.ovr) || 0);
+    });
+    var incomingAssignments = {};
+    incomingPlayers.slice().sort(function(first, second) { return (Number(second.ovr) || 0) - (Number(first.ovr) || 0); }).forEach(function(player, index) {
+      var source = outgoingByRole[Math.min(index, outgoingByRole.length - 1)];
+      incomingAssignments[player.id] = source ? previous[source.id] : null;
+    });
+    (state.leagueData[state.selectedTeam] || []).forEach(function(player) {
+      var prior = incomingAssignments[player.id] || previous[player.id];
+      next[player.id] = prior ? { starter: !!prior.starter, minutes: Number(prior.minutes) || 0 } : { starter: false, minutes: 0 };
+    });
+    var validation = global.ManagerState.validateRotation(state.leagueData[state.selectedTeam] || [], next);
+    if (validation.valid) {
+      state.rotation = next;
+      return false;
+    }
+    state.rotation = global.ManagerState.createDefaultRotation(state.leagueData[state.selectedTeam] || []);
+    return true;
+  }
+
+  function executeTrade(state, outgoingIds, incomingIds) {
+    var proposal = evaluateTrade(state, outgoingIds, incomingIds);
+    if (!proposal.valid) throw new Error(proposal.reason);
+    if (!proposal.accepted) throw new Error(proposal.reason);
+
+    var userRoster = state.leagueData[state.selectedTeam];
+    var partnerRoster = state.leagueData[proposal.partnerTeam];
+    var outgoingIdsByKey = {};
+    var incomingIdsByKey = {};
+    proposal.outgoing.forEach(function(location) { outgoingIdsByKey[location.player.id] = true; });
+    proposal.incoming.forEach(function(location) { incomingIdsByKey[location.player.id] = true; });
+    state.leagueData[state.selectedTeam] = userRoster.filter(function(player) { return !outgoingIdsByKey[player.id]; }).concat(proposal.incoming.map(function(location) { return location.player; }));
+    state.leagueData[proposal.partnerTeam] = partnerRoster.filter(function(player) { return !incomingIdsByKey[player.id]; }).concat(proposal.outgoing.map(function(location) { return location.player; }));
+    var rotationReset = restoreRotationAfterTrade(state, proposal.outgoing.map(function(location) { return location.player; }), proposal.incoming.map(function(location) { return location.player; }));
+    state.tradeHistory = Array.isArray(state.tradeHistory) ? state.tradeHistory : [];
+    var tradeId = 'T' + (state.tradeHistory.length + 1) + '-' + (Number(state.season.scheduleIndex) || 0);
+    while (state.tradeHistory.some(function(trade) { return trade.id === tradeId; })) tradeId += '-R';
+    var trade = {
+      id: tradeId,
+      userTeam: state.selectedTeam,
+      partnerTeam: proposal.partnerTeam,
+      sent: proposal.outgoing.map(function(location) { return tradeSnapshot(location.player); }),
+      received: proposal.incoming.map(function(location) { return tradeSnapshot(location.player); }),
+      acceptedMargin: proposal.acceptedMargin,
+      scheduleIndex: Math.max(0, Math.floor(Number(state.season.scheduleIndex) || 0)),
+      rotationReset: rotationReset,
+      createdAt: new Date().toISOString()
+    };
+    state.tradeHistory.push(trade);
+    state.updatedAt = new Date().toISOString();
+    return { trade: trade, proposal: proposal };
+  }
+
+  function compareStandings(state, a, b) {
+      var recordA = state.season.standings[a] || {};
+      var recordB = state.season.standings[b] || {};
+      var winsA = Number(recordA.wins) || 0;
+      var winsB = Number(recordB.wins) || 0;
+      var gamesA = winsA + (Number(recordA.losses) || 0);
+      var gamesB = winsB + (Number(recordB.losses) || 0);
+      var percentageDiff = (gamesB ? winsB / gamesB : 0) - (gamesA ? winsA / gamesA : 0);
+      if (percentageDiff) return percentageDiff;
+      var differential = ((recordB.pointsFor || 0) - (recordB.pointsAgainst || 0)) - ((recordA.pointsFor || 0) - (recordA.pointsAgainst || 0));
+      return differential || a.localeCompare(b);
+  }
+
+  function sortStandings(state, ids) {
+    return ids.slice().sort(function(a, b) { return compareStandings(state, a, b); });
+  }
+
   function standingsList(state, conference) {
     var config = getConfig();
     var ids = (config.CONFERENCE && config.CONFERENCE[conference]) || [];
-    return ids.slice().sort(function(a, b) {
-      var recordA = state.season.standings[a] || {};
-      var recordB = state.season.standings[b] || {};
-      var winDiff = (recordB.wins || 0) - (recordA.wins || 0);
-      if (winDiff) return winDiff;
-      var differential = ((recordB.pointsFor || 0) - (recordB.pointsAgainst || 0)) - ((recordA.pointsFor || 0) - (recordA.pointsAgainst || 0));
-      return differential || a.localeCompare(b);
-    });
+    return sortStandings(state, ids);
+  }
+
+  function overallStandingsList(state) {
+    var config = getConfig();
+    var conferences = config.CONFERENCE || {};
+    var ids = (conferences.NORTH || []).concat(conferences.SOUTH || []);
+    if (!ids.length) ids = Object.keys(state.season.standings || {});
+    return sortStandings(state, ids);
   }
 
   function activePlayerMinutes(state, teamId) {
@@ -180,6 +396,9 @@
   }
 
   function ensureSeasonPlayerStats(state) {
+    if (!state.season || typeof state.season !== 'object') throw new Error('经理赛季数据无效，无法读取球员统计。');
+    if (!state.season.playerStats || typeof state.season.playerStats !== 'object' || Array.isArray(state.season.playerStats)) state.season.playerStats = {};
+    if (!state.season.playerStatGameKeys || typeof state.season.playerStatGameKeys !== 'object' || Array.isArray(state.season.playerStatGameKeys)) state.season.playerStatGameKeys = {};
     return Object.keys(state.season.playerStats).map(function(key) { return state.season.playerStats[key]; });
   }
 
@@ -285,8 +504,9 @@
     return count;
   }
 
-  function makeSeries(homeSeed, awaySeed, round, conference) {
-    return { homeSeed: homeSeed, awaySeed: awaySeed, conference: conference, round: round, homeWins: 0, awayWins: 0, games: [], winner: null };
+  function makeSeries(homeSeed, awaySeed, round, conference, slot) {
+    var id = 'P' + round + '-' + conference + '-S' + slot + '-' + homeSeed + '-' + awaySeed;
+    return { id: id, homeSeed: homeSeed, awaySeed: awaySeed, conference: conference, round: round, homeWins: 0, awayWins: 0, games: [], winner: null };
   }
 
   function seedTeams(state, conference) {
@@ -295,8 +515,8 @@
 
   function buildRound(state, round, conference, teams) {
     var pairs = [[0, 7], [3, 4], [1, 6], [2, 5]];
-    return pairs.map(function(pair) {
-      return makeSeries(teams[pair[0]], teams[pair[1]], round, conference);
+    return pairs.map(function(pair, index) {
+      return makeSeries(teams[pair[0]], teams[pair[1]], round, conference, index + 1);
     });
   }
 
@@ -324,16 +544,22 @@
     return null;
   }
 
+  function seriesHomeTeam(series, gameIndex) {
+    var homePattern = [true, true, false, false, true, false, true];
+    return homePattern[gameIndex] ? series.homeSeed : series.awaySeed;
+  }
+
   function simulateSeriesGame(state, series) {
     if (series.winner) return null;
-    var home = series.games.length % 2 < 2 ? series.homeSeed : series.awaySeed;
+    var home = seriesHomeTeam(series, series.games.length);
     var away = home === series.homeSeed ? series.awaySeed : series.homeSeed;
     var seedDiff = ((Number(state.season.standings[series.homeSeed].wins) || 0) - (Number(state.season.standings[series.awaySeed].wins) || 0)) * 0.025;
     var result = simulateGame(state, home, away, { phase: 'playoffs', seedDiff: seedDiff });
     if (result.winner === series.homeSeed) series.homeWins++; else series.awayWins++;
     series.games.push({ home: home, away: away, homeScore: result.homeScore, awayScore: result.awayScore, winner: result.winner });
+    var gameId = (series.id || ('P' + series.round + '-' + series.conference + '-' + series.homeSeed + '-' + series.awaySeed)) + '-G' + series.games.length;
     state.season.games.push({
-      index: 'P' + series.round + '-' + series.conference + '-' + series.games.length,
+      index: gameId,
       home: home,
       away: away,
       homeScore: result.homeScore,
@@ -341,6 +567,7 @@
       winner: result.winner,
       phase: 'playoffs'
     });
+    recordGamePlayerStats(state, result, gameId);
     series.winner = seriesWinner(series);
     return result;
   }
@@ -355,18 +582,18 @@
     var south = playoffs.conferences.SOUTH;
     if (playoffs.round === 1 && allSeriesDone(north) && allSeriesDone(south)) {
       playoffs.round = 2;
-      playoffs.conferences.NORTH = [makeSeries(north[0].winner, north[1].winner, 2, 'NORTH'), makeSeries(north[2].winner, north[3].winner, 2, 'NORTH')];
-      playoffs.conferences.SOUTH = [makeSeries(south[0].winner, south[1].winner, 2, 'SOUTH'), makeSeries(south[2].winner, south[3].winner, 2, 'SOUTH')];
+      playoffs.conferences.NORTH = [makeSeries(north[0].winner, north[1].winner, 2, 'NORTH', 1), makeSeries(north[2].winner, north[3].winner, 2, 'NORTH', 2)];
+      playoffs.conferences.SOUTH = [makeSeries(south[0].winner, south[1].winner, 2, 'SOUTH', 1), makeSeries(south[2].winner, south[3].winner, 2, 'SOUTH', 2)];
     } else if (playoffs.round === 2 && allSeriesDone(north) && allSeriesDone(south)) {
       playoffs.round = 3;
-      playoffs.conferences.NORTH = [makeSeries(north[0].winner, north[1].winner, 3, 'NORTH')];
-      playoffs.conferences.SOUTH = [makeSeries(south[0].winner, south[1].winner, 3, 'SOUTH')];
+      playoffs.conferences.NORTH = [makeSeries(north[0].winner, north[1].winner, 3, 'NORTH', 1)];
+      playoffs.conferences.SOUTH = [makeSeries(south[0].winner, south[1].winner, 3, 'SOUTH', 1)];
       playoffs.conferenceWinners = {};
     } else if (playoffs.round === 3 && allSeriesDone(north) && allSeriesDone(south)) {
       playoffs.round = 4;
       playoffs.conferenceWinners.NORTH = north[0].winner;
       playoffs.conferenceWinners.SOUTH = south[0].winner;
-      playoffs.finals = makeSeries(playoffs.conferenceWinners.NORTH, playoffs.conferenceWinners.SOUTH, 4, 'FINALS');
+      playoffs.finals = makeSeries(playoffs.conferenceWinners.NORTH, playoffs.conferenceWinners.SOUTH, 4, 'FINALS', 1);
       playoffs.conferences.NORTH = [];
       playoffs.conferences.SOUTH = [];
     } else if (playoffs.round === 4 && playoffs.finals && playoffs.finals.winner) {
@@ -425,7 +652,15 @@
     var winsComplete = record.wins >= goal.targetWins;
     var roundComplete = (state.season.userRound || 0) >= goal.targetRound;
     var champion = state.season.champion === state.selectedTeam;
-    var score = 50 + (winsComplete ? 22 : Math.max(0, record.wins - goal.targetWins) * 0.5) + (roundComplete ? 20 : (state.season.userRound || 0) * 4) + (champion ? 12 : 0);
+    var wins = Math.max(0, Number(record.wins) || 0);
+    var targetWins = Math.max(1, Number(goal.targetWins) || 1);
+    var targetRound = Math.max(1, Number(goal.targetRound) || 1);
+    var userRound = Math.max(0, Number(state.season.userRound) || 0);
+    var winProgress = Math.min(1, wins / targetWins) * 48;
+    var extraWins = Math.min(16, Math.max(0, wins - targetWins)) * 0.75;
+    var roundProgress = Math.min(1, userRound / targetRound) * 16;
+    var extraRounds = Math.min(2, Math.max(0, userRound - targetRound)) * 5;
+    var score = 20 + winProgress + extraWins + roundProgress + extraRounds + (champion ? 10 : 0);
     score = Math.round(clamp(score, 0, 100));
     var label = score >= 85 ? '超出预期' : (score >= 68 ? '达到预期' : (score >= 50 ? '仍有机会' : '低于预期'));
     return {
@@ -447,7 +682,13 @@
   global.ManagerEngine = {
     teamName: teamName,
     rosterPower: rosterPower,
+    MAX_TRADE_PLAYERS: MAX_TRADE_PLAYERS,
+    playerTradeValue: playerTradeValue,
+    evaluateTrade: evaluateTrade,
+    tradeTargets: tradeTargets,
+    executeTrade: executeTrade,
     standingsList: standingsList,
+    overallStandingsList: overallStandingsList,
     playerStatRows: ensureSeasonPlayerStats,
     getNextRegularGame: getNextRegularGame,
     simulateNextRegularGame: simulateNextRegularGame,
@@ -457,6 +698,7 @@
     simulateNextPostseasonGame: simulateNextPostseasonGame,
     simulateNextUserPostseasonGame: simulateNextUserPostseasonGame,
     simulateRemainingPostseason: simulateRemainingPostseason,
+    seriesHomeTeam: seriesHomeTeam,
     evaluateOwner: evaluateOwner,
     reset: reset
   };

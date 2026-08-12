@@ -1730,7 +1730,7 @@ function calcOvrPositionScore(dimensions, pos) {
   }, 0);
 }
 
-function calcOVR(attrs, pos) {
+function calcOvrFormulaScore(attrs, pos) {
   var model = SIM_CONFIG && SIM_CONFIG.OVR_MODEL;
   if (!model) return 50;
   var positions = getOvrPositions(pos);
@@ -1743,7 +1743,25 @@ function calcOVR(attrs, pos) {
   }
   var calibration = model.calibration[positions[0]] || model.calibration.SG;
   var eliteBonus = Math.max(0, positionScore - model.eliteThreshold) * calibration.eliteScale;
-  return Math.max(40, Math.min(99, Math.round(calibration.offset + positionScore * calibration.scale + eliteBonus)));
+  // 保留未截断的连续公式分作为成长基准，避免高 OVR 球员在 99 分平台上失去成长响应。
+  return calibration.offset + positionScore * calibration.scale + eliteBonus;
+}
+
+function calcOVR(attrs, pos) {
+  var formulaScore = calcOvrFormulaScore(attrs, pos);
+  var model = SIM_CONFIG && SIM_CONFIG.OVR_MODEL;
+  var anchor = model && model.sourceAnchor;
+  if (attrs && anchor && !isGeneratedLeaguePlayer(attrs)) {
+    var anchorVersion = Number(attrs._ovrAnchorVersion);
+    var anchorOvr = Number(attrs._ovrAnchorOvr);
+    var anchorScore = Number(attrs._ovrAnchorScore);
+    if (anchorVersion === Number(anchor.version) && Number.isFinite(anchorOvr) && Number.isFinite(anchorScore)) {
+      var deltaScale = Number(anchor.attributeDeltaScale);
+      if (!Number.isFinite(deltaScale)) deltaScale = 1;
+      return Math.max(40, Math.min(99, Math.round(anchorOvr + (formulaScore - anchorScore) * deltaScale)));
+    }
+  }
+  return Math.max(40, Math.min(99, Math.round(formulaScore)));
 }
 
 function isGeneratedLeaguePlayer(player) {
@@ -1934,7 +1952,8 @@ function syncLeaguePlayerOvrs() {
   LEAGUE_TEAM_IDS.forEach(function(teamId) {
     (LEAGUE_PLAYER_DATA[teamId] || []).forEach(function(player) {
       if (!player || !player.pos) return;
-      if (!Object.prototype.hasOwnProperty.call(player, '_sourceOvr')) {
+      var hadSourceOvr = Object.prototype.hasOwnProperty.call(player, '_sourceOvr');
+      if (!hadSourceOvr) {
         try {
           Object.defineProperty(player, '_sourceOvr', { value: Number(player.ovr) || 50, writable: true, configurable: true, enumerable: true });
         } catch (error) {
@@ -1944,6 +1963,21 @@ function syncLeaguePlayerOvrs() {
       if (isGeneratedLeaguePlayer(player)) {
         rebalanceLegacyGeneratedPlayer(player);
         refreshGeneratedPlayerType(player);
+      } else {
+        var anchor = SIM_CONFIG && SIM_CONFIG.OVR_MODEL && SIM_CONFIG.OVR_MODEL.sourceAnchor;
+        var expectedAnchorVersion = anchor ? Number(anchor.version) : 0;
+        var hasCurrentAnchor = anchor
+          && Number(player._ovrAnchorVersion) === expectedAnchorVersion
+          && Number.isFinite(Number(player._ovrAnchorOvr))
+          && Number.isFinite(Number(player._ovrAnchorScore));
+        if (anchor && !hasCurrentAnchor) {
+          var seasonCount = Number(STATE && STATE.career && STATE.career.seasonCount) || 0;
+          // 新名单以审核 OVR 为基准；旧的长期存档升级公式时保留当时的运行 OVR，避免进度跳变。
+          var anchorOvr = hadSourceOvr && seasonCount > 0 ? Number(player.ovr) : Number(player._sourceOvr);
+          player._ovrAnchorVersion = expectedAnchorVersion;
+          player._ovrAnchorOvr = Math.max(40, Math.min(99, Math.round(anchorOvr || 50)));
+          player._ovrAnchorScore = calcOvrFormulaScore(player, player.pos);
+        }
       }
       var nextOvr = calcOVR(player, player.pos);
       if (player.ovr === nextOvr) return;

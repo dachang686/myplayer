@@ -11,7 +11,11 @@
   var standingsConference = null;
   var playerRankingStat = 'pts';
   var playerRankingLimit = 10;
+  var tradeOutgoingIds = [];
+  var tradeIncomingIds = [];
+  var tradePartnerTeamId = null;
   var toastTimer = null;
+  var storageBusy = false;
 
   function escapeHtml(value) {
     return String(value == null ? '' : value).replace(/[&<>"']/g, function(char) {
@@ -41,6 +45,42 @@
     root.classList.toggle('is-session-active', isActive);
   }
 
+  function rotationValidation(current) {
+    return current ? global.ManagerState.validateRotation(current.leagueData[current.selectedTeam] || [], current.rotation) : null;
+  }
+
+  function updateActionAvailability(current) {
+    current = current || state();
+    var validation = rotationValidation(current);
+    var rotationBlocked = !!(current && current.season.phase === 'regular' && validation && !validation.valid);
+    var reason = rotationBlocked ? (validation.errors[0] || '请先修正轮换配置。') : '';
+    if (!root) return;
+    root.classList.toggle('is-storage-busy', storageBusy);
+    root.querySelectorAll('[data-action="save-game"], [data-action="load-save"], [data-action="restart-game"]').forEach(function(button) {
+      button.disabled = storageBusy;
+      button.setAttribute('aria-busy', storageBusy ? 'true' : 'false');
+    });
+    var tradeWindowClosed = !current || !current.season || current.season.phase !== 'regular';
+    root.querySelectorAll('[data-action="complete-trade"], [data-action="select-trade-outgoing"], [data-action="select-trade-incoming"], [data-trade-team]').forEach(function(button) {
+      var blocked = storageBusy || tradeWindowClosed;
+      button.disabled = blocked;
+      button.setAttribute('aria-busy', storageBusy ? 'true' : 'false');
+      button.setAttribute('aria-disabled', blocked ? 'true' : 'false');
+    });
+    root.querySelectorAll('[data-action="next-step"], [data-action="simulate-next"], [data-action="simulate-regular"]').forEach(function(button) {
+      var blocked = storageBusy || rotationBlocked;
+      button.disabled = blocked;
+      button.setAttribute('aria-disabled', blocked ? 'true' : 'false');
+      button.title = rotationBlocked ? reason : '';
+      button.setAttribute('aria-label', rotationBlocked ? '无法推进：' + reason : button.textContent.trim());
+    });
+  }
+
+  function setStorageBusy(nextBusy) {
+    storageBusy = nextBusy;
+    updateActionAvailability();
+  }
+
   function renderWelcome() {
     setSession(false);
     main.innerHTML = '<section class="manager-welcome">' +
@@ -61,17 +101,14 @@
           '<span class="manager-arrow" aria-hidden="true">↗</span>' +
         '</button>';
       }).join('') + '</div>' +
-      '<div class="manager-welcome-footer"><button class="manager-button manager-button-secondary" type="button" data-action="load-save">读取已有经理存档</button><span>本页不会读取球员模式存档。</span></div>' +
+      '<div class="manager-welcome-footer"><button class="manager-button manager-button-secondary" type="button" data-action="load-save">读取已有经理存档</button><span>本页不会读取球员模式存档；可在这里读取已有经理进度。</span></div>' +
     '</section>';
   }
 
   function renderDashboard() {
     var current = state();
     var record = current.season.standings[current.selectedTeam] || { wins: 0, losses: 0 };
-    var allRanked = teamIds().slice().sort(function(a, b) {
-      var x = current.season.standings[a] || {}, y = current.season.standings[b] || {};
-      return (y.wins - x.wins) || ((y.pointsFor - y.pointsAgainst) - (x.pointsFor - x.pointsAgainst));
-    });
+    var allRanked = global.ManagerEngine.overallStandingsList(current);
     var place = allRanked.indexOf(current.selectedTeam) + 1;
     var next = current.season.phase === 'regular' ? global.ManagerEngine.getNextRegularGame(current) : null;
     var opponent = next ? (next.home === current.selectedTeam ? next.away : next.home) : null;
@@ -84,23 +121,27 @@
         '<article class="manager-panel manager-next-game"><div class="manager-panel-kicker">NEXT GAME</div>' + (next ? '<div class="manager-matchup"><div><strong>' + escapeHtml(teamName(next.home)) + '</strong><small>' + escapeHtml(next.home) + '</small></div><span>VS</span><div class="manager-matchup-away"><strong>' + escapeHtml(teamName(next.away)) + '</strong><small>' + escapeHtml(next.away) + '</small></div></div><p>第 ' + next.gameNum + ' 场 · 赛季日程第 ' + next.day + ' 天</p>' : '<div class="manager-empty-line">常规赛已完成，准备迎接季后赛。</div>') + '</article>' +
         '<article class="manager-panel manager-owner-panel"><div class="manager-panel-kicker">OWNER CHECK-IN</div><div class="manager-owner-score"><strong>' + (owner.score || current.owner.rating) + '</strong><span>/100</span><small>' + escapeHtml(owner.label || '等待赛季结果') + '</small></div><p>' + escapeHtml(owner.summary || '先把轮换稳定下来，再让结果替你说话。') + '</p></article>' +
       '</div>' +
-      '<article class="manager-panel manager-command-panel"><div><div class="manager-panel-kicker">办公室指令</div><h2>' + (current.season.phase === 'regular' ? '把时间交给赛程' : (current.season.phase === 'playoffs' ? '向冠军推进' : '复盘本赛季')) + '</h2><p>' + (current.season.phase === 'regular' ? '每场推进可检查结果，也可以一次性模拟剩余常规赛。' : (current.season.phase === 'playoffs' ? '系列赛采用七场四胜制，完成后将生成董事会评价。' : '查看完整排名、轮换与最终评价。')) + '</p></div><div class="manager-command-actions"><button class="manager-button manager-button-secondary" type="button" data-action="open-roster">调整轮换</button>' + commandButtons(current) + '</div></article>' +
+      '<article class="manager-panel manager-command-panel"><div><div class="manager-panel-kicker">办公室指令</div><h2>' + (current.season.phase === 'regular' ? '把时间交给赛程' : (current.season.phase === 'playoffs' ? '向冠军推进' : '复盘本赛季')) + '</h2><p>' + (current.season.phase === 'regular' ? '每场推进可检查结果，也可以一次性模拟剩余常规赛。' : (current.season.phase === 'playoffs' ? '系列赛采用七场四胜制，完成后将生成董事会评价。' : '查看完整排名、轮换与最终评价。')) + '</p></div><div class="manager-command-actions"><button class="manager-button manager-button-secondary" type="button" data-action="open-roster">调整轮换</button><button class="manager-button manager-button-secondary" type="button" data-action="open-trade">交易中心</button>' + commandButtons(current) + '</div></article>' +
     '</section>';
   }
 
   function commandButtons(current) {
-    if (current.season.phase === 'regular') return '<button class="manager-button manager-button-secondary" type="button" data-action="simulate-regular">模拟完常规赛</button>';
-    if (current.season.phase === 'playoffs') return '<button class="manager-button manager-button-secondary" type="button" data-action="simulate-playoffs">模拟至总冠军</button>';
-    return '<button class="manager-button manager-button-secondary" type="button" data-view="standings">查看赛季总结</button>';
+    var restart = '<button class="manager-button manager-button-quiet" type="button" data-action="restart-game">重开经理模式</button>';
+    if (current.season.phase === 'regular') return '<button class="manager-button manager-button-secondary" type="button" data-action="simulate-regular">模拟完常规赛</button>' + restart;
+    if (current.season.phase === 'playoffs') return '<button class="manager-button manager-button-secondary" type="button" data-action="simulate-playoffs">模拟至总冠军</button>' + restart;
+    return '<button class="manager-button manager-button-secondary" type="button" data-view="standings">查看赛季总结</button>' + restart;
   }
 
   function updateNextAction() {
     var label = document.getElementById('manager-next-label');
     var current = state();
     if (!label || !current) return;
-    if (current.season.phase === 'regular') label.textContent = '推进下一场';
+    var validation = rotationValidation(current);
+    if (current.season.phase === 'regular' && validation && !validation.valid) label.textContent = '先修正轮换';
+    else if (current.season.phase === 'regular') label.textContent = '推进下一场';
     else if (current.season.phase === 'playoffs') label.textContent = '推进季后赛';
     else label.textContent = '查看赛季总结';
+    updateActionAvailability(current);
   }
 
   function nextStep() {
@@ -123,13 +164,13 @@
     });
     main.innerHTML = '<section class="manager-page manager-roster-page">' +
       '<div class="manager-page-head"><div><div class="manager-eyebrow">阵容办公室 / ROTATION</div><h1>把每一分钟都安排好。</h1><p>首发必须覆盖五个位置，轮换人数 9 至 11 人，总时间严格为 240 分钟。</p></div></div>' +
-      '<div class="manager-rotation-status ' + (validation.valid ? 'is-valid' : 'is-invalid') + '"><div><strong>' + validation.totalMinutes + '<em>/240</em></strong><span>总上场时间</span></div><div><strong>' + validation.activeCount + '<em>/9–11</em></strong><span>轮换人数</span></div><div><strong>' + validation.starterCount + '<em>/5</em></strong><span>首发人数</span></div><span class="manager-validation-label">' + (validation.valid ? '✓ 轮换合法' : '需要修正') + '</span></div>' +
-      (validation.valid ? '' : '<div class="manager-error-list" role="alert">' + validation.errors.map(function(error) { return '<div>! ' + escapeHtml(error) + '</div>'; }).join('') + '</div>') +
+      '<div class="manager-rotation-status ' + (validation.valid ? 'is-valid' : 'is-invalid') + '"><div><strong data-rotation-total>' + validation.totalMinutes + '<em>/240</em></strong><span>总上场时间</span></div><div><strong data-rotation-active>' + validation.activeCount + '<em>/9–11</em></strong><span>轮换人数</span></div><div><strong data-rotation-starters>' + validation.starterCount + '<em>/5</em></strong><span>首发人数</span></div><span class="manager-validation-label" data-rotation-label>' + (validation.valid ? '✓ 轮换合法' : '需要修正') + '</span></div>' +
+      '<div class="manager-error-list" data-rotation-errors role="alert" aria-live="assertive"' + (validation.valid ? ' hidden' : '') + '>' + validation.errors.map(function(error) { return '<div>! ' + escapeHtml(error) + '</div>'; }).join('') + '</div>' +
       '<div class="manager-roster-list">' + sorted.map(function(player) {
         var assignment = current.rotation[player.id] || { starter: false, minutes: 0 };
         var positions = escapeHtml(String(player.pos || '').replace(/\s+/g, ' '));
-        return '<article class="manager-player-row ' + (assignment.starter ? 'is-starter' : '') + ' ' + (assignment.minutes > 0 ? 'is-active' : 'is-inactive') + '">' +
-          '<div class="manager-player-rank">' + (assignment.starter ? 'S' : (assignment.minutes > 0 ? 'R' : '—')) + '</div>' +
+        return '<article class="manager-player-row ' + (assignment.starter ? 'is-starter' : '') + ' ' + (Number(assignment.minutes) > 0 ? 'is-active' : 'is-inactive') + '" data-rotation-player="' + escapeHtml(player.id) + '">' +
+          '<div class="manager-player-rank">' + (assignment.starter ? 'S' : (Number(assignment.minutes) > 0 ? 'R' : '—')) + '</div>' +
           '<div class="manager-player-copy"><strong>' + escapeHtml(player.cname || player.name || '球员') + '</strong><span>' + positions + ' · OVR ' + (Number(player.ovr) || 0) + '</span></div>' +
           '<label class="manager-minute-field"><span>分钟</span><input type="number" min="0" max="48" step="1" value="' + (Number(assignment.minutes) || 0) + '" data-minute-player="' + escapeHtml(player.id) + '"></label>' +
           '<button class="manager-toggle-button" type="button" data-action="toggle-starter" data-player="' + escapeHtml(player.id) + '" aria-pressed="' + (!!assignment.starter) + '">' + (assignment.starter ? '首发' : '轮换') + '</button>' +
@@ -137,6 +178,94 @@
       }).join('') + '</div>' +
       '<div class="manager-roster-footer"><span>修改会即时写入经理状态，点击下方保存后刷新仍可恢复。</span></div>' +
     '</section>';
+  }
+
+  function playerName(player) {
+    return player && (player.cname || player.name || player.id) || '球员';
+  }
+
+  function tradePlayerNames(players) {
+    return (players || []).map(playerName).join('、') || '未选择球员';
+  }
+
+  function selectedTradePlayers(roster, playerIds) {
+    var selected = {};
+    (playerIds || []).forEach(function(playerId) { selected[playerId] = true; });
+    return (roster || []).filter(function(player) { return selected[player.id]; });
+  }
+
+  function validTradeSelection(roster, playerIds) {
+    var available = {};
+    (roster || []).forEach(function(player) { available[player.id] = true; });
+    var seen = {};
+    return (playerIds || []).filter(function(playerId) {
+      if (!available[playerId] || seen[playerId]) return false;
+      seen[playerId] = true;
+      return true;
+    }).slice(0, global.ManagerEngine.MAX_TRADE_PLAYERS || 3);
+  }
+
+  function toggleTradeSelection(selection, playerId) {
+    var next = (selection || []).slice();
+    var index = next.indexOf(playerId);
+    if (index >= 0) {
+      next.splice(index, 1);
+      return next;
+    }
+    var max = global.ManagerEngine.MAX_TRADE_PLAYERS || 3;
+    if (next.length >= max) {
+      showToast('每边最多选择 ' + max + ' 名球员。', true);
+      return next;
+    }
+    next.push(playerId);
+    return next;
+  }
+
+  function tradeableTeams(current) {
+    return teamIds().filter(function(teamId) {
+      return teamId !== current.selectedTeam && Array.isArray(current.leagueData[teamId]);
+    });
+  }
+
+  function renderTrade() {
+    var current = state();
+    var roster = (current.leagueData[current.selectedTeam] || []).slice().sort(function(first, second) {
+      return (Number(second.ovr) || 0) - (Number(first.ovr) || 0) || String(first.id).localeCompare(String(second.id));
+    });
+    var teams = tradeableTeams(current);
+    if (teams.indexOf(tradePartnerTeamId) < 0) tradePartnerTeamId = teams[0] || null;
+    var partnerRoster = tradePartnerTeamId ? (current.leagueData[tradePartnerTeamId] || []).slice().sort(function(first, second) {
+      return (Number(second.ovr) || 0) - (Number(first.ovr) || 0) || String(first.id).localeCompare(String(second.id));
+    }) : [];
+    tradeOutgoingIds = validTradeSelection(roster, tradeOutgoingIds);
+    tradeIncomingIds = validTradeSelection(partnerRoster, tradeIncomingIds);
+    var maxPlayers = global.ManagerEngine.MAX_TRADE_PLAYERS || 3;
+    var outgoing = selectedTradePlayers(roster, tradeOutgoingIds);
+    var incoming = selectedTradePlayers(partnerRoster, tradeIncomingIds);
+    var proposal = global.ManagerEngine.evaluateTrade(current, tradeOutgoingIds, tradeIncomingIds);
+    var windowOpen = current.season.phase === 'regular';
+    var outgoingChoices = roster.map(function(player) {
+      var selected = tradeOutgoingIds.indexOf(player.id) >= 0;
+      return '<button type="button" class="manager-trade-player-choice ' + (selected ? 'is-selected' : '') + '" data-action="select-trade-outgoing" data-player="' + escapeHtml(player.id) + '" aria-pressed="' + selected + '"' + (windowOpen ? '' : ' disabled') + '>' +
+        '<span><b>' + escapeHtml(playerName(player)) + '</b><small>' + escapeHtml(player.pos || '位置待定') + '</small></span><strong>' + (Number(player.ovr) || 0) + '</strong>' +
+      '</button>';
+    }).join('');
+    var incomingChoices = partnerRoster.map(function(player) {
+      var selected = tradeIncomingIds.indexOf(player.id) >= 0;
+      return '<button type="button" class="manager-trade-player-choice ' + (selected ? 'is-selected' : '') + '" data-action="select-trade-incoming" data-player="' + escapeHtml(player.id) + '" aria-pressed="' + selected + '"' + (windowOpen ? '' : ' disabled') + '>' +
+        '<span><b>' + escapeHtml(playerName(player)) + '</b><small>' + escapeHtml(player.pos || '位置待定') + '</small></span><strong>' + (Number(player.ovr) || 0) + '</strong>' +
+      '</button>';
+    }).join('');
+    var history = (current.tradeHistory || []).slice().reverse().slice(0, 4).map(function(trade) {
+      return '<div class="manager-trade-history-row"><span>第 ' + (Number(trade.scheduleIndex) + 1) + ' 场前</span><b>' + escapeHtml(tradePlayerNames(trade.sent)) + ' → ' + escapeHtml(teamName(trade.partnerTeam)) + '</b><small>换回 ' + escapeHtml(tradePlayerNames(trade.received)) + (trade.rotationReset ? ' · 轮换已重置' : '') + '</small></div>';
+    }).join('');
+    var assessment = proposal.valid ? (proposal.accepted ? '对方接受报价' : '对方暂不接受') : proposal.reason;
+    var assessmentDetail = proposal.valid ? '送出价值 ' + proposal.outgoingValue.toFixed(1) + ' · 得到价值 ' + proposal.incomingValue.toFixed(1) + ' · 对方评估 ' + (proposal.acceptedMargin >= 0 ? '+' : '') + proposal.acceptedMargin.toFixed(1) : '双方各选 1 至 ' + maxPlayers + ' 名球员后生成评估。';
+    main.innerHTML = '<section class="manager-page manager-trade-page"><div class="manager-page-head"><div><div class="manager-eyebrow">交易中心 / TRADE DESK</div><h1>组合资产，重塑阵容。</h1><p>' + (windowOpen ? '每边可组合 1 至 ' + maxPlayers + ' 名球员。报价按资产价值、位置需求和名单空间评估，不涉及薪资或选秀权。' : '交易窗口已关闭，季后赛与赛季结束后不能再交易。') + '</p></div></div>' +
+      '<section class="manager-trade-builder-grid"><article class="manager-panel manager-trade-builder"><div class="manager-trade-builder-heading"><div class="manager-panel-kicker">STEP 1 · 送出资产包</div><span class="manager-trade-selection-count">' + outgoing.length + ' / ' + maxPlayers + '</span></div><div class="manager-trade-player-grid">' + (outgoingChoices || '<div class="manager-empty-line">没有可交易球员。</div>') + '</div><p class="manager-trade-package-copy">送出：' + escapeHtml(tradePlayerNames(outgoing)) + '</p></article>' +
+      '<article class="manager-panel manager-trade-builder"><div class="manager-trade-partner"><label>STEP 2 · 交易对象<select data-trade-team' + (windowOpen ? '' : ' disabled') + '>' + teams.map(function(teamId) { return '<option value="' + escapeHtml(teamId) + '"' + (teamId === tradePartnerTeamId ? ' selected' : '') + '>' + escapeHtml(teamName(teamId)) + '</option>'; }).join('') + '</select></label><span class="manager-trade-selection-count">' + incoming.length + ' / ' + maxPlayers + '</span></div><div class="manager-trade-player-grid">' + (incomingChoices || '<div class="manager-empty-line">当前球队没有可交易球员。</div>') + '</div><p class="manager-trade-package-copy">得到：' + escapeHtml(tradePlayerNames(incoming)) + '</p></article></section>' +
+      '<article class="manager-panel manager-trade-assessment" aria-live="polite"><div><div class="manager-panel-kicker">STEP 3 · 对方评估</div><h2>' + escapeHtml(assessment) + '</h2><p>' + escapeHtml(assessmentDetail) + '</p></div><button class="manager-button ' + (proposal.valid && proposal.accepted ? 'manager-button-primary' : 'manager-button-secondary') + '" type="button" data-action="complete-trade"' + (proposal.valid && proposal.accepted && windowOpen ? '' : ' disabled') + '>' + (proposal.valid && proposal.accepted ? '提交报价' : '等待可成交报价') + '</button></article>' +
+      '<article class="manager-panel manager-trade-history"><div class="manager-panel-kicker">TRADE LOG</div>' + (history || '<div class="manager-empty-line">本赛季尚未完成交易。</div>') + '</article></section>';
   }
 
   function conferenceForTeam(teamId) {
@@ -208,7 +337,7 @@
         '<span class="manager-standing-streak">' + recentStreak(current, id) + '</span>' +
       '</div>';
     });
-    var teamBody = '<div class="manager-standings-tabs"><button type="button" class="' + (conference === 'SOUTH' ? 'is-active' : '') + '" data-action="set-standings-conference" data-conference="SOUTH">南方</button><button type="button" class="' + (conference === 'NORTH' ? 'is-active' : '') + '" data-action="set-standings-conference" data-conference="NORTH">北方</button></div>' +
+    var teamBody = '<div class="manager-standings-tabs"><button type="button" class="' + (conference === 'SOUTH' ? 'is-active' : '') + '" data-action="set-standings-conference" data-conference="SOUTH" aria-pressed="' + (conference === 'SOUTH') + '">南方</button><button type="button" class="' + (conference === 'NORTH' ? 'is-active' : '') + '" data-action="set-standings-conference" data-conference="NORTH" aria-pressed="' + (conference === 'NORTH') + '">北方</button></div>' +
       '<div class="manager-standings-panel"><div class="manager-standings-list">' + listHtml + '</div></div>';
     var statConfig = {
       pts: { total: 'points', label: '场均得分' },
@@ -237,17 +366,17 @@
     }).join('') : '<div class="manager-ranking-empty">推进比赛后显示球员排行榜。</div>';
     var remainingPlayerRows = Math.max(0, playerRows.length - visiblePlayerRows.length);
     var playerBody = '<div class="manager-player-stat-tabs">' +
-        '<button type="button" class="' + (playerRankingStat === 'pts' ? 'is-active' : '') + '" data-action="set-player-ranking-stat" data-stat="pts">得分</button>' +
-        '<button type="button" class="' + (playerRankingStat === 'reb' ? 'is-active' : '') + '" data-action="set-player-ranking-stat" data-stat="reb">篮板</button>' +
-        '<button type="button" class="' + (playerRankingStat === 'ast' ? 'is-active' : '') + '" data-action="set-player-ranking-stat" data-stat="ast">助攻</button>' +
-        '<button type="button" class="' + (playerRankingStat === 'stl' ? 'is-active' : '') + '" data-action="set-player-ranking-stat" data-stat="stl">抢断</button>' +
-        '<button type="button" class="' + (playerRankingStat === 'blk' ? 'is-active' : '') + '" data-action="set-player-ranking-stat" data-stat="blk">盖帽</button>' +
+        '<button type="button" class="' + (playerRankingStat === 'pts' ? 'is-active' : '') + '" data-action="set-player-ranking-stat" data-stat="pts" aria-pressed="' + (playerRankingStat === 'pts') + '">得分</button>' +
+        '<button type="button" class="' + (playerRankingStat === 'reb' ? 'is-active' : '') + '" data-action="set-player-ranking-stat" data-stat="reb" aria-pressed="' + (playerRankingStat === 'reb') + '">篮板</button>' +
+        '<button type="button" class="' + (playerRankingStat === 'ast' ? 'is-active' : '') + '" data-action="set-player-ranking-stat" data-stat="ast" aria-pressed="' + (playerRankingStat === 'ast') + '">助攻</button>' +
+        '<button type="button" class="' + (playerRankingStat === 'stl' ? 'is-active' : '') + '" data-action="set-player-ranking-stat" data-stat="stl" aria-pressed="' + (playerRankingStat === 'stl') + '">抢断</button>' +
+        '<button type="button" class="' + (playerRankingStat === 'blk' ? 'is-active' : '') + '" data-action="set-player-ranking-stat" data-stat="blk" aria-pressed="' + (playerRankingStat === 'blk') + '">盖帽</button>' +
       '</div>' +
       '<div class="manager-player-stat-panel"><div class="manager-player-stat-list"><div class="manager-player-stat-head"><span>排名</span><span>球员</span><span>球队</span><span>场次</span><span>' + activeStat.label + '</span></div>' + playerListHtml + '</div>' +
       (remainingPlayerRows > 0 ? '<button type="button" class="manager-button manager-button-secondary manager-player-stat-more" data-action="show-more-player-stats">查看更多（下 ' + Math.min(10, remainingPlayerRows) + ' 名）</button>' : '') + '</div>';
-    main.innerHTML = '<section class="manager-page manager-standings-page"><div class="manager-page-head"><div><div class="manager-eyebrow">赛季排名 / STANDINGS</div><h1>' + (current.season.phase === 'complete' ? '赛季总结' : '联盟排行榜') + '</h1><p>' + (current.season.phase === 'complete' ? '冠军：' + escapeHtml(teamName(current.season.champion)) + ' · 董事会：' + escapeHtml(owner.label || '') : '排名按战绩与净胜分排序，各联盟前八进入季后赛。') + '</p></div></div>' +
+    main.innerHTML = '<section class="manager-page manager-standings-page"><div class="manager-page-head"><div><div class="manager-eyebrow">赛季排名 / STANDINGS</div><h1>' + (current.season.phase === 'complete' ? '赛季总结' : '联盟排行榜') + '</h1><p>' + (current.season.phase === 'complete' ? '冠军：' + escapeHtml(teamName(current.season.champion)) + ' · 董事会：' + escapeHtml(owner.label || '') : '排名按胜率与净胜分排序，各联盟前八进入季后赛。') + '</p></div></div>' +
       (current.season.phase === 'complete' ? '<div class="manager-review-banner"><strong>' + (owner.score || 0) + '<em>/100</em></strong><div><b>' + escapeHtml(owner.label || '') + '</b><span>' + escapeHtml(owner.summary || '') + '</span></div></div>' : '') +
-      '<div class="manager-rankings-view-tabs"><button type="button" class="' + (standingsView === 'teams' ? 'is-active' : '') + '" data-action="set-standings-view" data-standings-view="teams">球队战绩</button><button type="button" class="' + (standingsView === 'players' ? 'is-active' : '') + '" data-action="set-standings-view" data-standings-view="players">球员统计</button></div>' +
+      '<div class="manager-rankings-view-tabs"><button type="button" class="' + (standingsView === 'teams' ? 'is-active' : '') + '" data-action="set-standings-view" data-standings-view="teams" aria-pressed="' + (standingsView === 'teams') + '">球队战绩</button><button type="button" class="' + (standingsView === 'players' ? 'is-active' : '') + '" data-action="set-standings-view" data-standings-view="players" aria-pressed="' + (standingsView === 'players') + '">球员统计</button></div>' +
       (standingsView === 'players' ? playerBody : teamBody) + '</section>';
   }
 
@@ -267,8 +396,13 @@
   function render() {
     if (!state()) { renderWelcome(); return; }
     setSession(true);
-    nav.querySelectorAll('[data-view]').forEach(function(button) { button.classList.toggle('is-active', button.dataset.view === view); });
+    nav.querySelectorAll('[data-view]').forEach(function(button) {
+      var active = button.dataset.view === view;
+      button.classList.toggle('is-active', active);
+      if (active) button.setAttribute('aria-current', 'page'); else button.removeAttribute('aria-current');
+    });
     if (view === 'roster') renderRoster();
+    else if (view === 'trade') renderTrade();
     else if (view === 'standings') renderStandings();
     else if (view === 'season') renderSeason();
     else renderDashboard();
@@ -291,39 +425,86 @@
   }
 
   function saveGame() {
-    if (!state()) return;
-    global.ManagerStorage.save(state()).then(function() { showToast('经理存档已保存到独立槽位。'); }).catch(function(error) { showToast(error.message || '保存失败。', true); });
+    if (!state() || storageBusy) return;
+    setStorageBusy(true);
+    global.ManagerStorage.save(state()).then(function() {
+      showToast('经理存档已保存到独立槽位。');
+    }, function(error) {
+      showToast(error.message || '保存失败。', true);
+    }).then(function() { setStorageBusy(false); });
   }
 
   function loadSave() {
+    if (storageBusy) return;
+    setStorageBusy(true);
     global.ManagerStorage.load().then(function(saved) {
       if (!saved) { showToast('没有找到经理模式存档。', true); return; }
       setState(saved);
       showToast('经理存档已读取。');
-    }).catch(function(error) { showToast(error.message || '读取失败。', true); });
+    }, function(error) {
+      showToast(error.message || '读取失败。', true);
+    }).then(function() { setStorageBusy(false); });
   }
 
   function restartGame() {
-    global.ManagerStorage.clear().catch(function() {}).then(function() {
+    if (storageBusy) return;
+    if (!global.confirm('确认重开经理模式？这只会删除经理槽位 1，并回到选队页；不会影响球员模式存档或共享联赛数据。')) return;
+    setStorageBusy(true);
+    global.ManagerStorage.clear().then(function() {
       global.MANAGER_STATE = null;
       view = 'dashboard';
       render();
       showToast('已重开经理模式，请重新选择执教球队。');
+    }, function(error) {
+      showToast(error.message || '重开失败，经理存档未被删除。', true);
+    }).then(function() {
+      setStorageBusy(false);
     });
   }
 
   function simulate(action) {
-    if (!state()) return;
+    if (!state() || storageBusy) return;
     try {
       var count = 0;
       if (action === 'simulate-next') { count = global.ManagerEngine.simulateNextUserRegularGame(state()).result ? 1 : 0; }
       if (action === 'simulate-regular') count = global.ManagerEngine.simulateRemainingRegularSeason(state());
       if (action === 'simulate-playoff-next') { count = global.ManagerEngine.simulateNextUserPostseasonGame(state()).result ? 1 : 0; }
       if (action === 'simulate-playoffs') count = global.ManagerEngine.simulateRemainingPostseason(state());
-      global.ManagerStorage.save(state()).catch(function() {});
       render();
-      showToast(count ? '已推进 ' + count + ' 场。' : '赛季状态已更新。');
+      setStorageBusy(true);
+      global.ManagerStorage.save(state()).then(function() {
+        showToast(count ? '已推进 ' + count + ' 场并已自动保存。' : '赛季状态已更新并已自动保存。');
+      }, function(error) {
+        showToast((count ? '已推进 ' + count + ' 场，但自动保存失败：' : '赛季状态已更新，但自动保存失败：') + (error.message || '请手动重试保存。'), true);
+      }).then(function() { setStorageBusy(false); });
     } catch (error) { showToast(error.message || '模拟失败。', true); }
+  }
+
+  function completeTrade() {
+    var current = state();
+    if (!current || storageBusy) return;
+    var proposal = global.ManagerEngine.evaluateTrade(current, tradeOutgoingIds, tradeIncomingIds);
+    if (!proposal.valid || !proposal.accepted) {
+      showToast(proposal.reason || '该交易无法完成。', true);
+      renderTrade();
+      return;
+    }
+    var confirmation = '确认送出“' + tradePlayerNames(proposal.outgoing.map(function(location) { return location.player; })) + '”，换回“' + tradePlayerNames(proposal.incoming.map(function(location) { return location.player; })) + '”吗？\n只会修改当前经理存档，交易后会自动保存。';
+    if (!global.confirm(confirmation)) return;
+    try {
+      var result = global.ManagerEngine.executeTrade(current, tradeOutgoingIds, tradeIncomingIds);
+      tradeOutgoingIds = [];
+      tradeIncomingIds = [];
+      render();
+      setStorageBusy(true);
+      global.ManagerStorage.save(state()).then(function() {
+        showToast('交易完成：' + tradePlayerNames(result.trade.sent) + ' 换回 ' + tradePlayerNames(result.trade.received) + '，已自动保存。');
+      }, function(error) {
+        showToast('交易已完成，但自动保存失败：' + (error.message || '请手动重试保存。'), true);
+      }).then(function() { setStorageBusy(false); });
+    } catch (error) {
+      showToast(error.message || '交易失败。', true);
+    }
   }
 
   function toggleStarter(playerId) {
@@ -332,6 +513,7 @@
     current.rotation[playerId].starter = !current.rotation[playerId].starter;
     if (current.rotation[playerId].starter && Number(current.rotation[playerId].minutes) <= 0) current.rotation[playerId].minutes = 24;
     renderRoster();
+    updateNextAction();
   }
 
   function handleClick(event) {
@@ -349,9 +531,21 @@
     else if (action === 'set-player-ranking-stat') { playerRankingStat = statConfigValue(target.dataset.stat); playerRankingLimit = 10; renderStandings(); }
     else if (action === 'show-more-player-stats') { playerRankingLimit += 10; renderStandings(); }
     else if (action === 'open-roster') { view = 'roster'; render(); }
+    else if (action === 'open-trade') { view = 'trade'; render(); }
     else if (action === 'open-dashboard') { view = 'dashboard'; render(); }
     else if (action === 'toggle-starter') toggleStarter(target.dataset.player);
+    else if (action === 'select-trade-outgoing') { tradeOutgoingIds = toggleTradeSelection(tradeOutgoingIds, target.dataset.player); renderTrade(); }
+    else if (action === 'select-trade-incoming') { tradeIncomingIds = toggleTradeSelection(tradeIncomingIds, target.dataset.player); renderTrade(); }
+    else if (action === 'complete-trade') completeTrade();
     else if (action === 'simulate-next' || action === 'simulate-regular' || action === 'simulate-playoff-next' || action === 'simulate-playoffs') simulate(action);
+  }
+
+  function handleChange(event) {
+    var select = event.target.closest('[data-trade-team]');
+    if (!select || !state()) return;
+    tradePartnerTeamId = select.value;
+    tradeIncomingIds = [];
+    renderTrade();
   }
 
   function handleInput(event) {
@@ -359,16 +553,41 @@
     if (!input || !state()) return;
     var playerId = input.dataset.minutePlayer;
     if (!state().rotation[playerId]) return;
-    state().rotation[playerId].minutes = Number(input.value);
-    var validation = global.ManagerState.validateRotation(state().leagueData[state().selectedTeam] || [], state().rotation);
+    state().rotation[playerId].minutes = input.value === '' ? NaN : Number(input.value);
+    var validation = rotationValidation(state());
+    renderRotationFeedback(validation);
+  }
+
+  function renderRotationFeedback(validation) {
     var status = main.querySelector('.manager-rotation-status');
     if (status) {
       status.classList.toggle('is-valid', validation.valid);
       status.classList.toggle('is-invalid', !validation.valid);
-      status.querySelector('.manager-validation-label').textContent = validation.valid ? '✓ 轮换合法' : '需要修正';
-      status.querySelector('div:first-child strong').innerHTML = validation.totalMinutes + '<em>/240</em>';
-      status.querySelector('div:nth-child(2) strong').innerHTML = validation.activeCount + '<em>/9–11</em>';
+      status.querySelector('[data-rotation-label]').textContent = validation.valid ? '✓ 轮换合法' : '需要修正';
+      status.querySelector('[data-rotation-total]').innerHTML = validation.totalMinutes + '<em>/240</em>';
+      status.querySelector('[data-rotation-active]').innerHTML = validation.activeCount + '<em>/9–11</em>';
+      status.querySelector('[data-rotation-starters]').innerHTML = validation.starterCount + '<em>/5</em>';
     }
+    var errors = main.querySelector('[data-rotation-errors]');
+    if (errors) {
+      errors.hidden = validation.valid;
+      errors.innerHTML = validation.errors.map(function(error) { return '<div>! ' + escapeHtml(error) + '</div>'; }).join('');
+    }
+    main.querySelectorAll('[data-rotation-player]').forEach(function(row) {
+      var assignment = state().rotation[row.dataset.rotationPlayer] || { starter: false, minutes: 0 };
+      var active = Number(assignment.minutes) > 0;
+      row.classList.toggle('is-starter', !!assignment.starter);
+      row.classList.toggle('is-active', active);
+      row.classList.toggle('is-inactive', !active);
+      var badge = row.querySelector('.manager-player-rank');
+      if (badge) badge.textContent = assignment.starter ? 'S' : (active ? 'R' : '—');
+      var toggle = row.querySelector('[data-action="toggle-starter"]');
+      if (toggle) {
+        toggle.textContent = assignment.starter ? '首发' : '轮换';
+        toggle.setAttribute('aria-pressed', assignment.starter ? 'true' : 'false');
+      }
+    });
+    updateNextAction();
   }
 
   function init() {
@@ -379,10 +598,13 @@
     toast = document.getElementById('manager-toast');
     root.addEventListener('click', handleClick);
     root.addEventListener('input', handleInput);
+    root.addEventListener('change', handleChange);
     renderWelcome();
     global.ManagerStorage.load().then(function(saved) {
-      if (saved) showToast('检测到经理存档，可从右上角读取。');
-    }).catch(function() {});
+      if (saved) showToast('检测到经理存档，可在欢迎页下方读取。');
+    }, function(error) {
+      showToast(error.message || '无法检查经理存档。', true);
+    });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

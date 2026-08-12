@@ -2219,7 +2219,7 @@ function renderRosterPlayers(team, shown, allAvailable) {
     const playerPos = getBuildPlayerPositions(p).join(' / ');
     const hsStyle = getPlayerHeadshotStyle(p.id, 32);
     const ovrGrade = getOvrGrade(parseInt(p.ovr) || 50);
-    listHtml += `<button type="button" class="br-player${sel ? ' selected' : ''}" aria-pressed="${sel ? 'true' : 'false'}" onclick="pickPlayer('${p.id}')">
+    listHtml += `<button type="button" class="br-player${sel ? ' selected' : ''}" data-player-id="${p.id}" aria-pressed="${sel ? 'true' : 'false'}" onclick="pickPlayer('${p.id}')">
       <div class="bp-left">
         <div class="bp-headshot" style="${hsStyle}"></div>
         <div class="bp-copy">
@@ -2284,7 +2284,14 @@ function pickPlayer(playerId) {
   STATE.selectedPlayer = player;
   
   document.querySelectorAll('.br-player').forEach(r => {
-    r.classList.toggle('selected', r.textContent.includes(player.cname));
+    const selected = r.dataset.playerId === player.id;
+    r.classList.toggle('selected', selected);
+    r.setAttribute('aria-pressed', selected ? 'true' : 'false');
+    const detail = r.querySelector('.bp-detail');
+    const rowPlayer = players.find(p => p.id === r.dataset.playerId);
+    if (detail && rowPlayer) {
+      detail.textContent = getBuildPlayerPositions(rowPlayer).join(' / ') + (selected ? ' · 已选' : '');
+    }
   });
   
   renderLeftAttrs();
