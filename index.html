@@ -774,13 +774,13 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     <main class="home-shell">
       <section class="home-hero">
         <div class="home-eyebrow">本地单机生涯模拟</div>
-        <h1>抽能力，<br><span>打完整个生涯</span></h1>
-        <p>从随机球队中挑选球员，拼出十四项能力，再把这名新秀带进漫长赛季。</p>
+        <h1>自由建人，<br><span>打完整个生涯</span></h1>
+        <p>分配十四项能力，把独一无二的新秀带进漫长赛季。</p>
       </section>
 
       <div class="home-loop" aria-label="游戏流程">
-        <div class="home-loop-item"><b>01</b><strong>抽球队</strong><small>每轮随机一队</small></div>
-        <div class="home-loop-item"><b>02</b><strong>取能力</strong><small>锁定十四项属性</small></div>
+        <div class="home-loop-item"><b>01</b><strong>选位置</strong><small>确定场上角色</small></div>
+        <div class="home-loop-item"><b>02</b><strong>分配能力</strong><small>自由加点十四项属性</small></div>
         <div class="home-loop-item"><b>03</b><strong>跑生涯</strong><small>赛季、季后赛与休赛期</small></div>
       </div>
 
@@ -848,13 +848,13 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
           <span class="create-step-no">02</span>
           <div class="create-step-copy">
             <strong id="create-position-title">选择场上位置</strong>
-            <small>站位会影响能力抽取时的跨位置折损</small>
+            <small>站位决定总评计算与场上角色</small>
           </div>
         </div>
         <div class="pos-grid" id="pos-grid" aria-label="场上位置"></div>
       </section>
     </div>
-    <button class="btn btn-primary" onclick="trackEvent({act:'click',blk:'BMC098',pos:'TC2',label:'确认位置'});confirmPosition()">进入能力抽取</button>
+    <button class="btn btn-primary" onclick="trackEvent({act:'click',blk:'BMC098',pos:'TC2',label:'确认位置'});confirmPosition()">进入能力分配</button>
   </div>
 
   <!-- ====== 建球员 ====== -->
@@ -1118,6 +1118,8 @@ const STATE = {
   attrs: {},            // { threePT: 75, ... } 锁定后的值
   attrSlots: {},        // { threePT: { player, team, value }, ... }
   lockedCount: 0,
+  buildPointsTotal: 0,
+  buildPointsRemaining: 0,
   usedPlayers: [],      // 已选球员名列表
   _mustLockAfterSpin: false, // 已展示球员未锁定属性时禁用随机球队
   
@@ -1626,6 +1628,7 @@ function initGame() {
   Object.assign(STATE, {
     mode: null, position: null, playerName: '',
     attrs: {}, attrSlots: {}, lockedCount: 0,
+    buildPointsTotal: 0, buildPointsRemaining: 0,
     usedPlayers: [], _mustLockAfterSpin: false,
     buildStep: 'select', noPlayerSelected: true,
     currentTeam: null, currentRoster: [],
@@ -1671,7 +1674,7 @@ function initGame() {
 // ==================== 玩法说明弹窗 ====================
 var _helpPage = 0;
 var _helpPages = [
-  { title: '建球员', content: '选择我的位置后进入抽签选队，随机抽取球队后从该队球员列表中选一人，点击左侧属性槽锁定一项属性。锁定后自动进入下一轮，可继续抽新球队选人锁属性。每局限换三次球员，用完只能重新随机球队。跨位置选人会触发属性衰减，集满十四项属性后自动揭晓总评、模板风格和相似球员。' },
+  { title: '建球员', content: '选择我的位置后，系统会随机发放 150 到 200 点能力点。十四项属性均从 50 起步，你可以自由分配点数，单项最高 99。点数用完后揭晓总评、模板风格和相似球员；位置会影响总评计算与赛场角色。' },
   { title: '赛季', content: '抽签决定我的生涯球队后进入赛季。系统根据我与队内同位置球员的总评比较判定首发或替补。每场比赛可点单场推进，也可点击日历日期批量模拟到当天。比赛数据根据属性和位置动态生成，方差较大，有爆发也有低迷。赛季中可随时点我的数据查看场均表现。' },
   { title: '生涯事件', content: '赛季事件分为伤病、纪律、职业剧情和生活花絮，各自拥有独立概率、冷却和赛季名额。部分事件会根据单场表现、球队战绩、合同阶段和季后赛形势触发，并提供会影响信任、声望、伤病风险或未来数场球队气势的选择。同一随机事件不会在一个赛季内重复，所有结果可在“我的数据—事件”中回看。' },
   { title: '季后赛', content: '常规赛结束后根据排名决定季后赛或附加赛资格。附加赛在七到十名之间进行，逐场淘汰。季后赛每轮七场四胜，我的系列赛会一场一场模拟，每场生成简报。点击简报可展开查看详细比分、我的数据和全队数据。一路赢下去直到总冠军。' },
@@ -1860,6 +1863,14 @@ function confirmPosition() {
     return;
   }
   syncPlayerName();
+  const buildConfig = SIM_CONFIG.BUILD;
+  const baseAttr = buildConfig.POINT_BUILD_BASE_ATTR;
+  STATE.attrs = {};
+  STATE.attrSlots = {};
+  ATTR_KEYS.forEach(key => { STATE.attrs[key] = baseAttr; });
+  STATE.lockedCount = ATTR_KEYS.length;
+  STATE.buildPointsTotal = buildConfig.POINT_BUILD_MIN_POINTS + Math.floor(Math.random() * (buildConfig.POINT_BUILD_MAX_POINTS - buildConfig.POINT_BUILD_MIN_POINTS + 1));
+  STATE.buildPointsRemaining = STATE.buildPointsTotal;
   STATE.selectedPlayer = null;
   STATE.currentTeam = null;
   showScreen('screen-build');
@@ -1875,8 +1886,37 @@ function renderBuildUI() {
   renderLeftAttrs();
 }
 
+function isPointBuildActive() {
+  return Number(STATE.buildPointsTotal) > 0;
+}
+
+function getPointBuildOvr() {
+  return STATE.position ? calcOVR(STATE.attrs, STATE.position) : 0;
+}
+
 /** Render left attribute sidebar */
 function renderLeftAttrs() {
+  if (isPointBuildActive()) {
+    const ovrEl = document.getElementById('bl-ovr');
+    if (ovrEl) ovrEl.textContent = getPointBuildOvr();
+    const container = document.getElementById('bl-attrs');
+    if (!container) return;
+    container.innerHTML = '';
+    ATTR_KEYS.forEach(key => {
+      const value = Number(STATE.attrs[key]) || SIM_CONFIG.BUILD.POINT_BUILD_BASE_ATTR;
+      const grade = getGrade(value);
+      const div = document.createElement('div');
+      div.className = 'ba-slot locked';
+      div.innerHTML = '<span class="ba-label">' + attrCN(key) + '</span>'
+        + '<span class="ba-grade" style="color:' + grade.color + '">' + grade.letter + '</span>'
+        + '<span class="ba-tail"><span class="ba-value">' + value + '</span><span class="ba-status">已分配</span></span>';
+      container.appendChild(div);
+    });
+    const footer = document.getElementById('bl-footer');
+    if (footer) footer.innerHTML = '<div style="padding:8px 10px;font-size:11px;color:var(--text-dim);">剩余 ' + STATE.buildPointsRemaining + ' / ' + STATE.buildPointsTotal + ' 点</div>';
+    return;
+  }
+
   // OVR
   const ovrEl = document.getElementById('bl-ovr');
   if (ovrEl) {
@@ -1972,6 +2012,10 @@ function renderLeftAttrs() {
 
 /** Render slot machine — 3 buttons (no reroll limit, forced choice) */
 function renderTeamPicker() {
+  if (isPointBuildActive()) {
+    renderPointBuildAllocator();
+    return;
+  }
   const slotArea = document.getElementById('br-slot-area');
   if (!slotArea) return;
   
@@ -2001,6 +2045,58 @@ function renderTeamPicker() {
   
   const rosterArea = document.getElementById('br-roster-area');
   if (rosterArea) rosterArea.innerHTML = '';
+}
+
+function changePointBuildAttr(key, delta) {
+  if (!isPointBuildActive()) return;
+  const min = SIM_CONFIG.BUILD.POINT_BUILD_BASE_ATTR;
+  const max = SIM_CONFIG.BUILD.ATTR_MAX;
+  const current = Number(STATE.attrs[key]) || min;
+  if (delta > 0) {
+    if (STATE.buildPointsRemaining <= 0 || current >= max) return;
+    STATE.attrs[key] = current + 1;
+    STATE.buildPointsRemaining--;
+  } else {
+    if (current <= min) return;
+    STATE.attrs[key] = current - 1;
+    STATE.buildPointsRemaining++;
+  }
+  STATE.finalOVR = 0;
+  renderBuildUI();
+  renderTeamPicker();
+}
+
+function finishPointBuild() {
+  if (!isPointBuildActive() || STATE.buildPointsRemaining !== 0) return;
+  STATE.finalOVR = getPointBuildOvr();
+  revealPlayer();
+}
+
+function renderPointBuildAllocator() {
+  const slotArea = document.getElementById('br-slot-area');
+  const rosterArea = document.getElementById('br-roster-area');
+  if (!slotArea) return;
+  const baseAttr = SIM_CONFIG.BUILD.POINT_BUILD_BASE_ATTR;
+  const maxAttr = SIM_CONFIG.BUILD.ATTR_MAX;
+  const canFinish = STATE.buildPointsRemaining === 0;
+  const rows = ATTR_KEYS.map(key => {
+    const value = Number(STATE.attrs[key]) || baseAttr;
+    const canLower = value > baseAttr;
+    const canRaise = STATE.buildPointsRemaining > 0 && value < maxAttr;
+    return '<div style="display:grid;grid-template-columns:1fr 34px 34px 34px;gap:7px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border-light);">'
+      + '<span style="font-size:13px;font-weight:700;">' + attrCN(key) + '</span>'
+      + '<b style="text-align:center;font-family:var(--font-display);font-size:15px;">' + value + '</b>'
+      + '<button type="button" aria-label="降低' + attrCN(key) + '" onclick="changePointBuildAttr(\'' + key + '\', -1)" ' + (canLower ? '' : 'disabled') + ' style="height:30px;border:1px solid var(--border);border-radius:7px;background:var(--bg-card);color:var(--text);font-weight:800;cursor:pointer;">−</button>'
+      + '<button type="button" aria-label="提高' + attrCN(key) + '" onclick="changePointBuildAttr(\'' + key + '\', 1)" ' + (canRaise ? '' : 'disabled') + ' style="height:30px;border:0;border-radius:7px;background:var(--orange);color:#fff;font-weight:800;cursor:pointer;">+</button>'
+      + '</div>';
+  }).join('');
+  slotArea.innerHTML = '<div class="br-slot-area">'
+    + '<div class="br-slot-head"><div><span class="br-slot-kicker">ATTRIBUTE POINTS</span><div class="br-slot-label">自由分配能力</div></div><span class="br-slot-rule">单项最高 ' + maxAttr + '</span></div>'
+    + '<div style="display:flex;align-items:baseline;justify-content:space-between;padding:10px 12px;border-radius:10px;background:var(--orange-bg);margin-bottom:8px;"><span style="font-size:12px;color:var(--text-dim);">可分配点数</span><strong style="font-family:var(--font-display);font-size:24px;color:var(--orange);">' + STATE.buildPointsRemaining + ' <small style="font-size:12px;color:var(--text-dim);">/ ' + STATE.buildPointsTotal + '</small></strong></div>'
+    + '<div style="max-height:52vh;overflow-y:auto;padding:0 2px;">' + rows + '</div>'
+    + '<button class="slot-btn slot-btn-primary" type="button" onclick="finishPointBuild()" ' + (canFinish ? '' : 'disabled') + ' style="width:100%;margin-top:12px;">' + (canFinish ? '确认属性，揭晓球员' : '请用完全部点数') + '</button>'
+    + '</div>';
+  if (rosterArea) rosterArea.innerHTML = '<div class="br-hint" style="padding:10px 4px;">14 项属性均从 ' + baseAttr + ' 开始；加点将实时更新预计总评。</div>';
 }
 
 /** 只更新按钮状态，不重建老虎机HTML（防止跳动）*/
