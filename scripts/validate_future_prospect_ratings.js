@@ -7,6 +7,8 @@ const indexSource = fs.readFileSync('index.html', 'utf8');
 const offseasonSource = fs.readFileSync('js/offseason.js', 'utf8');
 const evidence = JSON.parse(fs.readFileSync('scripts/data/future_prospect_profiles.json', 'utf8')).profiles;
 const reviews = JSON.parse(fs.readFileSync('scripts/data/future_prospect_reviews.json', 'utf8')).reviews;
+const fairAdjustments = JSON.parse(fs.readFileSync('scripts/data/fair_ovr_rookie_adjustments.json', 'utf8')).players
+  .filter((row) => row.cohort === 'future');
 const context = {};
 vm.createContext(context);
 vm.runInContext(configSource, context);
@@ -35,6 +37,7 @@ const errors = [];
 const candidateById = Object.fromEntries(candidates.map((candidate) => [candidate.id, candidate]));
 const evidenceById = {};
 const reviewById = {};
+const fairAdjustmentById = Object.fromEntries(fairAdjustments.map((row) => [row.id, row]));
 
 evidence.forEach((profile) => {
   if (evidenceById[profile.id]) errors.push(`${profile.id} 证据档案重复`);
@@ -56,6 +59,13 @@ Object.keys(ratings).forEach((id) => {
   if (profile && review && profile.name !== review.name) errors.push(`${id} 证据名 ${profile.name} 与审核名 ${review.name} 不一致`);
   if (!rating || !vm.runInContext(`!!SIM_CONFIG.OVR_MODEL.positionWeights[${JSON.stringify(rating && rating.pos)}]`, context)) errors.push(`${id} 位置无效`);
   if (!rating.height) errors.push(`${id} 缺少身高`);
+  const fairAdjustment = fairAdjustmentById[id];
+  if (!fairAdjustment) errors.push(`${id} 缺少公平 OVR 属性审计`);
+  Object.entries((fairAdjustment && fairAdjustment.changes) || {}).forEach(([key, tuple]) => {
+    if (key === 'STL' || !attrKeys.includes(key) || !Array.isArray(tuple) || tuple.length !== 2 || rating.attributes[key] !== tuple[1]) {
+      errors.push(`${id} 公平 OVR 属性审计无效：${key}`);
+    }
+  });
   if (!profilesByPosition[rating.pos] || !profilesByPosition[rating.pos].includes(rating.profile)) errors.push(`${id} 模板 ${rating.profile} 与位置 ${rating.pos} 不匹配`);
   attrKeys.forEach((key) => {
     const value = rating.attributes && rating.attributes[key];
@@ -63,6 +73,8 @@ Object.keys(ratings).forEach((id) => {
   });
   if (rating && rating.attributes && ovrStart >= 0 && ovrEnd > ovrStart) {
     context.ratingProbe = { pos: rating.pos, ovr: rating.ovr, ...rating.attributes };
+    const directCalculated = vm.runInContext('calcOVR(ratingProbe, ratingProbe.pos)', context);
+    if (Math.abs(directCalculated - rating.ovr) > 2) errors.push(`${id} 公平公式实算偏差超过 2：${directCalculated} / ${rating.ovr}`);
     vm.runInContext(`normalizeRookieAttributesToOvr(ratingProbe, ${Number(rating.ovr)})`, context);
     const calculated = vm.runInContext('calcOVR(ratingProbe, ratingProbe.pos)', context);
     if (calculated !== rating.ovr) errors.push(`${id} 新公式归一失败：目标 ${rating.ovr}，实算 ${calculated}`);
@@ -92,6 +104,7 @@ console.log(JSON.stringify({
   fixedFutureRatings: Object.keys(ratings).length,
   evidenceProfiles: evidence.length,
   confirmedReviews: reviews.filter((review) => review.status === 'confirmed').length,
+  fairOvrAdjustments: fairAdjustments.length,
   validationErrors: errors.length,
   errors
 }, null, 2));

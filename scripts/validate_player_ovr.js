@@ -106,6 +106,35 @@ const formulaResiduals = leaguePlayers.map(player => {
     error: formulaOvr - player.ovr,
   };
 });
+const fairness = SIM_CONFIG.OVR_MODEL.fairness;
+const baselineAttrs = Object.fromEntries(ATTR_KEYS.map(key => [key, fairness.baselineAttribute]));
+const baselineOvrs = {};
+const coreBuildOvrs = {};
+Object.keys(SIM_CONFIG.OVR_MODEL.positionWeights).forEach(pos => {
+  baselineOvrs[pos] = formulaContext.calcOVR(baselineAttrs, pos);
+  const coreBuild = { ...baselineAttrs };
+  Object.entries(SIM_CONFIG.OVR_MODEL.positionWeights[pos])
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+    .forEach(([key], index) => { coreBuild[key] = index === 3 ? 92 : 99; });
+  coreBuildOvrs[pos] = formulaContext.calcOVR(coreBuild, pos);
+  const weights = Object.values(SIM_CONFIG.OVR_MODEL.positionWeights[pos]).sort((a, b) => b - a);
+  const totalWeight = weights.reduce((sum, value) => sum + value, 0);
+  const topFourWeight = weights.slice(0, 4).reduce((sum, value) => sum + value, 0);
+  if (Math.abs(totalWeight - fairness.totalPositionWeight) > 0.00001) {
+    throw new Error(`${pos} 总权重未归一：${totalWeight}`);
+  }
+  if (Math.abs(topFourWeight - fairness.topFourWeight) > 0.00001) {
+    throw new Error(`${pos} 核心四项权重未归一：${topFourWeight}`);
+  }
+});
+if (Object.values(baselineOvrs).some(value => value !== fairness.baselineOvr)) {
+  throw new Error(`全 50 属性的各位置 OVR 不一致：${JSON.stringify(baselineOvrs)}`);
+}
+const coreBuildGap = Math.max(...Object.values(coreBuildOvrs)) - Math.min(...Object.values(coreBuildOvrs));
+if (coreBuildGap > fairness.maxCoreBuildGap) {
+  throw new Error(`同点数核心构筑差距过大：${JSON.stringify(coreBuildOvrs)}`);
+}
 const meanAbsoluteError = formulaResiduals.reduce((sum, item) => sum + Math.abs(item.error), 0) / formulaResiduals.length;
 const withinThree = formulaResiduals.filter(item => Math.abs(item.error) <= 3).length;
 const largeResiduals = formulaResiduals
@@ -150,5 +179,6 @@ console.log(JSON.stringify({
   largeResiduals,
   monotonicChecks,
   validationErrors,
+  fairness: { baselineOvrs, coreBuildOvrs, coreBuildGap },
 }, null, 2));
 if (validationErrors.length) process.exitCode = 1;

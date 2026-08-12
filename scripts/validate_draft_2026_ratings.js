@@ -8,6 +8,8 @@ const draftSource = fs.readFileSync(path.join(root, 'js', 'data', 'draft_data.js
 const offseasonSource = fs.readFileSync(path.join(root, 'js', 'offseason.js'), 'utf8');
 const reviews = JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'draft_class_2026_reviews.json'), 'utf8')).reviews;
 const profiles = JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'draft_class_2026_profiles.json'), 'utf8')).profiles;
+const fairAdjustments = JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'fair_ovr_rookie_adjustments.json'), 'utf8')).players
+  .filter((row) => row.cohort === '2026');
 
 const context = {};
 vm.createContext(context);
@@ -27,6 +29,7 @@ const errors = [];
 const ratingIds = Object.keys(ratings).sort();
 const reviewIds = reviews.map((review) => review.id);
 const profileById = new Map(profiles.map((profile) => [profile.id, profile]));
+const fairAdjustmentById = new Map(fairAdjustments.map((row) => [row.id, row]));
 
 if (!draftClassMatch) {
   errors.push('未找到 2026 届选秀名单');
@@ -57,12 +60,21 @@ ratingIds.forEach((id) => {
   const rating = ratings[id];
   if (!vm.runInContext(`!!SIM_CONFIG.OVR_MODEL.positionWeights[${JSON.stringify(rating.pos)}]`, context)) errors.push(`${id} 位置无效：${rating.pos}`);
   const attributes = rating.attributes || {};
+  const fairAdjustment = fairAdjustmentById.get(id);
+  if (!fairAdjustment) errors.push(`${id} 缺少公平 OVR 属性审计`);
+  Object.entries((fairAdjustment && fairAdjustment.changes) || {}).forEach(([key, tuple]) => {
+    if (key === 'STL' || !attrKeys.includes(key) || !Array.isArray(tuple) || tuple.length !== 2 || attributes[key] !== tuple[1]) {
+      errors.push(`${id} 公平 OVR 属性审计无效：${key}`);
+    }
+  });
   attrKeys.forEach((key) => {
     const value = attributes[key];
     if (!Number.isFinite(value) || value < 25 || value > 99) errors.push(`${id} ${key} 无效：${value}`);
   });
   if (ovrStart >= 0 && ovrEnd > ovrStart) {
     context.ratingProbe = { pos: rating.pos, ovr: rating.ovr, ...attributes };
+    const directCalculated = vm.runInContext('calcOVR(ratingProbe, ratingProbe.pos)', context);
+    if (Math.abs(directCalculated - rating.ovr) > 2) errors.push(`${id} 公平公式实算偏差超过 2：${directCalculated} / ${rating.ovr}`);
     vm.runInContext(`normalizeRookieAttributesToOvr(ratingProbe, ${Number(rating.ovr)})`, context);
     const calculated = vm.runInContext('calcOVR(ratingProbe, ratingProbe.pos)', context);
     if (calculated !== rating.ovr) errors.push(`${id} 新公式归一失败：目标 ${rating.ovr}，实算 ${calculated}`);
@@ -76,6 +88,7 @@ console.log(JSON.stringify({
   officialProfiles: profiles.length,
   reviewedPlayers: reviews.length,
   fixedRatings: ratingIds.length,
+  fairOvrAdjustments: fairAdjustments.length,
   lastReviewedId: reviewIds[reviewIds.length - 1] || null,
   validationErrors: errors.length,
   errors,

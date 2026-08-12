@@ -6,6 +6,7 @@ const root = path.resolve(__dirname, '..');
 const leaguePath = path.join(root, 'js', 'data', 'league_players.js');
 const reviewPath = path.join(__dirname, 'data', 'player_rating_reviews.json');
 const ovrAdjustmentPath = path.join(__dirname, 'data', 'player_ovr_adjustments.json');
+const fairOvrAdjustmentPath = path.join(__dirname, 'data', 'fair_ovr_player_adjustments.json');
 const identityPath = path.join(__dirname, 'data', 'nba2k_player_identity.json');
 const mappingPath = path.join(__dirname, 'data', 'nba2k26_player_mapping.json');
 const ratingsPath = path.join(__dirname, 'data', 'nba2k26_player_ratings.json');
@@ -39,6 +40,7 @@ const baselinePlayersById = new Map(
 );
 const reviewData = JSON.parse(fs.readFileSync(reviewPath, 'utf8'));
 const ovrAdjustmentData = JSON.parse(fs.readFileSync(ovrAdjustmentPath, 'utf8'));
+const fairOvrAdjustmentData = JSON.parse(fs.readFileSync(fairOvrAdjustmentPath, 'utf8'));
 const identities = JSON.parse(fs.readFileSync(identityPath, 'utf8')).players || [];
 const mappings = JSON.parse(fs.readFileSync(mappingPath, 'utf8')).players || [];
 const ratings = JSON.parse(fs.readFileSync(ratingsPath, 'utf8')).players || [];
@@ -48,11 +50,18 @@ const ratingByUrl = new Map(ratings.map(rating => [rating.url, rating]));
 const mappingById = new Map(mappings.filter(mapping => mapping.accepted).map(mapping => [mapping.localId, mapping]));
 const reviews = reviewData.players || [];
 const ovrAdjustments = ovrAdjustmentData.players || [];
+const fairOvrAdjustments = fairOvrAdjustmentData.players || [];
 const ovrAdjustmentById = new Map();
+const fairOvrAdjustmentById = new Map();
 for (const adjustment of ovrAdjustments) {
   if (ovrAdjustmentById.has(adjustment.localId)) fail(`duplicate OVR adjustment: ${adjustment.localId}`);
   if (!adjustment.reason) fail(`missing OVR adjustment reason: ${adjustment.localId}`);
   ovrAdjustmentById.set(adjustment.localId, adjustment);
+}
+for (const adjustment of fairOvrAdjustments) {
+  if (fairOvrAdjustmentById.has(adjustment.localId)) fail(`duplicate fair OVR adjustment: ${adjustment.localId}`);
+  if (!adjustment.reason) fail(`missing fair OVR adjustment reason: ${adjustment.localId}`);
+  fairOvrAdjustmentById.set(adjustment.localId, adjustment);
 }
 const playersById = new Map();
 
@@ -118,7 +127,13 @@ for (let index = 0; index < reviews.length; index++) {
     if (adjustmentTuple && (!Array.isArray(adjustmentTuple) || adjustmentTuple.length !== 2 || adjustmentTuple[0] !== reviewedValue)) {
       fail(`${review.localId} invalid OVR adjustment tuple: ${attribute}`);
     }
-    const expected = adjustmentTuple ? adjustmentTuple[1] : reviewedValue;
+    const adjustedExpected = adjustmentTuple ? adjustmentTuple[1] : reviewedValue;
+    const fairAdjustment = fairOvrAdjustmentById.get(review.localId);
+    const fairTuple = fairAdjustment && fairAdjustment.changes && fairAdjustment.changes[attribute];
+    if (fairTuple && (!Array.isArray(fairTuple) || fairTuple.length !== 2 || fairTuple[0] !== adjustedExpected)) {
+      fail(`${review.localId} invalid fair OVR adjustment tuple: ${attribute}`);
+    }
+    const expected = fairTuple ? fairTuple[1] : adjustedExpected;
     if (leagueEntry.player[attribute] !== expected) {
       fail(`${review.localId} ${attribute}: league=${leagueEntry.player[attribute]}, review=${expected}`);
     }
@@ -153,6 +168,18 @@ for (const adjustment of ovrAdjustments) {
   }
 }
 
+for (const adjustment of fairOvrAdjustments) {
+  if (!reviewedIds.has(adjustment.localId)) fail(`fair OVR adjustment has no player review: ${adjustment.localId}`);
+  if (Math.abs(adjustment.afterFormulaOvr - adjustment.sourceOvr) > 2) {
+    fail(`${adjustment.localId} fair OVR residual exceeds 2`);
+  }
+  for (const attribute of Object.keys(adjustment.changes || {})) {
+    if (!attributes.includes(attribute) || attribute === 'ovr' || attribute === 'STL') {
+      fail(`${adjustment.localId} invalid fair OVR-adjusted field: ${attribute}`);
+    }
+  }
+}
+
 for (const [team, players] of Object.entries(league)) {
   const baselineById = new Map((baselineLeague[team] || []).map(player => [player.id, player]));
   for (const player of players) {
@@ -173,6 +200,7 @@ const result = {
   leaguePlayers: playersById.size,
   reviewedPlayers: reviews.length,
   ovrAdjustedPlayers: ovrAdjustments.length,
+  fairOvrAdjustedPlayers: fairOvrAdjustments.length,
   lastReviewedId: reviews.at(-1)?.localId || null,
   validationErrors: errors.length,
   errors,
