@@ -13830,7 +13830,7 @@ function generateCareerPoster() {
     honorRows.push(erRange + ' ' + erTeamCn + (labelStr ? ' ' + labelStr : ''));
   });
   if (!honorRows.length) honorRows.push('暂无主要荣誉');
-  var honorCardH = 32 + honorRows.length * 20;
+  var honorCardH = 0;
 
   var legacy = c.legacy || null;
   var retired = !!c.retired;
@@ -13850,6 +13850,17 @@ function generateCareerPoster() {
   var measureCtx = document.createElement('canvas').getContext('2d');
   measureCtx.font = '500 11px ' + C.fb;
   var evalLines = wrapCareerEvaluationText(evalText, cardW - 28, measureCtx);
+  var honorLineH = 14, honorRowGap = 2;
+  measureCtx.font = '500 10px ' + C.fd;
+  var honorRowLines = honorRows.map(function(row) {
+    return wrapCareerEvaluationText(row, cardW - 36, measureCtx);
+  });
+  var honorRowHeights = honorRowLines.map(function(lines) {
+    return Math.max(18, 4 + lines.length * honorLineH);
+  });
+  honorCardH = 32 + honorRowHeights.reduce(function(total, rowH) {
+    return total + rowH + honorRowGap;
+  }, 0);
   var evalCardH = 38 + evalLines.length * 20;
   var sections = [80, 92, 126, 130, honorCardH, 104, evalCardH, 18];
   var H = sections.reduce(function(a, b) { return a + b + 6; }, 0) + 8;
@@ -13982,11 +13993,17 @@ function generateCareerPoster() {
   ctx.fillStyle = C.orange;
   ctx.font = '500 13px ' + C.fd;
   ctx.fillText('🏆 生涯纪录', cardX + 14, y + 8);
+  var honorRowY = y + 26;
   for (var hri = 0; hri < honorRows.length; hri++) {
-    fillCell(cardX + 14, y + 26 + hri * 20, cardW - 28, 18, 5);
+    var rowLines = honorRowLines[hri];
+    var rowH = honorRowHeights[hri];
+    fillCell(cardX + 14, honorRowY, cardW - 28, rowH, 5);
     ctx.fillStyle = C.text;
     ctx.font = '500 10px ' + C.fd;
-    ctx.fillText(honorRows[hri], cardX + 18, y + 26 + hri * 20 + 3);
+    for (var hrli = 0; hrli < rowLines.length; hrli++) {
+      ctx.fillText(rowLines[hrli], cardX + 18, honorRowY + 3 + hrli * honorLineH);
+    }
+    honorRowY += rowH + honorRowGap;
   }
   y += cardH + 6;
 

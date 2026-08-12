@@ -1,0 +1,70 @@
+- generic [ref=f2e2]:
+  - link "跳到主要内容" [ref=f2e3] [cursor=pointer]:
+    - /url: "#manager-main"
+  - banner [ref=f2e4]:
+    - generic "篮坛造星局经理模式" [ref=f2e5]:
+      - generic [ref=f2e6]: CF
+      - generic [ref=f2e8]:
+        - strong [ref=f2e9]: 篮坛造星局
+        - generic [ref=f2e10]: 经理办公室
+  - navigation "经理模式导航" [ref=f2e210]:
+    - button "主页" [ref=f2e211] [cursor=pointer]:
+      - generic [ref=f2e212]: 🏠
+    - button "阵容" [ref=f2e214] [cursor=pointer]:
+      - generic [ref=f2e215]: 🏀
+    - button "排名" [ref=f2e217] [cursor=pointer]:
+      - generic [ref=f2e218]: 📊
+    - button "赛季" [ref=f2e220] [cursor=pointer]:
+      - generic [ref=f2e221]: 📅
+  - main [ref=f2e11]:
+    - generic [ref=f2e223]:
+      - generic [ref=f2e225]:
+        - generic [ref=f2e226]: 经理主页 / 2026-27 赛季
+        - heading "亚特兰大鸡仔" [level=1] [ref=f2e227]
+        - paragraph [ref=f2e228]: 常规赛进行中 · 董事会目标：至少 36 胜并打进季后赛
+      - generic [ref=f2e229]:
+        - generic [ref=f2e230]:
+          - generic [ref=f2e231]: 战绩
+          - strong [ref=f2e232]: 0-0
+        - generic [ref=f2e233]:
+          - generic [ref=f2e234]: 联盟排名
+          - strong [ref=f2e235]: "#1"
+        - generic [ref=f2e236]:
+          - generic [ref=f2e237]: 目标完成度
+          - strong [ref=f2e238]:
+            - text: "70"
+            - emphasis [ref=f2e239]: /100
+      - generic [ref=f2e240]:
+        - article [ref=f2e241]:
+          - generic [ref=f2e242]: NEXT GAME
+          - generic [ref=f2e243]:
+            - generic [ref=f2e244]:
+              - strong [ref=f2e245]: 亚特兰大鸡仔
+              - generic [ref=f2e246]: ATL
+            - generic [ref=f2e247]: VS
+            - generic [ref=f2e248]:
+              - strong [ref=f2e249]: 洛杉矶长江
+              - generic [ref=f2e250]: LAL
+          - paragraph [ref=f2e251]: 第 1 场 · 赛季日程第 0 天
+        - article [ref=f2e252]:
+          - generic [ref=f2e253]: OWNER CHECK-IN
+          - generic [ref=f2e254]:
+            - strong [ref=f2e255]: "70"
+            - generic [ref=f2e256]: /100
+            - generic [ref=f2e257]: 等待赛季结果
+          - paragraph [ref=f2e258]: 先把轮换稳定下来，再让结果替你说话。
+      - article [ref=f2e259]:
+        - generic [ref=f2e260]:
+          - generic [ref=f2e261]: 办公室指令
+          - heading "把时间交给赛程" [level=2] [ref=f2e262]
+          - paragraph [ref=f2e263]: 每场推进可检查结果，也可以一次性模拟剩余常规赛。
+        - generic [ref=f2e264]:
+          - button "调整轮换" [ref=f2e265] [cursor=pointer]
+          - button "推进下一场" [ref=f2e266] [cursor=pointer]
+          - button "模拟完常规赛" [ref=f2e267] [cursor=pointer]
+  - generic "存档操作":
+    - button "下一步 推进下一场" [ref=f2e268] [cursor=pointer]:
+      - generic [ref=f2e269]: 下一步
+      - generic [ref=f2e270]: 推进下一场
+    - button "手动保存经理进度" [ref=f2e271] [cursor=pointer]: 💾
+  - status [ref=f2e272]: 已接任 亚特兰大鸡仔，先检查你的轮换。

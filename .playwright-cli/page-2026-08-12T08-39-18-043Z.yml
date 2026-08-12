@@ -1,0 +1,208 @@
+- generic [ref=e2]:
+  - link "跳到主要内容" [ref=e3] [cursor=pointer]:
+    - /url: "#manager-main"
+  - banner [ref=e4]:
+    - generic "篮坛造星局经理模式" [ref=e5]:
+      - generic [ref=e6]: CF
+      - generic [ref=e8]:
+        - strong [ref=e9]: 篮坛造星局
+        - generic [ref=e10]: 经理办公室
+  - main [ref=e11]:
+    - generic [ref=e12]:
+      - generic [ref=e13]: MANAGER MODE / 01
+      - heading "把一支球队，带到 它应有的位置。" [level=1] [ref=e14]: 把一支球队，带到它应有的位置。
+      - paragraph [ref=e15]: 选择执教球队，搭建自己的轮换，跑完一个完整赛季。经理存档与球员生涯完全分开。
+      - generic [ref=e16]:
+        - generic [ref=e17]:
+          - strong [ref=e18]: 纵向切片
+          - generic [ref=e19]: 常规赛 · 季后赛 · 董事会评价
+        - generic [ref=e20]:
+          - strong [ref=e21]: 独立存档
+          - generic [ref=e22]: court_forge_manager_v1 · 经理槽位 1
+      - generic [ref=e23]:
+        - generic [ref=e24]: 选择执教球队
+        - generic [ref=e25]: 30 支球队 · 2026-27 赛季
+      - generic [ref=e26]:
+        - button "ATL 亚特兰大鸡仔 核心强度 85" [ref=e27] [cursor=pointer]:
+          - generic [ref=e28]: ATL
+          - generic [ref=e29]:
+            - strong [ref=e30]: 亚特兰大鸡仔
+            - generic [ref=e31]: 核心强度 85
+          - generic [ref=e32]: ↗
+        - button "BKN 布鲁克林钢龙 核心强度 81" [ref=e33] [cursor=pointer]:
+          - generic [ref=e34]: BKN
+          - generic [ref=e35]:
+            - strong [ref=e36]: 布鲁克林钢龙
+            - generic [ref=e37]: 核心强度 81
+          - generic [ref=e38]: ↗
+        - button "BOS 波士顿东北虎 核心强度 85" [ref=e39] [cursor=pointer]:
+          - generic [ref=e40]: BOS
+          - generic [ref=e41]:
+            - strong [ref=e42]: 波士顿东北虎
+            - generic [ref=e43]: 核心强度 85
+          - generic [ref=e44]: ↗
+        - button "CHA 夏洛特王冠 核心强度 83" [ref=e45] [cursor=pointer]:
+          - generic [ref=e46]: CHA
+          - generic [ref=e47]:
+            - strong [ref=e48]: 夏洛特王冠
+            - generic [ref=e49]: 核心强度 83
+          - generic [ref=e50]: ↗
+        - button "CHI 芝加哥熊猫 核心强度 82" [ref=e51] [cursor=pointer]:
+          - generic [ref=e52]: CHI
+          - generic [ref=e53]:
+            - strong [ref=e54]: 芝加哥熊猫
+            - generic [ref=e55]: 核心强度 82
+          - generic [ref=e56]: ↗
+        - button "CLE 克利夫兰冰原狼 核心强度 85" [ref=e57] [cursor=pointer]:
+          - generic [ref=e58]: CLE
+          - generic [ref=e59]:
+            - strong [ref=e60]: 克利夫兰冰原狼
+            - generic [ref=e61]: 核心强度 85
+          - generic [ref=e62]: ↗
+        - button "DAL 达拉斯大侠 核心强度 84" [ref=e63] [cursor=pointer]:
+          - generic [ref=e64]: DAL
+          - generic [ref=e65]:
+            - strong [ref=e66]: 达拉斯大侠
+            - generic [ref=e67]: 核心强度 84
+          - generic [ref=e68]: ↗
+        - button "DEN 丹佛挖土机 核心强度 87" [ref=e69] [cursor=pointer]:
+          - generic [ref=e70]: DEN
+          - generic [ref=e71]:
+            - strong [ref=e72]: 丹佛挖土机
+            - generic [ref=e73]: 核心强度 87
+          - generic [ref=e74]: ↗
+        - button "DET 底特律机车 核心强度 86" [ref=e75] [cursor=pointer]:
+          - generic [ref=e76]: DET
+          - generic [ref=e77]:
+            - strong [ref=e78]: 底特律机车
+            - generic [ref=e79]: 核心强度 86
+          - generic [ref=e80]: ↗
+        - button "GSW 金州猛将 核心强度 85" [ref=e81] [cursor=pointer]:
+          - generic [ref=e82]: GSW
+          - generic [ref=e83]:
+            - strong [ref=e84]: 金州猛将
+            - generic [ref=e85]: 核心强度 85
+          - generic [ref=e86]: ↗
+        - button "HOU 休斯敦意大利炮 核心强度 86" [ref=e87] [cursor=pointer]:
+          - generic [ref=e88]: HOU
+          - generic [ref=e89]:
+            - strong [ref=e90]: 休斯敦意大利炮
+            - generic [ref=e91]: 核心强度 86
+          - generic [ref=e92]: ↗
+        - button "IND 印第安纳散步 核心强度 86" [ref=e93] [cursor=pointer]:
+          - generic [ref=e94]: IND
+          - generic [ref=e95]:
+            - strong [ref=e96]: 印第安纳散步
+            - generic [ref=e97]: 核心强度 86
+          - generic [ref=e98]: ↗
+        - button "LAC 洛杉矶大潜艇 核心强度 82" [ref=e99] [cursor=pointer]:
+          - generic [ref=e100]: LAC
+          - generic [ref=e101]:
+            - strong [ref=e102]: 洛杉矶大潜艇
+            - generic [ref=e103]: 核心强度 82
+          - generic [ref=e104]: ↗
+        - button "LAL 洛杉矶长江 核心强度 86" [ref=e105] [cursor=pointer]:
+          - generic [ref=e106]: LAL
+          - generic [ref=e107]:
+            - strong [ref=e108]: 洛杉矶长江
+            - generic [ref=e109]: 核心强度 86
+          - generic [ref=e110]: ↗
+        - button "MEM 孟菲斯河熊 核心强度 81" [ref=e111] [cursor=pointer]:
+          - generic [ref=e112]: MEM
+          - generic [ref=e113]:
+            - strong [ref=e114]: 孟菲斯河熊
+            - generic [ref=e115]: 核心强度 81
+          - generic [ref=e116]: ↗
+        - button "MIA 迈阿密飓风 核心强度 85" [ref=e117] [cursor=pointer]:
+          - generic [ref=e118]: MIA
+          - generic [ref=e119]:
+            - strong [ref=e120]: 迈阿密飓风
+            - generic [ref=e121]: 核心强度 85
+          - generic [ref=e122]: ↗
+        - button "MIL 密尔沃基麦穗 核心强度 82" [ref=e123] [cursor=pointer]:
+          - generic [ref=e124]: MIL
+          - generic [ref=e125]:
+            - strong [ref=e126]: 密尔沃基麦穗
+            - generic [ref=e127]: 核心强度 82
+          - generic [ref=e128]: ↗
+        - button "MIN 明尼苏达雪狼 核心强度 87" [ref=e129] [cursor=pointer]:
+          - generic [ref=e130]: MIN
+          - generic [ref=e131]:
+            - strong [ref=e132]: 明尼苏达雪狼
+            - generic [ref=e133]: 核心强度 87
+          - generic [ref=e134]: ↗
+        - button "NOP 新奥尔良铜乐 核心强度 84" [ref=e135] [cursor=pointer]:
+          - generic [ref=e136]: NOP
+          - generic [ref=e137]:
+            - strong [ref=e138]: 新奥尔良铜乐
+            - generic [ref=e139]: 核心强度 84
+          - generic [ref=e140]: ↗
+        - button "NYK 纽约大鲨鱼 核心强度 87" [ref=e141] [cursor=pointer]:
+          - generic [ref=e142]: NYK
+          - generic [ref=e143]:
+            - strong [ref=e144]: 纽约大鲨鱼
+            - generic [ref=e145]: 核心强度 87
+          - generic [ref=e146]: ↗
+        - button "OKC 俄克拉荷马城雷鸟 核心强度 87" [ref=e147] [cursor=pointer]:
+          - generic [ref=e148]: OKC
+          - generic [ref=e149]:
+            - strong [ref=e150]: 俄克拉荷马城雷鸟
+            - generic [ref=e151]: 核心强度 87
+          - generic [ref=e152]: ↗
+        - button "ORL 奥兰多表演 核心强度 85" [ref=e153] [cursor=pointer]:
+          - generic [ref=e154]: ORL
+          - generic [ref=e155]:
+            - strong [ref=e156]: 奥兰多表演
+            - generic [ref=e157]: 核心强度 85
+          - generic [ref=e158]: ↗
+        - button "PHI 费城很多人 核心强度 91" [ref=e159] [cursor=pointer]:
+          - generic [ref=e160]: PHI
+          - generic [ref=e161]:
+            - strong [ref=e162]: 费城很多人
+            - generic [ref=e163]: 核心强度 91
+          - generic [ref=e164]: ↗
+        - button "PHX 菲尼克斯火鸟 核心强度 84" [ref=e165] [cursor=pointer]:
+          - generic [ref=e166]: PHX
+          - generic [ref=e167]:
+            - strong [ref=e168]: 菲尼克斯火鸟
+            - generic [ref=e169]: 核心强度 84
+          - generic [ref=e170]: ↗
+        - button "POR 波特兰常青 核心强度 86" [ref=e171] [cursor=pointer]:
+          - generic [ref=e172]: POR
+          - generic [ref=e173]:
+            - strong [ref=e174]: 波特兰常青
+            - generic [ref=e175]: 核心强度 86
+          - generic [ref=e176]: ↗
+        - button "SAC 萨克拉门托皇帝 核心强度 82" [ref=e177] [cursor=pointer]:
+          - generic [ref=e178]: SAC
+          - generic [ref=e179]:
+            - strong [ref=e180]: 萨克拉门托皇帝
+            - generic [ref=e181]: 核心强度 82
+          - generic [ref=e182]: ↗
+        - button "SAS 圣安东尼奥牧马 核心强度 86" [ref=e183] [cursor=pointer]:
+          - generic [ref=e184]: SAS
+          - generic [ref=e185]:
+            - strong [ref=e186]: 圣安东尼奥牧马
+            - generic [ref=e187]: 核心强度 86
+          - generic [ref=e188]: ↗
+        - button "TOR 多伦多枫港 核心强度 86" [ref=e189] [cursor=pointer]:
+          - generic [ref=e190]: TOR
+          - generic [ref=e191]:
+            - strong [ref=e192]: 多伦多枫港
+            - generic [ref=e193]: 核心强度 86
+          - generic [ref=e194]: ↗
+        - button "UTA 盐湖城白峰 核心强度 85" [ref=e195] [cursor=pointer]:
+          - generic [ref=e196]: UTA
+          - generic [ref=e197]:
+            - strong [ref=e198]: 盐湖城白峰
+            - generic [ref=e199]: 核心强度 85
+          - generic [ref=e200]: ↗
+        - button "WAS 华盛顿故宫 核心强度 86" [ref=e201] [cursor=pointer]:
+          - generic [ref=e202]: WAS
+          - generic [ref=e203]:
+            - strong [ref=e204]: 华盛顿故宫
+            - generic [ref=e205]: 核心强度 86
+          - generic [ref=e206]: ↗
+      - generic [ref=e207]:
+        - button "读取已有经理存档" [ref=e208] [cursor=pointer]
+        - generic [ref=e209]: 本页不会读取球员模式存档。

@@ -1,0 +1,52 @@
+- generic [ref=f6e2]:
+  - link "跳到主要内容" [ref=f6e3] [cursor=pointer]:
+    - /url: "#manager-main"
+  - banner [ref=f6e4]:
+    - generic "篮坛造星局经理模式" [ref=f6e5]:
+      - generic [ref=f6e6]: CF
+      - generic [ref=f6e8]:
+        - strong [ref=f6e9]: 篮坛造星局
+        - generic [ref=f6e10]: 经理办公室
+  - navigation "经理模式导航" [ref=f6e211]:
+    - button "主页" [ref=f6e212] [cursor=pointer]:
+      - generic [ref=f6e213]: 🏠
+    - button "阵容" [ref=f6e215] [cursor=pointer]:
+      - generic [ref=f6e216]: 🏀
+    - button "排名" [ref=f6e218] [cursor=pointer]:
+      - generic [ref=f6e219]: 📊
+    - button "赛季" [ref=f6e221] [cursor=pointer]:
+      - generic [ref=f6e222]: 📅
+  - main [ref=f6e11]:
+    - generic [ref=f6e297]:
+      - generic [ref=f6e299]:
+        - generic [ref=f6e300]: 赛季中心 / SEASON LOG
+        - heading "结果会留下痕迹。" [level=1] [ref=f6e301]
+        - paragraph [ref=f6e302]: 逐场推进适合观察，批量模拟适合快速完成赛季。
+      - generic [ref=f6e303]:
+        - generic [ref=f6e304]:
+          - generic [ref=f6e305]: "01"
+          - generic [ref=f6e306]: 常规赛
+          - generic [ref=f6e307]: 1 / 82 场
+        - generic [ref=f6e308]:
+          - generic [ref=f6e309]: "02"
+          - generic [ref=f6e310]: 季后赛
+          - generic [ref=f6e311]: 0 场已完成
+        - generic [ref=f6e312]:
+          - generic [ref=f6e313]: "03"
+          - generic [ref=f6e314]: 董事会评价
+          - generic [ref=f6e315]: 赛季结束后生成
+      - article [ref=f6e316]:
+        - generic [ref=f6e317]: MY GAME LOG
+        - generic [ref=f6e318]:
+          - generic [ref=f6e319]: 常规赛
+          - generic [ref=f6e320]: "亚特兰大鸡仔 121 : 113 洛杉矶长江"
+          - generic [ref=f6e321]: 你的球队获胜
+      - generic [ref=f6e322]:
+        - button "模拟完常规赛" [ref=f6e323] [cursor=pointer]
+        - generic [ref=f6e324]: 下一场：迈阿密飓风
+  - generic "存档操作":
+    - button "下一步 推进下一场" [active] [ref=f6e268] [cursor=pointer]:
+      - generic [ref=f6e269]: 下一步
+      - generic [ref=f6e270]: 推进下一场
+    - button "手动保存经理进度" [ref=f6e271] [cursor=pointer]: 💾
+  - status [ref=f6e210]: 已推进 1 场。

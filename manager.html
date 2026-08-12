@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self'; style-src 'self'; img-src 'self' data: blob:; connect-src 'self';">
+  <title>经理模式 · 篮坛造星局</title>
+  <link rel="stylesheet" href="css/manager.css">
+  <link rel="stylesheet" href="css/manager-personal.css">
+</head>
+<body>
+  <div class="manager-app" id="manager-app">
+    <a class="manager-skip-link" href="#manager-main">跳到主要内容</a>
+    <header class="manager-topbar">
+      <div class="manager-brand" aria-label="篮坛造星局经理模式">
+        <span class="manager-brand-mark" aria-hidden="true"><span>CF</span></span>
+        <span class="manager-brand-copy">
+          <strong>篮坛造星局</strong>
+          <small>经理办公室</small>
+        </span>
+      </div>
+    </header>
+
+    <nav class="manager-nav" id="manager-nav" aria-label="经理模式导航" hidden>
+      <button type="button" data-view="dashboard"><span class="manager-nav-icon" aria-hidden="true">🏠</span><span>主页</span></button>
+      <button type="button" data-view="roster"><span class="manager-nav-icon" aria-hidden="true">🏀</span><span>阵容</span></button>
+      <button type="button" data-view="standings"><span class="manager-nav-icon" aria-hidden="true">📊</span><span>排名</span></button>
+      <button type="button" data-view="season"><span class="manager-nav-icon" aria-hidden="true">📅</span><span>赛季</span></button>
+    </nav>
+
+    <main class="manager-main" id="manager-main" tabindex="-1">
+      <div class="manager-loading" role="status">正在整理经理办公室…</div>
+    </main>
+
+    <div class="manager-save-actions" id="manager-save-actions" aria-label="存档操作" hidden>
+      <button class="manager-next-button" type="button" data-action="next-step">
+        <span class="manager-next-kicker">下一步</span>
+        <span id="manager-next-label">继续</span>
+      </button>
+      <button class="manager-global-save-button" type="button" data-action="save-game" aria-label="手动保存经理进度" title="保存进度">💾</button>
+    </div>
+
+    <div class="manager-toast" id="manager-toast" role="status" aria-live="polite" hidden></div>
+  </div>
+
+  <script src="js/data/league_players.js"></script>
+  <script src="js/data/league_schedule.js"></script>
+  <script src="js/data/simulation_config.js"></script>
+  <script src="js/data/fictional_team_names.js"></script>
+  <script src="js/manager/state.js"></script>
+  <script src="js/manager/engine.js"></script>
+  <script src="js/manager/storage.js"></script>
+  <script src="js/manager/app.js"></script>
+</body>
+</html>
