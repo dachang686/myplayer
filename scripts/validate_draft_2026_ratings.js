@@ -15,11 +15,25 @@ vm.runInContext(`${configSource}\n${draftSource}`, context);
 const ratings = vm.runInContext('DRAFT_CLASS_2026_RATINGS', context);
 const weights = vm.runInContext('SIM_CONFIG.OVR_WEIGHTS', context);
 const attrKeys = vm.runInContext('SIM_CONFIG.ATTR_LIST', context);
+const draftClassMatch = offseasonSource.match(/var DRAFT_CLASS_2026\s*=\s*(\[[\s\S]*?\n\]);/);
 
 const errors = [];
 const ratingIds = Object.keys(ratings).sort();
 const reviewIds = reviews.map((review) => review.id);
 const profileById = new Map(profiles.map((profile) => [profile.id, profile]));
+
+if (!draftClassMatch) {
+  errors.push('未找到 2026 届选秀名单');
+} else {
+  const draftClass = vm.runInNewContext(draftClassMatch[1]);
+  if (draftClass.length !== 60) errors.push(`2026 届选秀名单应为 60 人，实际 ${draftClass.length}`);
+  draftClass.forEach((player, index) => {
+    if (Object.prototype.hasOwnProperty.call(player, 'name') || Object.prototype.hasOwnProperty.call(player, 'nameEN')) {
+      errors.push(`D26-${String(index + 1).padStart(2, '0')} 仍含英文姓名字段`);
+    }
+    if (!player.cn) errors.push(`D26-${String(index + 1).padStart(2, '0')} 缺少中文名`);
+  });
+}
 
 if (new Set(reviewIds).size !== reviewIds.length) errors.push('审核记录存在重复 ID');
 if (ratingIds.length !== reviews.length) errors.push(`固定能力 ${ratingIds.length} 人，审核记录 ${reviews.length} 人`);
