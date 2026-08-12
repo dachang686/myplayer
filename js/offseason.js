@@ -4,8 +4,9 @@ function getMobility() {
   if (!c) return null;
   c.mobility = c.mobility || {};
   var m = c.mobility;
-  m.trades = m.trades || 0;
-  m.teamInitiatedTrades = m.teamInitiatedTrades || m.trades || 0;
+  if (m.trades == null) m.trades = 0;
+  if (m.teamInitiatedTrades == null) m.teamInitiatedTrades = m.trades || 0;
+  if (m.playerRequestedTrades == null) m.playerRequestedTrades = 0;
   m.waived = m.waived || 0;
   m.nonRenewals = m.nonRenewals || 0;
   if (m.lastMove == null) m.lastMove = null;
@@ -16,7 +17,7 @@ function getMobility() {
 
 function getTeamInitiatedTradeCount() {
   var m = getMobility();
-  return m ? (m.teamInitiatedTrades || m.trades || 0) : 0;
+  return m ? (m.teamInitiatedTrades || 0) : 0;
 }
 
 function getLastSeasonWinRate() {
@@ -187,7 +188,7 @@ function doTradeUser(destTeam, done) {
   }
   STATE.careerTeam = destTeam;
   m.teamInitiatedTrades = (m.teamInitiatedTrades || 0) + 1;
-  m.trades = m.teamInitiatedTrades;
+  m.trades = m.teamInitiatedTrades + (m.playerRequestedTrades || 0);
   m.lastMove = 'trade';
   m.lastMoveSeason = STATE.career.seasonCount;
   m.lastTeam = old;
@@ -229,6 +230,58 @@ function doTradeUser(destTeam, done) {
   });
 }
 
+function pickPlayerRequestedTradeDestination(request) {
+  var preferred = request && request.preferredTeam;
+  if (preferred && preferred !== STATE.careerTeam && LEAGUE_TEAM_IDS.indexOf(preferred) >= 0 && Math.random() < 0.8) {
+    return preferred;
+  }
+  return pickTradeDestination();
+}
+
+function completePlayerRequestedTrade(destTeam, request, done) {
+  var old = STATE.careerTeam;
+  if (!destTeam || destTeam === old) {
+    request.status = 'failed';
+    request.failureReason = 'no_destination';
+    if (done) done();
+    return;
+  }
+
+  var c = STATE.career;
+  var m = getMobility();
+  var displayName = getMyPlayerDisplayName();
+  STATE.careerTeam = destTeam;
+  m.playerRequestedTrades = (m.playerRequestedTrades || 0) + 1;
+  m.trades = (m.teamInitiatedTrades || 0) + m.playerRequestedTrades;
+  m.lastMove = 'requested_trade';
+  m.lastMoveSeason = c.seasonCount || 0;
+  m.lastTeam = old;
+  request.status = 'completed';
+  request.completedSeason = c.seasonCount || 0;
+  request.destination = destTeam;
+  c.flags = c.flags || {};
+  c.flags.tradeRequested = false;
+  c.flags.requestedTradeCompleted = true;
+  c.flags.traded = true;
+  addProfileDelta('fanSupport', -1);
+  addSeasonMod('mediaPressure', 1, -10, 10);
+  setBranchNode('transfer', 'transfer_start');
+
+  if (STATE._leagueChanges) {
+    STATE._leagueChanges.trades = STATE._leagueChanges.trades || [];
+    STATE._leagueChanges.trades.push({ from: old, to: destTeam, playerA: displayName, playerB: '未来资产', requested: true });
+  }
+
+  var oldName = getTeamName ? getTeamName(old) : old;
+  var newName = getTeamName ? getTeamName(destTeam) : destTeam;
+  var preferredMissed = request.preferredTeam && request.preferredTeam !== destTeam;
+  var msg = oldName + '正式将' + displayName + '交易到' + newName + '。' +
+    (preferredMissed ? '这不是你最初列出的首选下家，但双方最终完成了谈判。' : '管理层兑现了处理交易申请的承诺。') +
+    '<br><br>效果：加盟新球队；球迷支持-1；媒体压力+1。';
+  recordMobilityHistory('requested_trade', '申请交易完成', msg);
+  showOffseasonResultModal('申请交易完成', msg, done);
+}
+
 function doWaiveUser(done) {
   var old = STATE.careerTeam;
   var displayName = getMyPlayerDisplayName();
@@ -253,9 +306,30 @@ function maybeMoveUserInOffseason(done) {
   if (typeof done !== 'function') done = function() {};
   var c = STATE.career;
   if (!c || c.retired) return done();
+  var m = getMobility();
+  var request = m.tradeRequest;
+  if (!request && c.flags && c.flags.tradeRequested) {
+    request = {
+      season: c.seasonCount || 0,
+      submittedGame: 0,
+      preferredTeam: '',
+      source: 'legacy_event',
+      status: 'approved',
+      approvalChance: 100
+    };
+    m.tradeRequest = request;
+  }
+  if (request && request.status === 'approved' && request.season <= (c.seasonCount || 0)) {
+    var requestedDestination = pickPlayerRequestedTradeDestination(request);
+    if (requestedDestination) {
+      completePlayerRequestedTrade(requestedDestination, request, done);
+      return;
+    }
+    request.status = 'failed';
+    request.failureReason = 'no_destination';
+  }
   if (isUserRookieProtected() || isUserStarProtected()) return done();
   if ((c.contract || 0) <= 0) return done();
-  var m = getMobility();
   if (m.lastMoveSeason === (c.seasonCount || 0)) return done();
   if (getTeamInitiatedTradeCount() >= 1) {
     var waiveOnlyChance = getUserWaiveChance();
@@ -915,66 +989,66 @@ function renderSeasonScreenDOM() {
 
 // ==================== 选秀系统 ====================
 var DRAFT_CLASS_2026 = [
-  { pick: 1, team: 'WAS', cn: 'A-J-迪班萨', pos: '前锋', height: '2.06米' },
-  { pick: 2, team: 'UTA', cn: '达林-彼得森', pos: '后卫', height: '1.98米' },
-  { pick: 3, team: 'MEM', cn: '卡梅隆-布泽尔', pos: '前锋', height: '2.06米' },
-  { pick: 4, team: 'CHI', cn: '凯莱布-威尔逊', pos: '前锋', height: '2.08米' },
-  { pick: 5, team: 'LAC', cn: '基顿-瓦格勒', pos: '后卫', height: '1.98米' },
-  { pick: 6, team: 'BKN', cn: '米克尔-布朗-二世', pos: '后卫', height: '1.96米' },
-  { pick: 7, team: 'SAC', cn: '达里乌斯-阿库夫-二世', pos: '后卫', height: '1.91米' },
-  { pick: 8, team: 'ATL', cn: '金斯顿-弗莱明斯', pos: '后卫', height: '1.93米' },
-  { pick: 9, team: 'DAL', cn: '莫雷兹-约翰逊-二世', pos: '前锋', height: '2.06米' },
-  { pick: 10, team: 'MIL', cn: '布雷登-伯里斯', pos: '后卫', height: '1.93米' },
-  { pick: 11, team: 'GSW', cn: '雅克塞尔-兰德伯格', pos: '前锋', height: '2.06米' },
-  { pick: 12, team: 'OKC', cn: '阿戴-马拉', pos: '中锋', height: '2.21米' },
-  { pick: 13, team: 'MIL', cn: '内特-阿门特', pos: '前锋', height: '2.08米' },
-  { pick: 14, team: 'CHA', cn: '汉内斯-斯坦巴赫', pos: '前锋', height: '2.11米' },
-  { pick: 15, team: 'CHI', cn: '戴林-斯温', pos: '后卫', height: '2.03米' },
-  { pick: 16, team: 'OKC', cn: '班尼特-斯蒂尔茨', pos: '后卫', height: '1.93米' },
-  { pick: 17, team: 'DET', cn: '埃布卡-奥科里', pos: '后卫', height: '1.88米' },
-  { pick: 18, team: 'CHA', cn: '克里斯蒂安-安德森', pos: '后卫', height: '1.91米' },
-  { pick: 19, team: 'TOR', cn: '艾伦-格雷夫斯', pos: '前锋', height: '2.06米' },
-  { pick: 20, team: 'SAS', cn: '杰登-昆坦斯', pos: '前锋', height: '2.08米' },
-  { pick: 21, team: 'MEM', cn: '卡里姆-洛佩兹', pos: '前锋', height: '2.03米' },
-  { pick: 22, team: 'PHI', cn: '拉巴伦-菲隆-二世', pos: '后卫', height: '1.93米' },
-  { pick: 23, team: 'ATL', cn: '祖比-埃吉奥福', pos: '前锋', height: '2.06米' },
-  { pick: 24, team: 'LAL', cn: '卡梅隆-卡尔', pos: '后卫', height: '1.96米' },
-  { pick: 25, team: 'DAL', cn: '塞尔希奥-德-拉雷亚', pos: '前锋', height: '1.98米' },
-  { pick: 26, team: 'SAS', cn: '塔里斯-里德-二世', pos: '中锋', height: '2.11米' },
-  { pick: 27, team: 'BOS', cn: '克里斯-塞纳克-二世', pos: '前锋', height: '2.11米' },
-  { pick: 28, team: 'BKN', cn: '约书亚-杰斐逊', pos: '前锋', height: '2.06米' },
-  { pick: 29, team: 'SAC', cn: '亚历克斯-卡拉班', pos: '前锋', height: '2.03米' },
-  { pick: 30, team: 'PHX', cn: '科亚-皮特', pos: '前锋', height: '2.03米' },
-  { pick: 31, team: 'HOU', cn: '布鲁斯-桑顿-二世', pos: '后卫', height: '1.88米' },
-  { pick: 32, team: 'MEM', cn: '里奇-桑德斯', pos: '后卫', height: '1.96米' },
-  { pick: 33, team: 'MIN', cn: '赛亚-埃文斯', pos: '后卫', height: '1.98米' },
-  { pick: 34, team: 'CLE', cn: '米里克-托马斯', pos: '后卫', height: '1.96米' },
-  { pick: 35, team: 'DEN', cn: '特雷文-布拉齐尔', pos: '前锋', height: '2.08米' },
-  { pick: 36, team: 'LAC', cn: '巴巴-米勒', pos: '前锋', height: '2.11米' },
-  { pick: 37, team: 'MIA', cn: '赖安-康威尔', pos: '后卫', height: '1.93米' },
-  { pick: 38, team: 'IND', cn: '布雷登-史密斯', pos: '后卫', height: '1.83米' },
-  { pick: 39, team: 'NYK', cn: '杰克-卡伊尔', pos: '后卫', height: '1.91米' },
-  { pick: 40, team: 'BOS', cn: '狄龙-米切尔', pos: '前锋', height: '2.03米' },
-  { pick: 41, team: 'OKC', cn: '奥特加-奥韦', pos: '后卫', height: '1.93米' },
-  { pick: 42, team: 'SAS', cn: '贾科比-吉莱斯皮', pos: '后卫', height: '1.85米' },
-  { pick: 43, team: 'BKN', cn: '泰勒-比洛多', pos: '前锋', height: '2.06米' },
-  { pick: 44, team: 'SAS', cn: '马利克-布朗', pos: '前锋', height: '2.06米' },
-  { pick: 45, team: 'SAC', cn: '伊曼纽尔-夏普', pos: '后卫', height: '1.91米' },
-  { pick: 46, team: 'WAS', cn: '菲利克斯-奥帕拉', pos: '前锋', height: '2.11米' },
-  { pick: 47, team: 'NYK', cn: '泰勒-尼克尔', pos: '前锋', height: '2.01米' },
-  { pick: 48, team: 'DAL', cn: '托比-拉瓦尔', pos: '前锋', height: '2.03米' },
-  { pick: 49, team: 'DEN', cn: '布莱斯-霍普金斯', pos: '前锋', height: '2.01米' },
-  { pick: 50, team: 'TOR', cn: '贾登-布拉德利', pos: '后卫', height: '1.91米' },
-  { pick: 51, team: 'ORL', cn: '伊赛亚-尼尔森', pos: '前锋', height: '2.08米' },
-  { pick: 52, team: 'ATL', cn: '亨利-维萨尔', pos: '中锋', height: '2.13米' },
-  { pick: 53, team: 'DET', cn: '乌戈纳-奥尼恩索', pos: '中锋', height: '2.13米' },
-  { pick: 54, team: 'GSW', cn: '拉杰-琼斯', pos: '后卫', height: '2.01米' },
-  { pick: 55, team: 'LAC', cn: '尼克-马蒂内利', pos: '前锋', height: '2.01米' },
-  { pick: 56, team: 'DAL', cn: '弗谢沃洛德-伊什琴科', pos: '后卫', height: '1.91米' },
-  { pick: 57, team: 'LAC', cn: '纳西斯-恩戈伊', pos: '中锋', height: '2.13米' },
-  { pick: 58, team: 'NOP', cn: '贾伦-皮埃尔-二世', pos: '后卫', height: '1.96米' },
-  { pick: 59, team: 'MIN', cn: '特雷-考夫曼-雷恩', pos: '前锋', height: '2.06米' },
-  { pick: 60, team: 'MIL', cn: '马利克-刘易斯', pos: '前锋', height: '2.03米' },
+  { pick: 1, team: 'WAS', name: 'AJ Dybantsa', cn: 'A-J-迪班萨', pos: '前锋', height: '2.06米' },
+  { pick: 2, team: 'UTA', name: 'Darryn Peterson', cn: '达林-彼得森', pos: '后卫', height: '1.98米' },
+  { pick: 3, team: 'MEM', name: 'Cameron Boozer', cn: '卡梅隆-布泽尔', pos: '前锋', height: '2.06米' },
+  { pick: 4, team: 'CHI', name: 'Caleb Wilson', cn: '凯莱布-威尔逊', pos: '前锋', height: '2.08米' },
+  { pick: 5, team: 'LAC', name: 'Keaton Wagler', cn: '基顿-瓦格勒', pos: '后卫', height: '1.98米' },
+  { pick: 6, team: 'BKN', name: 'Mikel Brown Jr.', cn: '米克尔-布朗-二世', pos: '后卫', height: '1.96米' },
+  { pick: 7, team: 'SAC', name: 'Darius Acuff Jr.', cn: '达里乌斯-阿库夫-二世', pos: '后卫', height: '1.91米' },
+  { pick: 8, team: 'ATL', name: 'Kingston Flemings', cn: '金斯顿-弗莱明斯', pos: '后卫', height: '1.93米' },
+  { pick: 9, team: 'DAL', name: 'Morez Johnson Jr.', cn: '莫雷兹-约翰逊-二世', pos: '前锋', height: '2.06米' },
+  { pick: 10, team: 'MIL', name: 'Brayden Burries', cn: '布雷登-伯里斯', pos: '后卫', height: '1.93米' },
+  { pick: 11, team: 'GSW', name: 'Yaxel Lendeborg', cn: '雅克塞尔-兰德伯格', pos: '前锋', height: '2.06米' },
+  { pick: 12, team: 'OKC', name: 'Aday Mara', cn: '阿戴-马拉', pos: '中锋', height: '2.21米' },
+  { pick: 13, team: 'MIL', name: 'Nate Ament', cn: '内特-阿门特', pos: '前锋', height: '2.08米' },
+  { pick: 14, team: 'CHA', name: 'Hannes Steinbach', cn: '汉内斯-斯坦巴赫', pos: '前锋', height: '2.11米' },
+  { pick: 15, team: 'CHI', name: 'Dailyn Swain', cn: '戴林-斯温', pos: '后卫', height: '2.03米' },
+  { pick: 16, team: 'OKC', name: 'Bennett Stirtz', cn: '班尼特-斯蒂尔茨', pos: '后卫', height: '1.93米' },
+  { pick: 17, team: 'DET', name: 'Ebuka Okorie', cn: '埃布卡-奥科里', pos: '后卫', height: '1.88米' },
+  { pick: 18, team: 'CHA', name: 'Christian Anderson', cn: '克里斯蒂安-安德森', pos: '后卫', height: '1.91米' },
+  { pick: 19, team: 'TOR', name: 'Allen Graves', cn: '艾伦-格雷夫斯', pos: '前锋', height: '2.06米' },
+  { pick: 20, team: 'SAS', name: 'Jayden Quaintance', cn: '杰登-昆坦斯', pos: '前锋', height: '2.08米' },
+  { pick: 21, team: 'MEM', name: 'Karim Lopez', cn: '卡里姆-洛佩兹', pos: '前锋', height: '2.03米' },
+  { pick: 22, team: 'PHI', name: 'Labaron Philon Jr.', cn: '拉巴伦-菲隆-二世', pos: '后卫', height: '1.93米' },
+  { pick: 23, team: 'ATL', name: 'Zuby Ejiofor', cn: '祖比-埃吉奥福', pos: '前锋', height: '2.06米' },
+  { pick: 24, team: 'LAL', name: 'Cameron Carr', cn: '卡梅隆-卡尔', pos: '后卫', height: '1.96米' },
+  { pick: 25, team: 'DAL', name: 'Sergio De Larrea', cn: '塞尔希奥-德-拉雷亚', pos: '前锋', height: '1.98米' },
+  { pick: 26, team: 'SAS', name: 'Tarris Reed Jr.', cn: '塔里斯-里德-二世', pos: '中锋', height: '2.11米' },
+  { pick: 27, team: 'BOS', name: 'Chris Cenac Jr.', cn: '克里斯-塞纳克-二世', pos: '前锋', height: '2.11米' },
+  { pick: 28, team: 'BKN', name: 'Joshua Jefferson', cn: '约书亚-杰斐逊', pos: '前锋', height: '2.06米' },
+  { pick: 29, team: 'SAC', name: 'Alex Karaban', cn: '亚历克斯-卡拉班', pos: '前锋', height: '2.03米' },
+  { pick: 30, team: 'PHX', name: 'Koa Peat', cn: '科亚-皮特', pos: '前锋', height: '2.03米' },
+  { pick: 31, team: 'HOU', name: 'Bruce Thornton', cn: '布鲁斯-桑顿-二世', pos: '后卫', height: '1.88米' },
+  { pick: 32, team: 'MEM', name: 'Richie Saunders', cn: '里奇-桑德斯', pos: '后卫', height: '1.96米' },
+  { pick: 33, team: 'MIN', name: 'Isaiah Evans', cn: '赛亚-埃文斯', pos: '后卫', height: '1.98米' },
+  { pick: 34, team: 'CLE', name: 'Meleek Thomas', cn: '米里克-托马斯', pos: '后卫', height: '1.96米' },
+  { pick: 35, team: 'DEN', name: 'Trevon Brazile', cn: '特雷文-布拉齐尔', pos: '前锋', height: '2.08米' },
+  { pick: 36, team: 'LAC', name: 'Baba Miller', cn: '巴巴-米勒', pos: '前锋', height: '2.11米' },
+  { pick: 37, team: 'MIA', name: 'Ryan Conwell', cn: '赖安-康威尔', pos: '后卫', height: '1.93米' },
+  { pick: 38, team: 'IND', name: 'Braden Smith', cn: '布雷登-史密斯', pos: '后卫', height: '1.83米' },
+  { pick: 39, team: 'NYK', name: 'Jack Kayil', cn: '杰克-卡伊尔', pos: '后卫', height: '1.91米' },
+  { pick: 40, team: 'BOS', name: 'Dillon Mitchell', cn: '狄龙-米切尔', pos: '前锋', height: '2.03米' },
+  { pick: 41, team: 'OKC', name: 'Otega Oweh', cn: '奥特加-奥韦', pos: '后卫', height: '1.93米' },
+  { pick: 42, team: 'SAS', name: 'Ja\'Kobi Gillespie', cn: '贾科比-吉莱斯皮', pos: '后卫', height: '1.85米' },
+  { pick: 43, team: 'BKN', name: 'Tyler Bilodeau', cn: '泰勒-比洛多', pos: '前锋', height: '2.06米' },
+  { pick: 44, team: 'SAS', name: 'Maliq Brown', cn: '马利克-布朗', pos: '前锋', height: '2.06米' },
+  { pick: 45, team: 'SAC', name: 'Emanuel Sharp', cn: '伊曼纽尔-夏普', pos: '后卫', height: '1.91米' },
+  { pick: 46, team: 'WAS', name: 'Felix Okpara', cn: '菲利克斯-奥帕拉', pos: '前锋', height: '2.11米' },
+  { pick: 47, team: 'NYK', name: 'Tyler Nickel', cn: '泰勒-尼克尔', pos: '前锋', height: '2.01米' },
+  { pick: 48, team: 'DAL', name: 'Tobi Lawal', cn: '托比-拉瓦尔', pos: '前锋', height: '2.03米' },
+  { pick: 49, team: 'DEN', name: 'Bryce Hopkins', cn: '布莱斯-霍普金斯', pos: '前锋', height: '2.01米' },
+  { pick: 50, team: 'TOR', name: 'Jaden Bradley', cn: '贾登-布拉德利', pos: '后卫', height: '1.91米' },
+  { pick: 51, team: 'ORL', name: 'Izaiyah Nelson', cn: '伊赛亚-尼尔森', pos: '前锋', height: '2.08米' },
+  { pick: 52, team: 'ATL', name: 'Henri Veesaar', cn: '亨利-维萨尔', pos: '中锋', height: '2.13米' },
+  { pick: 53, team: 'DET', name: 'Ugonna Onyenso', cn: '乌戈纳-奥尼恩索', pos: '中锋', height: '2.13米' },
+  { pick: 54, team: 'GSW', name: 'Lajae Jones', cn: '拉杰-琼斯', pos: '后卫', height: '2.01米' },
+  { pick: 55, team: 'LAC', name: 'Nick Martinelli', cn: '尼克-马蒂内利', pos: '前锋', height: '2.01米' },
+  { pick: 56, team: 'DAL', name: 'Vsevolod Ishchenko', cn: '弗谢沃洛德-伊什琴科', pos: '后卫', height: '1.91米' },
+  { pick: 57, team: 'LAC', name: 'Narcisse Ngoy', cn: '纳西斯-恩戈伊', pos: '中锋', height: '2.13米' },
+  { pick: 58, team: 'NOP', name: 'Jaron Pierre Jr.', cn: '贾伦-皮埃尔-二世', pos: '后卫', height: '1.96米' },
+  { pick: 59, team: 'MIN', name: 'Trey Kaufman-Renn', cn: '特雷-考夫曼-雷恩', pos: '前锋', height: '2.06米' },
+  { pick: 60, team: 'MIL', name: 'Malique Lewis', cn: '马利克-刘易斯', pos: '前锋', height: '2.03米' },
 ];
 
 function draftOvrByPick(pick) {
@@ -1012,11 +1086,15 @@ function applyDraftClass2026() {
     picks.forEach(function(pk) {
       var pad = String(pk.pick);
       while (pad.length < 2) pad = '0' + pad;
-      var ovr = draftOvrByPick(pk.pick);
+      var rookieId = 'D26-' + pad;
+      var fixedRating = typeof DRAFT_CLASS_2026_RATINGS !== 'undefined'
+        ? DRAFT_CLASS_2026_RATINGS[rookieId]
+        : null;
+      var ovr = fixedRating ? fixedRating.ovr : draftOvrByPick(pk.pick);
       var rookie = {
-        id: 'D26-' + pad,
+        id: rookieId,
         cname: pk.cn,
-        pos: draftPosToCode(pk.pos),
+        pos: fixedRating ? fixedRating.pos : draftPosToCode(pk.pos),
         height: pk.height,
         type: '新秀',
         ovr: ovr,
@@ -1025,7 +1103,17 @@ function applyDraftClass2026() {
         loyalty: inferPlayerLoyalty('D26-' + pad),
         _awardStreak: {},
       };
-      applyRookieAttributeProfile(rookie, ovr, Math.random);
+      if (fixedRating) {
+        rookie._rookieProfile = fixedRating.profile;
+        rookie._rookieGenerationVersion = ROOKIE_ATTRIBUTE_PROFILE_VERSION;
+        rookie._rookieSeason = getCurrentLeagueSeasonNumber();
+        ATTR_KEYS.forEach(function(key) {
+          rookie[key] = fixedRating.attributes[key];
+        });
+        rookie.ovr = calcOVR(rookie, rookie.pos);
+      } else {
+        applyRookieAttributeProfile(rookie, ovr, Math.random);
+      }
       roster.push(rookie);
     });
   });
@@ -1069,8 +1157,13 @@ function processDraft() {
     // 当届新秀只在本次休赛期受交易保护，下一休赛期会统一解除。
     rookie._justSigned = true;
     var targetOvr = ovrRange.min + Math.floor(rngNext() * (ovrRange.max - ovrRange.min + 1));
-    rookie.ovr = targetOvr;
-    applyRookieAttributeProfile(rookie, targetOvr, rngNext);
+    if (rookie._fixedProspectRating) {
+      rookie.ovr = calcOVR(rookie, rookie.pos);
+      rookie._rookieSeason = getCurrentLeagueSeasonNumber();
+    } else {
+      rookie.ovr = targetOvr;
+      applyRookieAttributeProfile(rookie, targetOvr, rngNext);
+    }
     // 新秀合同
     if (idx < 5) rookie.contract = 3 + Math.floor(rngNext() * 2);
     else if (idx < 14) rookie.contract = 2 + Math.floor(rngNext() * 3);
@@ -1098,6 +1191,204 @@ function randomContractByAge(age) {
   return 1;
 }
 
+// ==================== 玩家主动申请交易 ====================
+function getActiveTradeRequestSeason() {
+  var c = STATE.career;
+  return c ? (c.seasonCount || 0) + 1 : 1;
+}
+
+function getPlayerTradeRequest() {
+  var m = getMobility();
+  return m && m.tradeRequest ? m.tradeRequest : null;
+}
+
+function getTradeRequestAvailability() {
+  var c = STATE.career;
+  var season = STATE.season;
+  if (!c || !season || c.retired) return { allowed: false, reason: '当前没有进行中的职业生涯' };
+  if (season.isPlayoffs || season._resultsViewed) return { allowed: false, reason: '季后赛及赛季结束后不能提交申请' };
+  if ((c.contract || 0) <= 1) return { allowed: false, reason: '合同将在本赛季后到期，请通过自由市场选择球队' };
+
+  var currentSeason = getActiveTradeRequestSeason();
+  var request = getPlayerTradeRequest();
+  if (request && request.season === currentSeason) {
+    if (request.status === 'approved') return { allowed: false, reason: '申请已获准，将在休赛期完成交易', status: request.status };
+    if (request.status === 'denied') return { allowed: false, reason: '本赛季的交易申请已被拒绝', status: request.status };
+    return { allowed: false, reason: '本赛季已经提交过交易申请', status: request.status };
+  }
+
+  var gamesPlayed = (season.schedule || []).filter(function(game) { return game && game.simulated; }).length;
+  if (gamesPlayed < 10) return { allowed: false, reason: '常规赛至少完成 10 场后开放', gamesNeeded: 10 - gamesPlayed };
+  return { allowed: true, reason: '每赛季限申请一次；意向球队不保证成为最终下家' };
+}
+
+function getTradeRequestApprovalChance(preferredTeam) {
+  var c = STATE.career || {};
+  var season = STATE.season || {};
+  var profile = typeof getCareerProfile === 'function' ? getCareerProfile() : {};
+  var total = (season.wins || 0) + (season.losses || 0);
+  var winRate = total ? (season.wins || 0) / total : 0.5;
+  var chance = 52;
+
+  if ((c.contract || 0) === 2) chance += 12;
+  else if ((c.contract || 0) >= 4) chance -= 10;
+  if (winRate < 0.4) chance += 10;
+  else if (winRate > 0.62) chance -= 8;
+  if ((STATE.finalOVR || 0) >= 90) chance -= 12;
+  else if ((STATE.finalOVR || 0) < 76) chance += 8;
+  chance += Math.min(8, Math.max(0, profile.controversy || 0));
+
+  if (preferredTeam && preferredTeam !== STATE.careerTeam && typeof calcTeamLineup === 'function') {
+    var lineup = calcTeamLineup(preferredTeam);
+    var starter = lineup && lineup.starters ? lineup.starters[STATE.position] : null;
+    if (!starter || (STATE.finalOVR || 0) >= (starter.ovr || 0) + 3) chance += 12;
+    else if ((STATE.finalOVR || 0) < (starter.ovr || 0) - 5) chance -= 8;
+  }
+  return Math.max(25, Math.min(85, Math.round(chance)));
+}
+
+function getTradeRequestCandidates() {
+  var candidates = [];
+  (LEAGUE_TEAM_IDS || []).forEach(function(team) {
+    if (team === STATE.careerTeam) return;
+    var lineup = calcTeamLineup(team);
+    var starter = lineup && lineup.starters ? lineup.starters[STATE.position] : null;
+    var starterOvr = starter ? (starter.ovr || 0) : 55;
+    var fit = (STATE.finalOVR || 0) - starterOvr;
+    var standing = STATE.season && STATE.season.standings ? STATE.season.standings[team] : null;
+    var games = standing ? (standing.wins || 0) + (standing.losses || 0) : 0;
+    var rate = games ? (standing.wins || 0) / games : 0.5;
+    var score = fit * 4 + rate * 18 + (fit >= 3 ? 18 : 0);
+    candidates.push({ team: team, starterOvr: starterOvr, score: score });
+  });
+  candidates.sort(function(a, b) { return b.score - a.score || a.team.localeCompare(b.team); });
+  return candidates.slice(0, 8);
+}
+
+function recordPlayerTradeRequest(request, resultText) {
+  var c = STATE.career;
+  if (!c || request.source !== 'manual') return;
+  c.branchHistory = c.branchHistory || [];
+  c.branchHistory.push({
+    seasonNum: c.seasonCount || 0,
+    phase: 'career',
+    branch: 'transfer',
+    eventId: 'player_trade_request_' + request.season,
+    event: '主动申请交易',
+    choice: request.preferredTeam ? ('意向球队：' + getTeamName(request.preferredTeam)) : '不指定下家',
+    result: resultText || ''
+  });
+}
+
+function createPlayerTradeRequest(preferredTeam, source, options) {
+  options = options || {};
+  var availability = getTradeRequestAvailability();
+  if (!availability.allowed) return null;
+  if (preferredTeam && (preferredTeam === STATE.careerTeam || LEAGUE_TEAM_IDS.indexOf(preferredTeam) < 0)) return null;
+
+  var chance = getTradeRequestApprovalChance(preferredTeam);
+  var approved = Math.random() * 100 < chance;
+  var request = {
+    season: getActiveTradeRequestSeason(),
+    submittedGame: (STATE.season.schedule || []).filter(function(game) { return game && game.simulated; }).length,
+    preferredTeam: preferredTeam || '',
+    source: source || 'manual',
+    status: approved ? 'approved' : 'denied',
+    approvalChance: chance
+  };
+  getMobility().tradeRequest = request;
+  STATE.career.flags = STATE.career.flags || {};
+  STATE.career.flags.tradeRequested = true;
+
+  if (options.applyEffects !== false) {
+    addProfileDelta('loyalty', -2);
+    addProfileDelta('lockerRoomTrust', -1);
+    addProfileDelta('controversy', 1);
+    addProfileDelta('businessValue', 1);
+    if (typeof addActiveEventEffect === 'function') addActiveEventEffect('player-trade-request', '交易申请风波', -0.5, 4);
+  }
+
+  var teamName = preferredTeam ? getTeamName(preferredTeam) : '其他球队';
+  var resultText = approved
+    ? '管理层同意在赛季结束后为你寻找交易。你的首选下家是' + teamName + '，但最终去向仍取决于谈判。'
+    : '管理层拒绝了申请，表示本赛季仍需要你完成合同责任。你本赛季不能再次申请。';
+  recordPlayerTradeRequest(request, resultText);
+  if (typeof queueSeasonAutoSave === 'function') queueSeasonAutoSave();
+  return { request: request, resultText: resultText };
+}
+
+function closeTradeRequestModal() {
+  var modal = document.getElementById('trade-request-modal');
+  if (modal) modal.remove();
+}
+
+function showTradeRequestModal() {
+  var availability = getTradeRequestAvailability();
+  if (!availability.allowed) return;
+  closeTradeRequestModal();
+  var candidates = getTradeRequestCandidates();
+  var cards = '';
+  candidates.forEach(function(candidate) {
+    var team = candidate.team;
+    cards += '<button class="team-pick-card" style="font:inherit;cursor:pointer;" onclick="showTradeRequestConfirmation(\'' + team + '\')">' +
+      getTeamLogo(team, 36) +
+      '<span class="tpc-abbr">' + getTeamName(team) + '</span>' +
+      '<span class="tpc-name">同位置首发 OVR ' + candidate.starterOvr + '</span>' +
+      '</button>';
+  });
+  var html = '<div class="team-picker-overlay" id="trade-request-modal">';
+  html += '<div class="team-picker-modal">';
+  html += '<div class="team-picker-header"><span>📨 申请交易</span><button class="team-picker-close" onclick="closeTradeRequestModal()">✕</button></div>';
+  html += '<div style="padding:10px 14px 4px;font-size:12px;line-height:1.6;color:var(--text-dim);">选择一支意向球队。管理层可能拒绝申请；即使获准，意向球队也不保证成为最终下家。</div>';
+  html += '<div class="team-picker-grid">' + cards + '</div>';
+  html += '</div></div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function showTradeRequestConfirmation(team) {
+  var modal = document.getElementById('trade-request-modal');
+  if (!modal || team === STATE.careerTeam || LEAGUE_TEAM_IDS.indexOf(team) < 0) return;
+  var chance = getTradeRequestApprovalChance(team);
+  modal.innerHTML = '<div class="team-picker-modal" style="max-width:380px;">' +
+    '<div class="team-picker-header"><span>确认提交申请</span><button class="team-picker-close" onclick="closeTradeRequestModal()">✕</button></div>' +
+    '<div style="padding:18px 14px;text-align:center;">' + getTeamLogo(team, 52) +
+    '<div style="font:700 18px var(--font-display);margin:8px 0 6px;">' + getTeamName(team) + '</div>' +
+    '<div style="font-size:12px;line-height:1.65;color:var(--text-dim);">将该队列为首选下家。当前管理层批准概率约为 ' + chance + '%；提交后本赛季不能撤回或再次申请。</div></div>' +
+    '<div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;">' +
+    '<button class="btn btn-secondary btn-sm" style="flex:1;" onclick="showTradeRequestModal()">返回</button>' +
+    '<button class="btn btn-primary btn-sm" style="flex:1;" onclick="submitPlayerTradeRequest(\'' + team + '\')">提交申请</button>' +
+    '</div></div>';
+}
+
+function submitPlayerTradeRequest(team) {
+  var result = createPlayerTradeRequest(team, 'manual');
+  closeTradeRequestModal();
+  if (!result) return;
+  var effectText = result.request.status === 'approved'
+    ? '<br><br>影响：忠诚-2；更衣室信任-1；争议+1；未来四场球队气势略降。'
+    : '<br><br>影响：忠诚-2；更衣室信任-1；争议+1；本赛季申请次数已用完。';
+  showOffseasonResultModal(result.request.status === 'approved' ? '交易申请获准' : '交易申请被拒', result.resultText + effectText, function() {
+    showMyCard();
+  });
+}
+
+function renderPlayerTradeRequestCard() {
+  var availability = getTradeRequestAvailability();
+  var request = getPlayerTradeRequest();
+  var currentSeason = getActiveTradeRequestSeason();
+  var title = '📨 申请交易';
+  var body = availability.reason || '';
+  var action = '';
+  if (availability.allowed) {
+    action = '<button class="btn btn-secondary btn-sm" style="width:100%;margin-top:9px;" onclick="showTradeRequestModal()">选择意向球队</button>';
+  } else if (request && request.season === currentSeason && request.preferredTeam) {
+    body += ' · 首选 ' + getTeamName(request.preferredTeam);
+  }
+  return '<div class="mc-section"><div class="mc-section-title">' + title + '</div>' +
+    '<div style="font-size:12px;line-height:1.6;color:var(--text-dim);">' + body + '</div>' + action + '</div>';
+}
+
+// ==================== 自由球员签约偏好 ====================
 function getTeamHistoricalWinPct(teamId, standings) {
   var row = standings && standings[teamId];
   var wins = (row && row.wins) || 0;
@@ -1917,7 +2208,12 @@ function evolveLeague() {
         ? 68 + Math.floor(rngNext() * 7)
         : 60 + Math.floor(rngNext() * 8);
       rk.ovr = fillerOvr;
-      applyRookieAttributeProfile(rk, fillerOvr, rngNext);
+      if (rk._fixedProspectRating) {
+        rk.ovr = calcOVR(rk, rk.pos);
+        rk._rookieSeason = getCurrentLeagueSeasonNumber();
+      } else {
+        applyRookieAttributeProfile(rk, fillerOvr, rngNext);
+      }
       rk.contract = draftSlot <= 3 ? 3 : 2;
       rk.loyalty = getRookieContractLoyalty(rk.contract);
       newRoster.push(rk);

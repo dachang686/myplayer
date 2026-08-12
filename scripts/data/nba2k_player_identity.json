@@ -1,0 +1,3157 @@
+{
+  "source": "C:\\kevin\\myplayer_bak\\assets\\activity-static.hoopchina.com.cn\\files\\2678-5hu3djrc-upload-1783494754597-12.js",
+  "createdAt": "2026-08-11T11:21:27.819Z",
+  "changedFromLegacy": 129,
+  "players": [
+    {
+      "localId": "P0001",
+      "originalTeam": "ATL",
+      "name": "Jalen Johnson",
+      "cname": "杰伦-约翰逊"
+    },
+    {
+      "localId": "P0002",
+      "originalTeam": "ATL",
+      "name": "Nickeil Alexander-Walker",
+      "cname": "亚历山大-沃克"
+    },
+    {
+      "localId": "P0003",
+      "originalTeam": "ATL",
+      "name": "Dyson Daniels",
+      "cname": "戴森-丹尼尔斯"
+    },
+    {
+      "localId": "P0004",
+      "originalTeam": "ATL",
+      "name": "CJ McCollum",
+      "cname": "CJ-麦科勒姆"
+    },
+    {
+      "localId": "P0005",
+      "originalTeam": "ATL",
+      "name": "Onyeka Okongwu",
+      "cname": "奥涅卡-奥孔古"
+    },
+    {
+      "localId": "P0006",
+      "originalTeam": "ATL",
+      "name": "Jock Landale",
+      "cname": "乔克-兰代尔"
+    },
+    {
+      "localId": "P0007",
+      "originalTeam": "ATL",
+      "name": "Zaccharie Risacher",
+      "cname": "扎卡里-里萨谢"
+    },
+    {
+      "localId": "P0008",
+      "originalTeam": "ATL",
+      "name": "Devin Carter",
+      "cname": "德文-卡特"
+    },
+    {
+      "localId": "P0009",
+      "originalTeam": "ATL",
+      "name": "Corey Kispert",
+      "cname": "科里-基斯珀特"
+    },
+    {
+      "localId": "P0010",
+      "originalTeam": "ATL",
+      "name": "Buddy Hield",
+      "cname": "巴迪-希尔德"
+    },
+    {
+      "localId": "P0011",
+      "originalTeam": "ATL",
+      "name": "Asa Newell",
+      "cname": "阿萨-纽厄尔"
+    },
+    {
+      "localId": "P0012",
+      "originalTeam": "ATL",
+      "name": "Mouhamed Gueye",
+      "cname": "穆罕默德-古耶"
+    },
+    {
+      "localId": "P0013",
+      "originalTeam": "ATL",
+      "name": "Tony Bradley",
+      "cname": "托尼-布拉德利"
+    },
+    {
+      "localId": "P0014",
+      "originalTeam": "ATL",
+      "name": "Gabe Vincent",
+      "cname": "盖布-文森特"
+    },
+    {
+      "localId": "P0015",
+      "originalTeam": "ATL",
+      "name": "Christian Koloko",
+      "cname": "克里斯蒂安-科洛科"
+    },
+    {
+      "localId": "P0016",
+      "originalTeam": "ATL",
+      "name": "Keaton Wallace",
+      "cname": "基顿-华莱士"
+    },
+    {
+      "localId": "P0017",
+      "originalTeam": "ATL",
+      "name": "RayJ Dennis",
+      "cname": "雷-J-丹尼斯"
+    },
+    {
+      "localId": "P0018",
+      "originalTeam": "ATL",
+      "name": "Keshon Gilbert",
+      "cname": "凯雄-吉尔伯特"
+    },
+    {
+      "localId": "P0019",
+      "originalTeam": "BKN",
+      "name": "Michael Porter Jr.",
+      "cname": "小迈克尔-波特"
+    },
+    {
+      "localId": "P0020",
+      "originalTeam": "BKN",
+      "name": "Julius Randle",
+      "cname": "朱利叶斯-兰德尔"
+    },
+    {
+      "localId": "P0021",
+      "originalTeam": "BKN",
+      "name": "Ziaire Williams",
+      "cname": "宰伊尔-威廉姆斯"
+    },
+    {
+      "localId": "P0022",
+      "originalTeam": "BKN",
+      "name": "Day’Ron Sharpe",
+      "cname": "戴龙-夏普"
+    },
+    {
+      "localId": "P0023",
+      "originalTeam": "BKN",
+      "name": "Egor Demin",
+      "cname": "叶戈尔-德明"
+    },
+    {
+      "localId": "P0024",
+      "originalTeam": "BKN",
+      "name": "Josh Minott",
+      "cname": "乔什-米诺特"
+    },
+    {
+      "localId": "P0025",
+      "originalTeam": "BKN",
+      "name": "Moritz Wagner",
+      "cname": "莫里茨-瓦格纳"
+    },
+    {
+      "localId": "P0026",
+      "originalTeam": "BKN",
+      "name": "Danny Wolf",
+      "cname": "丹尼-沃尔夫"
+    },
+    {
+      "localId": "P0027",
+      "originalTeam": "BKN",
+      "name": "Keon Ellis",
+      "cname": "基恩-埃利斯"
+    },
+    {
+      "localId": "P0028",
+      "originalTeam": "BKN",
+      "name": "Nolan Traore",
+      "cname": "诺兰-特拉奥雷"
+    },
+    {
+      "localId": "P0029",
+      "originalTeam": "BKN",
+      "name": "Noah Clowney",
+      "cname": "诺厄-克洛尼"
+    },
+    {
+      "localId": "P0030",
+      "originalTeam": "BKN",
+      "name": "Terance Mann",
+      "cname": "特伦斯-曼"
+    },
+    {
+      "localId": "P0031",
+      "originalTeam": "BKN",
+      "name": "Ochai Agbaji",
+      "cname": "奥查伊-阿巴吉"
+    },
+    {
+      "localId": "P0032",
+      "originalTeam": "BKN",
+      "name": "Ben Saraf",
+      "cname": "本-萨拉夫"
+    },
+    {
+      "localId": "P0033",
+      "originalTeam": "BKN",
+      "name": "Jalen Wilson",
+      "cname": "杰伦-威尔逊"
+    },
+    {
+      "localId": "P0034",
+      "originalTeam": "BKN",
+      "name": "Drake Powell",
+      "cname": "德雷克-鲍威尔"
+    },
+    {
+      "localId": "P0035",
+      "originalTeam": "BKN",
+      "name": "Chaney Johnson",
+      "cname": "钱尼-约翰逊"
+    },
+    {
+      "localId": "P0036",
+      "originalTeam": "BKN",
+      "name": "Tyson Etienne",
+      "cname": "泰森-艾蒂安"
+    },
+    {
+      "localId": "P0037",
+      "originalTeam": "BKN",
+      "name": "Malachi Smith",
+      "cname": "玛拉基-史密斯"
+    },
+    {
+      "localId": "P0038",
+      "originalTeam": "BKN",
+      "name": "E.J. Liddell",
+      "cname": "E.J.-利德尔"
+    },
+    {
+      "localId": "P0039",
+      "originalTeam": "BKN",
+      "name": "Trevon Scott",
+      "cname": "特雷文-斯科特"
+    },
+    {
+      "localId": "P0040",
+      "originalTeam": "BOS",
+      "name": "Jayson Tatum",
+      "cname": "杰森-塔图姆"
+    },
+    {
+      "localId": "P0041",
+      "originalTeam": "BOS",
+      "name": "Derrick White",
+      "cname": "德里克-怀特"
+    },
+    {
+      "localId": "P0042",
+      "originalTeam": "BOS",
+      "name": "Paul George",
+      "cname": "保罗-乔治"
+    },
+    {
+      "localId": "P0043",
+      "originalTeam": "BOS",
+      "name": "Payton Pritchard",
+      "cname": "佩顿-普里查德"
+    },
+    {
+      "localId": "P0044",
+      "originalTeam": "BOS",
+      "name": "Neemias Queta",
+      "cname": "内米亚斯-克塔"
+    },
+    {
+      "localId": "P0045",
+      "originalTeam": "BOS",
+      "name": "Mitchell Robinson",
+      "cname": "米切尔-罗宾逊"
+    },
+    {
+      "localId": "P0046",
+      "originalTeam": "BOS",
+      "name": "Luka Garza",
+      "cname": "卢卡-加尔扎"
+    },
+    {
+      "localId": "P0047",
+      "originalTeam": "BOS",
+      "name": "Sam Hauser",
+      "cname": "萨姆-豪瑟"
+    },
+    {
+      "localId": "P0048",
+      "originalTeam": "BOS",
+      "name": "Mike Conley",
+      "cname": "迈克-康利"
+    },
+    {
+      "localId": "P0049",
+      "originalTeam": "BOS",
+      "name": "Jordan Walsh",
+      "cname": "乔丹-沃尔什"
+    },
+    {
+      "localId": "P0050",
+      "originalTeam": "BOS",
+      "name": "Baylor Scheierman",
+      "cname": "贝勒-沙伊尔曼"
+    },
+    {
+      "localId": "P0051",
+      "originalTeam": "BOS",
+      "name": "Hugo Gonzalez",
+      "cname": "乌戈-冈萨雷斯"
+    },
+    {
+      "localId": "P0052",
+      "originalTeam": "BOS",
+      "name": "Dalano Banton",
+      "cname": "达拉诺-班顿"
+    },
+    {
+      "localId": "P0053",
+      "originalTeam": "BOS",
+      "name": "Ron Harper Jr.",
+      "cname": "小罗恩-哈珀"
+    },
+    {
+      "localId": "P0054",
+      "originalTeam": "BOS",
+      "name": "Amari Williams",
+      "cname": "阿马里-威廉姆斯"
+    },
+    {
+      "localId": "P0055",
+      "originalTeam": "BOS",
+      "name": "John Tonje",
+      "cname": "约翰-汤杰"
+    },
+    {
+      "localId": "P0056",
+      "originalTeam": "BOS",
+      "name": "Max Shulga",
+      "cname": "马克斯-舒尔加"
+    },
+    {
+      "localId": "P0057",
+      "originalTeam": "CHA",
+      "name": "Brandon Miller",
+      "cname": "布兰登-米勒"
+    },
+    {
+      "localId": "P0058",
+      "originalTeam": "CHA",
+      "name": "Kon Knueppel",
+      "cname": "康-克努佩尔"
+    },
+    {
+      "localId": "P0059",
+      "originalTeam": "CHA",
+      "name": "Naz Reid",
+      "cname": "纳兹-里德"
+    },
+    {
+      "localId": "P0060",
+      "originalTeam": "CHA",
+      "name": "Coby White",
+      "cname": "科比-怀特"
+    },
+    {
+      "localId": "P0061",
+      "originalTeam": "CHA",
+      "name": "Grayson Allen",
+      "cname": "格雷森-阿伦"
+    },
+    {
+      "localId": "P0062",
+      "originalTeam": "CHA",
+      "name": "Moussa Diabate",
+      "cname": "穆萨-迪亚巴特"
+    },
+    {
+      "localId": "P0063",
+      "originalTeam": "CHA",
+      "name": "Ryan Kalkbrenner",
+      "cname": "瑞安-卡尔克布伦纳"
+    },
+    {
+      "localId": "P0064",
+      "originalTeam": "CHA",
+      "name": "Royce O’Neale",
+      "cname": "罗伊斯-奥尼尔"
+    },
+    {
+      "localId": "P0065",
+      "originalTeam": "CHA",
+      "name": "Grant Williams",
+      "cname": "格兰特-威廉姆斯"
+    },
+    {
+      "localId": "P0066",
+      "originalTeam": "CHA",
+      "name": "Tidjane Salaun",
+      "cname": "蒂贾内-萨隆"
+    },
+    {
+      "localId": "P0067",
+      "originalTeam": "CHA",
+      "name": "Dorian Finney-Smith",
+      "cname": "多里安-芬尼-史密斯"
+    },
+    {
+      "localId": "P0068",
+      "originalTeam": "CHA",
+      "name": "Sion James",
+      "cname": "锡安-詹姆斯"
+    },
+    {
+      "localId": "P0069",
+      "originalTeam": "CHA",
+      "name": "Tre Mann",
+      "cname": "特雷-曼"
+    },
+    {
+      "localId": "P0070",
+      "originalTeam": "CHA",
+      "name": "Pat Connaughton",
+      "cname": "帕特-康诺顿"
+    },
+    {
+      "localId": "P0071",
+      "originalTeam": "CHA",
+      "name": "Xavier Tillman",
+      "cname": "泽维尔-蒂尔曼"
+    },
+    {
+      "localId": "P0072",
+      "originalTeam": "CHA",
+      "name": "PJ Hall",
+      "cname": "PJ-霍尔"
+    },
+    {
+      "localId": "P0073",
+      "originalTeam": "CHA",
+      "name": "Liam McNeeley",
+      "cname": "利亚姆-麦克尼利"
+    },
+    {
+      "localId": "P0074",
+      "originalTeam": "CHA",
+      "name": "Antonio Reeves",
+      "cname": "安东尼奥-里夫斯"
+    },
+    {
+      "localId": "P0075",
+      "originalTeam": "CHI",
+      "name": "Norman Powell",
+      "cname": "诺曼-鲍威尔"
+    },
+    {
+      "localId": "P0076",
+      "originalTeam": "CHI",
+      "name": "Josh Giddey",
+      "cname": "乔什-吉迪"
+    },
+    {
+      "localId": "P0077",
+      "originalTeam": "CHI",
+      "name": "Matas Buzelis",
+      "cname": "马塔斯-布泽利斯"
+    },
+    {
+      "localId": "P0078",
+      "originalTeam": "CHI",
+      "name": "Nic Claxton",
+      "cname": "尼古拉斯-克拉克斯顿"
+    },
+    {
+      "localId": "P0079",
+      "originalTeam": "CHI",
+      "name": "Tre Jones",
+      "cname": "特雷-琼斯"
+    },
+    {
+      "localId": "P0080",
+      "originalTeam": "CHI",
+      "name": "Jalen Smith",
+      "cname": "杰伦-史密斯"
+    },
+    {
+      "localId": "P0081",
+      "originalTeam": "CHI",
+      "name": "Zach Collins",
+      "cname": "扎克-科林斯"
+    },
+    {
+      "localId": "P0082",
+      "originalTeam": "CHI",
+      "name": "Isaac Okoro",
+      "cname": "艾萨克-奥科罗"
+    },
+    {
+      "localId": "P0083",
+      "originalTeam": "CHI",
+      "name": "Leonard Miller",
+      "cname": "伦纳德-米勒"
+    },
+    {
+      "localId": "P0084",
+      "originalTeam": "CHI",
+      "name": "Patrick Williams",
+      "cname": "帕特里克-威廉姆斯"
+    },
+    {
+      "localId": "P0085",
+      "originalTeam": "CHI",
+      "name": "Nick Richards",
+      "cname": "尼克-理查兹"
+    },
+    {
+      "localId": "P0086",
+      "originalTeam": "CHI",
+      "name": "Rob Dillingham",
+      "cname": "罗布-迪林厄姆"
+    },
+    {
+      "localId": "P0087",
+      "originalTeam": "CHI",
+      "name": "Yuki Kawamura",
+      "cname": "河村勇辉"
+    },
+    {
+      "localId": "P0088",
+      "originalTeam": "CHI",
+      "name": "Noa Essengue",
+      "cname": "诺阿-埃森格"
+    },
+    {
+      "localId": "P0089",
+      "originalTeam": "CHI",
+      "name": "Mac McClung",
+      "cname": "麦克-麦克朗"
+    },
+    {
+      "localId": "P0090",
+      "originalTeam": "CHI",
+      "name": "Lachlan Olbrich",
+      "cname": "拉克伦-奥尔布里奇"
+    },
+    {
+      "localId": "P0091",
+      "originalTeam": "CLE",
+      "name": "Donovan Mitchell",
+      "cname": "多诺万-米切尔"
+    },
+    {
+      "localId": "P0092",
+      "originalTeam": "CLE",
+      "name": "Evan Mobley",
+      "cname": "埃文-莫布利"
+    },
+    {
+      "localId": "P0093",
+      "originalTeam": "CLE",
+      "name": "Jarrett Allen",
+      "cname": "贾勒特-阿伦"
+    },
+    {
+      "localId": "P0094",
+      "originalTeam": "CLE",
+      "name": "Max Strus",
+      "cname": "马克斯-斯特鲁斯"
+    },
+    {
+      "localId": "P0095",
+      "originalTeam": "CLE",
+      "name": "Sam Merrill",
+      "cname": "萨姆-梅里尔"
+    },
+    {
+      "localId": "P0096",
+      "originalTeam": "CLE",
+      "name": "Dennis Schroder",
+      "cname": "丹尼斯-施罗德"
+    },
+    {
+      "localId": "P0097",
+      "originalTeam": "CLE",
+      "name": "Jaylon Tyson",
+      "cname": "杰伦-泰森"
+    },
+    {
+      "localId": "P0098",
+      "originalTeam": "CLE",
+      "name": "Thomas Bryant",
+      "cname": "托马斯-布莱恩特"
+    },
+    {
+      "localId": "P0099",
+      "originalTeam": "CLE",
+      "name": "Craig Porter Jr.",
+      "cname": "小克雷格-波特"
+    },
+    {
+      "localId": "P0100",
+      "originalTeam": "CLE",
+      "name": "Nae’Qwan Tomlin",
+      "cname": "纳伊夸恩-汤姆林"
+    },
+    {
+      "localId": "P0101",
+      "originalTeam": "CLE",
+      "name": "Tyrese Proctor",
+      "cname": "泰雷斯-普罗克特"
+    },
+    {
+      "localId": "P0102",
+      "originalTeam": "CLE",
+      "name": "Olivier Sarr",
+      "cname": "奥利维耶-萨尔"
+    },
+    {
+      "localId": "P0103",
+      "originalTeam": "CLE",
+      "name": "Tristan Enaruna",
+      "cname": "特里斯坦-埃纳鲁纳"
+    },
+    {
+      "localId": "P0104",
+      "originalTeam": "CLE",
+      "name": "Riley Minix",
+      "cname": "赖利-米尼克斯"
+    },
+    {
+      "localId": "P0105",
+      "originalTeam": "DAL",
+      "name": "Kyrie Irving",
+      "cname": "凯里-欧文"
+    },
+    {
+      "localId": "P0106",
+      "originalTeam": "DAL",
+      "name": "Cooper Flagg",
+      "cname": "库珀-弗拉格"
+    },
+    {
+      "localId": "P0107",
+      "originalTeam": "DAL",
+      "name": "Naji Marshall",
+      "cname": "纳吉-马歇尔"
+    },
+    {
+      "localId": "P0108",
+      "originalTeam": "DAL",
+      "name": "Santi Aldama",
+      "cname": "桑蒂-阿尔达马"
+    },
+    {
+      "localId": "P0109",
+      "originalTeam": "DAL",
+      "name": "P.J. Washington",
+      "cname": "PJ-华盛顿"
+    },
+    {
+      "localId": "P0110",
+      "originalTeam": "DAL",
+      "name": "Daniel Gafford",
+      "cname": "丹尼尔-加福德"
+    },
+    {
+      "localId": "P0111",
+      "originalTeam": "DAL",
+      "name": "Dereck Lively II",
+      "cname": "德雷克-莱夫利二世"
+    },
+    {
+      "localId": "P0112",
+      "originalTeam": "DAL",
+      "name": "Klay Thompson",
+      "cname": "克莱-汤普森"
+    },
+    {
+      "localId": "P0113",
+      "originalTeam": "DAL",
+      "name": "Max Christie",
+      "cname": "马克斯-克里斯蒂"
+    },
+    {
+      "localId": "P0114",
+      "originalTeam": "DAL",
+      "name": "Caleb Martin",
+      "cname": "凯莱布-马丁"
+    },
+    {
+      "localId": "P0115",
+      "originalTeam": "DAL",
+      "name": "Ryan Nembhard",
+      "cname": "瑞安-内姆哈德"
+    },
+    {
+      "localId": "P0116",
+      "originalTeam": "DAL",
+      "name": "Dwight Powell",
+      "cname": "德怀特-鲍威尔"
+    },
+    {
+      "localId": "P0117",
+      "originalTeam": "DAL",
+      "name": "Moussa Cisse",
+      "cname": "穆萨-西塞"
+    },
+    {
+      "localId": "P0118",
+      "originalTeam": "DAL",
+      "name": "John Poulakidas",
+      "cname": "约翰-普拉基达斯"
+    },
+    {
+      "localId": "P0119",
+      "originalTeam": "DAL",
+      "name": "Tyler Smith",
+      "cname": "泰勒-史密斯"
+    },
+    {
+      "localId": "P0120",
+      "originalTeam": "DEN",
+      "name": "Nikola Jokic",
+      "cname": "尼古拉-约基奇"
+    },
+    {
+      "localId": "P0121",
+      "originalTeam": "DEN",
+      "name": "Jamal Murray",
+      "cname": "贾马尔-默里"
+    },
+    {
+      "localId": "P0122",
+      "originalTeam": "DEN",
+      "name": "Aaron Gordon",
+      "cname": "阿龙-戈登"
+    },
+    {
+      "localId": "P0123",
+      "originalTeam": "DEN",
+      "name": "Peyton Watson",
+      "cname": "佩顿-沃特森"
+    },
+    {
+      "localId": "P0124",
+      "originalTeam": "DEN",
+      "name": "Christian Braun",
+      "cname": "克里斯蒂安-布劳恩"
+    },
+    {
+      "localId": "P0125",
+      "originalTeam": "DEN",
+      "name": "Cameron Johnson",
+      "cname": "卡梅伦-约翰逊"
+    },
+    {
+      "localId": "P0126",
+      "originalTeam": "DEN",
+      "name": "Tim Hardaway Jr.",
+      "cname": "小蒂姆-哈达威"
+    },
+    {
+      "localId": "P0127",
+      "originalTeam": "DEN",
+      "name": "Marvin Bagley III",
+      "cname": "马文-巴格利三世"
+    },
+    {
+      "localId": "P0128",
+      "originalTeam": "DEN",
+      "name": "Julian Strawther",
+      "cname": "朱利安-斯特劳瑟"
+    },
+    {
+      "localId": "P0129",
+      "originalTeam": "DEN",
+      "name": "Bruce Brown",
+      "cname": "布鲁斯-布朗"
+    },
+    {
+      "localId": "P0130",
+      "originalTeam": "DEN",
+      "name": "Zeke Nnaji",
+      "cname": "齐克-纳吉"
+    },
+    {
+      "localId": "P0131",
+      "originalTeam": "DEN",
+      "name": "Tyus Jones",
+      "cname": "泰厄斯-琼斯"
+    },
+    {
+      "localId": "P0132",
+      "originalTeam": "DEN",
+      "name": "Jalen Pickett",
+      "cname": "杰伦-皮克特"
+    },
+    {
+      "localId": "P0133",
+      "originalTeam": "DEN",
+      "name": "DaRon Holmes II",
+      "cname": "达隆-霍姆斯二世"
+    },
+    {
+      "localId": "P0134",
+      "originalTeam": "DEN",
+      "name": "KJ Simpson",
+      "cname": "KJ-辛普森"
+    },
+    {
+      "localId": "P0135",
+      "originalTeam": "DEN",
+      "name": "Spencer Jones",
+      "cname": "斯潘塞-琼斯"
+    },
+    {
+      "localId": "P0136",
+      "originalTeam": "DEN",
+      "name": "David Roddy",
+      "cname": "戴维-罗迪"
+    },
+    {
+      "localId": "P0137",
+      "originalTeam": "DEN",
+      "name": "Curtis Jones",
+      "cname": "柯蒂斯-琼斯"
+    },
+    {
+      "localId": "P0138",
+      "originalTeam": "DET",
+      "name": "Cade Cunningham",
+      "cname": "凯德-坎宁安"
+    },
+    {
+      "localId": "P0139",
+      "originalTeam": "DET",
+      "name": "Ausar Thompson",
+      "cname": "奥萨尔-汤普森"
+    },
+    {
+      "localId": "P0140",
+      "originalTeam": "DET",
+      "name": "Jalen Duren",
+      "cname": "杰伦-杜伦"
+    },
+    {
+      "localId": "P0141",
+      "originalTeam": "DET",
+      "name": "John Collins",
+      "cname": "约翰-科林斯"
+    },
+    {
+      "localId": "P0142",
+      "originalTeam": "DET",
+      "name": "Daniss Jenkins",
+      "cname": "达尼斯-詹金斯"
+    },
+    {
+      "localId": "P0143",
+      "originalTeam": "DET",
+      "name": "Duncan Robinson",
+      "cname": "邓肯-罗宾逊"
+    },
+    {
+      "localId": "P0144",
+      "originalTeam": "DET",
+      "name": "Paul Reed",
+      "cname": "保罗-里德"
+    },
+    {
+      "localId": "P0145",
+      "originalTeam": "DET",
+      "name": "Isaiah Joe",
+      "cname": "以赛亚-乔"
+    },
+    {
+      "localId": "P0146",
+      "originalTeam": "DET",
+      "name": "Javonte Green",
+      "cname": "贾冯特-格林"
+    },
+    {
+      "localId": "P0147",
+      "originalTeam": "DET",
+      "name": "Ronald Holland II",
+      "cname": "罗纳德-霍兰德二世"
+    },
+    {
+      "localId": "P0148",
+      "originalTeam": "DET",
+      "name": "Kevin Huerter",
+      "cname": "凯文-赫尔特"
+    },
+    {
+      "localId": "P0149",
+      "originalTeam": "DET",
+      "name": "Marcus Sasser",
+      "cname": "马库斯-萨瑟"
+    },
+    {
+      "localId": "P0150",
+      "originalTeam": "DET",
+      "name": "Taurean Prince",
+      "cname": "托里恩-普林斯"
+    },
+    {
+      "localId": "P0151",
+      "originalTeam": "DET",
+      "name": "Gary Harris",
+      "cname": "加里-哈里斯"
+    },
+    {
+      "localId": "P0152",
+      "originalTeam": "DET",
+      "name": "Isaac Jones",
+      "cname": "艾萨克-琼斯"
+    },
+    {
+      "localId": "P0153",
+      "originalTeam": "DET",
+      "name": "Wendell Moore Jr.",
+      "cname": "小温德尔-摩尔"
+    },
+    {
+      "localId": "P0154",
+      "originalTeam": "DET",
+      "name": "Chaz Lanier",
+      "cname": "查兹-拉尼尔"
+    },
+    {
+      "localId": "P0155",
+      "originalTeam": "DET",
+      "name": "Tolu Smith",
+      "cname": "托卢-史密斯"
+    },
+    {
+      "localId": "P0156",
+      "originalTeam": "GSW",
+      "name": "Stephen Curry",
+      "cname": "斯蒂芬-库里"
+    },
+    {
+      "localId": "P0157",
+      "originalTeam": "GSW",
+      "name": "Jimmy Butler",
+      "cname": "吉米-巴特勒"
+    },
+    {
+      "localId": "P0158",
+      "originalTeam": "GSW",
+      "name": "Kristaps Porzingis",
+      "cname": "克里斯塔普斯-波尔津吉斯"
+    },
+    {
+      "localId": "P0159",
+      "originalTeam": "GSW",
+      "name": "Brandin Podziemski",
+      "cname": "布兰丁-波杰姆斯基"
+    },
+    {
+      "localId": "P0160",
+      "originalTeam": "GSW",
+      "name": "Gui Santos",
+      "cname": "吉-桑托斯"
+    },
+    {
+      "localId": "P0161",
+      "originalTeam": "GSW",
+      "name": "Draymond Green",
+      "cname": "德雷蒙德-格林"
+    },
+    {
+      "localId": "P0162",
+      "originalTeam": "GSW",
+      "name": "De’Anthony Melton",
+      "cname": "德安东尼-梅尔顿"
+    },
+    {
+      "localId": "P0163",
+      "originalTeam": "GSW",
+      "name": "Al Horford",
+      "cname": "艾尔-霍福德"
+    },
+    {
+      "localId": "P0164",
+      "originalTeam": "GSW",
+      "name": "Gary Payton II",
+      "cname": "加里-佩顿二世"
+    },
+    {
+      "localId": "P0165",
+      "originalTeam": "GSW",
+      "name": "Moses Moody",
+      "cname": "摩西-穆迪"
+    },
+    {
+      "localId": "P0166",
+      "originalTeam": "GSW",
+      "name": "Will Richard",
+      "cname": "威尔-理查德"
+    },
+    {
+      "localId": "P0167",
+      "originalTeam": "GSW",
+      "name": "Seth Curry",
+      "cname": "塞思-库里"
+    },
+    {
+      "localId": "P0168",
+      "originalTeam": "GSW",
+      "name": "Nate Williams",
+      "cname": "内特-威廉姆斯"
+    },
+    {
+      "localId": "P0169",
+      "originalTeam": "GSW",
+      "name": "LJ Cryer",
+      "cname": "LJ-克赖尔"
+    },
+    {
+      "localId": "P0170",
+      "originalTeam": "GSW",
+      "name": "Charles Bassey",
+      "cname": "查尔斯-巴塞"
+    },
+    {
+      "localId": "P0171",
+      "originalTeam": "GSW",
+      "name": "Malevy Leons",
+      "cname": "马莱维-莱昂斯"
+    },
+    {
+      "localId": "P0172",
+      "originalTeam": "HOU",
+      "name": "Kevin Durant",
+      "cname": "凯文-杜兰特"
+    },
+    {
+      "localId": "P0173",
+      "originalTeam": "HOU",
+      "name": "Alperen Sengun",
+      "cname": "阿尔佩伦-申京"
+    },
+    {
+      "localId": "P0174",
+      "originalTeam": "HOU",
+      "name": "Amen Thompson",
+      "cname": "阿门-汤普森"
+    },
+    {
+      "localId": "P0175",
+      "originalTeam": "HOU",
+      "name": "Jabari Smith Jr.",
+      "cname": "小贾巴里-史密斯"
+    },
+    {
+      "localId": "P0176",
+      "originalTeam": "HOU",
+      "name": "Reed Sheppard",
+      "cname": "里德-谢泼德"
+    },
+    {
+      "localId": "P0177",
+      "originalTeam": "HOU",
+      "name": "Fred VanVleet",
+      "cname": "弗雷德-范弗利特"
+    },
+    {
+      "localId": "P0178",
+      "originalTeam": "HOU",
+      "name": "Marcus Smart",
+      "cname": "马库斯-斯马特"
+    },
+    {
+      "localId": "P0179",
+      "originalTeam": "HOU",
+      "name": "Tari Eason",
+      "cname": "塔里-伊森"
+    },
+    {
+      "localId": "P0180",
+      "originalTeam": "HOU",
+      "name": "Clint Capela",
+      "cname": "克林特-卡佩拉"
+    },
+    {
+      "localId": "P0181",
+      "originalTeam": "HOU",
+      "name": "Steven Adams",
+      "cname": "史蒂文-亚当斯"
+    },
+    {
+      "localId": "P0182",
+      "originalTeam": "HOU",
+      "name": "Aaron Holiday",
+      "cname": "阿龙-霍勒迪"
+    },
+    {
+      "localId": "P0183",
+      "originalTeam": "HOU",
+      "name": "Bogdan Bogdanovic",
+      "cname": "波格丹-波格丹诺维奇"
+    },
+    {
+      "localId": "P0184",
+      "originalTeam": "HOU",
+      "name": "Jae’Sean Tate",
+      "cname": "杰肖恩-泰特"
+    },
+    {
+      "localId": "P0185",
+      "originalTeam": "HOU",
+      "name": "Jeff Green",
+      "cname": "杰夫-格林"
+    },
+    {
+      "localId": "P0186",
+      "originalTeam": "HOU",
+      "name": "JD Davison",
+      "cname": "JD-戴维森"
+    },
+    {
+      "localId": "P0187",
+      "originalTeam": "HOU",
+      "name": "Tristen Newton",
+      "cname": "特里斯坦-牛顿"
+    },
+    {
+      "localId": "P0188",
+      "originalTeam": "HOU",
+      "name": "Isaiah Crawford",
+      "cname": "以赛亚-克劳福德"
+    },
+    {
+      "localId": "P0189",
+      "originalTeam": "IND",
+      "name": "Tyrese Haliburton",
+      "cname": "泰雷塞-哈利伯顿"
+    },
+    {
+      "localId": "P0190",
+      "originalTeam": "IND",
+      "name": "Pascal Siakam",
+      "cname": "帕斯卡尔-西亚卡姆"
+    },
+    {
+      "localId": "P0191",
+      "originalTeam": "IND",
+      "name": "Ivica Zubac",
+      "cname": "伊维察-祖巴茨"
+    },
+    {
+      "localId": "P0192",
+      "originalTeam": "IND",
+      "name": "Andrew Nembhard",
+      "cname": "安德鲁-内姆哈德"
+    },
+    {
+      "localId": "P0193",
+      "originalTeam": "IND",
+      "name": "T.J. McConnell",
+      "cname": "TJ-麦康奈尔"
+    },
+    {
+      "localId": "P0194",
+      "originalTeam": "IND",
+      "name": "Jarace Walker",
+      "cname": "贾拉斯-沃克"
+    },
+    {
+      "localId": "P0195",
+      "originalTeam": "IND",
+      "name": "Obi Toppin",
+      "cname": "奥比-托平"
+    },
+    {
+      "localId": "P0196",
+      "originalTeam": "IND",
+      "name": "Aaron Nesmith",
+      "cname": "阿龙-内史密斯"
+    },
+    {
+      "localId": "P0197",
+      "originalTeam": "IND",
+      "name": "Kelly Oubre Jr.",
+      "cname": "小凯利-乌布雷"
+    },
+    {
+      "localId": "P0198",
+      "originalTeam": "IND",
+      "name": "Jay Huff",
+      "cname": "杰伊-赫夫"
+    },
+    {
+      "localId": "P0199",
+      "originalTeam": "IND",
+      "name": "Quenton Jackson",
+      "cname": "昆顿-杰克逊"
+    },
+    {
+      "localId": "P0200",
+      "originalTeam": "IND",
+      "name": "Kobe Brown",
+      "cname": "科比-布朗"
+    },
+    {
+      "localId": "P0201",
+      "originalTeam": "IND",
+      "name": "Ben Sheppard",
+      "cname": "本-谢泼德"
+    },
+    {
+      "localId": "P0202",
+      "originalTeam": "IND",
+      "name": "Johnny Furphy",
+      "cname": "约翰尼-弗菲"
+    },
+    {
+      "localId": "P0203",
+      "originalTeam": "IND",
+      "name": "Larry Nance Jr.",
+      "cname": "小拉里-南斯"
+    },
+    {
+      "localId": "P0204",
+      "originalTeam": "IND",
+      "name": "Jalen Slawson",
+      "cname": "杰伦-斯劳森"
+    },
+    {
+      "localId": "P0205",
+      "originalTeam": "IND",
+      "name": "Ethan Thompson",
+      "cname": "伊桑-汤普森"
+    },
+    {
+      "localId": "P0206",
+      "originalTeam": "IND",
+      "name": "Taelon Peter",
+      "cname": "塔隆-彼得"
+    },
+    {
+      "localId": "P0207",
+      "originalTeam": "LAC",
+      "name": "Brandon Ingram",
+      "cname": "布兰登-英格拉姆"
+    },
+    {
+      "localId": "P0208",
+      "originalTeam": "LAC",
+      "name": "Darius Garland",
+      "cname": "达里厄斯-加兰"
+    },
+    {
+      "localId": "P0209",
+      "originalTeam": "LAC",
+      "name": "Bennedict Mathurin",
+      "cname": "本内迪克特-马图林"
+    },
+    {
+      "localId": "P0210",
+      "originalTeam": "LAC",
+      "name": "Rui Hachimura",
+      "cname": "八村垒"
+    },
+    {
+      "localId": "P0211",
+      "originalTeam": "LAC",
+      "name": "Derrick Jones Jr.",
+      "cname": "小德里克-琼斯"
+    },
+    {
+      "localId": "P0212",
+      "originalTeam": "LAC",
+      "name": "Brook Lopez",
+      "cname": "布鲁克-洛佩斯"
+    },
+    {
+      "localId": "P0213",
+      "originalTeam": "LAC",
+      "name": "Kris Dunn",
+      "cname": "克里斯-邓恩"
+    },
+    {
+      "localId": "P0214",
+      "originalTeam": "LAC",
+      "name": "Jordan Miller",
+      "cname": "乔丹-米勒"
+    },
+    {
+      "localId": "P0215",
+      "originalTeam": "LAC",
+      "name": "Isaiah Jackson",
+      "cname": "以赛亚-杰克逊"
+    },
+    {
+      "localId": "P0216",
+      "originalTeam": "LAC",
+      "name": "Bradley Beal",
+      "cname": "布拉德利-比尔"
+    },
+    {
+      "localId": "P0217",
+      "originalTeam": "LAC",
+      "name": "Gradey Dick",
+      "cname": "格雷迪-迪克"
+    },
+    {
+      "localId": "P0218",
+      "originalTeam": "LAC",
+      "name": "Kobe Sanders",
+      "cname": "科比-桑德斯"
+    },
+    {
+      "localId": "P0219",
+      "originalTeam": "LAC",
+      "name": "Yanic Konan Niederhauser",
+      "cname": "亚尼克-科南-尼德豪泽"
+    },
+    {
+      "localId": "P0220",
+      "originalTeam": "LAC",
+      "name": "Nicolas Batum",
+      "cname": "尼古拉-巴图姆"
+    },
+    {
+      "localId": "P0221",
+      "originalTeam": "LAC",
+      "name": "TyTy Washington Jr.",
+      "cname": "小泰泰-华盛顿"
+    },
+    {
+      "localId": "P0222",
+      "originalTeam": "LAC",
+      "name": "Cam Christie",
+      "cname": "卡姆-克里斯蒂"
+    },
+    {
+      "localId": "P0223",
+      "originalTeam": "LAC",
+      "name": "Norchad Omier",
+      "cname": "诺查德-奥米尔"
+    },
+    {
+      "localId": "P0224",
+      "originalTeam": "LAC",
+      "name": "Sean Pedulla",
+      "cname": "肖恩-佩杜拉"
+    },
+    {
+      "localId": "P0225",
+      "originalTeam": "LAL",
+      "name": "Luka Doncic",
+      "cname": "卢卡-东契奇"
+    },
+    {
+      "localId": "P0226",
+      "originalTeam": "LAL",
+      "name": "Austin Reaves",
+      "cname": "奥斯汀-里夫斯"
+    },
+    {
+      "localId": "P0227",
+      "originalTeam": "LAL",
+      "name": "Walker Kessler",
+      "cname": "沃克-凯斯勒"
+    },
+    {
+      "localId": "P0228",
+      "originalTeam": "LAL",
+      "name": "Collin Sexton",
+      "cname": "科林-塞克斯顿"
+    },
+    {
+      "localId": "P0229",
+      "originalTeam": "LAL",
+      "name": "Quentin Grimes",
+      "cname": "昆廷-格兰姆斯"
+    },
+    {
+      "localId": "P0230",
+      "originalTeam": "LAL",
+      "name": "Sandro Mamukelashvili",
+      "cname": "桑德罗-马穆凯拉什维利"
+    },
+    {
+      "localId": "P0231",
+      "originalTeam": "LAL",
+      "name": "Jarred Vanderbilt",
+      "cname": "贾里德-范德比尔特"
+    },
+    {
+      "localId": "P0232",
+      "originalTeam": "LAL",
+      "name": "Jaden Hardy",
+      "cname": "杰登-哈迪"
+    },
+    {
+      "localId": "P0233",
+      "originalTeam": "LAL",
+      "name": "Jake LaRavia",
+      "cname": "杰克-拉雷维亚"
+    },
+    {
+      "localId": "P0234",
+      "originalTeam": "LAL",
+      "name": "Maxi Kleber",
+      "cname": "马克西-克勒贝尔"
+    },
+    {
+      "localId": "P0235",
+      "originalTeam": "LAL",
+      "name": "Dalton Knecht",
+      "cname": "多尔顿-克内克特"
+    },
+    {
+      "localId": "P0236",
+      "originalTeam": "LAL",
+      "name": "Kevon Looney",
+      "cname": "凯文-卢尼"
+    },
+    {
+      "localId": "P0237",
+      "originalTeam": "LAL",
+      "name": "Nick Smith Jr.",
+      "cname": "小尼克-史密斯"
+    },
+    {
+      "localId": "P0238",
+      "originalTeam": "LAL",
+      "name": "Drew Timme",
+      "cname": "德鲁-蒂米"
+    },
+    {
+      "localId": "P0239",
+      "originalTeam": "LAL",
+      "name": "Bronny James",
+      "cname": "布朗尼-詹姆斯"
+    },
+    {
+      "localId": "P0240",
+      "originalTeam": "LAL",
+      "name": "Adou Thiero",
+      "cname": "阿杜-蒂耶罗"
+    },
+    {
+      "localId": "P0241",
+      "originalTeam": "LAL",
+      "name": "Chris Manon",
+      "cname": "克里斯-马农"
+    },
+    {
+      "localId": "P0242",
+      "originalTeam": "MEM",
+      "name": "Ty Jerome",
+      "cname": "泰-杰罗姆"
+    },
+    {
+      "localId": "P0243",
+      "originalTeam": "MEM",
+      "name": "Zach Edey",
+      "cname": "扎克-埃迪"
+    },
+    {
+      "localId": "P0244",
+      "originalTeam": "MEM",
+      "name": "Jerami Grant",
+      "cname": "杰拉米-格兰特"
+    },
+    {
+      "localId": "P0245",
+      "originalTeam": "MEM",
+      "name": "Cedric Coward",
+      "cname": "塞德里克-科沃德"
+    },
+    {
+      "localId": "P0246",
+      "originalTeam": "MEM",
+      "name": "GG Jackson",
+      "cname": "GG-杰克逊"
+    },
+    {
+      "localId": "P0247",
+      "originalTeam": "MEM",
+      "name": "Jaylen Wells",
+      "cname": "杰伦-威尔斯"
+    },
+    {
+      "localId": "P0248",
+      "originalTeam": "MEM",
+      "name": "Cam Spencer",
+      "cname": "卡姆-斯潘塞"
+    },
+    {
+      "localId": "P0249",
+      "originalTeam": "MEM",
+      "name": "Isaiah Stewart",
+      "cname": "以赛亚-斯图尔特"
+    },
+    {
+      "localId": "P0250",
+      "originalTeam": "MEM",
+      "name": "Olivier-Maxence Prosper",
+      "cname": "奥利维耶-马克桑斯-普罗斯珀"
+    },
+    {
+      "localId": "P0251",
+      "originalTeam": "MEM",
+      "name": "Javon Small",
+      "cname": "贾冯-斯莫尔"
+    },
+    {
+      "localId": "P0252",
+      "originalTeam": "MEM",
+      "name": "Scotty Pippen Jr.",
+      "cname": "小斯科蒂-皮蓬"
+    },
+    {
+      "localId": "P0253",
+      "originalTeam": "MEM",
+      "name": "D’Angelo Russell",
+      "cname": "丹吉洛-拉塞尔"
+    },
+    {
+      "localId": "P0254",
+      "originalTeam": "MEM",
+      "name": "Quinten Post",
+      "cname": "昆滕-波斯特"
+    },
+    {
+      "localId": "P0255",
+      "originalTeam": "MEM",
+      "name": "Taylor Hendricks",
+      "cname": "泰勒-亨德里克斯"
+    },
+    {
+      "localId": "P0256",
+      "originalTeam": "MEM",
+      "name": "Walter Clayton Jr.",
+      "cname": "小沃尔特-克莱顿"
+    },
+    {
+      "localId": "P0257",
+      "originalTeam": "MEM",
+      "name": "Kentavious Caldwell-Pope",
+      "cname": "肯塔维奥斯-考德威尔-波普"
+    },
+    {
+      "localId": "P0258",
+      "originalTeam": "MEM",
+      "name": "Kris Murray",
+      "cname": "克里斯-默里"
+    },
+    {
+      "localId": "P0259",
+      "originalTeam": "MEM",
+      "name": "Jahmai Mashack",
+      "cname": "贾迈-马沙克"
+    },
+    {
+      "localId": "P0260",
+      "originalTeam": "MEM",
+      "name": "AJ Johnson",
+      "cname": "AJ-约翰逊"
+    },
+    {
+      "localId": "P0261",
+      "originalTeam": "MEM",
+      "name": "Dariq Whitehead",
+      "cname": "达里克-怀特黑德"
+    },
+    {
+      "localId": "P0262",
+      "originalTeam": "MEM",
+      "name": "Taj Gibson",
+      "cname": "泰-吉布森"
+    },
+    {
+      "localId": "P0263",
+      "originalTeam": "MEM",
+      "name": "Adama Bal",
+      "cname": "阿达马-巴尔"
+    },
+    {
+      "localId": "P0264",
+      "originalTeam": "MIA",
+      "name": "Giannis Antetokounmpo",
+      "cname": "扬尼斯-阿德托昆博"
+    },
+    {
+      "localId": "P0265",
+      "originalTeam": "MIA",
+      "name": "Bam Adebayo",
+      "cname": "巴姆-阿德巴约"
+    },
+    {
+      "localId": "P0266",
+      "originalTeam": "MIA",
+      "name": "Andrew Wiggins",
+      "cname": "安德鲁-威金斯"
+    },
+    {
+      "localId": "P0267",
+      "originalTeam": "MIA",
+      "name": "Bobby Portis",
+      "cname": "博比-波蒂斯"
+    },
+    {
+      "localId": "P0268",
+      "originalTeam": "MIA",
+      "name": "Pelle Larsson",
+      "cname": "佩莱-拉松"
+    },
+    {
+      "localId": "P0269",
+      "originalTeam": "MIA",
+      "name": "Davion Mitchell",
+      "cname": "戴维恩-米切尔"
+    },
+    {
+      "localId": "P0270",
+      "originalTeam": "MIA",
+      "name": "Simone Fontecchio",
+      "cname": "西莫内-丰泰基奥"
+    },
+    {
+      "localId": "P0271",
+      "originalTeam": "MIA",
+      "name": "Dru Smith",
+      "cname": "德鲁-史密斯"
+    },
+    {
+      "localId": "P0272",
+      "originalTeam": "MIA",
+      "name": "Myron Gardner",
+      "cname": "迈伦-加德纳"
+    },
+    {
+      "localId": "P0273",
+      "originalTeam": "MIA",
+      "name": "Nikola Jovic",
+      "cname": "尼古拉-约维奇"
+    },
+    {
+      "localId": "P0274",
+      "originalTeam": "MIA",
+      "name": "Keshad Johnson",
+      "cname": "凯沙德-约翰逊"
+    },
+    {
+      "localId": "P0275",
+      "originalTeam": "MIA",
+      "name": "Trevor Keels",
+      "cname": "特雷弗-基尔斯"
+    },
+    {
+      "localId": "P0276",
+      "originalTeam": "MIA",
+      "name": "Vladislav Goldin",
+      "cname": "弗拉季斯拉夫-戈尔丁"
+    },
+    {
+      "localId": "P0277",
+      "originalTeam": "MIA",
+      "name": "Jahmir Young",
+      "cname": "贾米尔-扬"
+    },
+    {
+      "localId": "P0278",
+      "originalTeam": "MIL",
+      "name": "Tyler Herro",
+      "cname": "泰勒-希罗"
+    },
+    {
+      "localId": "P0279",
+      "originalTeam": "MIL",
+      "name": "Kevin Porter Jr.",
+      "cname": "小凯文-波特"
+    },
+    {
+      "localId": "P0280",
+      "originalTeam": "MIL",
+      "name": "Ryan Rollins",
+      "cname": "瑞安-罗林斯"
+    },
+    {
+      "localId": "P0281",
+      "originalTeam": "MIL",
+      "name": "Kyle Kuzma",
+      "cname": "凯尔-库兹马"
+    },
+    {
+      "localId": "P0282",
+      "originalTeam": "MIL",
+      "name": "Jaime Jaquez Jr.",
+      "cname": "小海梅-哈克斯"
+    },
+    {
+      "localId": "P0283",
+      "originalTeam": "MIL",
+      "name": "Kel’el Ware",
+      "cname": "凯尔-韦尔"
+    },
+    {
+      "localId": "P0284",
+      "originalTeam": "MIL",
+      "name": "Caris LeVert",
+      "cname": "卡里斯-勒韦尔"
+    },
+    {
+      "localId": "P0285",
+      "originalTeam": "MIL",
+      "name": "Myles Turner",
+      "cname": "迈尔斯-特纳"
+    },
+    {
+      "localId": "P0286",
+      "originalTeam": "MIL",
+      "name": "Ousmane Dieng",
+      "cname": "乌斯曼-迪昂"
+    },
+    {
+      "localId": "P0287",
+      "originalTeam": "MIL",
+      "name": "AJ Green",
+      "cname": "AJ-格林"
+    },
+    {
+      "localId": "P0288",
+      "originalTeam": "MIL",
+      "name": "Kasparas Jakucionis",
+      "cname": "卡斯帕拉斯-雅库西奥尼斯"
+    },
+    {
+      "localId": "P0289",
+      "originalTeam": "MIL",
+      "name": "Gary Trent Jr.",
+      "cname": "小加里-特伦特"
+    },
+    {
+      "localId": "P0290",
+      "originalTeam": "MIL",
+      "name": "Jericho Sims",
+      "cname": "杰里科-西姆斯"
+    },
+    {
+      "localId": "P0291",
+      "originalTeam": "MIL",
+      "name": "Kam Jones",
+      "cname": "卡姆-琼斯"
+    },
+    {
+      "localId": "P0292",
+      "originalTeam": "MIL",
+      "name": "Andre Jackson Jr.",
+      "cname": "小安德烈-杰克逊"
+    },
+    {
+      "localId": "P0293",
+      "originalTeam": "MIL",
+      "name": "Cormac Ryan",
+      "cname": "科马克-瑞安"
+    },
+    {
+      "localId": "P0294",
+      "originalTeam": "MIL",
+      "name": "Thanasis Antetokounmpo",
+      "cname": "萨纳西斯-阿德托昆博"
+    },
+    {
+      "localId": "P0295",
+      "originalTeam": "MIL",
+      "name": "Alex Antetokounmpo",
+      "cname": "亚历克斯-阿德托昆博"
+    },
+    {
+      "localId": "P0296",
+      "originalTeam": "MIN",
+      "name": "Anthony Edwards",
+      "cname": "安东尼-爱德华兹"
+    },
+    {
+      "localId": "P0297",
+      "originalTeam": "MIN",
+      "name": "LaMelo Ball",
+      "cname": "拉梅洛-鲍尔"
+    },
+    {
+      "localId": "P0298",
+      "originalTeam": "MIN",
+      "name": "Rudy Gobert",
+      "cname": "鲁迪-戈贝尔"
+    },
+    {
+      "localId": "P0299",
+      "originalTeam": "MIN",
+      "name": "Jaden McDaniels",
+      "cname": "贾登-麦克丹尼尔斯"
+    },
+    {
+      "localId": "P0300",
+      "originalTeam": "MIN",
+      "name": "Ayo Dosunmu",
+      "cname": "阿约-多孙穆"
+    },
+    {
+      "localId": "P0301",
+      "originalTeam": "MIN",
+      "name": "Donte DiVincenzo",
+      "cname": "唐特-迪温琴佐"
+    },
+    {
+      "localId": "P0302",
+      "originalTeam": "MIN",
+      "name": "Terrence Shannon Jr.",
+      "cname": "小特伦斯-香农"
+    },
+    {
+      "localId": "P0303",
+      "originalTeam": "MIN",
+      "name": "Bones Hyland",
+      "cname": "伯恩斯-海兰"
+    },
+    {
+      "localId": "P0304",
+      "originalTeam": "MIN",
+      "name": "Josh Green",
+      "cname": "乔什-格林"
+    },
+    {
+      "localId": "P0305",
+      "originalTeam": "MIN",
+      "name": "Trey Lyles",
+      "cname": "Trey Lyles"
+    },
+    {
+      "localId": "P0306",
+      "originalTeam": "MIN",
+      "name": "Jaylen Clark",
+      "cname": "杰伦-克拉克"
+    },
+    {
+      "localId": "P0307",
+      "originalTeam": "MIN",
+      "name": "Joe Ingles",
+      "cname": "乔-英格尔斯"
+    },
+    {
+      "localId": "P0308",
+      "originalTeam": "MIN",
+      "name": "Julian Phillips",
+      "cname": "朱利安-菲利普斯"
+    },
+    {
+      "localId": "P0309",
+      "originalTeam": "MIN",
+      "name": "Joan Beringer",
+      "cname": "若昂-贝林格"
+    },
+    {
+      "localId": "P0310",
+      "originalTeam": "MIN",
+      "name": "Enrique Freeman",
+      "cname": "恩里克-弗里曼"
+    },
+    {
+      "localId": "P0311",
+      "originalTeam": "MIN",
+      "name": "Rocco Zikarsky",
+      "cname": "罗科-齐卡尔斯基"
+    },
+    {
+      "localId": "P0312",
+      "originalTeam": "MIN",
+      "name": "Mouhamadou Gueye",
+      "cname": "穆罕默杜-古耶"
+    },
+    {
+      "localId": "P0313",
+      "originalTeam": "MIN",
+      "name": "Zyon Pullin",
+      "cname": "齐昂-普林"
+    },
+    {
+      "localId": "P0314",
+      "originalTeam": "NOP",
+      "name": "Zion Williamson",
+      "cname": "锡安-威廉姆森"
+    },
+    {
+      "localId": "P0315",
+      "originalTeam": "NOP",
+      "name": "Trey Murphy III",
+      "cname": "特雷-墨菲三世"
+    },
+    {
+      "localId": "P0316",
+      "originalTeam": "NOP",
+      "name": "Dejounte Murray",
+      "cname": "德章泰-默里"
+    },
+    {
+      "localId": "P0317",
+      "originalTeam": "NOP",
+      "name": "Saddiq Bey",
+      "cname": "萨迪克-贝"
+    },
+    {
+      "localId": "P0318",
+      "originalTeam": "NOP",
+      "name": "Jeremiah Fears",
+      "cname": "杰里迈亚-费尔斯"
+    },
+    {
+      "localId": "P0319",
+      "originalTeam": "NOP",
+      "name": "Derik Queen",
+      "cname": "德里克-奎因"
+    },
+    {
+      "localId": "P0320",
+      "originalTeam": "NOP",
+      "name": "Herbert Jones",
+      "cname": "赫伯特-琼斯"
+    },
+    {
+      "localId": "P0321",
+      "originalTeam": "NOP",
+      "name": "Yves Missi",
+      "cname": "伊夫-米西"
+    },
+    {
+      "localId": "P0322",
+      "originalTeam": "NOP",
+      "name": "DeAndre Jordan",
+      "cname": "德安德烈-乔丹"
+    },
+    {
+      "localId": "P0323",
+      "originalTeam": "NOP",
+      "name": "Jordan Poole",
+      "cname": "乔丹-普尔"
+    },
+    {
+      "localId": "P0324",
+      "originalTeam": "NOP",
+      "name": "Karlo Matkovic",
+      "cname": "卡洛-马特科维奇"
+    },
+    {
+      "localId": "P0325",
+      "originalTeam": "NOP",
+      "name": "Bryce McGowens",
+      "cname": "布赖斯-麦高恩斯"
+    },
+    {
+      "localId": "P0326",
+      "originalTeam": "NOP",
+      "name": "Jordan Hawkins",
+      "cname": "乔丹-霍金斯"
+    },
+    {
+      "localId": "P0327",
+      "originalTeam": "NOP",
+      "name": "Micah Peavy",
+      "cname": "迈卡-皮维"
+    },
+    {
+      "localId": "P0328",
+      "originalTeam": "NOP",
+      "name": "Hunter Dickinson",
+      "cname": "亨特-迪金森"
+    },
+    {
+      "localId": "P0329",
+      "originalTeam": "NOP",
+      "name": "Josh Oduro",
+      "cname": "乔什-奥杜罗"
+    },
+    {
+      "localId": "P0330",
+      "originalTeam": "NYK",
+      "name": "Jalen Brunson",
+      "cname": "杰伦-布伦森"
+    },
+    {
+      "localId": "P0331",
+      "originalTeam": "NYK",
+      "name": "Karl-Anthony Towns",
+      "cname": "卡尔-安东尼-唐斯"
+    },
+    {
+      "localId": "P0332",
+      "originalTeam": "NYK",
+      "name": "OG Anunoby",
+      "cname": "OG-阿奴诺比"
+    },
+    {
+      "localId": "P0333",
+      "originalTeam": "NYK",
+      "name": "Mikal Bridges",
+      "cname": "米卡尔-布里奇斯"
+    },
+    {
+      "localId": "P0334",
+      "originalTeam": "NYK",
+      "name": "Josh Hart",
+      "cname": "约什-哈特"
+    },
+    {
+      "localId": "P0335",
+      "originalTeam": "NYK",
+      "name": "Miles McBride",
+      "cname": "迈尔斯-麦克布莱德"
+    },
+    {
+      "localId": "P0336",
+      "originalTeam": "NYK",
+      "name": "Jose Alvarado",
+      "cname": "何塞-阿尔瓦拉多"
+    },
+    {
+      "localId": "P0337",
+      "originalTeam": "NYK",
+      "name": "Landry Shamet",
+      "cname": "兰德里-沙梅特"
+    },
+    {
+      "localId": "P0338",
+      "originalTeam": "NYK",
+      "name": "Jordan Clarkson",
+      "cname": "乔丹-克拉克森"
+    },
+    {
+      "localId": "P0339",
+      "originalTeam": "NYK",
+      "name": "Andre Drummond",
+      "cname": "安德烈-德拉蒙德"
+    },
+    {
+      "localId": "P0340",
+      "originalTeam": "NYK",
+      "name": "Jeremy Sochan",
+      "cname": "杰里米-索汉"
+    },
+    {
+      "localId": "P0341",
+      "originalTeam": "NYK",
+      "name": "Tyler Kolek",
+      "cname": "泰勒-科莱克"
+    },
+    {
+      "localId": "P0342",
+      "originalTeam": "NYK",
+      "name": "Mohamed Diawara",
+      "cname": "穆罕默德-迪亚瓦拉"
+    },
+    {
+      "localId": "P0343",
+      "originalTeam": "NYK",
+      "name": "Trey Jemison III",
+      "cname": "特雷-杰米森三世"
+    },
+    {
+      "localId": "P0344",
+      "originalTeam": "NYK",
+      "name": "Kevin McCullar Jr.",
+      "cname": "小凯文-麦卡拉"
+    },
+    {
+      "localId": "P0345",
+      "originalTeam": "NYK",
+      "name": "Pacome Dadiet",
+      "cname": "帕科姆-达迪耶"
+    },
+    {
+      "localId": "P0346",
+      "originalTeam": "NYK",
+      "name": "Dillon Jones",
+      "cname": "狄龙-琼斯"
+    },
+    {
+      "localId": "P0347",
+      "originalTeam": "OKC",
+      "name": "Shai Gilgeous-Alexander",
+      "cname": "谢伊-吉尔杰斯-亚历山大"
+    },
+    {
+      "localId": "P0348",
+      "originalTeam": "OKC",
+      "name": "Chet Holmgren",
+      "cname": "切特-霍姆格伦"
+    },
+    {
+      "localId": "P0349",
+      "originalTeam": "OKC",
+      "name": "Jalen Williams",
+      "cname": "杰伦-威廉姆斯"
+    },
+    {
+      "localId": "P0350",
+      "originalTeam": "OKC",
+      "name": "Isaiah Hartenstein",
+      "cname": "以赛亚-哈尔滕施泰因"
+    },
+    {
+      "localId": "P0351",
+      "originalTeam": "OKC",
+      "name": "Ajay Mitchell",
+      "cname": "阿贾伊-米切尔"
+    },
+    {
+      "localId": "P0352",
+      "originalTeam": "OKC",
+      "name": "Cason Wallace",
+      "cname": "卡森-华莱士"
+    },
+    {
+      "localId": "P0353",
+      "originalTeam": "OKC",
+      "name": "Alex Caruso",
+      "cname": "亚历克斯-卡鲁索"
+    },
+    {
+      "localId": "P0354",
+      "originalTeam": "OKC",
+      "name": "Luguentz Dort",
+      "cname": "吕冈茨-多尔特"
+    },
+    {
+      "localId": "P0355",
+      "originalTeam": "OKC",
+      "name": "Jared McCain",
+      "cname": "贾里德-麦凯恩"
+    },
+    {
+      "localId": "P0356",
+      "originalTeam": "OKC",
+      "name": "Jaylin Williams",
+      "cname": "杰林-威廉姆斯"
+    },
+    {
+      "localId": "P0357",
+      "originalTeam": "OKC",
+      "name": "Kenrich Williams",
+      "cname": "肯里奇-威廉姆斯"
+    },
+    {
+      "localId": "P0358",
+      "originalTeam": "OKC",
+      "name": "Aaron Wiggins",
+      "cname": "阿龙-威金斯"
+    },
+    {
+      "localId": "P0359",
+      "originalTeam": "OKC",
+      "name": "Nikola Topic",
+      "cname": "尼古拉-托皮奇"
+    },
+    {
+      "localId": "P0360",
+      "originalTeam": "OKC",
+      "name": "Thomas Sorber",
+      "cname": "托马斯-索伯"
+    },
+    {
+      "localId": "P0361",
+      "originalTeam": "OKC",
+      "name": "Brooks Barnhizer",
+      "cname": "布鲁克斯-巴恩希泽"
+    },
+    {
+      "localId": "P0362",
+      "originalTeam": "ORL",
+      "name": "Paolo Banchero",
+      "cname": "保罗-班凯罗"
+    },
+    {
+      "localId": "P0363",
+      "originalTeam": "ORL",
+      "name": "Franz Wagner",
+      "cname": "弗朗茨-瓦格纳"
+    },
+    {
+      "localId": "P0364",
+      "originalTeam": "ORL",
+      "name": "Desmond Bane",
+      "cname": "德斯蒙德-贝恩"
+    },
+    {
+      "localId": "P0365",
+      "originalTeam": "ORL",
+      "name": "Anthony Black",
+      "cname": "安东尼-布莱克"
+    },
+    {
+      "localId": "P0366",
+      "originalTeam": "ORL",
+      "name": "Jalen Suggs",
+      "cname": "杰伦-萨格斯"
+    },
+    {
+      "localId": "P0367",
+      "originalTeam": "ORL",
+      "name": "Wendell Carter Jr.",
+      "cname": "小温德尔-卡特"
+    },
+    {
+      "localId": "P0368",
+      "originalTeam": "ORL",
+      "name": "Nikola Vucevic",
+      "cname": "尼古拉-武切维奇"
+    },
+    {
+      "localId": "P0369",
+      "originalTeam": "ORL",
+      "name": "Tristan da Silva",
+      "cname": "特里斯坦-达席尔瓦"
+    },
+    {
+      "localId": "P0370",
+      "originalTeam": "ORL",
+      "name": "Goga Bitadze",
+      "cname": "戈加-比塔泽"
+    },
+    {
+      "localId": "P0371",
+      "originalTeam": "ORL",
+      "name": "Jevon Carter",
+      "cname": "杰文-卡特"
+    },
+    {
+      "localId": "P0372",
+      "originalTeam": "ORL",
+      "name": "Noah Penda",
+      "cname": "诺亚-彭达"
+    },
+    {
+      "localId": "P0373",
+      "originalTeam": "ORL",
+      "name": "Jamal Cain",
+      "cname": "贾马尔-凯恩"
+    },
+    {
+      "localId": "P0374",
+      "originalTeam": "ORL",
+      "name": "Jett Howard",
+      "cname": "杰特-霍华德"
+    },
+    {
+      "localId": "P0375",
+      "originalTeam": "ORL",
+      "name": "Jonathan Isaac",
+      "cname": "乔纳森-艾萨克"
+    },
+    {
+      "localId": "P0376",
+      "originalTeam": "ORL",
+      "name": "Jase Richardson",
+      "cname": "杰斯-理查德森"
+    },
+    {
+      "localId": "P0377",
+      "originalTeam": "ORL",
+      "name": "Colin Castleton",
+      "cname": "科林-卡斯尔顿"
+    },
+    {
+      "localId": "P0378",
+      "originalTeam": "ORL",
+      "name": "Alex Morales",
+      "cname": "亚历克斯-莫拉莱斯"
+    },
+    {
+      "localId": "P0379",
+      "originalTeam": "PHI",
+      "name": "LeBron James",
+      "cname": "勒布朗-詹姆斯"
+    },
+    {
+      "localId": "P0380",
+      "originalTeam": "PHI",
+      "name": "Jaylen Brown",
+      "cname": "杰伦-布朗"
+    },
+    {
+      "localId": "P0381",
+      "originalTeam": "PHI",
+      "name": "Tyrese Maxey",
+      "cname": "泰雷塞-马克西"
+    },
+    {
+      "localId": "P0382",
+      "originalTeam": "PHI",
+      "name": "Joel Embiid",
+      "cname": "乔尔-恩比德"
+    },
+    {
+      "localId": "P0383",
+      "originalTeam": "PHI",
+      "name": "VJ Edgecombe",
+      "cname": "VJ-埃奇库姆"
+    },
+    {
+      "localId": "P0384",
+      "originalTeam": "PHI",
+      "name": "Anfernee Simons",
+      "cname": "安芬尼-西蒙斯"
+    },
+    {
+      "localId": "P0385",
+      "originalTeam": "PHI",
+      "name": "Dean Wade",
+      "cname": "迪恩-韦德"
+    },
+    {
+      "localId": "P0386",
+      "originalTeam": "PHI",
+      "name": "Trendon Watford",
+      "cname": "特伦登-沃特福德"
+    },
+    {
+      "localId": "P0387",
+      "originalTeam": "PHI",
+      "name": "Justin Edwards",
+      "cname": "贾斯汀-爱德华兹"
+    },
+    {
+      "localId": "P0388",
+      "originalTeam": "PHI",
+      "name": "Dominick Barlow",
+      "cname": "多米尼克-巴洛"
+    },
+    {
+      "localId": "P0389",
+      "originalTeam": "PHI",
+      "name": "Caleb Love",
+      "cname": "凯莱布-乐福"
+    },
+    {
+      "localId": "P0390",
+      "originalTeam": "PHI",
+      "name": "Adem Bona",
+      "cname": "阿代姆-博纳"
+    },
+    {
+      "localId": "P0391",
+      "originalTeam": "PHI",
+      "name": "Rayan Rupert",
+      "cname": "拉扬-吕佩尔"
+    },
+    {
+      "localId": "P0392",
+      "originalTeam": "PHI",
+      "name": "Ariel Hukporti",
+      "cname": "阿里埃尔-胡克波尔蒂"
+    },
+    {
+      "localId": "P0393",
+      "originalTeam": "PHI",
+      "name": "Tyrese Martin",
+      "cname": "泰雷斯-马丁"
+    },
+    {
+      "localId": "P0394",
+      "originalTeam": "PHI",
+      "name": "Dalen Terry",
+      "cname": "达伦-特里"
+    },
+    {
+      "localId": "P0395",
+      "originalTeam": "PHI",
+      "name": "Jabari Walker",
+      "cname": "贾巴里-沃克"
+    },
+    {
+      "localId": "P0396",
+      "originalTeam": "PHI",
+      "name": "Johni Broome",
+      "cname": "约翰尼-布鲁姆"
+    },
+    {
+      "localId": "P0397",
+      "originalTeam": "PHI",
+      "name": "MarJon Beauchamp",
+      "cname": "马乔恩-博尚"
+    },
+    {
+      "localId": "P0398",
+      "originalTeam": "PHX",
+      "name": "Devin Booker",
+      "cname": "德文-布克"
+    },
+    {
+      "localId": "P0399",
+      "originalTeam": "PHX",
+      "name": "Dillon Brooks",
+      "cname": "狄龙-布鲁克斯"
+    },
+    {
+      "localId": "P0400",
+      "originalTeam": "PHX",
+      "name": "Jalen Green",
+      "cname": "杰伦-格林"
+    },
+    {
+      "localId": "P0401",
+      "originalTeam": "PHX",
+      "name": "Mark Williams",
+      "cname": "马克-威廉姆斯"
+    },
+    {
+      "localId": "P0402",
+      "originalTeam": "PHX",
+      "name": "Miles Bridges",
+      "cname": "迈尔斯-布里奇斯"
+    },
+    {
+      "localId": "P0403",
+      "originalTeam": "PHX",
+      "name": "Collin Gillespie",
+      "cname": "科林-吉莱斯皮"
+    },
+    {
+      "localId": "P0404",
+      "originalTeam": "PHX",
+      "name": "Luke Kennard",
+      "cname": "卢克-肯纳德"
+    },
+    {
+      "localId": "P0405",
+      "originalTeam": "PHX",
+      "name": "Jordan Goodwin",
+      "cname": "乔丹-古德温"
+    },
+    {
+      "localId": "P0406",
+      "originalTeam": "PHX",
+      "name": "Oso Ighodaro",
+      "cname": "奥索-伊戈达罗"
+    },
+    {
+      "localId": "P0407",
+      "originalTeam": "PHX",
+      "name": "Pat Spencer",
+      "cname": "帕特-斯潘塞"
+    },
+    {
+      "localId": "P0408",
+      "originalTeam": "PHX",
+      "name": "Rasheer Fleming",
+      "cname": "拉希尔-弗莱明"
+    },
+    {
+      "localId": "P0409",
+      "originalTeam": "PHX",
+      "name": "Ryan Dunn",
+      "cname": "瑞安-邓恩"
+    },
+    {
+      "localId": "P0410",
+      "originalTeam": "PHX",
+      "name": "Khaman Maluach",
+      "cname": "卡曼-马卢阿奇"
+    },
+    {
+      "localId": "P0411",
+      "originalTeam": "PHX",
+      "name": "Jamaree Bouyea",
+      "cname": "贾马里-布耶"
+    },
+    {
+      "localId": "P0412",
+      "originalTeam": "PHX",
+      "name": "Amir Coffey",
+      "cname": "阿米尔-科菲"
+    },
+    {
+      "localId": "P0413",
+      "originalTeam": "PHX",
+      "name": "Haywood Highsmith",
+      "cname": "海伍德-海史密斯"
+    },
+    {
+      "localId": "P0414",
+      "originalTeam": "PHX",
+      "name": "Isaiah Livers",
+      "cname": "以赛亚-利弗斯"
+    },
+    {
+      "localId": "P0415",
+      "originalTeam": "PHX",
+      "name": "Koby Brea",
+      "cname": "科比-布雷亚"
+    },
+    {
+      "localId": "P0416",
+      "originalTeam": "PHX",
+      "name": "CJ Huntley",
+      "cname": "CJ-亨特利"
+    },
+    {
+      "localId": "P0417",
+      "originalTeam": "POR",
+      "name": "Deni Avdija",
+      "cname": "德尼-阿夫迪亚"
+    },
+    {
+      "localId": "P0418",
+      "originalTeam": "POR",
+      "name": "Damian Lillard",
+      "cname": "达米安-利拉德"
+    },
+    {
+      "localId": "P0419",
+      "originalTeam": "POR",
+      "name": "Ja Morant",
+      "cname": "贾-莫兰特"
+    },
+    {
+      "localId": "P0420",
+      "originalTeam": "POR",
+      "name": "Shaedon Sharpe",
+      "cname": "谢登-夏普"
+    },
+    {
+      "localId": "P0421",
+      "originalTeam": "POR",
+      "name": "Donovan Clingan",
+      "cname": "多诺万-克林根"
+    },
+    {
+      "localId": "P0422",
+      "originalTeam": "POR",
+      "name": "Jrue Holiday",
+      "cname": "朱-霍勒迪"
+    },
+    {
+      "localId": "P0423",
+      "originalTeam": "POR",
+      "name": "Scoot Henderson",
+      "cname": "斯库特-亨德森"
+    },
+    {
+      "localId": "P0424",
+      "originalTeam": "POR",
+      "name": "Toumani Camara",
+      "cname": "图马尼-卡马拉"
+    },
+    {
+      "localId": "P0425",
+      "originalTeam": "POR",
+      "name": "Robert Williams III",
+      "cname": "罗伯特-威廉姆斯三世"
+    },
+    {
+      "localId": "P0426",
+      "originalTeam": "POR",
+      "name": "Matisse Thybulle",
+      "cname": "马蒂斯-赛布尔"
+    },
+    {
+      "localId": "P0427",
+      "originalTeam": "POR",
+      "name": "Vit Krejci",
+      "cname": "维特-克雷伊奇"
+    },
+    {
+      "localId": "P0428",
+      "originalTeam": "POR",
+      "name": "Sidy Cissoko",
+      "cname": "西迪-西索科"
+    },
+    {
+      "localId": "P0429",
+      "originalTeam": "POR",
+      "name": "Blake Wesley",
+      "cname": "布莱克-韦斯利"
+    },
+    {
+      "localId": "P0430",
+      "originalTeam": "POR",
+      "name": "Branden Carlson",
+      "cname": "布兰登-卡尔森"
+    },
+    {
+      "localId": "P0431",
+      "originalTeam": "POR",
+      "name": "Yang Hansen",
+      "cname": "杨瀚森"
+    },
+    {
+      "localId": "P0432",
+      "originalTeam": "POR",
+      "name": "Chris Youngblood",
+      "cname": "克里斯-扬布拉德"
+    },
+    {
+      "localId": "P0433",
+      "originalTeam": "POR",
+      "name": "Jayson Kent",
+      "cname": "杰森-肯特"
+    },
+    {
+      "localId": "P0434",
+      "originalTeam": "SAC",
+      "name": "Domantas Sabonis",
+      "cname": "多曼塔斯-萨博尼斯"
+    },
+    {
+      "localId": "P0435",
+      "originalTeam": "SAC",
+      "name": "Zach LaVine",
+      "cname": "扎克-拉文"
+    },
+    {
+      "localId": "P0436",
+      "originalTeam": "SAC",
+      "name": "Russell Westbrook",
+      "cname": "拉塞尔-威斯布鲁克"
+    },
+    {
+      "localId": "P0437",
+      "originalTeam": "SAC",
+      "name": "Maxime Raynaud",
+      "cname": "马克西姆-雷诺"
+    },
+    {
+      "localId": "P0438",
+      "originalTeam": "SAC",
+      "name": "Malik Monk",
+      "cname": "马利克-蒙克"
+    },
+    {
+      "localId": "P0439",
+      "originalTeam": "SAC",
+      "name": "Keegan Murray",
+      "cname": "基根-默里"
+    },
+    {
+      "localId": "P0440",
+      "originalTeam": "SAC",
+      "name": "De’Andre Hunter",
+      "cname": "德安德烈-亨特"
+    },
+    {
+      "localId": "P0441",
+      "originalTeam": "SAC",
+      "name": "Precious Achiuwa",
+      "cname": "普雷舍斯-阿丘瓦"
+    },
+    {
+      "localId": "P0442",
+      "originalTeam": "SAC",
+      "name": "Nique Clifford",
+      "cname": "尼克-克利福德"
+    },
+    {
+      "localId": "P0443",
+      "originalTeam": "SAC",
+      "name": "Dylan Cardwell",
+      "cname": "迪伦-卡德韦尔"
+    },
+    {
+      "localId": "P0444",
+      "originalTeam": "SAC",
+      "name": "Drew Eubanks",
+      "cname": "德鲁-尤班克斯"
+    },
+    {
+      "localId": "P0445",
+      "originalTeam": "SAC",
+      "name": "Jonathan Mogbo",
+      "cname": "乔纳森-莫格博"
+    },
+    {
+      "localId": "P0446",
+      "originalTeam": "SAC",
+      "name": "Daeqwon Plowden",
+      "cname": "戴克万-普洛登"
+    },
+    {
+      "localId": "P0447",
+      "originalTeam": "SAC",
+      "name": "Killian Hayes",
+      "cname": "基利安-海斯"
+    },
+    {
+      "localId": "P0448",
+      "originalTeam": "SAC",
+      "name": "Patrick Baldwin Jr.",
+      "cname": "小帕特里克-鲍德温"
+    },
+    {
+      "localId": "P0449",
+      "originalTeam": "SAC",
+      "name": "Doug McDermott",
+      "cname": "道格-麦克德莫特"
+    },
+    {
+      "localId": "P0450",
+      "originalTeam": "SAC",
+      "name": "Isaiah Stevens",
+      "cname": "以赛亚-史蒂文斯"
+    },
+    {
+      "localId": "P0451",
+      "originalTeam": "SAC",
+      "name": "Adam Flagler",
+      "cname": "Adam Flagler"
+    },
+    {
+      "localId": "P0452",
+      "originalTeam": "SAS",
+      "name": "Victor Wembanyama",
+      "cname": "维克托-文班亚马"
+    },
+    {
+      "localId": "P0453",
+      "originalTeam": "SAS",
+      "name": "Stephon Castle",
+      "cname": "斯蒂芬-卡斯尔"
+    },
+    {
+      "localId": "P0454",
+      "originalTeam": "SAS",
+      "name": "De’Aaron Fox",
+      "cname": "达龙-福克斯"
+    },
+    {
+      "localId": "P0455",
+      "originalTeam": "SAS",
+      "name": "Dylan Harper",
+      "cname": "迪伦-哈珀"
+    },
+    {
+      "localId": "P0456",
+      "originalTeam": "SAS",
+      "name": "Tobias Harris",
+      "cname": "托拜厄斯-哈里斯"
+    },
+    {
+      "localId": "P0457",
+      "originalTeam": "SAS",
+      "name": "Julian Champagnie",
+      "cname": "朱利安-尚帕尼"
+    },
+    {
+      "localId": "P0458",
+      "originalTeam": "SAS",
+      "name": "Devin Vassell",
+      "cname": "德文-瓦塞尔"
+    },
+    {
+      "localId": "P0459",
+      "originalTeam": "SAS",
+      "name": "Keldon Johnson",
+      "cname": "凯尔登-约翰逊"
+    },
+    {
+      "localId": "P0460",
+      "originalTeam": "SAS",
+      "name": "Luke Kornet",
+      "cname": "卢克-科内特"
+    },
+    {
+      "localId": "P0461",
+      "originalTeam": "SAS",
+      "name": "Harrison Barnes",
+      "cname": "哈里森-巴恩斯"
+    },
+    {
+      "localId": "P0462",
+      "originalTeam": "SAS",
+      "name": "Carter Bryant",
+      "cname": "卡特-布赖恩特"
+    },
+    {
+      "localId": "P0463",
+      "originalTeam": "SAS",
+      "name": "Mason Plumlee",
+      "cname": "梅森-普拉姆利"
+    },
+    {
+      "localId": "P0464",
+      "originalTeam": "SAS",
+      "name": "Kelly Olynyk",
+      "cname": "凯利-奥利尼克"
+    },
+    {
+      "localId": "P0465",
+      "originalTeam": "SAS",
+      "name": "Lindy Waters III",
+      "cname": "林迪-沃特斯三世"
+    },
+    {
+      "localId": "P0466",
+      "originalTeam": "SAS",
+      "name": "Jordan McLaughlin",
+      "cname": "乔丹-麦克劳克林"
+    },
+    {
+      "localId": "P0467",
+      "originalTeam": "SAS",
+      "name": "David Jones Garcia",
+      "cname": "戴维-琼斯-加西亚"
+    },
+    {
+      "localId": "P0468",
+      "originalTeam": "SAS",
+      "name": "Bismack Biyombo",
+      "cname": "俾斯麦-比永博"
+    },
+    {
+      "localId": "P0469",
+      "originalTeam": "SAS",
+      "name": "Harrison Ingram",
+      "cname": "哈里森-英格拉姆"
+    },
+    {
+      "localId": "P0470",
+      "originalTeam": "SAS",
+      "name": "Emanuel Miller",
+      "cname": "伊曼纽尔-米勒"
+    },
+    {
+      "localId": "P0471",
+      "originalTeam": "TOR",
+      "name": "Kawhi Leonard",
+      "cname": "科怀-伦纳德"
+    },
+    {
+      "localId": "P0472",
+      "originalTeam": "TOR",
+      "name": "Scottie Barnes",
+      "cname": "斯科蒂-巴恩斯"
+    },
+    {
+      "localId": "P0473",
+      "originalTeam": "TOR",
+      "name": "Immanuel Quickley",
+      "cname": "伊曼纽尔-奎克利"
+    },
+    {
+      "localId": "P0474",
+      "originalTeam": "TOR",
+      "name": "RJ Barrett",
+      "cname": "RJ-巴雷特"
+    },
+    {
+      "localId": "P0475",
+      "originalTeam": "TOR",
+      "name": "Collin Murray-Boyles",
+      "cname": "科林-默里-博伊尔斯"
+    },
+    {
+      "localId": "P0476",
+      "originalTeam": "TOR",
+      "name": "Jakob Poeltl",
+      "cname": "雅各布-珀尔特尔"
+    },
+    {
+      "localId": "P0477",
+      "originalTeam": "TOR",
+      "name": "Ja’Kobe Walter",
+      "cname": "贾科比-沃尔特"
+    },
+    {
+      "localId": "P0478",
+      "originalTeam": "TOR",
+      "name": "Jamal Shead",
+      "cname": "贾马尔-谢德"
+    },
+    {
+      "localId": "P0479",
+      "originalTeam": "TOR",
+      "name": "Jamison Battle",
+      "cname": "贾米森-巴特尔"
+    },
+    {
+      "localId": "P0480",
+      "originalTeam": "TOR",
+      "name": "Kyle Anderson",
+      "cname": "凯尔-安德森"
+    },
+    {
+      "localId": "P0481",
+      "originalTeam": "TOR",
+      "name": "A.J. Lawson",
+      "cname": "A.J.-劳森"
+    },
+    {
+      "localId": "P0482",
+      "originalTeam": "TOR",
+      "name": "Kyle Lowry",
+      "cname": "凯尔-洛瑞"
+    },
+    {
+      "localId": "P0483",
+      "originalTeam": "TOR",
+      "name": "Trayce Jackson-Davis",
+      "cname": "特雷斯-杰克逊-戴维斯"
+    },
+    {
+      "localId": "P0484",
+      "originalTeam": "TOR",
+      "name": "Alijah Martin",
+      "cname": "阿利雅-马丁"
+    },
+    {
+      "localId": "P0485",
+      "originalTeam": "TOR",
+      "name": "Garrett Temple",
+      "cname": "加勒特-坦普尔"
+    },
+    {
+      "localId": "P0486",
+      "originalTeam": "TOR",
+      "name": "Chucky Hepburn",
+      "cname": "查基-赫普伯恩"
+    },
+    {
+      "localId": "P0487",
+      "originalTeam": "UTA",
+      "name": "Lauri Markkanen",
+      "cname": "劳里-马尔卡宁"
+    },
+    {
+      "localId": "P0488",
+      "originalTeam": "UTA",
+      "name": "Keyonte George",
+      "cname": "基扬特-乔治"
+    },
+    {
+      "localId": "P0489",
+      "originalTeam": "UTA",
+      "name": "Jaren Jackson Jr.",
+      "cname": "小贾伦-杰克逊"
+    },
+    {
+      "localId": "P0490",
+      "originalTeam": "UTA",
+      "name": "Isaiah Collier",
+      "cname": "以赛亚-科利尔"
+    },
+    {
+      "localId": "P0491",
+      "originalTeam": "UTA",
+      "name": "Jusuf Nurkic",
+      "cname": "优素福-努尔基奇"
+    },
+    {
+      "localId": "P0492",
+      "originalTeam": "UTA",
+      "name": "Ace Bailey",
+      "cname": "埃斯-贝利"
+    },
+    {
+      "localId": "P0493",
+      "originalTeam": "UTA",
+      "name": "Brice Sensabaugh",
+      "cname": "布赖斯-森萨博"
+    },
+    {
+      "localId": "P0494",
+      "originalTeam": "UTA",
+      "name": "Kyle Filipowski",
+      "cname": "凯尔-菲利波夫斯基"
+    },
+    {
+      "localId": "P0495",
+      "originalTeam": "UTA",
+      "name": "Jaxson Hayes",
+      "cname": "贾克森-海斯"
+    },
+    {
+      "localId": "P0496",
+      "originalTeam": "UTA",
+      "name": "Kevin Love",
+      "cname": "凯文-乐福"
+    },
+    {
+      "localId": "P0497",
+      "originalTeam": "UTA",
+      "name": "Cody Williams",
+      "cname": "科迪-威廉姆斯"
+    },
+    {
+      "localId": "P0498",
+      "originalTeam": "UTA",
+      "name": "John Konchar",
+      "cname": "约翰-康查尔"
+    },
+    {
+      "localId": "P0499",
+      "originalTeam": "UTA",
+      "name": "Svi Mykhailiuk",
+      "cname": "斯维亚托斯拉夫-米哈伊柳克"
+    },
+    {
+      "localId": "P0500",
+      "originalTeam": "UTA",
+      "name": "Josh Okogie",
+      "cname": "乔什-奥科吉"
+    },
+    {
+      "localId": "P0501",
+      "originalTeam": "UTA",
+      "name": "Oscar Tshiebwe",
+      "cname": "奥斯卡-奇布韦"
+    },
+    {
+      "localId": "P0502",
+      "originalTeam": "UTA",
+      "name": "Blake Hinson",
+      "cname": "布莱克-欣森"
+    },
+    {
+      "localId": "P0503",
+      "originalTeam": "UTA",
+      "name": "Elijah Harkless",
+      "cname": "伊莱贾-哈克利斯"
+    },
+    {
+      "localId": "P0504",
+      "originalTeam": "UTA",
+      "name": "Mo Bamba",
+      "cname": "Mo Bamba"
+    },
+    {
+      "localId": "P0505",
+      "originalTeam": "UTA",
+      "name": "Bez Mbeng",
+      "cname": "贝兹-姆本格"
+    },
+    {
+      "localId": "P0506",
+      "originalTeam": "UTA",
+      "name": "Trey Alexander",
+      "cname": "特雷-亚历山大"
+    },
+    {
+      "localId": "P0507",
+      "originalTeam": "UTA",
+      "name": "Tamar Bates",
+      "cname": "Tamar Bates"
+    },
+    {
+      "localId": "P0508",
+      "originalTeam": "UTA",
+      "name": "Hayden Gray",
+      "cname": "海登-格雷"
+    },
+    {
+      "localId": "P0509",
+      "originalTeam": "WAS",
+      "name": "Anthony Davis",
+      "cname": "安东尼-戴维斯"
+    },
+    {
+      "localId": "P0510",
+      "originalTeam": "WAS",
+      "name": "Trae Young",
+      "cname": "特雷-杨"
+    },
+    {
+      "localId": "P0511",
+      "originalTeam": "WAS",
+      "name": "Alex Sarr",
+      "cname": "亚历克斯-萨尔"
+    },
+    {
+      "localId": "P0512",
+      "originalTeam": "WAS",
+      "name": "KyShawn George",
+      "cname": "凯肖恩-乔治"
+    },
+    {
+      "localId": "P0513",
+      "originalTeam": "WAS",
+      "name": "Will Riley",
+      "cname": "威尔-莱利"
+    },
+    {
+      "localId": "P0514",
+      "originalTeam": "WAS",
+      "name": "Deandre Ayton",
+      "cname": "德安德烈-艾顿"
+    },
+    {
+      "localId": "P0515",
+      "originalTeam": "WAS",
+      "name": "Bilal Coulibaly",
+      "cname": "比拉勒-库利巴利"
+    },
+    {
+      "localId": "P0516",
+      "originalTeam": "WAS",
+      "name": "Justin Champagnie",
+      "cname": "贾斯廷-尚帕尼"
+    },
+    {
+      "localId": "P0517",
+      "originalTeam": "WAS",
+      "name": "Tre Johnson",
+      "cname": "特雷-约翰逊"
+    },
+    {
+      "localId": "P0518",
+      "originalTeam": "WAS",
+      "name": "Bub Carrington",
+      "cname": "巴布-卡林顿"
+    },
+    {
+      "localId": "P0519",
+      "originalTeam": "WAS",
+      "name": "Tristan Vukcevic",
+      "cname": "特里斯坦-武克切维奇"
+    },
+    {
+      "localId": "P0520",
+      "originalTeam": "WAS",
+      "name": "Julian Reese",
+      "cname": "朱利安-里斯"
+    },
+    {
+      "localId": "P0521",
+      "originalTeam": "WAS",
+      "name": "Jamir Watkins",
+      "cname": "贾米尔-沃特金斯"
+    },
+    {
+      "localId": "P0522",
+      "originalTeam": "WAS",
+      "name": "Khris Middleton",
+      "cname": "克里斯-米德尔顿"
+    },
+    {
+      "localId": "P0523",
+      "originalTeam": "WAS",
+      "name": "Cam Whitmore",
+      "cname": "卡姆-惠特莫尔"
+    },
+    {
+      "localId": "P0524",
+      "originalTeam": "WAS",
+      "name": "Sharife Cooper",
+      "cname": "谢里夫-库珀"
+    },
+    {
+      "localId": "P0525",
+      "originalTeam": "WAS",
+      "name": "Anthony Gill",
+      "cname": "安东尼-吉尔"
+    }
+  ]
+}

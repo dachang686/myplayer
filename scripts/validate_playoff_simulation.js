@@ -330,7 +330,7 @@ function runGames(options) {
   });
 }
 
-function runSeries(seed, teamA, teamB, seriesCount) {
+function runSeries(seed, teamA, teamB, seriesCount, seedBonus = 0) {
   const homePattern = [true, true, false, false, true, false, true];
   return withSeed(seed, () => {
     let seriesWinsA = 0;
@@ -338,7 +338,7 @@ function runSeries(seed, teamA, teamB, seriesCount) {
       let winsA = 0;
       let winsB = 0;
       for (let game = 0; game < 7 && winsA < 4 && winsB < 4; game++) {
-        const result = simulateGame(teamA, teamB, 0, null, { isHomeA: homePattern[game], isB2B: false });
+        const result = simulateGame(teamA, teamB, seedBonus, null, { isHomeA: homePattern[game], isB2B: false });
         if (result.won) winsA++;
         else winsB++;
       }
@@ -348,7 +348,7 @@ function runSeries(seed, teamA, teamB, seriesCount) {
   });
 }
 
-function runSeriesWithRecords(seed, favoriteRecord, underdogRecord) {
+function runSeriesWithRecords(seed, favoriteRecord, underdogRecord, seedBonus = 0) {
   const previousIsPlayoffs = state.season.isPlayoffs;
   const previousStandings = state.season.standings;
   state.season.isPlayoffs = true;
@@ -357,7 +357,7 @@ function runSeriesWithRecords(seed, favoriteRecord, underdogRecord) {
     PLAYOFF_UNDERDOG: underdogRecord,
   };
   try {
-    return runSeries(seed, 'PLAYOFF_FAVORITE', 'PLAYOFF_UNDERDOG', 10000);
+    return runSeries(seed, 'PLAYOFF_FAVORITE', 'PLAYOFF_UNDERDOG', 10000, seedBonus);
   } finally {
     state.season.isPlayoffs = previousIsPlayoffs;
     state.season.standings = previousStandings;
@@ -373,6 +373,7 @@ const equalSeries = runSeries(6606, 'EQUAL_A', 'EQUAL_B', 6000);
 const strongSeries = runSeries(7707, 'STRONG', 'WEAK', 6000);
 const wideRecordSeries = runSeriesWithRecords(7717, { wins: 52, losses: 30 }, { wins: 38, losses: 44 });
 const closeRecordSeries = runSeriesWithRecords(7727, { wins: 53, losses: 29 }, { wins: 51, losses: 31 });
+const closeRecordWithOneEightSeedEdge = runSeriesWithRecords(7737, { wins: 53, losses: 29 }, { wins: 51, losses: 31 }, 2.8);
 
 const deterministicA = withSeed(8808, () => simulateGame('STRONG', 'WEAK', 0, null, { isHomeA: true, isB2B: false }));
 const deterministicB = withSeed(8808, () => simulateGame('STRONG', 'WEAK', 0, null, { isHomeA: true, isB2B: false }));
@@ -624,6 +625,7 @@ const report = {
   playoffRecordCalibration: {
     wideRecordSeries,
     closeRecordSeries,
+    closeRecordWithOneEightSeedEdge,
   },
   deterministic: {
     same: JSON.stringify(deterministicA) === JSON.stringify(deterministicB),
@@ -657,6 +659,9 @@ if (outside(wideRecordSeries, 0.93, 0.96)) failures.push(`明显战绩优势系�
 if (outside(closeRecordSeries, 0.86, 0.91)) failures.push(`接近战绩系列赛胜率异常：${closeRecordSeries}`);
 if (wideRecordSeries - closeRecordSeries < 0.04) {
   failures.push(`常规赛战绩差没有形成足够区分：${JSON.stringify({ wideRecordSeries, closeRecordSeries })}`);
+}
+if (closeRecordWithOneEightSeedEdge - closeRecordSeries < 0.04) {
+  failures.push(`首轮种子差没有与常规赛战绩叠加：${JSON.stringify({ closeRecordSeries, closeRecordWithOneEightSeedEdge })}`);
 }
 if (!report.deterministic.same) failures.push('相同随机种子没有产生相同结果');
 if (inferredRegularSeasonContext.isHomeA !== false || inferredRegularSeasonContext.fatigueMarginDelta !== -1) {

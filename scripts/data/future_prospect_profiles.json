@@ -1,0 +1,647 @@
+{
+  "version": 1,
+  "profiles": [
+    {
+      "id": "D001",
+      "name": "Jordan Smith Jr.",
+      "position": "G",
+      "height": "6-2",
+      "weightLbs": 205,
+      "sources": [
+        "https://arkansasrazorbacks.com/roster/jordan-smith-jr/",
+        "https://reports.fiba.basketball/reports/2025/FIBA%20U19%20Basketball%20World%20Cup/2025-07-06/56A_USA_GER/start-list_56A_USA_GER_20250706.pdf"
+      ],
+      "stats": { "points": 26.6, "rebounds": 6.3, "assists": 5.6, "steals": 3.2, "fieldGoalPct": 56.0, "threePointPct": 36.9, "freeThrowPct": 72.4 },
+      "context": "2025-26 high school senior; Arkansas official bio; USA U19 participant"
+    },
+    {
+      "id": "D002",
+      "name": "Tyran Stokes",
+      "position": "G-F",
+      "height": "6-8",
+      "weightLbs": 230,
+      "sources": [
+        "https://kuathletics.com/sports/mens-basketball/roster/tyran-stokes/17968"
+      ],
+      "stats": { "points": 31.0, "rebounds": 13.0, "assists": 6.0, "steals": 4.0 },
+      "context": "2025-26 high school senior; Kansas official bio; USA U19 triple-double"
+    },
+    {
+      "id": "D003",
+      "name": "Stefan Joksimovic",
+      "position": "G-F",
+      "height": "6-7",
+      "weightLbs": null,
+      "sources": [
+        "https://www.fiba.basketball/en/players/349181-stefan-joksimovic",
+        "https://kzs.si/reprezentant/2615"
+      ],
+      "stats": { "games": 7, "points": 23.1, "rebounds": 6.7, "assists": 3.7, "efficiency": 23.4 },
+      "seniorStats": { "games": 6, "points": 10.2, "rebounds": 3.3, "assists": 1.5, "efficiency": 7.2 },
+      "context": "2026 FIBA U18 EuroBasket and 2027 World Cup European Qualifiers"
+    },
+    {
+      "id": "D004", "name": "Bruce Branch", "position": "G-F", "height": "6-7", "weightLbs": null,
+      "sources": ["https://www.usab.com/players/bruce-branch-iii", "https://www.nba.com/news/bruce-branch-iii-reclassifies-to-2026-high-school-class"],
+      "stats": { "games": 5, "points": 8.6, "rebounds": 8.6, "assists": 1.8, "blocks": 1.0 },
+      "prepStats": { "points": 18.0, "rebounds": 10.0, "assists": 4.0, "blocks": 2.0 },
+      "context": "2026 USA U18 AmeriCup and high school senior"
+    },
+    {
+      "id": "D005", "name": "Caleb Holt", "position": "G-F", "height": "6-5", "weightLbs": null,
+      "sources": ["https://www.usab.com/players/caleb-holt", "https://arizonawildcats.com/news/2026/4/23/mens-basketball-mcdonalds-all-american-caleb-holt-signs-with-arizona.aspx"],
+      "stats": { "points": 18.0, "rebounds": 8.0 },
+      "u19Stats": { "points": 10.0, "rebounds": 3.4, "steals": 2.7 },
+      "context": "High school junior baseline plus 2025 USA U19 and 2026 Hoop Summit"
+    },
+    {
+      "id": "D006", "name": "Braylon Mullins", "position": "G", "height": "6-6", "weightLbs": 198,
+      "sources": ["https://uconnhuskies.com/sports/mens-basketball/roster/mullins-braylon/15795", "https://uconnhuskies.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 33, "points": 12.0, "rebounds": 3.5, "assists": 1.4, "fieldGoalPct": 42.1, "threePointPct": 33.5, "freeThrowPct": 88.9 },
+      "context": "2025-26 UConn freshman"
+    },
+    {
+      "id": "D007", "name": "Thomas Haugh", "position": "F", "height": "6-9", "weightLbs": 215,
+      "sources": ["https://floridagators.com/sports/mens-basketball/roster/thomas-haugh/17744"],
+      "stats": { "points": 17.1, "rebounds": 6.1, "assistsTotal": 73, "threePointersMade": 58, "stealsTotal": 36, "blocksTotal": 33, "fieldGoalPct": 46.0 },
+      "context": "2025-26 Florida junior All-American"
+    },
+    {
+      "id": "D008", "name": "Luigi Suigo", "position": "C", "height": "7-1", "weightLbs": null,
+      "sources": ["https://www.fiba.basketball/en/players/318401-luigi-suigo", "https://www.fiba.basketball/en/events/fiba-basketball-world-cup-2027-european-qualifiers/teams/italy/318401-luigi-suigo"],
+      "stats": { "games": 4, "points": 2.3, "rebounds": 1.8, "assists": 0.3 },
+      "youthStats": { "points": 7.0, "rebounds": 7.1, "assists": 1.3, "efficiency": 12.3 },
+      "context": "Italy senior World Cup qualifiers and U17/U18 national teams"
+    },
+    {
+      "id": "D009", "name": "Hugo Yimga Moukouri", "position": "SF", "height": "6-8", "weightLbs": null,
+      "sources": ["https://www.fiba.basketball/en/players/344991-hugo-yimga", "https://www.fiba.basketball/en/news/who-are-the-top-players-to-watch-at-2026-fiba-u18-eurobasket"],
+      "stats": { "games": 7, "points": 17.3, "rebounds": 5.6, "assists": 1.1, "efficiency": 14.6 },
+      "context": "2026 FIBA U18 EuroBasket; French top-flight rising star"
+    },
+    {
+      "id": "D010", "name": "Cameron Williams", "position": "C", "height": "6-11", "weightLbs": null,
+      "sources": ["https://www.usab.com/players/cameron-williams", "https://goduke.com/documents/download/2026/3/14/ACCT_Final__03-14-26__Virginia.pdf"],
+      "stats": { "hoopSummitMinutes": 7, "points": 3, "assists": 1, "steals": 1, "blocks": 3 },
+      "context": "2026 USA Hoop Summit; Duke five-star signing"
+    },
+    {
+      "id": "D011", "name": "Alijah Arenas", "position": "G", "height": "6-6", "weightLbs": 199,
+      "sources": ["https://usctrojans.com/sports/mens-basketball/roster/alijah-arenas/18584", "https://usctrojans.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 14, "starts": 13, "points": 14.1, "rebounds": 2.9, "assists": 2.1, "fieldGoalPct": 34.1, "threePointPct": 21.3, "freeThrowPct": 79.2 },
+      "context": "2025-26 USC freshman; missed first 18 games through injury"
+    },
+    {
+      "id": "D012", "name": "Motiejus Krivas", "position": "C", "height": "7-2", "weightLbs": 260,
+      "sources": ["https://arizonawildcats.com/sports/mens-basketball/roster/motiejus-krivas/15406", "https://arizonawildcats.com/sports/mens-basketball/stats?path=mten"],
+      "stats": { "games": 39, "starts": 39, "points": 10.4, "rebounds": 8.2, "assistsTotal": 43, "stealsTotal": 28, "blocksTotal": 73, "fieldGoalPct": 56.9, "threePointPct": 30.8, "freeThrowPct": 78.0 },
+      "context": "2025-26 Arizona junior; opponents shot 36.7 percent while he was on court"
+    },
+    {
+      "id": "D013", "name": "Sayon Keita", "position": "C", "height": "7-0", "weightLbs": null,
+      "sources": ["https://www.euroleaguebasketball.net/en/euroleague/players/sayon-keita/012885/", "https://www.acb.com/es/liga/jugadores/sayon-keita-30003348?editionId=90"],
+      "stats": { "games": 5, "starts": 3, "minutes": 9.9, "points": 3.0, "rebounds": 1.8, "assists": 0.2, "steals": 0.6, "blocks": 0.2, "twoPointPct": 63.6, "freeThrowPct": 50.0 },
+      "context": "2025-26 Barcelona EuroLeague rotation center; 214 cm"
+    },
+    {
+      "id": "D014", "name": "Cameron Houindo", "position": "PF", "height": "6-8", "weightLbs": null,
+      "sources": ["https://www.fiba.basketball/en/players/344994-cameron-houindo", "https://www.fiba.basketball/en/events/fiba-u18-eurobasket-2025/teams/france/344994-cameron-houindo"],
+      "stats": { "games": 7, "points": 7.6, "rebounds": 5.0, "assists": 1.0, "steals": 0.6, "blocks": 1.4, "fieldGoalPct": 43.2, "threePointPct": 25.0, "freeThrowPct": 51.9, "efficiency": 9.6 },
+      "u16Stats": { "games": 7, "points": 13.9, "rebounds": 7.9, "assists": 0.3, "efficiency": 16.1 },
+      "context": "France U18 silver-medal rotation big; 2024 FIBA U16 EuroBasket MVP"
+    },
+    {
+      "id": "D015", "name": "Abdou Toure", "position": "W", "height": "6-5", "weightLbs": 200,
+      "sources": ["https://arkansasrazorbacks.com/roster/abdou-toure/"],
+      "stats": { "points": 24.6, "rebounds": 7.0, "assists": 3.0, "steals": 2.0, "fieldGoalPctAbove": 70.0, "threePointPctAbove": 40.0 },
+      "u17Stats": { "games": 7, "points": 23.0, "rebounds": 3.6, "blocks": 1.1 },
+      "context": "2025-26 high school senior; Guinea U17; Arkansas five-star signing"
+    },
+    {
+      "id": "D016", "name": "Christian Collins", "position": "F", "height": "6-9", "weightLbs": null,
+      "sources": ["https://usctrojans.com/news/2026/4/19/christian-collins-signs-with-usc-mens-basketball", "https://www.usab.com/players/christian-collins"],
+      "stats": { "points": 26.1, "rebounds": 9.6, "assists": 3.5, "fieldGoalPct": 56.0 },
+      "eyblStats": { "points": 12.0, "rebounds": 9.7 },
+      "hoopSummitStats": { "minutes": 18, "points": 4, "rebounds": 7, "assists": 2, "steals": 1 },
+      "context": "2025-26 high school senior; USC McDonald's All-American signing"
+    },
+    {
+      "id": "D017", "name": "Dylan Mingo", "position": "PG", "height": "6-4", "weightLbs": 185,
+      "sources": ["https://baylorbears.com/sports/mens-basketball/roster/dylan-mingo/15670"],
+      "stats": { "games": 12, "points": 19.3, "rebounds": 7.8, "assists": 2.6, "steals": 2.3 },
+      "top100CampStats": { "points": 23.8, "rebounds": 6.5, "assists": 6.8 },
+      "context": "2025-26 high school senior; missed most of senior season through injury; Baylor five-star signing"
+    },
+    {
+      "id": "D018", "name": "Papa Cheickh Niang", "position": "G-F", "height": "6-5", "weightLbs": null,
+      "sources": ["https://www.fiba.basketball/en/players/279164-papa-cheickh-niang", "https://www.fiba.basketball/en/news/who-are-the-top-players-to-watch-at-2026-fiba-u18-eurobasket"],
+      "stats": { "games": 7, "points": 16.1, "rebounds": 3.3, "assists": 3.6, "efficiency": 11.6 },
+      "context": "2026 Italy U18; Aquila Basket Trento Serie A rotation; transition slasher and perimeter defender"
+    },
+    {
+      "id": "D019", "name": "Amari Allen", "position": "F", "height": "6-8", "weightLbs": 205,
+      "sources": ["https://rolltide.com/sports/mens-basketball/roster/amari-allen/15275"],
+      "stats": { "games": 32, "starts": 24, "points": 11.4, "rebounds": 6.9, "assists": 3.1, "doubleDoubles": 5 },
+      "context": "2025-26 Alabama freshman; SEC All-Freshman Team"
+    },
+    {
+      "id": "D020", "name": "Malachi Moreno", "position": "C", "height": "7-0", "weightLbs": 245,
+      "sources": ["https://ukathletics.com/sports/mbball/roster/player/malachi-moreno/"],
+      "stats": { "games": 36, "starts": 30, "points": 7.8, "rebounds": 6.3, "blocks": 1.47, "fieldGoalPct": 58.2, "doubleDoubles": 3 },
+      "context": "2025-26 Kentucky freshman; All-SEC Freshman Team"
+    },
+    {
+      "id": "D021", "name": "Rueben Chinyelu", "position": "C", "height": "6-10", "weightLbs": 265,
+      "sources": ["https://floridagators.com/sports/mens-basketball/roster/rueben-chinyelu/17741", "https://floridagators.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 35, "starts": 35, "points": 10.9, "rebounds": 11.2, "assistsTotal": 23, "stealsTotal": 27, "blocksTotal": 36, "fieldGoalPct": 58.4, "freeThrowPct": 69.5 },
+      "context": "2025-26 Florida junior; Naismith and NABC National Defensive Player of the Year"
+    },
+    {
+      "id": "D022", "name": "Pavle Backo", "position": "C", "height": "6-11", "weightLbs": null,
+      "sources": ["https://www.fiba.basketball/en/players/341044-pavle-backo"],
+      "stats": { "games": 6, "points": 16.7, "rebounds": 5.8, "assists": 0.5, "efficiency": 17.2 },
+      "context": "2025 Serbia U18 EuroBasket"
+    },
+    {
+      "id": "D023", "name": "Anthony Thompson", "position": "F", "height": "6-9", "weightLbs": 215,
+      "sources": ["https://ohiostatebuckeyes.com/sports/mens-basketball/roster/anthony-thompson/13478"],
+      "stats": { "points": 24.9, "rebounds": 7.9, "assists": 2.3, "fieldGoalPct": 47.0, "threePointPct": 35.0 },
+      "clubStats": { "points": 22.1, "rebounds": 5.7, "assists": 2.2, "blocks": 1.9, "steals": 1.6 },
+      "context": "2025-26 high school senior; Ohio State five-star signing; 7-3 wingspan"
+    },
+    {
+      "id": "D024", "name": "Tounde Yessoufou", "position": "G", "height": "6-5", "weightLbs": 215,
+      "sources": ["https://baylorbears.com/sports/mens-basketball/roster/tounde-yessoufou/14463", "https://baylorbears.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 34, "starts": 34, "points": 17.8, "rebounds": 5.9, "assists": 1.6, "steals": 2.0, "fieldGoalPct": 46.5, "threePointPct": 29.3, "freeThrowPct": 74.6 },
+      "context": "2025-26 Baylor freshman; All-Big 12 honorable mention"
+    },
+    {
+      "id": "D025", "name": "Dame Sarr", "position": "G-F", "height": "6-8", "weightLbs": 190,
+      "sources": ["https://goduke.com/sports/mens-basketball/roster/dame-sarr/23111"],
+      "priorClubStats": { "minutes": 12.6, "points": 5.8, "rebounds": 1.7, "fieldGoalPct": 52.1, "threePointPct": 42.9, "euroLeagueGames": 15 },
+      "context": "2025-26 Duke freshman; prior FC Barcelona first-team and EuroLeague experience"
+    },
+    {
+      "id": "D026", "name": "Moustapha Thiam", "position": "C", "height": "7-2", "weightLbs": 235,
+      "sources": ["https://ucfknights.com/sports/mens-basketball/roster/player/moustapha-thiam"],
+      "stats": { "games": 34, "starts": 34, "points": 10.4, "rebounds": 6.4, "blocks": 2.6, "fieldGoalPct": 49.8, "threePointPct": 29.1, "freeThrowPct": 66.7, "assistsTotal": 25, "stealsTotal": 16 },
+      "context": "2024-25 UCF freshman; Big 12 blocks leader and UCF freshman blocks record"
+    },
+    {
+      "id": "D027", "name": "Baba Oladotun", "position": "F", "height": "6-10", "weightLbs": 195,
+      "sources": ["https://umterps.com/sports/mens-basketball/roster/baba-oladotun/16089"],
+      "stats": { "points": 22.5, "rebounds": 7.3, "assists": 3.0, "steals": 2.8 },
+      "context": "2024-25 high school sophomore baseline; missed much of 2025-26; Maryland five-star signing"
+    },
+    {
+      "id": "D028", "name": "Mor Massamba Diop", "position": "C", "height": "7-1", "weightLbs": null,
+      "sources": ["https://thesundevils.com/sports/mens-basketball/roster/player/massamba-diop", "https://thesundevils.com/sun-devil-mens-basketball-individual-season-records"],
+      "stats": { "games": 33, "starts": 33, "points": 13.6, "rebounds": 5.8, "blocksTotal": 69, "fieldGoalPct": 56.9, "threePointersMade": 8, "threePointersAttempted": 26 },
+      "context": "2025-26 Arizona State freshman; program freshman blocks record"
+    },
+    {
+      "id": "D029", "name": "Trey McKenney", "position": "G", "height": "6-4", "weightLbs": 225,
+      "sources": ["https://mgoblue.com/sports/mens-basketball/roster/trey-mckenney/27037"],
+      "stats": { "games": 40, "starts": 0, "minutes": 22.1, "points": 9.9, "rebounds": 2.8, "assistsTotal": 35, "stealsTotal": 16, "threePointersMade": 68, "freeThrowPct": 89.5 },
+      "context": "2025-26 Michigan freshman; Big Ten All-Freshman Team and national champion"
+    },
+    {
+      "id": "D030", "name": "Shelton Henderson", "position": "F", "height": "6-6", "weightLbs": 240,
+      "sources": ["https://miamihurricanes.com/sports/mbball/roster/season/2026-27/player/shelton-henderson/"],
+      "stats": { "games": 35, "starts": 35, "points": 13.7, "rebounds": 4.9, "assists": 2.1, "fieldGoalPct": 56.7 },
+      "context": "2025-26 Miami freshman; started every game"
+    },
+    {
+      "id": "D031", "name": "Klark Riethauser", "position": "F", "height": "6-8", "weightLbs": null,
+      "sources": ["https://www.fiba.basketball/en/players/341843-klark-riethauser", "https://www.fiba.basketball/en/events/fiba-u18-eurobasket-2025-division-b/stats"],
+      "stats": { "games": 7, "points": 21.7, "rebounds": 7.4, "assists": 2.7, "fieldGoalPct": 50.5, "threePointPct": 34.1, "freeThrowPct": 66.0, "efficiency": 23.0 },
+      "u19Stats": { "games": 6, "points": 3.5, "rebounds": 3.3, "assists": 1.0, "efficiency": 4.3 },
+      "context": "2025 Switzerland U18 Division B and two-years-up U19 World Cup"
+    },
+    {
+      "id": "D032", "name": "Paul Mbiya", "position": "C", "height": "7-0", "weightLbs": 255,
+      "sources": ["https://kuathletics.com/sports/mens-basketball/roster/paul-mbiya/17955"],
+      "stats": { "games": 21, "careerHighPoints": 8, "careerHighRebounds": 6 },
+      "priorClubStats": { "points": 15.3, "rebounds": 11.7, "blocks": 3.0 },
+      "context": "2025-26 Kansas freshman reserve; prior ASVEL system; 7-8 wingspan"
+    },
+    {
+      "id": "D033", "name": "Quentin Coleman", "position": "G", "height": "6-4", "weightLbs": 180,
+      "sources": ["https://fightingillini.com/news/2026/4/19/mens-basketball-coleman-signs-with-fighting-illini"],
+      "stats": { "points": 23.1, "rebounds": 6.1, "assists": 3.9, "steals": 2.7, "fieldGoalPct": 64.0, "threePointPct": 50.0 },
+      "context": "2025-26 high school senior; Illinois five-star signing; back-to-back state champion"
+    },
+    {
+      "id": "D034", "name": "Milan Momcilovic", "position": "F", "height": "6-8", "weightLbs": null,
+      "sources": ["https://cyclones.com/sports/mens-basketball/roster/milan-momcilovic/13862", "https://cyclones.com/sports/mbball/stats/2025-26"],
+      "stats": { "games": 37, "starts": 37, "points": 16.9, "rebounds": 3.1, "assists": 1.0, "fieldGoalPct": 50.5, "threePointPct": 48.7, "freeThrowPct": 87.8, "threePointersMade": 136 },
+      "context": "2025-26 Iowa State junior; NCAA leader in both threes made and three-point percentage"
+    },
+    {
+      "id": "D035", "name": "Brandon McCoy Jr.", "position": "G", "height": "6-5", "weightLbs": null,
+      "sources": ["https://mgoblue.com/news/2026/4/28/mens-basketball-wolverines-add-mccoy-cosby-to-class-of-2026-signees"],
+      "stats": { "points": 19.2, "rebounds": 7.4, "assists": 3.5, "steals": 2.2 },
+      "context": "2025-26 high school senior; Michigan five-star signing; three USA Basketball gold medals"
+    },
+    {
+      "id": "D036", "name": "Arafan Diane", "position": "C", "height": "7-0", "weightLbs": 280,
+      "sources": ["https://www.fiba.basketball/en/players/343290-arafan-diane", "https://uhcougars.com/sports/mens-basketball/roster/arafan-dian/10147"],
+      "stats": { "games": 7, "points": 19.1, "rebounds": 11.7, "assists": 1.4, "fieldGoalPct": 54.8, "freeThrowPct": 73.8, "blocksTotal": 10 },
+      "context": "2024 Guinea U17 World Cup; 2026 Houston signing"
+    },
+    {
+      "id": "D037", "name": "David Mirkovic", "position": "F", "height": "6-9", "weightLbs": 250,
+      "sources": ["https://fightingillini.com/sports/mens-basketball/roster/david-mirkovic/15979"],
+      "stats": { "games": 36, "starts": 35, "points": 13.5, "rebounds": 8.1, "assists": 2.6, "doubleDoubles": 9 },
+      "context": "2025-26 Illinois freshman; All-Big Ten honorable mention and All-Freshman Team"
+    },
+    {
+      "id": "D038", "name": "Matas Vokietaitis", "position": "C", "height": "7-0", "weightLbs": 255,
+      "sources": ["https://texaslonghorns.com/sports/mens-basketball/roster/MATAS-VOKIETAITIS/17088", "https://fausports.com/sports/mens-basketball/roster/vokietaitis-matas/17737"],
+      "stats": { "games": 34, "starts": 20, "minutes": 17.7, "points": 10.2, "rebounds": 5.5, "blocksTotal": 26, "fieldGoalPct": 67.7 },
+      "u20Stats": { "games": 7, "points": 11.3, "rebounds": 8.4, "assists": 0.4, "efficiency": 16.0 },
+      "context": "2024-25 FAU freshman; AAC Freshman of the Year; Lithuania U20"
+    },
+    {
+      "id": "D039", "name": "Neoklis Avdalas", "position": "G", "height": "6-9", "weightLbs": 215,
+      "sources": ["https://hokiesports.com/sports/mens-basketball/roster/player/neoklis-avdalas"],
+      "stats": { "games": 31, "starts": 31, "minutes": 31.6, "points": 12.1, "rebounds": 3.1, "assists": 4.6, "assistTurnoverRatio": 2.1 },
+      "priorClubStats": { "games": 26, "minutes": 18.5, "points": 7.7, "rebounds": 2.7, "assists": 1.4, "fieldGoalPct": 43.6, "threePointPct": 35.7, "freeThrowPct": 70.3 },
+      "context": "2025-26 Virginia Tech freshman; prior Greek HEBA A1 professional experience"
+    },
+    {
+      "id": "D040", "name": "Ivan Kharchenkov", "position": "F", "height": "6-7", "weightLbs": 230,
+      "sources": ["https://arizonawildcats.com/sports/mens-basketball/roster/ivan-kharchenkov/18798", "https://arizonawildcats.com/sports/mens-basketball/stats?path=mten"],
+      "stats": { "games": 39, "starts": 39, "minutes": 28.3, "points": 10.4, "rebounds": 4.3, "assists": 2.3, "steals": 1.4, "blocks": 0.3, "fieldGoalPct": 49.2, "threePointPct": 31.7, "freeThrowPct": 72.3 },
+      "context": "2025-26 Arizona freshman; prior Bayern Munich and EuroLeague experience"
+    },
+    {
+      "id": "D041", "name": "Alex Condon", "position": "F-C", "height": "6-11", "weightLbs": 236,
+      "sources": ["https://floridagators.com/sports/mens-basketball/roster/alex-condon/17742", "https://floridagators.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 34, "starts": 34, "minutes": 30.6, "points": 15.1, "rebounds": 7.5, "assistsTotal": 123, "stealsTotal": 23, "blocksTotal": 48, "fieldGoalPct": 55.6, "threePointPct": 17.0, "freeThrowPct": 64.9 },
+      "context": "2025-26 Florida junior; veteran starter and former national champion"
+    },
+    {
+      "id": "D042", "name": "Miikka Muurinen", "position": "W-F", "height": "7-0", "weightLbs": 215,
+      "sources": ["https://arkansasrazorbacks.com/miikka-muurinen-inks-with-arkansas/"],
+      "hoopSummitStats": { "points": 10, "rebounds": 8, "steals": 2 },
+      "priorClubStats": { "abaGames": 8, "pointsTotal": 33, "reboundsTotal": 23, "euroLeagueGames": 6, "euroLeagueMinutesTotal": 11 },
+      "context": "2026 Arkansas signing; 2026 Hoop Summit starter; prior Partizan ABA and EuroLeague minutes"
+    },
+    {
+      "id": "D043", "name": "Daniel Jacobsen", "position": "C", "height": "7-4", "weightLbs": 250,
+      "sources": ["https://purduesports.com/sports/mens-basketball/roster/player/daniel-jacobsen"],
+      "stats": { "games": 39, "points": 5.5, "rebounds": 3.0, "blocks": 1.2 },
+      "u19Stats": { "games": 7, "points": 6.6, "rebounds": 4.3, "blocks": 1.9, "fieldGoalPct": 60.6, "minutes": 12.3 },
+      "context": "2025-26 Purdue sophomore; USA U19 gold medalist; elite size and per-minute rim protection"
+    },
+    {
+      "id": "D044", "name": "Billy Richmond", "position": "G-W", "height": "6-7", "weightLbs": 205,
+      "sources": ["https://arkansasrazorbacks.com/roster/billy-richmond-iii/", "https://arkansasrazorbacks.com/stats/mbb/2025-26/plyr_24.htm"],
+      "stats": { "games": 35, "points": 11.0, "rebounds": 4.1 },
+      "context": "2025-26 Arkansas sophomore; late-season starter with high-efficiency rim scoring and multi-position defensive activity"
+    },
+    {
+      "id": "D045", "name": "Matt Able", "position": "G", "height": "6-5", "weightLbs": 205,
+      "sources": ["https://gopack.com/news/2025/4/17/mens-basketball-pack-signs-matt-able-in-class-of-2025", "https://gopack.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 34, "starts": 0, "minutes": 21.8, "points": 8.8, "rebounds": 3.4, "assistsTotal": 32, "stealsTotal": 42, "blocksTotal": 11, "fieldGoalPct": 41.6, "threePointPct": 35.5, "freeThrowPct": 79.6 },
+      "context": "2025-26 NC State freshman reserve; former five-star recruit"
+    },
+    {
+      "id": "D046", "name": "Coen Carr", "position": "F", "height": "6-6", "weightLbs": 230,
+      "sources": ["https://msuspartans.com/sports/mens-basketball/roster/carr-coen/16436", "https://msuspartans.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 35, "starts": 35, "minutes": 29.2, "points": 12.0, "rebounds": 5.4, "assistsTotal": 43, "stealsTotal": 16, "blocksTotal": 29, "fieldGoalPct": 51.8, "threePointPct": 27.6, "freeThrowPct": 62.9 },
+      "context": "2025-26 Michigan State junior starter; exceptional vertical athlete and interior finisher"
+    },
+    {
+      "id": "D047", "name": "John Blackwell", "position": "G", "height": "6-4", "weightLbs": 203,
+      "sources": ["https://uwbadgers.com/sports/mens-basketball/roster/john-blackwell/14412", "https://uwbadgers.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 34, "starts": 34, "minutes": 33.7, "points": 19.1, "rebounds": 5.1, "assistsTotal": 79, "stealsTotal": 38, "fieldGoalPct": 43.0, "threePointPct": 38.9, "freeThrowPct": 86.3 },
+      "context": "2025-26 Wisconsin junior; third-team All-Big Ten and Big Ten All-Tournament Team"
+    },
+    {
+      "id": "D048", "name": "Adam Atamna", "position": "SG", "height": "6-4", "weightLbs": null,
+      "sources": ["https://www.fiba.basketball/en/players/344984-adam-atamna", "https://www.euroleaguebasketball.net/en/euroleague/players/adam-atamna/profile/012268/", "https://lnb.fr/fr/player/9321?did=1&tid=1790"],
+      "u18Stats": { "games": 2, "points": 11.5, "rebounds": 1.5, "assists": 0.5, "efficiency": 13.5 },
+      "context": "17-year-old ASVEL guard; 2025 France U18 and limited 2025-26 EuroLeague/Betclic Elite minutes"
+    },
+    {
+      "id": "D049", "name": "Andrej Stojakovic", "position": "G-F", "height": "6-7", "weightLbs": 215,
+      "sources": ["https://fightingillini.com/sports/mens-basketball/roster/andrej-stojakovic/15980", "https://fightingillini.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 34, "starts": 21, "minutes": 26.2, "points": 13.5, "rebounds": 4.5, "assistsTotal": 34, "stealsTotal": 13, "blocksTotal": 15, "fieldGoalPct": 50.0, "threePointPct": 24.4, "freeThrowPct": 80.5 },
+      "context": "2025-26 Illinois junior; NCAA Tournament All-South Region Team"
+    },
+    {
+      "id": "D050", "name": "Paul McNeil Jr.", "position": "G", "height": "6-5", "weightLbs": 190,
+      "sources": ["https://gopack.com/sports/mens-basketball/roster/paul-mcneil-jr-/14097", "https://gopack.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 34, "starts": 32, "minutes": 28.6, "points": 13.8, "rebounds": 3.6, "assistsTotal": 28, "stealsTotal": 21, "blocksTotal": 13, "fieldGoalPct": 43.3, "threePointPct": 42.7, "freeThrowPct": 82.4, "threePointersMade": 105 },
+      "context": "2025-26 NC State sophomore; high-volume movement and spot-up shooter"
+    },
+    {
+      "id": "D051", "name": "Jacob Cofie", "position": "F", "height": "6-10", "weightLbs": 235,
+      "sources": ["https://usctrojans.com/sports/mens-basketball/roster/cofie-jacob/18585", "https://usctrojans.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 32, "starts": 32, "minutes": 30.4, "points": 9.9, "rebounds": 6.8, "assistsTotal": 62, "stealsTotal": 30, "blocksTotal": 56, "fieldGoalPct": 51.0, "threePointPct": 31.8, "freeThrowPct": 60.5 },
+      "context": "2025-26 USC sophomore; full-time starter and nationally ranked shot blocker"
+    },
+    {
+      "id": "D052", "name": "Tyler Tanner", "position": "PG", "height": "6-0", "weightLbs": 175,
+      "sources": ["https://vucommodores.com/sports/mbball/roster/season/2025-26/player/tyler-tanner"],
+      "stats": { "games": 36, "points": 19.5, "assists": 5.1, "steals": 2.4, "pointsTotal": 702, "assistsTotal": 184, "stealsTotal": 86 },
+      "context": "2025-26 Vanderbilt sophomore; All-America honorable mention, first-team All-SEC and SEC All-Defensive Team"
+    },
+    {
+      "id": "D053", "name": "Juke Harris", "position": "G", "height": "6-7", "weightLbs": 200,
+      "sources": ["https://godeacs.com/sports/mens-basketball/roster/harris-juke/8847", "https://godeacs.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 35, "points": 21.4, "pointsTotal": 750, "fieldGoalPct": 44.4, "accPoints": 22.9, "doubleDoubles": 5 },
+      "context": "2025-26 Wake Forest sophomore; 35 straight double-figure games and second-most points in program history"
+    },
+    {
+      "id": "D054", "name": "Flory Bidunga", "position": "F-C", "height": "6-10", "weightLbs": 235,
+      "sources": ["https://kuathletics.com/sports/mens-basketball/roster/flory-bidunga/16505", "https://kuathletics.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 35, "starts": 34, "minutes": 31.6, "points": 13.3, "rebounds": 9.0, "assistsTotal": 52, "stealsTotal": 26, "blocksTotal": 90, "fieldGoalPct": 64.0, "threePointPct": 0.0, "freeThrowPct": 65.4 },
+      "context": "2025-26 Kansas sophomore; only NCAA player above 13 points, 8.5 rebounds and 2.5 blocks per game"
+    },
+    {
+      "id": "D055", "name": "Cayden Boozer", "position": "G", "height": "6-4", "weightLbs": 205,
+      "sources": ["https://goduke.com/sports/mens-basketball/roster/cayden-boozer/23109", "https://goduke.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 38, "starts": 11, "minutes": 22.9, "points": 7.7, "rebounds": 2.3, "assistsTotal": 113, "stealsTotal": 31, "fieldGoalPct": 50.0, "threePointPct": 30.3, "freeThrowPct": 81.3 },
+      "context": "2025-26 Duke freshman; former five-star point guard and USA U17 assists leader"
+    },
+    {
+      "id": "D056", "name": "Matthys Mahop", "position": "G-F", "height": "6-5", "weightLbs": null,
+      "sources": ["https://www.fiba.basketball/en/players/364004-matthys-mahop", "https://www.euroleaguebasketball.net/en/nge/players/matthys-mahop/013060/"],
+      "u16Stats": { "games": 7, "points": 5.6, "rebounds": 5.0, "assists": 4.3, "efficiency": 10.1 },
+      "bwbStats": { "games": 9, "points": 5.6 },
+      "context": "France youth point wing; 2024 U16 EuroBasket plus 2025-26 Basketball Without Borders"
+    },
+    {
+      "id": "D057", "name": "Oscar Wembanyama", "position": "F", "height": "6-8", "weightLbs": null,
+      "sources": ["https://lnb.fr/en/news/bataille-du-top-10-strasbourg-veut-confirmer-dijon-doit-sexporter", "https://lnb.fr/fr/player/9936?did=3&tid=1832"],
+      "u21Stats": { "minutes": 24.0, "points": 11.1, "rebounds": 5.1, "assists": 2.5, "efficiency": 13.7 },
+      "context": "2025-26 Strasbourg Espoirs Elite multi-position forward with limited senior professional rotation minutes"
+    },
+    {
+      "id": "D058", "name": "JJ Andrews", "position": "W", "height": "6-6", "weightLbs": 225,
+      "sources": ["https://arkansasrazorbacks.com/roster/jj-andrews/"],
+      "stats": { "points": 30.7, "rebounds": 16.9, "assists": 3.1, "steals": 2.3, "blocks": 1.1, "fieldGoalPct": 60.9 },
+      "context": "2025-26 high school senior; Arkansas signing and 2025 EYBL MVP"
+    },
+    {
+      "id": "D059", "name": "Tomislav Ivisic", "position": "C", "height": "7-1", "weightLbs": 270,
+      "sources": ["https://fightingillini.com/sports/mens-basketball/roster/ivisic-tomislav/15976", "https://fightingillini.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 34, "starts": 33, "minutes": 25.4, "points": 10.4, "rebounds": 5.6, "assistsTotal": 53, "stealsTotal": 10, "blocksTotal": 20, "fieldGoalPct": 48.3, "threePointPct": 31.3, "freeThrowPct": 77.8 },
+      "context": "2025-26 Illinois junior; experienced 7-foot-1 skilled center"
+    },
+    {
+      "id": "D060", "name": "Patrick Ngongba II", "position": "C", "height": "6-11", "weightLbs": 250,
+      "sources": ["https://goduke.com/sports/mens-basketball/roster/patrick-ngongba-ii/23107", "https://goduke.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 32, "starts": 28, "minutes": 21.9, "points": 10.1, "rebounds": 5.8, "assistsTotal": 64, "stealsTotal": 19, "blocksTotal": 34, "fieldGoalPct": 60.6, "threePointPct": 25.8, "freeThrowPct": 66.4 },
+      "context": "2025-26 Duke sophomore starting center; USA U18 gold medalist"
+    },
+    {
+      "id": "D061", "name": "JT Toppin", "position": "F", "height": "6-9", "weightLbs": 230,
+      "sources": ["https://texastech.com/sports/mens-basketball/roster/jt-toppin/13943", "https://texastech.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 25, "starts": 25, "minutes": 34.8, "points": 21.8, "rebounds": 10.8, "assistsTotal": 53, "stealsTotal": 34, "blocksTotal": 43, "fieldGoalPct": 54.8, "threePointPct": 28.1, "freeThrowPct": 57.9 },
+      "context": "2025-26 Texas Tech junior; preseason AP first-team All-American before injury"
+    },
+    {
+      "id": "D062", "name": "Alex Wilkins", "position": "G", "height": "6-5", "weightLbs": 190,
+      "sources": ["https://ukathletics.com/sports/mbball/roster/player/alex-wilkins/"],
+      "stats": { "pointsTotal": 622, "fieldGoalPct": 45.8, "threePointPct": 32.1, "freeThrowPct": 83.5, "doubleFigureGames": 29, "twentyPointGames": 14 },
+      "context": "2025-26 Furman freshman; Kyle Macy Award and Lou Henson Award finalist before Kentucky transfer"
+    },
+    {
+      "id": "D063", "name": "Pryce Sandfort", "position": "F", "height": "6-7", "weightLbs": 210,
+      "sources": ["https://huskers.com/sports/mens-basketball/roster/player/pryce-sandfort"],
+      "stats": { "games": 35, "starts": 35, "minutes": 35.6, "points": 18.1, "rebounds": 4.9, "assists": 2.0, "fieldGoalPct": 47.7, "threePointPct": 41.6, "threePointersMade": 129 },
+      "context": "2025-26 Nebraska junior; first-team All-Big Ten and NCAA South Region All-Tournament high-volume shooter"
+    },
+    {
+      "id": "D064", "name": "Bryson Tiller", "position": "F", "height": "6-10", "weightLbs": 240,
+      "sources": ["https://kuathletics.com/sports/mens-basketball/roster/bryson-tiller/16517", "https://kuathletics.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 35, "starts": 31, "minutes": 25.8, "points": 7.9, "rebounds": 6.1, "assistsTotal": 35, "stealsTotal": 12, "blocksTotal": 45, "fieldGoalPct": 44.9, "threePointPct": 26.9, "freeThrowPct": 69.4 },
+      "context": "2025-26 Kansas redshirt freshman; five-star interior forward with two double-doubles"
+    },
+    {
+      "id": "D065", "name": "Anton Bonke", "position": "C", "height": "7-2", "weightLbs": 260,
+      "sources": ["https://charlotte49ers.com/sports/basketball/roster/anton-bonke/12687", "https://charlotte49ers.com/sports/mens-basketball/stats"],
+      "stats": { "games": 34, "starts": 32, "minutes": 25.5, "points": 10.6, "rebounds": 8.3, "assistsTotal": 35, "stealsTotal": 8, "blocksTotal": 51, "fieldGoalPct": 57.6, "threePointPct": 34.2, "freeThrowPct": 65.3 },
+      "context": "2025-26 Charlotte junior starting center; 7-foot-2 rim protector with developing low-volume range"
+    },
+    {
+      "id": "D066", "name": "Jeremy Fears Jr.", "position": "G", "height": "6-2", "weightLbs": 190,
+      "sources": ["https://msuspartans.com/sports/mens-basketball/roster/jeremy-fears%2Bjr./16438", "https://msuspartans.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 35, "starts": 35, "minutes": 32.4, "points": 15.2, "rebounds": 2.4, "assists": 9.4, "steals": 1.3, "fieldGoalPct": 43.1, "threePointPct": 32.1, "freeThrowPct": 88.5, "assistTurnoverRatio": 3.86 },
+      "context": "2025-26 Michigan State redshirt sophomore; first-team All-Big Ten and national assists leader"
+    },
+    {
+      "id": "D067", "name": "Michael Ruzic", "position": "PF", "height": "6-9", "weightLbs": 220,
+      "sources": ["https://acb.com/es/liga/jugadores/michael-ruzic-30002869"],
+      "stats": { "games": 35, "minutes": 18.1, "points": 6.9, "rebounds": 4.2, "assists": 0.7, "blocks": 0.7, "steals": 0.2, "twoPointPct": 63.6, "threePointPct": 35.9, "freeThrowPct": 63.3, "efficiency": 8.7 },
+      "context": "2025-26 Joventut 19-year-old ACB rotation stretch forward"
+    },
+    {
+      "id": "D068", "name": "Lucas Morillo", "position": "G", "height": "6-7", "weightLbs": 205,
+      "sources": ["https://www.fiba.basketball/en/events/fiba-u19-basketball-world-cup-2025/teams/dominican-republic/343111-lucas-morillo", "https://fightingillini.com/news/2025/11/20/mens-basketball-morillo-signs-with-illinois"],
+      "stats": { "games": 7, "minutes": 33.5, "points": 20.0, "rebounds": 9.0, "assists": 4.3, "steals": 1.9, "blocks": 0.3, "fieldGoalPct": 47.0, "threePointPct": 26.9, "freeThrowPct": 74.2, "efficiency": 22.9 },
+      "context": "2025 FIBA U19 Dominican Republic lead guard; 2026 Illinois signee after 15.1 points, 8.8 rebounds and 5.1 assists as a junior"
+    },
+    {
+      "id": "D069", "name": "Johann Grunloh", "position": "C", "height": "6-11", "weightLbs": 230,
+      "sources": ["https://virginiasports.com/sports/mbball/roster/season/2025-26/player/johann-grunloh"],
+      "stats": { "games": 36, "starts": 36, "fieldGoalsMade": 98, "fieldGoalsAttempted": 184, "threePointersMade": 21, "threePointersAttempted": 60, "freeThrowsMade": 77, "freeThrowsAttempted": 124, "reboundsTotal": 188, "assistsTotal": 23, "stealsTotal": 28, "blocksTotal": 80, "pointsTotal": 256 },
+      "context": "2025-26 Virginia freshman starting center; prior German BBL rotation big with 80 blocks in 36 NCAA games"
+    },
+    {
+      "id": "D070", "name": "Dash Daniels", "position": "G", "height": "6-5", "weightLbs": 198,
+      "sources": ["https://www.jackjumpers.com.au/player/dash-daniels"],
+      "stats": { "games": 35, "minutes": 14.3, "points": 4.1, "rebounds": 2.4, "assists": 0.9, "steals": 0.7, "blocks": 0.3, "fieldGoalPct": 42.0, "turnovers": 0.7 },
+      "context": "2025-26 NBL 17-year-old rotation guard; defensive prospect with senior Australia experience"
+    },
+    {
+      "id": "D071", "name": "Solo Ball", "position": "G", "height": "6-4", "weightLbs": 200,
+      "sources": ["https://uconnhuskies.com/sports/mens-basketball/roster/solo-ball/13284", "https://uconnhuskies.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 39, "starts": 39, "minutes": 28.4, "points": 12.8, "rebounds": 3.0, "assistsTotal": 59, "stealsTotal": 17, "blocksTotal": 8, "fieldGoalPct": 39.2, "threePointPct": 30.0, "freeThrowPct": 85.2 },
+      "priorStats": { "points": 14.4, "threePointPct": 41.4, "freeThrowPct": 84.1 },
+      "context": "2025-26 UConn junior starting guard; prior second-team All-Big East shooter whose efficiency regressed this season"
+    },
+    {
+      "id": "D072", "name": "Omer Mayer", "position": "G", "height": "6-4", "weightLbs": 215,
+      "sources": ["https://purduesports.com/sports/mens-basketball/roster/player/omer-mayer"],
+      "stats": { "minutes": 14.3, "points": 5.5, "rebounds": 1.1, "assists": 1.2, "fieldGoalPct": 41.2, "threePointPct": 35.5 },
+      "u19Stats": { "games": 4, "points": 20.0, "rebounds": 5.0, "assists": 4.3, "steals": 2.0, "threePointPct": 38.2 },
+      "u20Stats": { "games": 7, "points": 16.7, "assists": 5.1, "fieldGoalPct": 41.2, "threePointPct": 37.3, "freeThrowPct": 85.7 },
+      "context": "2025-26 Purdue freshman reserve guard with prior Maccabi Tel Aviv senior professional experience"
+    },
+    {
+      "id": "D073", "name": "Collin Chandler", "position": "G", "height": "6-4", "weightLbs": 202,
+      "sources": ["https://byucougars.com/news/2026/04/14/chandler-returns-home-signs-with-cougars"],
+      "stats": { "games": 36, "starts": 31, "points": 9.7, "rebounds": 2.8, "assists": 2.3, "stealsTotal": 44, "threePointersMade": 73, "threePointPct": 41.0, "conferenceThreePointPct": 45.7 },
+      "context": "2025-26 Kentucky sophomore starting guard; high-volume 3-and-D transfer to BYU"
+    },
+    {
+      "id": "D074", "name": "Ian Jackson", "position": "G", "height": "6-4", "weightLbs": 190,
+      "sources": ["https://redstormsports.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 36, "starts": 19, "minutes": 18.3, "points": 9.4, "rebounds": 2.3, "assistsTotal": 46, "stealsTotal": 27, "blocksTotal": 8, "fieldGoalPct": 40.9, "threePointPct": 34.3, "freeThrowPct": 90.0 },
+      "context": "2025-26 St. John's sophomore scoring guard and former five-star recruit"
+    },
+    {
+      "id": "D075", "name": "Thijs De Ridder", "position": "F", "height": "6-9", "weightLbs": 238,
+      "sources": ["https://virginiasports.com/sports/mbball/roster/player/thijs-de-ridder"],
+      "stats": { "games": 31, "starts": 31, "minutes": 27.5, "points": 15.9, "rebounds": 6.3, "assistsTotal": 49, "stealsTotal": 15, "blocksTotal": 27, "fieldGoalPct": 51.3, "threePointPct": 34.1, "freeThrowPct": 71.6 },
+      "context": "2025-26 Virginia freshman starter after two ACB seasons; former ACB Best Young Five forward"
+    },
+    {
+      "id": "D076", "name": "Eric Reibe", "position": "C", "height": "7-0", "weightLbs": 250,
+      "sources": ["https://uconnhuskies.com/sports/mens-basketball/roster/eric-reibe/14935", "https://uconnhuskies.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 40, "starts": 5, "minutes": 13.8, "points": 5.9, "rebounds": 3.3, "assistsTotal": 19, "stealsTotal": 10, "blocksTotal": 29, "fieldGoalPct": 65.8, "threePointPct": 30.8, "freeThrowPct": 52.1 },
+      "u19Stats": { "points": 15.4, "rebounds": 5.0, "assists": 1.6, "fieldGoalPct": 58.7 },
+      "context": "2025-26 UConn freshman reserve center and 2025 McDonald's All-American"
+    },
+    {
+      "id": "D077", "name": "Nikolas Khamenia", "position": "G-F", "height": "6-8", "weightLbs": 215,
+      "sources": ["https://goduke.com/sports/mens-basketball/roster/khamenia-nikolas/23113", "https://goduke.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 38, "starts": 5, "minutes": 19.8, "points": 5.7, "rebounds": 3.3, "assistsTotal": 39, "stealsTotal": 23, "blocksTotal": 3, "fieldGoalPct": 44.4, "threePointPct": 34.0, "freeThrowPct": 67.3 },
+      "context": "2025-26 Duke freshman rotation wing and former five-star USA U18 player"
+    },
+    {
+      "id": "D078", "name": "Mario Saint-Supery", "position": "G", "height": "6-4", "weightLbs": 199,
+      "sources": ["https://gozags.com/sports/mens-basketball/roster/mario-saintsupry/6217", "https://gozags.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 35, "starts": 17, "minutes": 23.0, "points": 8.6, "rebounds": 2.8, "assistsTotal": 133, "stealsTotal": 46, "blocksTotal": 4, "fieldGoalPct": 41.0, "threePointPct": 40.3, "freeThrowPct": 87.8 },
+      "context": "2025-26 Gonzaga freshman WCC All-Freshman guard with ACB and Spain senior national-team experience"
+    },
+    {
+      "id": "D079", "name": "Jalen Haralson", "position": "G", "height": "6-7", "weightLbs": 220,
+      "sources": ["https://fightingirish.com/sports/mbball/roster/season/2025-26/player/jalen-haralson/"],
+      "stats": { "games": 27, "starts": 23, "minutes": 26.6, "points": 16.2, "rebounds": 4.0, "assists": 2.6, "fieldGoalPct": 51.5, "twoPointPct": 54.3, "threePointPct": 20.0, "freeThrowPct": 67.4 },
+      "context": "2025-26 Notre Dame freshman All-ACC honorable mention power guard"
+    },
+    {
+      "id": "D080", "name": "Tay Kinney", "officialName": "Taylen Kinney", "position": "G", "height": "6-3", "weightLbs": 190,
+      "sources": ["https://kuathletics.com/news/2026/2/2/mens-basketball-taylen-kinney-named-mcdonalds-all-american", "https://kuathletics.com/sports/mens-basketball/roster/taylen-kinney/17962"],
+      "stats": { "points": 18.8, "rebounds": 4.8, "assists": 6.1, "twentyPointGames": 8 },
+      "context": "2025-26 Overtime Elite scoring point guard; 2026 McDonald's All-American and Kansas signee"
+    },
+    {
+      "id": "D081", "name": "Kanon Catchings", "position": "F", "height": "6-9", "weightLbs": 220,
+      "sources": ["https://georgiadogs.com/sports/mens-basketball/stats/2025-26", "https://georgiadogs.com/sports/mens-basketball/roster/2025-26"],
+      "stats": { "games": 32, "starts": 32, "minutes": 23.2, "points": 11.6, "rebounds": 4.8, "assistsTotal": 37, "stealsTotal": 25, "blocksTotal": 12, "fieldGoalPct": 42.3, "threePointPct": 37.6, "freeThrowPct": 65.1 },
+      "context": "2025-26 Georgia sophomore starting stretch wing after BYU freshman season"
+    },
+    {
+      "id": "D082", "name": "Silas Demary Jr.", "position": "G", "height": "6-5", "weightLbs": 200,
+      "sources": ["https://uconnhuskies.com/sports/mens-basketball/roster/silas-demary%20jr./15794", "https://uconnhuskies.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 39, "starts": 38, "minutes": 28.4, "points": 10.1, "rebounds": 4.5, "assists": 5.9, "assistsTotal": 229, "turnoversTotal": 87, "stealsTotal": 62, "blocksTotal": 10, "fieldGoalPct": 44.6, "threePointPct": 38.5, "freeThrowPct": 80.1 },
+      "context": "2025-26 UConn junior; first-team All-Big East and Big East All-Defensive lead guard"
+    },
+    {
+      "id": "D083", "name": "Ognjen Srzentic", "position": "F", "height": "6-7", "weightLbs": 205,
+      "sources": ["https://www.fiba.basketball/en/events/fiba-u18-eurobasket-2025/teams/serbia/319348-ognjen-srzentic", "https://www.basketball-reference.com/international/players/ognjen-srzentic-1.html"],
+      "u18Stats": { "games": 7, "minutes": 25.4, "points": 11.1, "rebounds": 4.7, "assists": 2.1, "steals": 0.9, "fieldGoalPct": 37.1, "threePointPct": 28.1, "freeThrowPct": 70.8 },
+      "proStats": { "games": 12, "minutes": 11.7, "points": 1.4, "rebounds": 1.8, "assists": 0.8, "fieldGoalPct": 27.3, "threePointPct": 13.3 },
+      "context": "2025-26 Mega ABA young rotation wing; Serbia U18 multi-skill forward"
+    },
+    {
+      "id": "D084", "name": "PJ Haggerty", "position": "G", "height": "6-3", "weightLbs": 195,
+      "sources": ["https://www.kstatesports.com/sports/mens-basketball/roster/pj-haggerty/13134", "https://www.kstatesports.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 31, "starts": 31, "minutes": 35.4, "points": 23.4, "rebounds": 5.3, "assists": 3.8, "stealsTotal": 37, "fieldGoalPct": 48.9, "threePointPct": 35.1, "freeThrowPct": 70.1 },
+      "context": "2025-26 Kansas State senior; fourth-leading scorer nationally after prior AAC Player of the Year season"
+    },
+    {
+      "id": "D085", "name": "Amaël L'Etang", "position": "F", "height": "7-1", "weightLbs": 235,
+      "sources": ["https://daytonflyers.com/sports/mens-basketball/roster/ama-euml-l-l-etang/15444", "https://daytonflyers.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 33, "starts": 31, "minutes": 25.4, "points": 11.9, "rebounds": 5.9, "assists": 1.6, "steals": 0.5, "blocks": 1.2, "fieldGoalPct": 49.0, "threePointPct": 36.1, "freeThrowPct": 76.5 },
+      "context": "2025-26 Dayton sophomore 7-foot-1 skilled frontcourt starter"
+    },
+    {
+      "id": "D086", "name": "Braden Huff", "position": "F-C", "height": "6-10", "weightLbs": 250,
+      "sources": ["https://gozags.com/sports/mens-basketball/roster/braden-huff/5748", "https://gozags.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 18, "starts": 18, "minutes": 25.4, "points": 17.8, "rebounds": 5.6, "assistsTotal": 27, "stealsTotal": 8, "blocksTotal": 9, "fieldGoalPct": 66.2, "threePointPct": 33.3, "freeThrowPct": 57.5 },
+      "context": "2025-26 Gonzaga redshirt junior highly efficient scoring big in injury-shortened season"
+    },
+    {
+      "id": "D087", "name": "Nolan Winter", "position": "F-C", "height": "7-0", "weightLbs": 235,
+      "sources": ["https://uwbadgers.com/sports/mens-basketball/roster/nolan-winter/15629", "https://uwbadgers.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 31, "starts": 30, "minutes": 30.6, "points": 13.1, "rebounds": 8.5, "assistsTotal": 48, "stealsTotal": 15, "blocksTotal": 38, "fieldGoalPct": 56.9, "threePointPct": 32.6, "freeThrowPct": 74.2 },
+      "context": "2025-26 Wisconsin junior starting two-way big and primary rebounder"
+    },
+    {
+      "id": "D088", "name": "Somto Cyril", "position": "C", "height": "6-11", "weightLbs": 260,
+      "sources": ["https://georgiadogs.com/sports/mens-basketball/roster/cyril-somtochukwu-somto/9832", "https://georgiadogs.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 33, "starts": 32, "minutes": 21.1, "points": 9.3, "rebounds": 5.4, "assistsTotal": 19, "stealsTotal": 21, "blocksTotal": 74, "fieldGoalPct": 75.9, "freeThrowPct": 57.8 },
+      "context": "2025-26 Georgia sophomore SEC All-Defensive center and Naismith defensive watch-list selection"
+    },
+    {
+      "id": "D089", "name": "Elliott Cadeau", "officialName": "Elliot Cadeau", "position": "G", "height": "6-1", "weightLbs": 180,
+      "sources": ["https://mgoblue.com/sports/mens-basketball/roster/cadeau-elliot/27041", "https://mgoblue.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 40, "starts": 40, "minutes": 27.1, "points": 10.5, "rebounds": 2.7, "assists": 5.9, "assistsTotal": 234, "turnoversTotal": 96, "stealsTotal": 34, "fieldGoalPct": 41.1, "threePointPct": 37.6, "freeThrowPct": 70.9 },
+      "context": "2025-26 Michigan junior NCAA champion and NCAA Tournament Most Outstanding Player"
+    },
+    {
+      "id": "D090", "name": "Kiyan Anthony", "position": "G", "height": "6-5", "weightLbs": 185,
+      "sources": ["https://cuse.com/sports/mens-basketball/roster/kiyan-anthony/25547"],
+      "stats": { "games": 29, "starts": 2, "points": 8.0, "rebounds": 1.4, "assists": 0.9, "fieldGoalPct": 39.9 },
+      "context": "2025-26 Syracuse freshman sixth man; former top-35 recruit evaluated independently from family reputation"
+    },
+    {
+      "id": "D091", "name": "Bassala Bagayoka", "officialName": "Bassala Bagayoko", "position": "C", "height": "2.07 m",
+      "sources": ["https://acb.com/es/liga/jugadores/bassala-bagayoko-20213102"],
+      "stats": { "games": 33, "minutes": 12.72, "points": 4.0, "rebounds": 3.5, "assists": 0.3, "steals": 0.4, "blocks": 0.4, "twoPointPct": 61.6, "threePointPct": 25.0, "freeThrowPct": 67.3, "pir": 5.6 },
+      "context": "2025-26 Bilbao 19-year-old ACB reserve center; candidate spelling corrected from Bagayoka to Bagayoko"
+    },
+    {
+      "id": "D092", "name": "Mouhamed Faye", "position": "C", "height": "2.09 m",
+      "sources": ["https://www.euroleaguebasketball.net/en/euroleague/players/mouhamed-faye/012403/"],
+      "stats": { "games": 24, "starts": 21, "minutes": 17.9, "points": 5.4, "rebounds": 5.5, "assists": 0.2, "steals": 0.4, "blocks": 1.0, "twoPointPct": 63.6, "threePointPct": 0.0, "freeThrowPct": 50.0, "pir": 7.9 },
+      "context": "2025-26 EuroLeague starting center sample at age 21 with strong rebounding and rim protection"
+    },
+    {
+      "id": "D093", "name": "Robert Wright III", "position": "G", "height": "6-1",
+      "sources": ["https://byucougars.com/sports/mens-basketball/roster/player/robert-wright-iii"],
+      "stats": { "games": 35, "starts": 35, "minutes": 34.8, "points": 18.1, "rebounds": 3.5, "assists": 4.6, "steals": 1.2, "fieldGoalPct": 46.7, "threePointPct": 41.0, "freeThrowPct": 82.1 },
+      "context": "2025-26 BYU sophomore All-Big 12 third-team lead guard with high-volume 50/40/80-level efficiency"
+    },
+    {
+      "id": "D094", "name": "Isiah Harwell", "position": "G", "height": "6-6", "weightLbs": 220,
+      "sources": ["https://uhcougars.com/sports/mens-basketball/roster/isiah-harwell/9546", "https://uhcougars.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 32, "starts": 0, "minutes": 13.9, "points": 3.6, "rebounds": 2.0, "assistsTotal": 17, "stealsTotal": 19, "blocksTotal": 8, "fieldGoalPct": 27.9, "threePointPct": 27.1, "freeThrowPct": 61.3 },
+      "context": "2025-26 Houston freshman defensive reserve; recruiting pedigree retained but current shooting production strongly discounted"
+    },
+    {
+      "id": "D095", "name": "Sadiq White", "officialName": "Sadiq White Jr.", "position": "F", "height": "6-9", "weightLbs": 195,
+      "sources": ["https://cuse.com/sports/mens-basketball/roster/sadiq-white%2520jr./25548", "https://cuse.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 31, "starts": 11, "minutes": 15.1, "points": 6.1, "rebounds": 3.3, "fieldGoalPct": 54.7, "threePointPct": 36.8, "freeThrowPct": 51.3 },
+      "context": "2025-26 Syracuse freshman athletic forward with efficient finishing in a limited role"
+    },
+    {
+      "id": "D096", "name": "London Jemison", "position": "F", "height": "6-8", "weightLbs": 205,
+      "sources": ["https://rolltide.com/sports/mens-basketball/roster/london-jemison/15282", "https://rolltide.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 34, "starts": 14, "points": 6.2, "rebounds": 3.4, "assists": 0.4, "fieldGoalPctSnapshot": 45.0, "threePointPctSnapshot": 36.1 },
+      "context": "2025-26 Alabama freshman two-way forward; final bio totals combined with official cumulative shooting snapshot"
+    },
+    {
+      "id": "D097", "name": "Dwayne Aristode", "position": "F", "height": "6-8", "weightLbs": 215,
+      "sources": ["https://arizonawildcats.com/sports/mens-basketball/stats/2025/", "https://arizonawildcats.com/sports/softball/roster/dwayne-aristode/18559"],
+      "stats": { "games": 35, "starts": 0, "minutes": 13.3, "points": 3.8, "rebounds": 1.7, "assistsTotal": 26, "stealsTotal": 16, "blocksTotal": 3, "fieldGoalPct": 49.0, "threePointPct": 46.2, "freeThrowPct": 50.0 },
+      "context": "2025-26 Arizona freshman reserve wing; excellent three-point percentage comes from only 65 attempts and is regressed"
+    },
+    {
+      "id": "D098", "name": "Tahaad Pettiford", "position": "G", "height": "6-1", "weightLbs": 170,
+      "sources": ["https://auburntigers.com/sports/mens-basketball/roster/player/tahaad-pettiford"],
+      "stats": { "games": 38, "starts": 36, "points": 15.4, "rebounds": 3.0, "assists": 3.8, "pointsTotal": 585, "assistsTotal": 145 },
+      "context": "2025-26 Auburn sophomore lead guard, NIT All-Tournament selection and primary creator"
+    },
+    {
+      "id": "D099", "name": "Joseph Tugler", "position": "F", "height": "6-8", "weightLbs": 230,
+      "sources": ["https://uhcougars.com/sports/mens-basketball/roster/joseph-tugler/10141", "https://uhcougars.com/sports/mens-basketball/stats/2025-26"],
+      "stats": { "games": 37, "starts": 36, "minutes": 23.5, "points": 8.4, "rebounds": 5.3, "steals": 1.3, "blocks": 1.5, "fieldGoalPct": 57.6 },
+      "context": "2025-26 Houston junior All-Big 12 honorable mention and high-impact switchable interior defender"
+    },
+    {
+      "id": "D100", "name": "Jackson McAndrew", "position": "F", "height": "6-10", "weightLbs": 225,
+      "sources": ["https://gocreighton.com/sports/mens-basketball/roster/jackson-mcandrew/8374", "https://gocreighton.com/sports/mens-basketball/stats/2025-26", "https://gocreighton.com/news/2025/11/21/mens-basketball-mcandrew-to-miss-rest-of-season-with-foot-injury"],
+      "stats": { "freshmanGames": 36, "freshmanStarts": 31, "freshmanPoints": 7.8, "freshmanRebounds": 4.4, "freshmanThreePointPct": 35.4, "sophomoreGames": 4, "sophomoreStarts": 4, "sophomorePoints": 6.8, "sophomoreRebounds": 4.5 },
+      "context": "2025-26 Creighton sophomore played four games before season-ending foot injury; rating anchored to full freshman sample"
+    }
+  ]
+}

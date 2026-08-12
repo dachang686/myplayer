@@ -1,0 +1,771 @@
+{
+  "version": 1,
+  "reviews": [
+    {
+      "id": "D001",
+      "name": "Jordan Smith Jr.",
+      "status": "confirmed",
+      "sources": [
+        "https://arkansasrazorbacks.com/roster/jordan-smith-jr/",
+        "https://reports.fiba.basketball/reports/2025/FIBA%20U19%20Basketball%20World%20Cup/2025-07-06/56A_USA_GER/start-list_56A_USA_GER_20250706.pdf"
+      ],
+      "basis": "高中赛季26.6分、6.3篮板、5.6助攻、3.2抢断，56.0/36.9/72.4命中率；6尺2、205磅双向持球后卫，终结、持球和外防突出，三分稳定但非精英，体型限制内线防守。终结90、控球88、外防88、三分84",
+      "previous": { "ovr": 85, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 83, "position": "SG", "height": "6'2\"", "profile": "two_way_slasher" }
+    },
+    {
+      "id": "D002",
+      "name": "Tyran Stokes",
+      "status": "confirmed",
+      "sources": ["https://kuathletics.com/sports/mens-basketball/roster/tyran-stokes/17968"],
+      "basis": "高中赛季31.0分、13.0篮板、6.0助攻、4.0抢断，并在USA U19取得三双；6尺8、230磅全能持球前锋，终结、篮板、组织、换防和对抗均突出。高中产量需向职业尺度回归，三分控制在76，不把每项都直接拉成精英值",
+      "previous": { "ovr": 85, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 84, "position": "SF", "height": "6'8\"", "profile": "point_forward" }
+    },
+    {
+      "id": "D003",
+      "name": "Stefan Joksimovic",
+      "status": "confirmed",
+      "sources": [
+        "https://www.fiba.basketball/en/players/349181-stefan-joksimovic",
+        "https://kzs.si/reprezentant/2615"
+      ],
+      "basis": "2026 FIBA U18欧锦赛7场场均23.1分、6.7篮板、3.7助攻、效率23.4；成人世预赛6场10.2分、3.3篮板、1.5助攻。6尺7成熟得分组织侧翼，中投、持球、外投和关键球突出，对抗与内线防守仍需发展",
+      "previous": { "ovr": 85, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 81, "position": "SF", "height": "6'7\"", "profile": "point_forward" }
+    },
+    {
+      "id": "D004",
+      "name": "Bruce Branch",
+      "status": "confirmed",
+      "sources": ["https://www.usab.com/players/bruce-branch-iii", "https://www.nba.com/news/bruce-branch-iii-reclassifies-to-2026-high-school-class"],
+      "basis": "USA U18五场8.6分、8.6篮板、1.8助攻、1.0盖帽，高中赛季18分、10篮板、4助攻、2盖帽；6尺7双向锋卫，篮板、换防、运动与终结工具突出，但国际赛得分与组织产量不足以支持高阶进攻。外防88、运动90、篮板86，三分76",
+      "previous": { "ovr": 80, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 82, "position": "SF", "height": "6'7\"", "profile": "two_way_wing" }
+    },
+    {
+      "id": "D005",
+      "name": "Caleb Holt",
+      "status": "confirmed",
+      "sources": ["https://www.usab.com/players/caleb-holt", "https://arizonawildcats.com/news/2026/4/23/mens-basketball-mcdonalds-all-american-caleb-holt-signs-with-arizona.aspx"],
+      "basis": "6尺5强壮锋卫，高中基准18分、8篮板；USA U19场均10分、3.4篮板、2.7抢断，Hoop Summit得到24分并投中4记三分。运动、对抗终结和外防最突出，投射具潜力但仍以高中样本为主。运动90、扣篮88、外防86、三分80",
+      "previous": { "ovr": 80, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 80, "position": "SG", "height": "6'5\"", "profile": "two_way_slasher" }
+    },
+    {
+      "id": "D006",
+      "name": "Braylon Mullins",
+      "status": "confirmed",
+      "sources": ["https://uconnhuskies.com/sports/mens-basketball/roster/mullins-braylon/15795", "https://uconnhuskies.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "UConn大一33场12.0分、3.5篮板、1.4助攻，42.1/33.5/88.9命中率；6尺6射手型后卫，罚球与高中47%三分履历支持长期投射，但大学三分效率和组织产量尚未达到乐透即战水平。三分82、关键84，传球68、力量62，总评由模板80下修为74",
+      "previous": { "ovr": 80, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 74, "position": "SG", "height": "6'6\"", "profile": "perimeter_scorer" }
+    },
+    {
+      "id": "D007",
+      "name": "Thomas Haugh",
+      "status": "confirmed",
+      "sources": ["https://floridagators.com/sports/mens-basketball/roster/thomas-haugh/17744"],
+      "basis": "Florida大三全美最佳阵容赛季17.1分、6.1篮板、73次助攻、58记三分、36抢断、33盖帽；6尺9技术型前锋，可持球、传球、投射并换防多个位置。中投84、终结86、外防84、关键86，成熟即战能力实算81；年龄只影响成长空间",
+      "previous": { "ovr": 80, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 81, "position": "PF", "height": "6'9\"", "profile": "stretch_four" }
+    },
+    {
+      "id": "D008",
+      "name": "Luigi Suigo",
+      "status": "confirmed",
+      "sources": ["https://www.fiba.basketball/en/players/318401-luigi-suigo", "https://www.fiba.basketball/en/events/fiba-basketball-world-cup-2027-european-qualifiers/teams/italy/318401-luigi-suigo"],
+      "basis": "7尺1意大利中锋，成人世预赛4场2.3分、1.8篮板、0.3助攻；U17/U18合计均值7.0分、7.1篮板、1.3助攻。身高和篮板工具可用，但当前得分、组织和成人赛成熟度有限。扣篮82、盖帽80、篮板80，控球58、传球58，总评74",
+      "previous": { "ovr": 80, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 74, "position": "C", "height": "7'1\"", "profile": "rim_protector" }
+    },
+    {
+      "id": "D009",
+      "name": "Hugo Yimga Moukouri",
+      "status": "confirmed",
+      "sources": ["https://www.fiba.basketball/en/players/344991-hugo-yimga", "https://www.fiba.basketball/en/news/who-are-the-top-players-to-watch-at-2026-fiba-u18-eurobasket"],
+      "basis": "2026 FIBA U18七场17.3分、5.6篮板、1.1助攻；6尺8法国顶级联赛年轻锋线，FIBA评价突出运动、力量、篮板、内线终结和外线换防，并已发展接球三分。运动88、终结86、外防84、力量82；组织产量低，传球70",
+      "previous": { "ovr": 79, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 81, "position": "SF", "height": "6'8\"", "profile": "two_way_wing" }
+    },
+    {
+      "id": "D010",
+      "name": "Cameron Williams",
+      "status": "confirmed",
+      "sources": ["https://www.usab.com/players/cameron-williams", "https://goduke.com/documents/download/2026/3/14/ACCT_Final__03-14-26__Virginia.pdf"],
+      "basis": "USA Basketball确认其为6尺11中锋和Duke五星签约球员；Hoop Summit仅出场7分钟得到3分、1助攻、1抢断、3盖帽。小样本明确支持长度与护框潜力，但不足以证明成熟进攻。盖帽88、内防82、运动82，终结76、传球62，综合实算76",
+      "previous": { "ovr": 79, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 76, "position": "C", "height": "6'11\"", "profile": "rim_protector" }
+    },
+    {
+      "id": "D011",
+      "name": "Alijah Arenas",
+      "status": "confirmed",
+      "sources": ["https://usctrojans.com/sports/mens-basketball/roster/alijah-arenas/18584", "https://usctrojans.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "USC大一因伤缺席前18场，复出后14场、13次首发，场均14.1分、2.9篮板、2.1助攻；但投篮34.1%、三分21.3%，大学样本尚不支持精英射手评级。保留6尺6锋卫的终结、运动与持球潜力，三分70、中投80、终结82、运动86，实算总评75",
+      "previous": { "ovr": 79, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 75, "position": "SG", "height": "6'6\"", "profile": "two_way_slasher" }
+    },
+    {
+      "id": "D012",
+      "name": "Motiejus Krivas",
+      "status": "confirmed",
+      "sources": ["https://arizonawildcats.com/sports/mens-basketball/roster/motiejus-krivas/15406", "https://arizonawildcats.com/sports/mens-basketball/stats?path=mten"],
+      "basis": "Arizona大三39场全部首发，场均10.4分、8.2篮板，56.9%投篮，并送出73盖帽；官方资料显示其在场时对手命中率36.7%。7尺2、260磅成熟护框中锋，内防88、盖帽90、篮板88、力量86；低产量三分样本不作为空间能力证明，三分58，实算总评81",
+      "previous": { "ovr": 79, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 81, "position": "C", "height": "7'2\"", "profile": "rim_protector" }
+    },
+    {
+      "id": "D013",
+      "name": "Sayon Keita",
+      "status": "confirmed",
+      "sources": ["https://www.euroleaguebasketball.net/en/euroleague/players/sayon-keita/012885/", "https://www.acb.com/es/liga/jugadores/sayon-keita-30003348?editionId=90"],
+      "basis": "Barcelona欧冠一队5场、3次首发，场均9.9分钟得到3.0分、1.8篮板，二分命中率63.6%；7尺身高和职业比赛经历支持顺下终结与护框潜力，但出场、篮板、盖帽及罚球样本均不足以给成熟中锋高分。扣篮84、内防78、盖帽78，三分50、控球56，实算总评73",
+      "previous": { "ovr": 79, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 73, "position": "C", "height": "7'0\"", "profile": "rim_protector" }
+    },
+    {
+      "id": "D014",
+      "name": "Cameron Houindo",
+      "status": "confirmed",
+      "sources": ["https://www.fiba.basketball/en/players/344994-cameron-houindo", "https://www.fiba.basketball/en/events/fiba-u18-eurobasket-2025/teams/france/344994-cameron-houindo"],
+      "basis": "6尺8法国四号位，2024 U16欧锦赛场均13.9分、7.9篮板并获MVP；越级参加2025 U18后为7.6分、5.0篮板、1.4盖帽，但三分25.0%、罚球51.9%。因此突出护框、篮板、力量和运动，不把投射潜力当成已兑现能力：盖帽86、内防84、篮板84，三分62，实算总评78",
+      "previous": { "ovr": 78, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 78, "position": "PF", "height": "6'8\"", "profile": "interior_forward" }
+    },
+    {
+      "id": "D015",
+      "name": "Abdou Toure",
+      "status": "confirmed",
+      "sources": ["https://arkansasrazorbacks.com/roster/abdou-toure/"],
+      "basis": "高中大四场均24.6分、7篮板、3助攻、2抢断，投篮超过70%、三分超过40%；Guinea U17七场23.0分并有单场50分。6尺5强壮锋卫的效率、爆发终结和双向产量均有多赛制支撑；三分84、终结88、扣篮90、外防84、运动90，仍按高中对抗尺度回归，实算总评82",
+      "previous": { "ovr": 78, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 82, "position": "SG", "height": "6'5\"", "profile": "two_way_slasher" }
+    },
+    {
+      "id": "D016",
+      "name": "Christian Collins",
+      "status": "confirmed",
+      "sources": ["https://usctrojans.com/news/2026/4/19/christian-collins-signs-with-usc-mens-basketball", "https://www.usab.com/players/christian-collins"],
+      "basis": "高中大四场均26.1分、9.6篮板、3.5助攻，投篮56%；EYBL场均12.0分、9.7篮板，Hoop Summit 18分钟拿到4分、7篮板、2助攻。6尺9无固定位置前锋，官方强调精英运动和多位置防守；运动94、扣篮92、篮板88、外防84，投射缺少命中率证据仅给三分72，实算总评82",
+      "previous": { "ovr": 78, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 82, "position": "SF", "height": "6'9\"", "profile": "two_way_wing" }
+    },
+    {
+      "id": "D017",
+      "name": "Dylan Mingo",
+      "status": "confirmed",
+      "sources": ["https://baylorbears.com/sports/mens-basketball/roster/dylan-mingo/15670"],
+      "basis": "EYBL 12场场均19.3分、7.8篮板、2.6助攻、2.3抢断，NBPA Top 100 Camp场均23.8分、6.5篮板、6.8助攻；高中大四大部分时间因伤缺阵。6尺4控卫兼具持球、终结、篮板和外防，控球88、传球84、终结86、外防84；投射缺少官方命中率支撑，三分76，实算总评81",
+      "previous": { "ovr": 78, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 81, "position": "PG", "height": "6'4\"", "profile": "playmaker" }
+    },
+    {
+      "id": "D018",
+      "name": "Papa Cheickh Niang",
+      "status": "confirmed",
+      "sources": ["https://www.fiba.basketball/en/players/279164-papa-cheickh-niang", "https://www.fiba.basketball/en/news/who-are-the-top-players-to-watch-at-2026-fiba-u18-eurobasket"],
+      "basis": "Italy U18七场场均16.1分、3.3篮板、3.6助攻；17岁已在Trento意甲进入轮换。FIBA报告明确其速度、弹跳、转换终结、突破和外线防守是主要优势，因此运动94、扣篮92、外防88、终结86；现阶段投射未获稳定数据支撑，三分70，实算总评80",
+      "previous": { "ovr": 78, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 80, "position": "SG", "height": "6'5\"", "profile": "two_way_slasher" }
+    },
+    {
+      "id": "D019",
+      "name": "Amari Allen",
+      "status": "confirmed",
+      "sources": ["https://rolltide.com/sports/mens-basketball/roster/amari-allen/15275"],
+      "basis": "Alabama大一32场、24次首发，场均11.4分、6.9篮板、3.1助攻，入选SEC最佳新秀阵容。6尺8前锋的篮板和传球已在SEC兑现，适合组织前锋模板；传球82、篮板80、终结82。官方资料未提供大学投射与防守效率，三分78、外防78保持中性，实算总评77",
+      "previous": { "ovr": 77, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 77, "position": "SF", "height": "6'8\"", "profile": "point_forward" }
+    },
+    {
+      "id": "D020",
+      "name": "Malachi Moreno",
+      "status": "confirmed",
+      "sources": ["https://ukathletics.com/sports/mbball/roster/player/malachi-moreno/"],
+      "basis": "Kentucky大一36场、30次首发，场均7.8分、6.3篮板、1.47盖帽，58.2%投篮并入选SEC最佳新秀阵容；7尺、245磅中锋已证明高效终结和护框，但进攻产量与外线样本有限。终结80、内防82、盖帽84、篮板82，关键84来自绝杀履历，实算总评77",
+      "previous": { "ovr": 77, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 77, "position": "C", "height": "7'0\"", "profile": "rim_protector" }
+    },
+    {
+      "id": "D021",
+      "name": "Rueben Chinyelu",
+      "status": "confirmed",
+      "sources": ["https://floridagators.com/sports/mens-basketball/roster/rueben-chinyelu/17741", "https://floridagators.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "Florida大三场均10.9分、11.2篮板，58.4%投篮；包揽Naismith与NABC全国最佳防守球员，并获SEC最佳防守球员。篮板联盟第一、单季137前场板刷新校史纪录。篮板96、内防94、力量94、盖帽90体现已兑现的统治力；无外线进球且组织产量低，三分48、传球56，实算总评83",
+      "previous": { "ovr": 77, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 83, "position": "C", "height": "6'10\"", "profile": "rim_protector" }
+    },
+    {
+      "id": "D022",
+      "name": "Pavle Backo",
+      "status": "confirmed",
+      "sources": ["https://www.fiba.basketball/en/players/341044-pavle-backo"],
+      "basis": "Serbia U18欧锦赛6场场均16.7分、5.8篮板，效率17.2；6尺11中锋得分效率突出，但仅0.5助攻且篮板不属于同届统治级。终结88、中投76、内防80、篮板80；缺乏稳定外线和成年联赛样本，三分68、传球58，实算总评78",
+      "previous": { "ovr": 77, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 78, "position": "C", "height": "6'11\"", "profile": "skilled_big" }
+    },
+    {
+      "id": "D023",
+      "name": "Anthony Thompson",
+      "status": "confirmed",
+      "sources": ["https://ohiostatebuckeyes.com/sports/mens-basketball/roster/anthony-thompson/13478"],
+      "basis": "高中大四场均24.9分、7.9篮板、2.3助攻，47%投篮、35%三分；3SSB场均22.1分、5.7篮板、1.9盖帽、1.6抢断。6尺9左手锋线、7尺3臂展，多维得分与防守产量都有正式样本；中投86、终结88、外防82、内防82、盖帽82，三分80按35%回归，实算总评83",
+      "previous": { "ovr": 77, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 83, "position": "SF", "height": "6'9\"", "profile": "two_way_wing" }
+    },
+    {
+      "id": "D024",
+      "name": "Tounde Yessoufou",
+      "status": "confirmed",
+      "sources": ["https://baylorbears.com/sports/mens-basketball/roster/tounde-yessoufou/14463", "https://baylorbears.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "Baylor大一34场全部首发，场均17.8分、5.9篮板、2.0抢断，46.5%投篮并入选Big 12荣誉阵容；但三分181投仅29.3%，组织仅1.6助攻。力量型双向突破手：扣篮92、运动92、力量88、外防88、终结88；三分按大学大样本下修为74、传球70，实算总评82",
+      "previous": { "ovr": 77, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 82, "position": "SG", "height": "6'5\"", "profile": "two_way_slasher" }
+    },
+    {
+      "id": "D025",
+      "name": "Dame Sarr",
+      "status": "confirmed",
+      "sources": ["https://goduke.com/sports/mens-basketball/roster/dame-sarr/23111"],
+      "basis": "6尺8锋卫在16岁即进入Barcelona一队，2024-25西甲场均12.6分钟得到5.8分，投篮52.1%、三分42.9%，并出战15场EuroLeague；Duke赛季记录也显示多场三分和外防贡献。三分86、外防86、运动88，体重仅190磅使力量68、内防68，传球产量有限给72，实算总评79",
+      "previous": { "ovr": 77, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 79, "position": "SF", "height": "6'8\"", "profile": "two_way_wing" }
+    },
+    {
+      "id": "D026",
+      "name": "Moustapha Thiam",
+      "status": "confirmed",
+      "sources": ["https://ucfknights.com/sports/mens-basketball/roster/player/moustapha-thiam"],
+      "basis": "UCF大一34场全部首发，场均10.4分、6.4篮板、2.6盖帽，88次盖帽刷新校队新秀纪录并领跑Big 12；7尺2中锋已证明精英护框，盖帽94、内防86。49.8%投篮与29.1%三分说明进攻仍在成长，终结82、三分72；篮板82而非精英级，实算总评81",
+      "previous": { "ovr": 77, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 81, "position": "C", "height": "7'2\"", "profile": "rim_protector" }
+    },
+    {
+      "id": "D027",
+      "name": "Baba Oladotun",
+      "status": "confirmed",
+      "sources": ["https://umterps.com/sports/mens-basketball/roster/baba-oladotun/16089"],
+      "basis": "6尺10、195磅长臂前锋，高二赛季场均22.5分、7.3篮板、3.0助攻、2.8抢断；2025-26因伤缺席大部分比赛，复出后带队夺州冠军。尺寸与后卫技术支撑组织前锋模板，但身体和高级别样本仍不足：中投84、终结86、控球82、外防82，力量64，实算总评80",
+      "previous": { "ovr": 77, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 80, "position": "SF", "height": "6'10\"", "profile": "point_forward" }
+    },
+    {
+      "id": "D028",
+      "name": "Mor Massamba Diop",
+      "status": "confirmed",
+      "sources": ["https://thesundevils.com/sports/mens-basketball/roster/player/massamba-diop", "https://thesundevils.com/sun-devil-mens-basketball-individual-season-records"],
+      "basis": "Arizona State大一33场全部首发，场均13.6分、5.8篮板，56.9%投篮，69盖帽刷新校队新秀纪录；8投中26记三分显示有限但真实的空间迹象。7尺1技术型中锋，终结88、盖帽92、内防86、中投80；篮板仅5.8不拔高，给80，三分76按小样本处理，实算总评82",
+      "previous": { "ovr": 77, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 82, "position": "C", "height": "7'1\"", "profile": "skilled_big" }
+    },
+    {
+      "id": "D029",
+      "name": "Trey McKenney",
+      "status": "confirmed",
+      "sources": ["https://mgoblue.com/sports/mens-basketball/roster/trey-mckenney/27037"],
+      "basis": "Michigan冠军队大一40场全部替补，场均22.1分钟得到9.9分、2.8篮板，投中全队最多68记三分，罚球89.5%，入选Big Ten最佳新秀阵容；助攻仅35次。6尺4、225磅强壮得分后卫，三分84、中投82、力量84、关键84，传球68，大学角色和产量决定总评不拔高，实算77",
+      "previous": { "ovr": 77, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 77, "position": "SG", "height": "6'4\"", "profile": "perimeter_scorer" }
+    },
+    {
+      "id": "D030",
+      "name": "Shelton Henderson",
+      "status": "confirmed",
+      "sources": ["https://miamihurricanes.com/sports/mbball/roster/season/2026-27/player/shelton-henderson/"],
+      "basis": "Miami大一35场全部首发，场均13.7分、4.9篮板、2.1助攻，56.7%投篮在全美大一球员中排名第三。6尺6、240磅强壮锋线的篮下效率已在ACC兑现，终结90、力量92、扣篮88；官方未给三分与防守分项，三分保守为74，外防82，实算总评81",
+      "previous": { "ovr": 77, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 81, "position": "SF", "height": "6'6\"", "profile": "two_way_wing" }
+    },
+    {
+      "id": "D031", "name": "Klark Riethauser", "status": "confirmed",
+      "sources": ["https://www.fiba.basketball/en/players/341843-klark-riethauser", "https://www.fiba.basketball/en/events/fiba-u18-eurobasket-2025-division-b/stats"],
+      "basis": "瑞士U18 B级赛7场场均21.7分、7.4篮板、2.7助攻，50.5%投篮、34.1%三分；但越两岁参加U19世界杯仅3.5分、3.3篮板。6尺8全能锋线在同龄低级别赛事产量突出，高级别适应仍有限；终结84、中投82、篮板80，三分80，实算总评77",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 77, "position": "SF", "height": "6'8\"", "profile": "point_forward" }
+    },
+    {
+      "id": "D032", "name": "Paul Mbiya", "status": "confirmed",
+      "sources": ["https://kuathletics.com/sports/mens-basketball/roster/paul-mbiya/17955"],
+      "basis": "7尺、255磅并有7尺8臂展，ASVEL体系曾场均15.3分、11.7篮板、3盖帽；但Kansas大一仅出战21场，赛季最高8分、6篮板，说明即战成熟度明显低于海外青年数据。保留护框工具：盖帽88、内防82、篮板82；终结76、控传54，实算总评76",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 76, "position": "C", "height": "7'0\"", "profile": "rim_protector" }
+    },
+    {
+      "id": "D033", "name": "Quentin Coleman", "status": "confirmed",
+      "sources": ["https://fightingillini.com/news/2026/4/19/mens-basketball-coleman-signs-with-fighting-illini"],
+      "basis": "高中大四场均23.1分、6.1篮板、3.9助攻、2.7抢断，64%投篮、50%三分；州决赛21投18中轰下50分并带队两连冠。三层得分、抢断和关键战表现都突出：三分88、中投88、终结88、外防86、关键92；高中效率需回归，未直接给90+射术，实算总评82",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 82, "position": "SG", "height": "6'4\"", "profile": "two_way_slasher" }
+    },
+    {
+      "id": "D034", "name": "Milan Momcilovic", "status": "confirmed",
+      "sources": ["https://cyclones.com/sports/mens-basketball/roster/milan-momcilovic/13862", "https://cyclones.com/sports/mbball/stats/2025-26"],
+      "basis": "Iowa State大三37场全部首发，场均16.9分；投中全美最多136记三分且48.7%三分同样领跑NCAA，成为历史首位同时领跑两项的球员。三分96、中投90、关键90体现已兑现的顶级投射；仅3.1篮板、1.0助攻，运动和防守产量有限，因此总评实算仅75，避免单项专长虚高整体战力",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 75, "position": "SF", "height": "6'8\"", "profile": "two_way_wing" }
+    },
+    {
+      "id": "D035", "name": "Brandon McCoy Jr.", "status": "confirmed",
+      "sources": ["https://mgoblue.com/news/2026/4/28/mens-basketball-wolverines-add-mccoy-cosby-to-class-of-2026-signees"],
+      "basis": "高中大四场均19.2分、7.4篮板、3.5助攻、2.2抢断，带队30胜1负并夺公开组冠军；同时拥有三枚USA青年国家队金牌。6尺5三层得分后卫兼具组织、运动和多位置防守：终结88、扣篮90、控球86、外防88、运动92，三分82未因定性描述过度拔高，实算总评83",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 83, "position": "SG", "height": "6'5\"", "profile": "two_way_slasher" }
+    },
+    {
+      "id": "D036", "name": "Arafan Diane", "status": "confirmed",
+      "sources": ["https://www.fiba.basketball/en/players/343290-arafan-diane", "https://uhcougars.com/sports/mens-basketball/roster/arafan-dian/10147"],
+      "basis": "Guinea U17世界杯场均19.1分、赛会第一的11.7篮板，54.8%投篮；7尺、280磅中锋在强队对抗中仍有稳定两双产量。篮板90、力量94、终结88、扣篮90；7场仅10盖帽使盖帽86而非顶格，无外线样本三分48、组织有限传球58，实算总评81",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 81, "position": "C", "height": "7'0\"", "profile": "rim_protector" }
+    },
+    {
+      "id": "D037", "name": "David Mirkovic", "status": "confirmed",
+      "sources": ["https://fightingillini.com/sports/mens-basketball/roster/david-mirkovic/15979"],
+      "basis": "Illinois大一36场、35次首发，场均13.5分、8.1篮板、2.6助攻，入选Big Ten荣誉阵容及最佳新秀阵容，并在NCAA淘汰赛交出29分17篮板。6尺9、250磅成熟全能四号位，终结88、篮板88、力量90、传球80、关键86；三分有多场实绩但缺完整赛季百分比，给80，实算总评83",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 83, "position": "PF", "height": "6'9\"", "profile": "stretch_four" }
+    },
+    {
+      "id": "D038", "name": "Matas Vokietaitis", "status": "confirmed",
+      "sources": ["https://texaslonghorns.com/sports/mens-basketball/roster/MATAS-VOKIETAITIS/17088", "https://fausports.com/sports/mens-basketball/roster/vokietaitis-matas/17737"],
+      "basis": "FAU大一场均仅17.7分钟便得到10.2分、5.5篮板，投篮67.7%，获AAC最佳新秀；Lithuania U20场均11.3分、8.4篮板。7尺高效终结型中锋，终结90、力量88、篮板84；没有三分产量且助攻极少，三分48、传球56，盖帽产量中等给80，实算总评77",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 77, "position": "C", "height": "7'0\"", "profile": "skilled_big" }
+    },
+    {
+      "id": "D039", "name": "Neoklis Avdalas", "status": "confirmed",
+      "sources": ["https://hokiesports.com/sports/mens-basketball/roster/player/neoklis-avdalas"],
+      "basis": "Virginia Tech大一31场全部首发，场均12.1分、3.1篮板、4.6助攻，助攻失误比2.1；此前已在希腊顶级职业联赛26场交出43.6%投篮和35.7%三分。6尺9组织侧翼的持球与视野最突出，传球88、控球86、中投84；得分效率尚未支持精英射术，三分80，防守产量也不拔高，实算总评78",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 78, "position": "SF", "height": "6'9\"", "profile": "point_forward" }
+    },
+    {
+      "id": "D040", "name": "Ivan Kharchenkov", "status": "confirmed",
+      "sources": ["https://arizonawildcats.com/sports/mens-basketball/roster/ivan-kharchenkov/18798", "https://arizonawildcats.com/sports/mens-basketball/stats?path=mten"],
+      "basis": "Arizona大一39场全部首发，场均10.4分、4.3篮板、2.3助攻、1.4抢断，投篮49.2%、三分31.7%；6尺7、230磅且已有Bayern职业与EuroLeague经历。强壮双向锋线的终结、外防和协防成熟，外防86、力量84、终结84；三分效率限制外投为72，组织有作用但非主控，传球80，实算总评79",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 79, "position": "SF", "height": "6'7\"", "profile": "two_way_wing" }
+    },
+    {
+      "id": "D041", "name": "Alex Condon", "status": "confirmed",
+      "sources": ["https://floridagators.com/sports/mens-basketball/roster/alex-condon/17742", "https://floridagators.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "Florida大三34场全部首发，场均15.1分、7.5篮板，55.6%投篮，并有123助攻、48盖帽；成熟的6尺11内线兼具高效终结、策应、篮板和护框。终结90、传球84、内防88、力量88；本季三分仅9中53（17.0%）、罚球64.9%，三分下调至64，不以往季空间潜力覆盖最新表现，实算总评83",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 83, "position": "PF", "height": "6'11\"", "profile": "interior_forward" }
+    },
+    {
+      "id": "D042", "name": "Miikka Muurinen", "status": "confirmed",
+      "sources": ["https://arkansasrazorbacks.com/miikka-muurinen-inks-with-arkansas/"],
+      "basis": "7尺、215磅机动前锋，2026 Hoop Summit首发得到10分、8篮板、2抢断；Partizan阶段仅8场ABA合计33分、23篮板，6场EuroLeague总计11分钟，成年赛样本非常有限。尺寸、弹跳和开放场终结突出，运动92、扣篮90；力量仅64，篮板与防守尚未在高分钟兑现，投射按潜力给76而非成熟射手值，实算总评76",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 76, "position": "PF", "height": "7'0\"", "profile": "stretch_four" }
+    },
+    {
+      "id": "D043", "name": "Daniel Jacobsen", "status": "confirmed",
+      "sources": ["https://purduesports.com/sports/mens-basketball/roster/player/daniel-jacobsen"],
+      "basis": "Purdue大二39场场均5.5分、3.0篮板、1.2盖帽；USA U19仅12.3分钟便有6.6分、4.3篮板、1.9盖帽和60.6%投篮。7尺4、250磅的护框与近筐效率是真实强项，盖帽92、内防82、终结86；大学总产量和移动能力限制篮板78、运动66、控传58，实算总评78",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 78, "position": "C", "height": "7'4\"", "profile": "rim_protector" }
+    },
+    {
+      "id": "D044", "name": "Billy Richmond", "status": "confirmed",
+      "sources": ["https://arkansasrazorbacks.com/roster/billy-richmond-iii/", "https://arkansasrazorbacks.com/stats/mbb/2025-26/plyr_24.htm"],
+      "basis": "Arkansas大二赛季末场均升至11.0分、4.1篮板，成为首发后多次以高命中率得到20分以上，并在多场贡献抢断和盖帽；6尺7锋卫的爆发力、篮下终结和防守覆盖突出。扣篮92、运动94、终结88、外防84；外线出手少且命中不稳定，三分仅58，持球组织仍属辅助，实算总评77",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 77, "position": "SF", "height": "6'7\"", "profile": "two_way_wing" }
+    },
+    {
+      "id": "D045", "name": "Matt Able", "status": "confirmed",
+      "sources": ["https://gopack.com/news/2025/4/17/mens-basketball-pack-signs-matt-able-in-class-of-2025", "https://gopack.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "NC State大一34场均为替补，场均21.8分钟得到8.8分、3.4篮板，41.6%投篮、35.5%三分、79.6%罚球，并有42抢断；投射和防守活跃度已在大学轮换中兑现。三分82、外防84、运动86；仅32助攻且整体得分产量有限，传球68、控球78，不按高中五星身份额外抬升，实算总评77",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 77, "position": "SG", "height": "6'5\"", "profile": "two_way_slasher" }
+    },
+    {
+      "id": "D046", "name": "Coen Carr", "status": "confirmed",
+      "sources": ["https://msuspartans.com/sports/mens-basketball/roster/carr-coen/16436", "https://msuspartans.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "Michigan State大三35场全部首发，场均12.0分、5.4篮板，51.8%投篮，并有29盖帽；官方评价与比赛产量都支持顶级垂直运动和近筐终结。扣篮98、运动98、力量90、终结88，外防86；三分仅27.6%、罚球62.9%，三分66、中投74，助攻43次使传球仅68，专长鲜明但非全面明星，实算总评80",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 80, "position": "SF", "height": "6'6\"", "profile": "two_way_wing" }
+    },
+    {
+      "id": "D047", "name": "John Blackwell", "status": "confirmed",
+      "sources": ["https://uwbadgers.com/sports/mens-basketball/roster/john-blackwell/14412", "https://uwbadgers.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "Wisconsin大三34场全部首发，场均19.1分、5.1篮板，命中96记三分，三分38.9%、罚球86.3%，入选Big Ten第三阵容及锦标赛最佳阵容。成熟三层得分后卫，三分90、中投88、终结86、关键90；助攻仅79次使传球76，外防有稳定对抗但不是顶级压迫型，给82，实算总评82",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 82, "position": "SG", "height": "6'4\"", "profile": "perimeter_scorer" }
+    },
+    {
+      "id": "D048", "name": "Adam Atamna", "status": "confirmed",
+      "sources": ["https://www.fiba.basketball/en/players/344984-adam-atamna", "https://www.euroleaguebasketball.net/en/euroleague/players/adam-atamna/profile/012268/", "https://lnb.fr/fr/player/9321?did=1&tid=1790"],
+      "basis": "17岁ASVEL后卫已进入法国顶级联赛及EuroLeague轮换边缘；2025 France U18仅2场，场均11.5分、1.5篮板、0.5助攻，样本不足以支持成熟核心评价。投射、持球和二次组织方向明确，三分82、中投82、控球82、传球80；力量64、篮板58，防守与成年赛稳定性仍待验证，实算总评76",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 76, "position": "SG", "height": "6'4\"", "profile": "perimeter_scorer" }
+    },
+    {
+      "id": "D049", "name": "Andrej Stojakovic", "status": "confirmed",
+      "sources": ["https://fightingillini.com/sports/mens-basketball/roster/andrej-stojakovic/15980", "https://fightingillini.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "Illinois大三34场、21次首发，场均13.5分、4.5篮板，整体投篮50.0%、罚球80.5%，入选NCAA南区最佳阵容；但三分仅20中82（24.4%）。因此按高效中距离和近筐侧翼处理：中投88、终结90、关键86；三分降至62，助攻仅34次使传球68，不因姓氏和射手印象虚增外投，实算总评77",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 77, "position": "SF", "height": "6'7\"", "profile": "point_forward" }
+    },
+    {
+      "id": "D050", "name": "Paul McNeil Jr.", "status": "confirmed",
+      "sources": ["https://gopack.com/sports/mens-basketball/roster/paul-mcneil-jr-/14097", "https://gopack.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "NC State大二34场、32次首发，场均13.8分，命中105记三分且三分42.7%、罚球82.4%；这是高产高效的精英大学投射样本。三分94、中投84、关键84；但全季仅28助攻、21抢断，传球62、外防72，终结和运动也仅轮换水平，保留尖锐专长而不平均抬升，总评实算75",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 75, "position": "SG", "height": "6'5\"", "profile": "perimeter_scorer" }
+    },
+    {
+      "id": "D051", "name": "Jacob Cofie", "status": "confirmed",
+      "sources": ["https://usctrojans.com/sports/mens-basketball/roster/cofie-jacob/18585", "https://usctrojans.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "USC大二32场全部首发，场均9.9分、6.8篮板、1.8盖帽，另有62助攻、30抢断，盖帽率位列全美前段；6尺10前锋的护框、协防和篮板已兑现。盖帽90、内防86、篮板86，传球72反映辅助策应；三分31.8%、罚球60.5%限制投射为72，中投74，实算总评81",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 81, "position": "PF", "height": "6'10\"", "profile": "interior_forward" }
+    },
+    {
+      "id": "D052", "name": "Tyler Tanner", "status": "confirmed",
+      "sources": ["https://vucommodores.com/sports/mbball/roster/season/2025-26/player/tyler-tanner"],
+      "basis": "Vanderbilt大二36场场均19.5分、5.1助攻、2.4抢断，单季702分、184助攻和86抢断，后两项均创校纪录；入选全美荣誉阵容、SEC第一阵容与SEC最佳防守阵容。控球92、传球94、外防94、关键94，运动92；6尺、175磅体型使内防40、篮板60、力量68，尺寸短板真实保留，实算总评84",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 84, "position": "PG", "height": "6'0\"", "profile": "playmaker" }
+    },
+    {
+      "id": "D053", "name": "Juke Harris", "status": "confirmed",
+      "sources": ["https://godeacs.com/sports/mens-basketball/roster/harris-juke/8847", "https://godeacs.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "Wake Forest大二35场连续得分上双，场均21.4分、ACC赛场22.9分，单季750分列校史第二，并有5次两双和31分15篮板代表作。6尺7高产得分侧翼，中投90、终结90、三分86、篮板86、关键90；组织并非主要职责，传球74，防守给稳定轮换级而非仅凭身材推成精英，实算总评82",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 82, "position": "SF", "height": "6'7\"", "profile": "two_way_wing" }
+    },
+    {
+      "id": "D054", "name": "Flory Bidunga", "status": "confirmed",
+      "sources": ["https://kuathletics.com/sports/mens-basketball/roster/flory-bidunga/16505", "https://kuathletics.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "Kansas大二35场、34次首发，场均13.3分、9.0篮板，64.0%投篮并送出90盖帽；是全美唯一同时超过13分、8.5篮板和2.5盖帽的球员。终结94、扣篮94、内防92、盖帽96、篮板94、运动94；三分2投0中且罚球65.4%，三分42、中投58，保留完全无空间的核心短板，实算总评86",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 86, "position": "C", "height": "6'10\"", "profile": "rim_protector" }
+    },
+    {
+      "id": "D055", "name": "Cayden Boozer", "status": "confirmed",
+      "sources": ["https://goduke.com/sports/mens-basketball/roster/cayden-boozer/23109", "https://goduke.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "Duke大一38场、11次首发，场均22.9分钟得到7.7分、2.3篮板，50.0%投篮并送出113助攻；高中和USA U17长期证明组织视野。传球92、控球88，外防84、终结82；大学三分仅30.3%，三分74，得分和首发角色均不足以维持高中乐透级即战评价，实算总评80",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 80, "position": "PG", "height": "6'4\"", "profile": "playmaker" }
+    },
+    {
+      "id": "D056", "name": "Matthys Mahop", "status": "confirmed",
+      "sources": ["https://www.fiba.basketball/en/players/364004-matthys-mahop", "https://www.euroleaguebasketball.net/en/nge/players/matthys-mahop/013060/"],
+      "basis": "France U16七场场均5.6分、5.0篮板、4.3助攻，随后参加两届BWB与EuroLeague NextGen；6尺5持球侧翼的组织、多位置防守和运动能力比得分更成熟。传球86、控球82、外防82、运动86；国际赛得分与投射样本有限，三分70、中投76、终结78，按发展型组织侧翼实算总评77",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 77, "position": "SF", "height": "6'5\"", "profile": "point_forward" }
+    },
+    {
+      "id": "D057", "name": "Oscar Wembanyama", "status": "confirmed",
+      "sources": ["https://lnb.fr/en/news/bataille-du-top-10-strasbourg-veut-confirmer-dijon-doit-sexporter", "https://lnb.fr/fr/player/9936?did=3&tid=1832"],
+      "basis": "Strasbourg U21场均24分钟得到11.1分、5.1篮板、2.5助攻、效率13.7，并开始进入职业队轮换；按本人比赛而非其兄长声望评估。6尺8多功能侧翼的防守覆盖、篮板和连接球突出：外防84、内防76、篮板82、传球82；得分效率未达到明星青年档，三分72、中投76，实算总评79",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 79, "position": "SF", "height": "6'8\"", "profile": "two_way_wing" }
+    },
+    {
+      "id": "D058", "name": "JJ Andrews", "status": "confirmed",
+      "sources": ["https://arkansasrazorbacks.com/roster/jj-andrews/"],
+      "basis": "高中大四场均30.7分、16.9篮板、3.1助攻、2.3抢断、1.1盖帽，投篮60.9%，并获得2025 EYBL MVP；6尺6、225磅强壮侧翼的终结、篮板、对抗和运动统治力突出。终结92、篮板94、力量90、运动90、外防86；高中样本向职业尺度回归，三分仅78、控传82/78，不全面堆满，实算总评85",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 85, "position": "SF", "height": "6'6\"", "profile": "two_way_wing" }
+    },
+    {
+      "id": "D059", "name": "Tomislav Ivisic", "status": "confirmed",
+      "sources": ["https://fightingillini.com/sports/mens-basketball/roster/ivisic-tomislav/15976", "https://fightingillini.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "Illinois大三34场、33次首发，场均10.4分、5.6篮板、1.6助攻，48.3%投篮、31.3%三分、77.8%罚球；7尺1、270磅技术中锋有空间和策应能力，但全季仅20盖帽。中投82、三分78、传球78、力量90；盖帽76、运动64、篮板84，按成熟轮换内线而非防守核心评估，实算总评79",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 79, "position": "C", "height": "7'1\"", "profile": "skilled_big" }
+    },
+    {
+      "id": "D060", "name": "Patrick Ngongba II", "status": "confirmed",
+      "sources": ["https://goduke.com/sports/mens-basketball/roster/patrick-ngongba-ii/23107", "https://goduke.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "Duke大二32场、28次首发，场均21.9分钟得到10.1分、5.8篮板，投篮60.6%，另有64助攻和34盖帽；6尺11、250磅内线的终结、力量、低位防守和辅助策应稳定。终结88、力量94、内防86、篮板86、传球72；三分25.8%且罚球66.4%，三分66、中投72，实算总评82",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 82, "position": "C", "height": "6'11\"", "profile": "skilled_big" }
+    },
+    {
+      "id": "D061", "name": "JT Toppin", "status": "confirmed",
+      "sources": ["https://texastech.com/sports/mens-basketball/roster/jt-toppin/13943", "https://texastech.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "Texas Tech大三伤前25场全部首发，场均21.8分、10.8篮板，54.8%投篮，并有43盖帽、34抢断；此前已是AP第二阵容，本季入选季前AP第一阵容。终结96、篮板96、力量94、内防92、扣篮92，体现已兑现的全美核心统治力；三分28.1%、罚球57.9%，三分仅66，不把明星总评误解为全能投射，实算总评88",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 88, "position": "PF", "height": "6'9\"", "profile": "interior_forward" }
+    },
+    {
+      "id": "D062", "name": "Alex Wilkins", "status": "confirmed",
+      "sources": ["https://ukathletics.com/sports/mbball/roster/player/alex-wilkins/"],
+      "basis": "Furman大一得到校史新秀纪录622分，29场得分上双、14场20+，入围Kyle Macy全美最佳新秀和Lou Henson中小联盟最佳球员；45.8%投篮、83.5%罚球支持成熟持球得分。中投86、终结88、控球88、关键88；三分仅32.1%使外投为78，不按总得分同步拔高，实算总评81",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 81, "position": "SG", "height": "6'5\"", "profile": "two_way_slasher" }
+    },
+    {
+      "id": "D063", "name": "Pryce Sandfort", "status": "confirmed",
+      "sources": ["https://huskers.com/sports/mens-basketball/roster/player/pryce-sandfort"],
+      "basis": "Nebraska大三35场全部首发，场均18.1分、4.9篮板、2.0助攻，47.7%投篮、41.6%三分并命中129记三分，入选Big Ten第一阵容。三分96、中投88、关键90体现精英射手产量与效率；组织和防守没有同档证据，传球74、外防76，不用得分同步拔高全属性，实算总评79",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 79, "position": "SF", "height": "6'7\"", "profile": "two_way_wing" }
+    },
+    {
+      "id": "D064", "name": "Bryson Tiller", "status": "confirmed",
+      "sources": ["https://kuathletics.com/sports/mens-basketball/roster/bryson-tiller/16517", "https://kuathletics.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "Kansas红衫大一35场、31次首发，场均7.9分、6.1篮板并有45盖帽，延续五星内线前锋的身体与护框优势；44.9%投篮、26.9%三分和69.4%罚球显示进攻仍在发展。扣篮86、盖帽86、内防84、篮板84、力量86；三分66、传球68，按内线前锋而非空间核心评估，实算总评80",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 80, "position": "PF", "height": "6'10\"", "profile": "interior_forward" }
+    },
+    {
+      "id": "D065", "name": "Anton Bonke", "status": "confirmed",
+      "sources": ["https://charlotte49ers.com/sports/basketball/roster/anton-bonke/12687", "https://charlotte49ers.com/sports/mens-basketball/stats"],
+      "basis": "Charlotte大三34场、32次首发，场均10.6分、8.3篮板，57.6%投篮并送出51盖帽；7尺2、260磅的尺寸和力量是明确优势。内防86、盖帽90、篮板90、力量94；三分13/38虽为34.2%但样本低且罚球65.3%，三分只给72，不包装成成熟空间中锋，实算总评82",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 82, "position": "C", "height": "7'2\"", "profile": "rim_protector" }
+    },
+    {
+      "id": "D066", "name": "Jeremy Fears Jr.", "status": "confirmed",
+      "sources": ["https://msuspartans.com/sports/mens-basketball/roster/jeremy-fears%2Bjr./16438", "https://msuspartans.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "Michigan State红衫大二35场全部首发，场均15.2分、9.4助攻领跑全美，助失比3.86、罚球88.5%，入选Big Ten第一阵容。传球99、控球96、关键94体现已兑现的顶级组织和比赛掌控；三分32.1%仅给78，6尺2体型令篮板56、内防38，不把助攻王误做全能后卫，实算总评84",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 84, "position": "PG", "height": "6'2\"", "profile": "playmaker" }
+    },
+    {
+      "id": "D067", "name": "Michael Ruzic", "status": "confirmed",
+      "sources": ["https://acb.com/es/liga/jugadores/michael-ruzic-30002869"],
+      "basis": "19岁在西班牙ACB出战35场，场均18.1分钟得到6.9分、4.2篮板，二分63.6%、三分35.9%，已有高水平职业轮换样本。终结86、三分84、中投82、盖帽82体现空间四号位和每场0.7盖帽；罚球63.3%、仅0.7助攻和0.2抢断使控传与外防保持70/72，实算总评79",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 79, "position": "PF", "height": "6'9\"", "profile": "stretch_four" }
+    },
+    {
+      "id": "D068", "name": "Lucas Morillo", "status": "confirmed",
+      "sources": ["https://www.fiba.basketball/en/events/fiba-u19-basketball-world-cup-2025/teams/dominican-republic/343111-lucas-morillo", "https://fightingillini.com/news/2025/11/20/mens-basketball-morillo-signs-with-illinois"],
+      "basis": "2025 U19世界杯7场场均20.0分、9.0篮板、4.3助攻和1.9抢断，47.0%投篮，6尺7后卫兼具持球、终结和篮板；高中大三另有15.1分、8.8篮板、5.1助攻。终结90、控球88、传球86、篮板88、外防86；三分仅26.9%使三分为68，明确定位双向突破手，实算总评82",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 82, "position": "SG", "height": "6'7\"", "profile": "two_way_slasher" }
+    },
+    {
+      "id": "D069", "name": "Johann Grunloh", "status": "confirmed",
+      "sources": ["https://virginiasports.com/sports/mbball/roster/season/2025-26/player/johann-grunloh"],
+      "basis": "Virginia大一36场全部首发，98/184投篮、21/60三分，抢下188篮板并送出80盖帽；此前已在德国BBL轮换，防守产量具有成年比赛基础。盖帽96、内防90、篮板86，三分35.0%对应78但罚球62.1%限制投射上调；低使用率和23次助攻使控传60/68，实算总评83",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 83, "position": "C", "height": "6'11\"", "profile": "rim_protector" }
+    },
+    {
+      "id": "D070", "name": "Dash Daniels", "status": "confirmed",
+      "sources": ["https://www.jackjumpers.com.au/player/dash-daniels"],
+      "basis": "17岁即在澳洲NBL出战35场、场均14.3分钟得到4.1分、2.4篮板、0.9助攻，成年职业轮换经历领先同龄人；官方档案明确其核心卖点为防守。外防94、运动92、扣篮86体现防守和身体潜力；42%投篮且进攻产量有限，三分68、中投74、终结78保持保守，实算总评78",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 78, "position": "SG", "height": "6'5\"", "profile": "two_way_slasher" }
+    },
+    {
+      "id": "D071", "name": "Solo Ball", "status": "confirmed",
+      "sources": ["https://uconnhuskies.com/sports/mens-basketball/roster/solo-ball/13284", "https://uconnhuskies.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "UConn大三39场全部首发，场均12.8分、3.0篮板，但39.2%投篮和30.0%三分较上季14.4分、41.4%三分明显回落；85.2%罚球与既往高产样本仍支持投射基础。三分从精英档回调至82，中投82；扣篮88、运动90保留爆发力，组织和防守按59助攻、17抢断保持72/78，实算总评79",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 79, "position": "SG", "height": "6'4\"", "profile": "perimeter_scorer" }
+    },
+    {
+      "id": "D072", "name": "Omer Mayer", "status": "confirmed",
+      "sources": ["https://purduesports.com/sports/mens-basketball/roster/player/omer-mayer"],
+      "basis": "Purdue大一场均14.3分钟得到5.5分、1.2助攻，41.2%投篮、35.5%三分；同年U19场均20.0分、4.3助攻，U20场均16.7分、5.1助攻且三分37.3%，另有Maccabi成年欧冠经历。控球88、传球88、三分84、中投86体现多层级持球样本；NCAA角色仍小，终结82、防守82不过度拔高，实算总评81",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 81, "position": "PG", "height": "6'4\"", "profile": "scoring_guard" }
+    },
+    {
+      "id": "D073", "name": "Collin Chandler", "status": "confirmed",
+      "sources": ["https://byucougars.com/news/2026/04/14/chandler-returns-home-signs-with-cougars"],
+      "basis": "Kentucky大二36场出战、31次首发，场均9.7分、2.8篮板、2.3助攻和全队第二的44抢断；命中73记三分、命中率41.0%，SEC比赛更达45.7%。三分94、外防88、关键88体现高质量3D价值；中投84、控球82、传球80按有限持球角色处理，实算总评82",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 82, "position": "SG", "height": "6'4\"", "profile": "perimeter_scorer" }
+    },
+    {
+      "id": "D074", "name": "Ian Jackson", "status": "confirmed",
+      "sources": ["https://redstormsports.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "St. John's大二36场出战、19次首发，场均18.3分钟得到9.4分，三分34.3%、罚球90.0%；114/279的整体投篮和46助攻对52失误显示效率与组织仍不稳定。终结86、扣篮90、运动92保留得分爆发力，三分82、中投84；传球74、外防82按实际产量评估，实算总评81",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 81, "position": "SG", "height": "6'4\"", "profile": "two_way_slasher" }
+    },
+    {
+      "id": "D075", "name": "Thijs De Ridder", "status": "confirmed",
+      "sources": ["https://virginiasports.com/sports/mbball/roster/player/thijs-de-ridder"],
+      "basis": "Virginia首季31场全部首发，场均15.9分、6.3篮板，51.3%投篮、34.1%三分，并有27盖帽；入学前已打两季西班牙ACB并入选最佳青年阵容，属于成熟职业转NCAA样本。终结90、篮板88、内防86、力量88，三分82不过度放大；传球76、外防82反映其前场定位，实算总评85",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 85, "position": "PF", "height": "6'9\"", "profile": "interior_forward" }
+    },
+    {
+      "id": "D076", "name": "Eric Reibe", "status": "confirmed",
+      "sources": ["https://uconnhuskies.com/sports/mens-basketball/roster/eric-reibe/14935", "https://uconnhuskies.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "UConn大一40场出战、5次首发，场均13.8分钟得到5.9分、3.3篮板，65.8%投篮并有29盖帽；此前U19场均15.4分且58.7%投篮。终结90、扣篮88、盖帽86、篮板84体现高效内线与青年赛产量；三分仅4/13且罚球52.1%，三分64、中投72，不误标为空间中锋，实算总评81",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 81, "position": "C", "height": "7'0\"", "profile": "rim_protector" }
+    },
+    {
+      "id": "D077", "name": "Nikolas Khamenia", "status": "confirmed",
+      "sources": ["https://goduke.com/sports/mens-basketball/roster/khamenia-nikolas/23113", "https://goduke.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "Duke大一38场出战、5次首发，场均19.8分钟得到5.7分、3.3篮板，44.4%投篮、34.0%三分，另有39助攻、23抢断和仅3盖帽。按已兑现的均衡轮换侧翼处理：控球82、传球80、外防82、三分80；终结82、篮板76、盖帽48，不预支五星履历对应的明星属性，实算总评78",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 78, "position": "SF", "height": "6'8\"", "profile": "point_forward" }
+    },
+    {
+      "id": "D078", "name": "Mario Saint-Supery", "status": "confirmed",
+      "sources": ["https://gozags.com/sports/mens-basketball/roster/mario-saintsupry/6217", "https://gozags.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "Gonzaga大一35场出战、17次首发，场均8.6分、2.8篮板，累计133助攻仅52失误、46抢断，三分40.3%、罚球87.8%；此前已有ACB和西班牙成年国家队经验。三分90、控球90、传球92、外防88体现成熟双能卫价值；篮下终结82、扣篮70按实际类型约束，实算总评83",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 83, "position": "PG", "height": "6'4\"", "profile": "playmaker" }
+    },
+    {
+      "id": "D079", "name": "Jalen Haralson", "status": "confirmed",
+      "sources": ["https://fightingirish.com/sports/mbball/roster/season/2025-26/player/jalen-haralson/"],
+      "basis": "Notre Dame大一27场、23次首发，场均16.2分、4.0篮板、2.6助攻，51.5%投篮并入选All-ACC荣誉提名；近筐70.3%和大量罚球证明突破终结已兑现。终结94、扣篮90、控球88、力量88；三分仅5/25、罚球67.4%，三分压至58，明确保留重大短板，实算总评82",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 82, "position": "SG", "height": "6'7\"", "profile": "two_way_slasher" }
+    },
+    {
+      "id": "D080", "name": "Tay Kinney", "status": "confirmed",
+      "sources": ["https://kuathletics.com/news/2026/2/2/mens-basketball-taylen-kinney-named-mcdonalds-all-american", "https://kuathletics.com/sports/mens-basketball/roster/taylen-kinney/17962"],
+      "basis": "正式姓名Taylen Kinney；OTE本季场均18.8分、4.8篮板、6.1助攻并有8场20+，上季也有20.1分、5.0助攻，入选2026麦当劳全明星。控球90、传球90、终结90、中投88、三分86体现连续高产得分控卫样本；比赛层级与6尺3体型使防守84、篮板70，不提前按大学明星尺度拔高，实算总评84",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 84, "position": "PG", "height": "6'3\"", "profile": "scoring_guard" }
+    },
+    {
+      "id": "D081", "name": "Kanon Catchings", "status": "confirmed",
+      "sources": ["https://georgiadogs.com/sports/mens-basketball/stats/2025-26", "https://georgiadogs.com/sports/mens-basketball/roster/2025-26"],
+      "basis": "Georgia大二32场全部首发，场均11.6分、4.8篮板，命中68记三分、三分率37.6%；整体投篮42.3%、罚球65.1%，仅37助攻。三分88、篮板82、扣篮84体现6尺9空间侧翼价值；控球76、传球70、外防78按实际角色约束，不沿用短期高命中样本过度拔高，实算总评80",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 80, "position": "SF", "height": "6'9\"", "profile": "two_way_wing" }
+    },
+    {
+      "id": "D082", "name": "Silas Demary Jr.", "status": "confirmed",
+      "sources": ["https://uconnhuskies.com/sports/mens-basketball/roster/silas-demary%20jr./15794", "https://uconnhuskies.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "UConn大三39场、38次首发，场均10.1分、4.5篮板、5.9助攻，三分38.5%，累计229助攻对87失误、62抢断；同时入选Big East第一阵容和防守阵容。传球94、控球92、外防94、关键90体现两端成熟组织核心；得分产量使终结84、中投84，不按荣誉把进攻同步堆满，实算总评86",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 86, "position": "PG", "height": "6'5\"", "profile": "playmaker" }
+    },
+    {
+      "id": "D083", "name": "Ognjen Srzentic", "status": "confirmed",
+      "sources": ["https://www.fiba.basketball/en/events/fiba-u18-eurobasket-2025/teams/serbia/319348-ognjen-srzentic", "https://www.basketball-reference.com/international/players/ognjen-srzentic-1.html"],
+      "basis": "塞尔维亚U18七场场均11.1分、4.7篮板、2.1助攻，但投篮37.1%、三分28.1%；Mega成年ABA轮换12场仅1.4分，投篮27.3%。按当前兑现度回归：三分68、中投76、终结78；6尺7多功能前锋的控传80/78、外防82、运动86仍保留发展价值，实算总评76",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 76, "position": "SF", "height": "6'7\"", "profile": "point_forward" }
+    },
+    {
+      "id": "D084", "name": "PJ Haggerty", "status": "confirmed",
+      "sources": ["https://www.kstatesports.com/sports/mens-basketball/roster/pj-haggerty/13134", "https://www.kstatesports.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "Kansas State大四31场全部首发，场均23.4分列全美第四，另有5.3篮板、3.8助攻，48.9%投篮；此前AAC年度最佳球员赛季也已持续高产。终结96、中投94、控球94、关键94体现成熟主攻手；三分35.1%给84、罚球70.1%限制纯射手上限，传球86和外防86不过度同步拔高，实算总评87",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 87, "position": "SG", "height": "6'3\"", "profile": "perimeter_scorer" }
+    },
+    {
+      "id": "D085", "name": "Amaël L'Etang", "status": "confirmed",
+      "sources": ["https://daytonflyers.com/sports/mens-basketball/roster/ama-euml-l-l-etang/15444", "https://daytonflyers.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "Dayton大二33场、31次首发，场均11.9分、5.9篮板、1.6助攻和1.2盖帽，49.0%投篮、36.1%三分、76.5%罚球；7尺1体型兼具真实空间能力。三分84、中投84、传球76、盖帽86定位技术型中锋；篮板84、运动68按实际产量和移动能力处理，不因身高自动堆高，实算总评81",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 81, "position": "C", "height": "7'1\"", "profile": "skilled_big" }
+    },
+    {
+      "id": "D086", "name": "Braden Huff", "status": "confirmed",
+      "sources": ["https://gozags.com/sports/mens-basketball/roster/braden-huff/5748", "https://gozags.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "Gonzaga红衫大三伤前18场全部首发，场均17.8分、5.6篮板，投篮66.2%，体现极强内线得分效率；三分7/21、罚球57.5%，仅9盖帽。终结96、中投88、传球82、关键90突出成熟进攻技术；三分78、盖帽76、内防84按有限防守产量约束，实算总评84",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 84, "position": "C", "height": "6'10\"", "profile": "skilled_big" }
+    },
+    {
+      "id": "D087", "name": "Nolan Winter", "status": "confirmed",
+      "sources": ["https://uwbadgers.com/sports/mens-basketball/roster/nolan-winter/15629", "https://uwbadgers.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "Wisconsin大三31场、30次首发，场均30.6分钟得到13.1分、8.5篮板，56.9%投篮并有38盖帽；承担稳定主力双向角色。篮板90、内防86、盖帽86、终结88；三分32.6%对应76，中投82，控传68/76不过度包装成技术核心，实算总评83",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 83, "position": "C", "height": "7'0\"", "profile": "rim_protector" }
+    },
+    {
+      "id": "D088", "name": "Somto Cyril", "status": "confirmed",
+      "sources": ["https://georgiadogs.com/sports/mens-basketball/roster/cyril-somtochukwu-somto/9832", "https://georgiadogs.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "Georgia大二33场、32次首发，场均21.1分钟得到9.3分、5.4篮板，投篮75.9%，累计74盖帽并入选SEC防守阵容和Naismith防守观察名单。终结94、扣篮94、内防92、盖帽96、力量96；没有三分出手且罚球57.8%，三分38、中投50，保留极鲜明的护框吃饼型轮廓，实算总评84",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 84, "position": "C", "height": "6'11\"", "profile": "rim_protector" }
+    },
+    {
+      "id": "D089", "name": "Elliott Cadeau", "status": "confirmed",
+      "sources": ["https://mgoblue.com/sports/mens-basketball/roster/cadeau-elliot/27041", "https://mgoblue.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "官方拼写Elliot Cadeau；Michigan大三40场全部首发，场均10.5分、2.7篮板、5.9助攻，三分37.6%，累计234助攻对96失误，并获得NCAA锦标赛最杰出球员。传球96、控球94、关键96，三分88体现进步；6尺1体型使篮板66、内防38，罚球70.9%也限制纯投射上限，实算总评85",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 85, "position": "PG", "height": "6'1\"", "profile": "playmaker" }
+    },
+    {
+      "id": "D090", "name": "Kiyan Anthony", "status": "confirmed",
+      "sources": ["https://cuse.com/sports/mens-basketball/roster/kiyan-anthony/25547"],
+      "basis": "Syracuse大一29场主要担任第六人、仅2次首发，场均8.0分、1.4篮板、0.9助攻，整体投篮39.9%；虽然有19分和18分的单场表现，但赛季稳定性尚未兑现。中投82、控球82、运动84保留得分侧翼基础；三分78、终结80、传球72、防守76严格按当前产出评估，不加入家族名气加成，实算总评76",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 76, "position": "SG", "height": "6'5\"", "profile": "perimeter_scorer" }
+    },
+    {
+      "id": "D091", "name": "Bassala Bagayoka", "status": "confirmed",
+      "sources": ["https://acb.com/es/liga/jugadores/bassala-bagayoko-20213102"],
+      "basis": "官方拼写Bassala Bagayoko；19岁在西班牙ACB出战33场，场均12.7分钟得到4.0分、3.5篮板、0.4盖帽，二分61.6%，三分25.0%。扣篮90、运动86、篮板84体现年轻小球中锋活力；进攻角色有限使中投64、传球58，护框仅按实际产量给84而非精英级，实算总评79",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 79, "position": "C", "height": "6'9\"", "profile": "rim_protector" }
+    },
+    {
+      "id": "D092", "name": "Mouhamed Faye", "status": "confirmed",
+      "sources": ["https://www.euroleaguebasketball.net/en/euroleague/players/mouhamed-faye/012403/"],
+      "basis": "21岁EuroLeague中锋24场、21次首发，场均17.9分钟得到5.4分、5.5篮板和1.0盖帽，二分63.6%，没有三分命中且罚球50%。篮板90、盖帽90、终结88与内防86体现职业高水平比赛中的护框吃饼产出；三分38、中投54、控传58/60保持真实局限，实算总评80",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 80, "position": "C", "height": "6'10\"", "profile": "rim_protector" }
+    },
+    {
+      "id": "D093", "name": "Robert Wright III", "status": "confirmed",
+      "sources": ["https://byucougars.com/sports/mens-basketball/roster/player/robert-wright-iii"],
+      "basis": "BYU大二35场全部首发，场均18.1分、4.6助攻、3.5篮板、1.2抢断，投篮46.7%、三分41.0%、罚球82.1%，入选Big 12第三阵容。三分94、中投94、终结94、控球94和关键96对应成熟高效主控；6尺1体型使内防36、盖帽26、篮板70，避免把进攻统治力无差别扩散到防守，实算总评87",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 87, "position": "PG", "height": "6'1\"", "profile": "scoring_guard" }
+    },
+    {
+      "id": "D094", "name": "Isiah Harwell", "status": "confirmed",
+      "sources": ["https://uhcougars.com/sports/mens-basketball/roster/isiah-harwell/9546", "https://uhcougars.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "Houston大一32场全部替补，场均13.9分钟仅3.6分、2.0篮板，投篮27.9%、三分27.1%、罚球61.3%。按当前兑现度将三分压到68、终结76、控球74；6尺6/220磅和19抢断、8盖帽保留外防84、力量84与运动88，不因五星履历维持虚高进攻值，实算总评75",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 75, "position": "SG", "height": "6'6\"", "profile": "two_way_slasher" }
+    },
+    {
+      "id": "D095", "name": "Sadiq White", "status": "confirmed",
+      "sources": ["https://cuse.com/sports/mens-basketball/roster/sadiq-white%2520jr./25548", "https://cuse.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "官方姓名Sadiq White Jr.；Syracuse大一31场、11次首发，场均15.1分钟得到6.1分、3.3篮板，投篮54.7%，仅19次三分出手。终结86、扣篮92、运动92体现6尺9运动型前锋效率；三分74按小样本回归，传球64与防守80/78不因身体条件提前兑现，实算总评79",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 79, "position": "PF", "height": "6'9\"", "profile": "interior_forward" }
+    },
+    {
+      "id": "D096", "name": "London Jemison", "status": "confirmed",
+      "sources": ["https://rolltide.com/sports/mens-basketball/roster/london-jemison/15282", "https://rolltide.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "Alabama大一最终出战34场、14次首发，场均6.2分、3.4篮板；官方统计快照三分36.1%，高中EYBL曾入选防守阵容。三分82、终结84、扣篮88与外防84保留双向侧翼潜力；仅0.4助攻使传球70，整体低使用率限制控球76和关键78，实算总评81",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 81, "position": "SF", "height": "6'8\"", "profile": "two_way_wing" }
+    },
+    {
+      "id": "D097", "name": "Dwayne Aristode", "status": "confirmed",
+      "sources": ["https://arizonawildcats.com/sports/mens-basketball/stats/2025/", "https://arizonawildcats.com/sports/softball/roster/dwayne-aristode/18559"],
+      "basis": "Arizona大一35场全部替补，场均13.3分钟得到3.8分、1.7篮板；三分30/65达到46.2%，但罚球仅50%且产量很低。三分按样本回归给88而非顶级96，外防82、运动88体现6尺8侧翼基础；终结78、控球74、篮板72按实际角色收紧，实算总评78",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 78, "position": "SF", "height": "6'8\"", "profile": "two_way_wing" }
+    },
+    {
+      "id": "D098", "name": "Tahaad Pettiford", "status": "confirmed",
+      "sources": ["https://auburntigers.com/sports/mens-basketball/roster/player/tahaad-pettiford"],
+      "basis": "Auburn大二38场、36次首发，场均15.4分、3.0篮板、3.8助攻，累计585分和145助攻并入选NIT最佳阵容。控球94、运动94、中投90、终结90和关键92体现高负荷主攻；6尺1/170磅使篮板66、内防36、力量72，外防82不随得分能力自动拔高，实算总评85",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 85, "position": "PG", "height": "6'1\"", "profile": "scoring_guard" }
+    },
+    {
+      "id": "D099", "name": "Joseph Tugler", "status": "confirmed",
+      "sources": ["https://uhcougars.com/sports/mens-basketball/roster/joseph-tugler/10141", "https://uhcougars.com/sports/mens-basketball/stats/2025-26"],
+      "basis": "Houston大三37场、36次首发，场均8.4分、5.3篮板、1.3抢断、1.5盖帽，投篮57.6%，获Big 12荣誉提名。内防94、盖帽94、力量94、外防88体现成熟换防护框价值；三分只有1次出手故给52，中投62、控球66，保持防守型前锋的鲜明短板，实算总评84",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 84, "position": "PF", "height": "6'8\"", "profile": "interior_forward" }
+    },
+    {
+      "id": "D100", "name": "Jackson McAndrew", "status": "confirmed",
+      "sources": ["https://gocreighton.com/sports/mens-basketball/roster/jackson-mcandrew/8374", "https://gocreighton.com/sports/mens-basketball/stats/2025-26", "https://gocreighton.com/news/2025/11/21/mens-basketball-mcandrew-to-miss-rest-of-season-with-foot-injury"],
+      "basis": "Creighton大二仅首发4场便因足伤赛季报销，不能用6.8分、4.5篮板的小样本定级；改以大一36场、31次首发的7.8分、4.4篮板和35.4%三分为主。三分84、中投80保留6尺10空间四号位特点；终结76、运动72、防守72/74按完整样本保守处理，实算总评75",
+      "previous": { "ovr": 75, "position": "随机", "height": "6'7\"", "attributes": "随机模板" },
+      "confirmed": { "ovr": 75, "position": "PF", "height": "6'10\"", "profile": "stretch_four" }
+    }
+  ]
+}

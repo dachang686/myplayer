@@ -1,0 +1,545 @@
+{
+  "version": 1,
+  "reviews": [
+    {
+      "id": "D26-01",
+      "name": "AJ Dybantsa",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/aj-dybantsa",
+      "basis": "35场25.5分、6.8篮板、3.7助攻，投篮51.0%、三分33.1%；官方定位为高使用率多层次得分锋线，兼具持球、运动能力和换防工具。三分保持77，中投、终结、控球与运动能力突出",
+      "previous": { "ovr": 81, "position": "SF/PF随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 82, "position": "SF", "profile": "two_way_wing" }
+    },
+    {
+      "id": "D26-02",
+      "name": "Darryn Peterson",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/darryn-peterson",
+      "basis": "24场20.2分、4.2篮板、1.6助攻、1.4抢断，三分38.0%、罚球83.0%；官方评价强调三层得分、精英中投和投射产量，传球定位为次级创造者。中投92为最强项，三分85，传球控制在75",
+      "previous": { "ovr": 81, "position": "PG/SG随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 81, "position": "SG", "profile": "perimeter_scorer" }
+    },
+    {
+      "id": "D26-03",
+      "name": "Cameron Boozer",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/cameron-boozer",
+      "basis": "38场22.5分、10.2篮板、4.1助攻，投篮55.6%、三分39.1%；大学年度最佳球员，官方评价突出低位终结、前场组织、篮板、力量与可用三分。终结90、篮板89、传球80、力量86，弹跳扣篮不按传统飞天内线上调",
+      "previous": { "ovr": 81, "position": "SF/PF随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 81, "position": "PF", "profile": "interior_forward" }
+    },
+    {
+      "id": "D26-04",
+      "name": "Caleb Wilson",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/caleb-wilson",
+      "basis": "24场19.8分、9.4篮板、2.7助攻、1.5抢断、1.4盖帽；官方定位为爆发力强的双向前锋、空接威胁和弱侧护框者，外线投篮仍待发展。扣篮90、运动89、盖帽84，三分限制为68",
+      "previous": { "ovr": 80, "position": "SF/PF随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 81, "position": "PF", "profile": "interior_forward" }
+    },
+    {
+      "id": "D26-05",
+      "name": "Keaton Wagler",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/keaton-wagler",
+      "basis": "17.9分、5.1篮板、4.2助攻，45/40/80命中率；官方评价突出精英射程、挡拆判断和半场节奏，同时明确指出爆发力与力量不足。三分90、中投88、传球84，运动76、力量50，总评由统一80降至78",
+      "previous": { "ovr": 80, "position": "PG/SG随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 78, "position": "SG", "profile": "perimeter_scorer" }
+    },
+    {
+      "id": "D26-06",
+      "name": "Mikel Brown Jr.",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/mikel-brown",
+      "basis": "21场18.2分、4.7助攻、3.3篮板，41/34/84命中率且因背伤缺席14场；官方定位为有尺寸的主控与挡拆创造者。控球90、传球86，三分82不按单场10记三分追涨，总评由统一80降至78",
+      "previous": { "ovr": 80, "position": "PG/SG随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 78, "position": "PG", "profile": "playmaker" }
+    },
+    {
+      "id": "D26-07",
+      "name": "Darius Acuff Jr.",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/darius-acuff",
+      "basis": "23.5分、6.4助攻、3.1篮板，48/44/81命中率；SEC得分和助攻双料领跑、Bob Cousy奖得主，官方评价为成熟的三层得分主控。三分88、控球90、传球88、关键88，身高6尺2限制篮板和内线防守，总评保持80",
+      "previous": { "ovr": 80, "position": "PG/SG随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 80, "position": "PG", "profile": "playmaker" }
+    },
+    {
+      "id": "D26-08",
+      "name": "Kingston Flemings",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/kingston-flemings",
+      "basis": "37场16.1分、5.2助攻、4.1篮板、1.5抢断，48/39/85命中率；官方评价强调速度、主控成熟度和精英持球防守。传球86、外防84、运动88、三分85，内防与盖帽保持后卫低值，总评保持80",
+      "previous": { "ovr": 80, "position": "PG/SG随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 80, "position": "PG", "profile": "playmaker" }
+    },
+    {
+      "id": "D26-09",
+      "name": "Morez Johnson Jr.",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/morez-johnson-jr",
+      "basis": "40场13.1分、7.3篮板、1.1盖帽，35次三分出手命中34.3%；官方定位为强壮、高活力、可换防的四/小球五，篮下终结出色但自主进攻有限。终结88、篮板84、力量86，三分70、中投65",
+      "previous": { "ovr": 79, "position": "SF/PF随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 79, "position": "PF", "profile": "interior_forward" }
+    },
+    {
+      "id": "D26-10",
+      "name": "Brayden Burries",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/brayden-burries",
+      "basis": "39场16.1分、4.9篮板、2.4助攻、1.5抢断，49.1/39.1/80.5命中率；官方定位为强壮、成熟的双向三层得分后卫，主控能力仍需发展。终结87、三分85、外防80、力量76，传球72",
+      "previous": { "ovr": 79, "position": "PG/SG随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 79, "position": "SG", "profile": "two_way_slasher" }
+    },
+    {
+      "id": "D26-11",
+      "name": "Yaxel Lendeborg",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/yaxel-lendeborg",
+      "basis": "15.1分、6.8篮板、3.2助攻、1.2盖帽、1.1抢断，52/37/82命中率；Big Ten年度最佳球员和防守阵容，官方称其为成熟的换防者、连接型传球手与空间点。能力分布全面但年龄较大、上限有限，总评由79降至78",
+      "previous": { "ovr": 79, "position": "SF/PF随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 78, "position": "PF", "profile": "stretch_four" }
+    },
+    {
+      "id": "D26-12",
+      "name": "Aday Mara",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/aday-mara",
+      "basis": "12.1分、6.8篮板、2.4助攻、2.6盖帽，投篮67%、三分30%、罚球56%；Big Ten最佳防守球员，官方评价突出护框时机、低位传球和柔和终结，外投与移动上限有限。盖帽92、内防88、终结86，三分45、速度58，总评由79降至78",
+      "previous": { "ovr": 79, "position": "C", "attributes": "随机模板" },
+      "confirmed": { "ovr": 78, "position": "C", "profile": "rim_protector" }
+    },
+    {
+      "id": "D26-13",
+      "name": "Nate Ament",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/nate-ament",
+      "basis": "35场16.8分、6.3篮板、2.4助攻、1.1抢断，40/33/79命中率；6尺10持球前锋，具备推进和二次组织潜力，但外线稳定性、对抗与防守完成度尚未成熟。控球84、传球80、运动84，三分74、力量60，总评按属性实算为76",
+      "previous": { "ovr": 79, "position": "SF/PF随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 76, "position": "SF", "profile": "point_forward" }
+    },
+    {
+      "id": "D26-14",
+      "name": "Hannes Steinbach",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/hannes-steinbach",
+      "basis": "30场18.5分、11.8篮板、1.6助攻、1.2盖帽、1.1抢断，投篮57.7%、三分34.0%；6尺10、248磅的高产篮板手和强硬终结者，具备柔和手感与有限二次策应，但失误多于助攻。篮板90、终结88、力量84，三分70、外防68",
+      "previous": { "ovr": 78, "position": "PF/C随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 78, "position": "PF", "profile": "interior_forward" }
+    },
+    {
+      "id": "D26-15",
+      "name": "Dailyn Swain",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/dailyn-swain",
+      "basis": "17.3分、7.5篮板、3.6助攻、1.6抢断，54.2/34.8/81.3命中率；强壮的下坡型锋线，篮下对抗、中距离和二次组织成熟，防守端手活跃，三分仍是发展项。终结88、中投84、外防82、力量80，三分74",
+      "previous": { "ovr": 78, "position": "SF/PF随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 79, "position": "SF", "profile": "two_way_wing" }
+    },
+    {
+      "id": "D26-16",
+      "name": "Bennett Stirtz",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/bennett-stirtz",
+      "basis": "19.8分、4.4助攻、2.6篮板、1.4抢断，48/36/86命中率；成熟、高球商的主控，射程、节奏和阅读防守是即战力，但6尺3体型、篮下终结、运动和NBA级防守上限有限。中投88、控球88、传球86、三分84，内防36、力量48",
+      "previous": { "ovr": 78, "position": "PG/SG随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 75, "position": "PG", "profile": "scoring_guard" }
+    },
+    {
+      "id": "D26-17",
+      "name": "Ebuka Okorie",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/ebuka-okorie",
+      "basis": "31场23.3分、3.6篮板、3.6助攻、1.7抢断，46.5/35.4/83.2命中率；6尺1强壮得分型控卫，主要价值来自持球得分、对抗终结和制造投篮，而非高产组织。终结88、中投86、控球86、力量70，内防32、盖帽25",
+      "previous": { "ovr": 78, "position": "PG/SG随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 76, "position": "PG", "profile": "scoring_guard" }
+    },
+    {
+      "id": "D26-18",
+      "name": "Christian Anderson",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/christian-anderson",
+      "basis": "18.6分、3.6篮板、7.5助攻、1.6抢断，场均38.5分钟；本地官方资料将投射和组织列为主要优势，但未缓存具体命中率，因此不额外追高投射。传球90、控球88、三分82，6尺1体型对应内防32、力量54",
+      "previous": { "ovr": 78, "position": "PG/SG随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 75, "position": "PG", "profile": "playmaker" }
+    },
+    {
+      "id": "D26-19",
+      "name": "Allen Graves",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/allen-graves",
+      "basis": "35场、场均22.7分钟得到11.8分、6.5篮板、1.9助攻、1.9抢断，51/41/75命中率；6尺8高效率侧翼，投射、终结、篮板和防守事件均有支撑，但进攻产量与持球样本有限。三分84、终结82、外防80、篮板78，控球76",
+      "previous": { "ovr": 78, "position": "SF/PF随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 77, "position": "SF", "profile": "two_way_wing" }
+    },
+    {
+      "id": "D26-20",
+      "name": "Jayden Quaintance",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/jayden-quaintance",
+      "basis": "场均23.3分钟得到7.2分、6.5篮板、1.0助攻、0.8抢断、1.7盖帽；6尺9、253磅的年轻防守内线，护框、篮板与终结潜力明确，但本地资料没有投射优势且进攻产量偏低。盖帽86、内防82、篮板80、力量82，三分45、传球56",
+      "previous": { "ovr": 78, "position": "PF/C随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 76, "position": "C", "profile": "rim_protector" }
+    },
+    {
+      "id": "D26-21",
+      "name": "Karim Lopez",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/karim-lopez",
+      "basis": "场均25.6分钟得到11.9分、6.1篮板、1.9助攻、1.2抢断、1.0盖帽；6尺8、222磅的年轻双向锋线，本地资料支持投射、终结、外线防守和对抗，但没有高产持球样本。外防82、终结82、三分78、力量78，控球72、传球68",
+      "previous": { "ovr": 78, "position": "SF/PF随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 76, "position": "SF", "profile": "two_way_wing" }
+    },
+    {
+      "id": "D26-22",
+      "name": "Labaron Philon Jr.",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/labaron-philon",
+      "basis": "本地官方资料确认其为6尺3、176磅的二年级后卫，并将投射和组织列为主要能力；缓存未提取到可靠赛季统计，因此不补猜命中率或得分产量。控球86、传球84、三分80，力量48、内防34，按现有证据保守实算为74",
+      "previous": { "ovr": 78, "position": "PG/SG随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 74, "position": "PG", "profile": "playmaker" }
+    },
+    {
+      "id": "D26-23",
+      "name": "Zuby Ejiofor",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/zuby-ejiofor",
+      "basis": "场均30.0分钟得到16.4分、7.3篮板、3.6助攻、1.3抢断、2.2盖帽；245磅的成熟多功能内线，策应、护框和对抗均有即战力，但6尺8尺寸与大龄限制上限。盖帽86、终结84、力量84、传球78；未缓存具体外线命中率，三分保守为72",
+      "previous": { "ovr": 77, "position": "PF/C随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 79, "position": "PF", "profile": "interior_forward" }
+    },
+    {
+      "id": "D26-24",
+      "name": "Cameron Carr",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/cameron-carr",
+      "basis": "本地官方资料确认其为6尺5后卫、场均18.2分，并同时标记投射、组织、终结与外线防守能力；由于命中率、助攻等明细未缓存，不把标签直接换算成精英值。中投84、终结84、三分82、外防80，传球76、力量58",
+      "previous": { "ovr": 77, "position": "PG/SG随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 77, "position": "SG", "profile": "two_way_slasher" }
+    },
+    {
+      "id": "D26-25",
+      "name": "Sergio De Larrea",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/sergio-de-larrea",
+      "basis": "本地官方资料确认其为6尺6、205磅的西班牙大后卫，并支持投射、组织和外线防守三项能力；缓存没有可靠统计明细，因此不给效率和产量额外加成。传球86、控球84、外防80、三分80，终结72、运动76",
+      "previous": { "ovr": 77, "position": "PG/SG随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 75, "position": "PG", "profile": "playmaker" }
+    },
+    {
+      "id": "D26-26",
+      "name": "Tarris Reed Jr.",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/tarris-reed-jr",
+      "basis": "场均27.3分钟得到14.7分、9.0篮板、2.3助攻、2.0盖帽；6尺10、260磅的成熟内线，篮板、护框、力量和顺下终结具备即战力，亦有有限策应，但没有外投证据。篮板86、盖帽86、力量86、终结84，三分45、运动74",
+      "previous": { "ovr": 77, "position": "C", "attributes": "随机模板" },
+      "confirmed": { "ovr": 79, "position": "C", "profile": "rim_protector" }
+    },
+    {
+      "id": "D26-27",
+      "name": "Chris Cenac Jr.",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/chris-cenac-jr",
+      "basis": "本地官方资料确认其为6尺11、240磅的一年级内线，并支持投射、篮板和力量特征；缓存没有比赛统计，也没有明确护框或组织证据，因此不把身材直接换算成高防守。篮板80、力量80、三分74，内防与盖帽均76，实算75",
+      "previous": { "ovr": 77, "position": "PF/C随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 75, "position": "C", "profile": "skilled_big" }
+    },
+    {
+      "id": "D26-28",
+      "name": "Joshua Jefferson",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/joshua-jefferson",
+      "basis": "场均13.0分、7.4篮板、3.1助攻、2.1抢断；6尺8、246磅的成熟多功能前锋，本地资料同时支持投射、策应、终结、外防、篮板和力量。外防84、力量86、篮板82、传球78；未缓存具体命中率，三分控制在78",
+      "previous": { "ovr": 77, "position": "SF/PF随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 79, "position": "PF", "profile": "interior_forward" }
+    },
+    {
+      "id": "D26-29",
+      "name": "Alex Karaban",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/alex-karaban",
+      "basis": "本地官方资料确认其为6尺7、225磅的成熟前锋，并支持投射、策应、终结、外防、篮板和力量；但缓存没有赛季统计且年龄较大，因此按即战型空间四号位而非高上限核心处理。三分84、外防80、关键80，运动72、盖帽62",
+      "previous": { "ovr": 77, "position": "SF/PF随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 76, "position": "PF", "profile": "stretch_four" }
+    },
+    {
+      "id": "D26-30",
+      "name": "Koa Peat",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/koa-peat",
+      "basis": "本地官方资料确认其为6尺7、245磅的一年级强壮前锋，并支持投射、终结、篮板与力量；缓存没有统计明细，也没有明确护框或外防优势。力量86、终结84、篮板82、扣篮82，三分76、传球66",
+      "previous": { "ovr": 77, "position": "SF/PF随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 77, "position": "PF", "profile": "interior_forward" }
+    },
+    {
+      "id": "D26-31",
+      "name": "Bruce Thornton",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/bruce-thornton",
+      "basis": "场均18.8分、4.3篮板、4.3助攻、1.1抢断，53/40/84命中率；6尺、223磅的成熟得分型控卫，投射效率、控球和对抗是即战力，但身高与年龄限制篮下、防守和成长上限。中投88、三分86、控球86、力量82，内防34、盖帽25",
+      "previous": { "ovr": 75, "position": "PG/SG随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 77, "position": "PG", "profile": "scoring_guard" }
+    },
+    {
+      "id": "D26-32",
+      "name": "Richie Saunders",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/richie-saunders",
+      "basis": "场均31.3分钟得到18.1分、5.9篮板、2.1助攻、1.8抢断，48.9/37.6/81.7命中率；6尺5成熟侧翼，投射、终结、篮板和对抗较稳定，但组织产量有限。三分84、终结84、中投82、篮板68，传球72",
+      "previous": { "ovr": 75, "position": "PG/SG随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 77, "position": "SG", "profile": "perimeter_scorer" }
+    },
+    {
+      "id": "D26-33",
+      "name": "Isaiah Evans",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/isaiah-evans",
+      "basis": "本地官方资料确认其为6尺6、186磅的二年级后卫，目前只有投射特征得到明确支持，缓存没有比赛统计或组织、防守、终结证据。三分84、中投82体现射手价值，其余能力按瘦长功能型侧翼保守设置，力量54、传球68，总评实算71",
+      "previous": { "ovr": 75, "position": "PG/SG随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 71, "position": "SG", "profile": "perimeter_scorer" }
+    },
+    {
+      "id": "D26-34",
+      "name": "Meleek Thomas",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/meleek-thomas",
+      "basis": "场均30.5分钟得到15.6分、3.8篮板、2.5助攻、1.5抢断；本地资料支持投射、组织、外线防守和运动能力，但没有命中率明细，且助攻产量不足以定位主控。运动86、外防82、控球82、三分80，传球76、力量62",
+      "previous": { "ovr": 75, "position": "SG/SF随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 75, "position": "SG", "profile": "two_way_slasher" }
+    },
+    {
+      "id": "D26-35",
+      "name": "Trevon Brazile",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/trevon-brazile",
+      "basis": "本地官方资料确认其为6尺10、226磅的大龄前锋，主要支持投射、有限策应和篮板能力；缓存没有赛季统计或明确护框、力量优势。三分80、篮板82、扣篮82、运动80，力量68、外防70，按机动空间四号位实算76",
+      "previous": { "ovr": 75, "position": "SF/PF随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 76, "position": "PF", "profile": "stretch_four" }
+    },
+    {
+      "id": "D26-36",
+      "name": "Baba Miller",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/baba-miller",
+      "basis": "场均31.8分钟得到13.0分、10.3篮板、3.7助攻、1.2盖帽；6尺11长臂前锋，本地资料支持投射、策应、终结、外防、篮板与运动能力，主要限制是208磅体重和大龄。篮板88、终结84、传球82、运动82，力量58；综合实算79",
+      "previous": { "ovr": 75, "position": "SF/PF随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 79, "position": "PF", "profile": "stretch_four" }
+    },
+    {
+      "id": "D26-37",
+      "name": "Ryan Conwell",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/ryan-conwell",
+      "basis": "场均16.6分、5.8篮板、2.5助攻、1.1抢断，48/41/86命中率；6尺4、215磅的成熟高效率射手，投射和对抗具备即战力，但组织产量与年龄限制其核心上限。三分88、中投84、关键82、力量78，传球72、运动74",
+      "previous": { "ovr": 75, "position": "PG/SG随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 76, "position": "SG", "profile": "perimeter_scorer" }
+    },
+    {
+      "id": "D26-38",
+      "name": "Braden Smith",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/braden-smith",
+      "basis": "场均34.5分钟得到14.3分、3.5篮板、8.8助攻、1.7抢断，44/36.2/82.5命中率；组织产量和球场阅读达到精英级，但5尺10、167磅严重限制篮下、换防和终结上限。传球94、控球88、关键84，内防28、盖帽25、扣篮40",
+      "previous": { "ovr": 75, "position": "PG/SG随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 76, "position": "PG", "profile": "playmaker" }
+    },
+    {
+      "id": "D26-39",
+      "name": "Jack Kayil",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/jack-kayil",
+      "basis": "在德国职业联赛场均21.1分钟得到12.3分、2.7篮板、3.5助攻；6尺5年轻后卫，本地资料支持组织、终结、外防、运动和对抗，但未支持投射。传球84、运动84、终结82、外防80，三分72，按职业联赛即战样本实算76",
+      "previous": { "ovr": 75, "position": "PG/SG随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 76, "position": "PG", "profile": "playmaker" }
+    },
+    {
+      "id": "D26-40",
+      "name": "Dillon Mitchell",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/dillon-mitchell",
+      "basis": "场均28.2分钟得到8.3分、7.0篮板、3.0助攻、1.3抢断；6尺8低使用率全能锋线，本地资料覆盖组织、终结、外防、内防、篮板与运动能力，但得分产量低且没有外线效率证据。扣篮88、运动88、外防84、篮板82，三分70、力量66",
+      "previous": { "ovr": 75, "position": "SF/PF随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 79, "position": "SF", "profile": "point_forward" }
+    },
+    {
+      "id": "D26-41",
+      "name": "Otega Oweh",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/otega-oweh",
+      "basis": "场均32.8分钟得到18.6分、4.8篮板、2.7助攻、1.8抢断，46.5/33.3/73.1命中率；6尺5、216磅的强壮突破侧翼，终结、对抗与防守事件突出，外线效率则低于成熟射手。终结86、力量82、中投82、三分76，传球72",
+      "previous": { "ovr": 73, "position": "PG/SG随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 77, "position": "SG", "profile": "two_way_slasher" }
+    },
+    {
+      "id": "D26-42",
+      "name": "Ja'Kobi Gillespie",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/jakobi-gillespie",
+      "basis": "本地官方资料确认其为6尺、182磅的大龄后卫，并支持投射、组织、终结、篮板和力量；缓存没有具体统计，也没有外防优势证据。控球86、传球86、三分82、终结82，内防32、盖帽25，按成熟功能型控卫实算75",
+      "previous": { "ovr": 73, "position": "PG/SG随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 75, "position": "PG", "profile": "playmaker" }
+    },
+    {
+      "id": "D26-43",
+      "name": "Tyler Bilodeau",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/tyler-bilodeau",
+      "basis": "本地官方资料确认其为6尺8、228磅的大龄前锋，目前仅策应能力得到明确支持，缓存没有得分、效率、防守或篮板数据。传球78、中投76、终结76，其余按连接型四号位保守设置；三分68、外防68、运动68，总评实算71",
+      "previous": { "ovr": 73, "position": "SF/PF随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 71, "position": "PF", "profile": "stretch_four" }
+    },
+    {
+      "id": "D26-44",
+      "name": "Maliq Brown",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/maliq-brown",
+      "basis": "本地官方资料确认其为6尺8、217磅的大龄前锋，缓存只明确提取出策应标签，没有可靠投射或得分数据；结合其前锋定位按防守连接型内线处理，不把未知项目补成进攻优势。内防82、盖帽80、传球78、外防78，三分62、中投68",
+      "previous": { "ovr": 73, "position": "SF/PF随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 75, "position": "PF", "profile": "interior_forward" }
+    },
+    {
+      "id": "D26-45",
+      "name": "Emanuel Sharp",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/emanuel-sharp",
+      "basis": "场均29.3分钟得到15.5分、3.0篮板、1.7助攻、1.2抢断，41.3/37.2/89.1命中率；罚球和三分支持稳定射手价值，但总体效率、组织和篮下产量有限。三分84、中投82、关键84、力量78，传球68、扣篮58",
+      "previous": { "ovr": 73, "position": "PG/SG随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 73, "position": "SG", "profile": "perimeter_scorer" }
+    },
+    {
+      "id": "D26-46",
+      "name": "Felix Okpara",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/felix-okpara",
+      "basis": "本地官方资料确认其为6尺10、237磅的大龄内线，终结与策应得到明确支持；缓存没有比赛统计、投射或篮板标签。终结82、扣篮84、传球72；内防80和盖帽84按中锋位置给中等即战值，不作为额外统计加成，三分42",
+      "previous": { "ovr": 73, "position": "PF/C随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 76, "position": "C", "profile": "skilled_big" }
+    },
+    {
+      "id": "D26-47",
+      "name": "Tyler Nickel",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/tyler-nickel",
+      "basis": "场均30.6分钟得到13.5分、3.3篮板、1.2助攻；6尺8、217磅的大龄锋卫，本地资料只明确支持外线防守和力量，没有效率、投射或持球优势证据。外防82、力量78，中投76、三分72，传球62、篮板58，总评实算71",
+      "previous": { "ovr": 73, "position": "SG/SF随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 71, "position": "SF", "profile": "two_way_wing" }
+    },
+    {
+      "id": "D26-48",
+      "name": "Tobi Lawal",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/tobi-lawal",
+      "basis": "场均29.1分钟得到12.3分、8.5篮板、1.1盖帽，54/25/76命中率；6尺8运动型内线，终结、扣篮、篮板与外防工具明显，但25%三分是明确短板，不能因投射标签补高。扣篮88、运动88、终结86、篮板86，三分58、力量70",
+      "previous": { "ovr": 73, "position": "SF/PF随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 77, "position": "PF", "profile": "interior_forward" }
+    },
+    {
+      "id": "D26-49",
+      "name": "Bryce Hopkins",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/bryce-hopkins",
+      "basis": "场均28.8分钟得到13.6分、6.2篮板、1.9助攻、1.1抢断，46.9/36.3/71.3命中率；6尺6、218磅的成熟得分锋线，投射、终结、篮板和对抗均可用，但年龄、罚球和组织产量限制上限。三分82、终结82、力量80，传球72、运动72",
+      "previous": { "ovr": 73, "position": "SF/PF随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 74, "position": "SF", "profile": "two_way_wing" }
+    },
+    {
+      "id": "D26-50",
+      "name": "Jaden Bradley",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/jaden-bradley",
+      "basis": "场均30.6分钟得到13.3分、3.4篮板、4.4助攻、1.4抢断，46.3/39.4/80.9命中率；成熟控卫的投射、组织、运动和对抗都达到即战水平，年龄限制未来成长但不应压低当前能力。三分86、控球84、传球84、运动82，内防36、盖帽28",
+      "previous": { "ovr": 73, "position": "PG/SG随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 77, "position": "PG", "profile": "playmaker" }
+    },
+    {
+      "id": "D26-51",
+      "name": "Izaiyah Nelson",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/izaiyah-nelson",
+      "basis": "场均27.2分钟得到15.9分、9.6篮板、1.2助攻、1.6抢断、1.4盖帽，56.1/14.3/72.5命中率；6尺8矮壮防守中锋，终结、篮板、活动范围和防守事件突出，外投则是明确短板。篮板90、终结88、内防84、盖帽82，三分35、传球60",
+      "previous": { "ovr": 73, "position": "C", "attributes": "随机模板" },
+      "confirmed": { "ovr": 78, "position": "C", "profile": "rim_protector" }
+    },
+    {
+      "id": "D26-52",
+      "name": "Henri Veesaar",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/henri-veesaar",
+      "basis": "场均31.3分钟得到17.0分、8.7篮板、2.1助攻、1.2盖帽，61/43/62命中率；6尺11高效空间型中锋，篮下与外线效率亮眼，但62%罚球提示三分样本需适度回归，防守也没有精英证据。终结90、三分88、篮板84、中投82，内防76、盖帽74",
+      "previous": { "ovr": 73, "position": "C", "attributes": "随机模板" },
+      "confirmed": { "ovr": 78, "position": "C", "profile": "skilled_big" }
+    },
+    {
+      "id": "D26-53",
+      "name": "Ugonna Onyenso",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/ugonna-onyenso",
+      "basis": "场均18.6分钟得到6.5分、4.9篮板、2.9盖帽；6尺11机动护框中锋，单位时间盖帽产量极高，但进攻、策应和篮板总产量有限。盖帽94、内防86、运动84，终结72、传球50；单项精英但综合实算仅76",
+      "previous": { "ovr": 71, "position": "C", "attributes": "随机模板" },
+      "confirmed": { "ovr": 76, "position": "C", "profile": "rim_protector" }
+    },
+    {
+      "id": "D26-54",
+      "name": "Lajae Jones",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/lajae-jones",
+      "basis": "场均29.5分钟得到12.7分、5.7篮板、1.1助攻、1.2抢断、1.0盖帽；6尺7、220磅多功能侧翼，外防、终结和力量较有价值，但助攻产量明确限制组织评级，外线命中率也未缓存。外防82、力量82、终结80，传球62、三分78",
+      "previous": { "ovr": 71, "position": "PG/SG随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 75, "position": "SF", "profile": "two_way_wing" }
+    },
+    {
+      "id": "D26-55",
+      "name": "Nick Martinelli",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/nick-martinelli",
+      "basis": "本地官方资料确认其为6尺7、224磅的大龄前锋，并支持投射、策应、终结、篮板和力量；缓存没有具体统计，也没有明确防守或运动优势。终结82、力量82、中投80、三分78，外防72、运动70，按成熟进攻型四号位实算75",
+      "previous": { "ovr": 71, "position": "SF/PF随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 75, "position": "PF", "profile": "stretch_four" }
+    },
+    {
+      "id": "D26-56",
+      "name": "Vsevolod Ishchenko",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/vsevolod-ishchenko",
+      "basis": "职业联赛43场、场均23.7分钟得到8.7分、4.7篮板、2.0助攻、1.3抢断，51.6/46.3/80.1命中率；6尺8高效低使用率侧翼，投射和外防具备价值，但得分与创造产量有限。三分90、中投84、外防82，控球78、传球74",
+      "previous": { "ovr": 71, "position": "PG/SG随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 76, "position": "SF", "profile": "two_way_wing" }
+    },
+    {
+      "id": "D26-57",
+      "name": "Narcisse Ngoy",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/narcisse-ngoy",
+      "basis": "法国职业联赛场均25.0分钟得到10.7分、11.7篮板、2.7盖帽；7尺、250磅的成熟防守中锋，篮板、护框和力量均达到高水平，本地资料也支持终结与有限策应。篮板92、盖帽90、内防88、力量88；移动与持球一般，综合实算81",
+      "previous": { "ovr": 71, "position": "C", "attributes": "随机模板" },
+      "confirmed": { "ovr": 81, "position": "C", "profile": "rim_protector" }
+    },
+    {
+      "id": "D26-58",
+      "name": "Jaron Pierre Jr.",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/jaron-pierre-jr",
+      "basis": "场均37.6分钟得到21.6分、5.5篮板、3.8助攻，42.4/38.2/81命中率；6尺6高产大龄得分侧翼，外投、持球和二次组织具备即战力，但总体命中率与年龄限制效率和成长上限。三分84、中投84、控球82、关键82，运动76",
+      "previous": { "ovr": 71, "position": "SG/SF随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 78, "position": "SG", "profile": "perimeter_scorer" }
+    },
+    {
+      "id": "D26-59",
+      "name": "Trey Kaufman-Renn",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/trey-kaufman-renn",
+      "basis": "本地官方资料确认其为6尺9、240磅的大龄前锋，并支持投射、终结、篮板与力量；缓存没有具体统计，也没有组织或运动优势。终结86、力量86、篮板84、三分76，传球64、运动68，按即战型内线四号位实算77",
+      "previous": { "ovr": 71, "position": "SF/PF随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 77, "position": "PF", "profile": "interior_forward" }
+    },
+    {
+      "id": "D26-60",
+      "name": "Malique Lewis",
+      "status": "confirmed",
+      "source": "https://www.nba.com/draft/2026/prospects/malique-lewis",
+      "basis": "澳大利亚职业联赛场均21.2分钟得到7.3分、4.4篮板、2.0助攻、1.1抢断，45.2/37.5/82.6命中率；6尺8低使用率全能侧翼，投射、外防和运动具备角色价值，但195磅体重与得分产量限制当前对抗和创造。运动84、三分82、外防80，力量56",
+      "previous": { "ovr": 71, "position": "SF/PF随机", "attributes": "随机模板" },
+      "confirmed": { "ovr": 74, "position": "SF", "profile": "two_way_wing" }
+    }
+  ]
+}

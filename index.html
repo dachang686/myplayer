@@ -1508,10 +1508,10 @@ function playerCanPlayPosition(player, position) {
   return getBuildPlayerPositions(player).includes(position);
 }
 
-/** 任一登记位置匹配时不折损，否则仍按主位置计算跨位置折损。 */
+/** 任一登记位置匹配时不折损；完全不匹配时按主位置计算，且最多保留 94%。 */
 function getPlayerPosPenalty(userPos, player, attrKey) {
   if (playerCanPlayPosition(player, userPos)) return 1.0;
-  return getPosPenalty(userPos, getPlayerMainPos(player), attrKey);
+  return Math.min(0.94, getPosPenalty(userPos, getPlayerMainPos(player), attrKey));
 }
 // ==================== 初始化 ====================
 
@@ -4373,7 +4373,7 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
     : !!(currentScheduleGame && previousScheduleGame
       && Number(currentScheduleGame.day) - Number(previousScheduleGame.day) === 1);
 
-  // 实力差决定预期分差；季后赛用真实常规赛胜率差表示赛季表现，缺少战绩时兼容旧种子修正。
+  // 实力差决定预期分差；季后赛同时计入常规赛表现与首轮种子差，避免种子修正被战绩覆盖。
   const rosterEdge = (powerA.offense - powerB.offense) * 0.45
                    + (powerA.defense - powerB.defense) * 0.45
                    + (powerA.depth - powerB.depth) * 0.10;
@@ -4383,9 +4383,11 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
   const gamesA = (recordA?.wins || 0) + (recordA?.losses || 0);
   const gamesB = (recordB?.wins || 0) + (recordB?.losses || 0);
   const hasPlayoffRecords = !!STATE.season?.isPlayoffs && gamesA > 0 && gamesB > 0;
-  const seasonFormEdge = hasPlayoffRecords
-    ? clamp((((recordA.wins || 0) / gamesA) - ((recordB.wins || 0) / gamesB)) * 12, -2.5, 2.5)
-    : clamp((seedBonus || 0) * 0.25, -0.8, 0.8);
+  const recordFormEdge = hasPlayoffRecords
+    ? clamp((((recordA.wins || 0) / gamesA) - ((recordB.wins || 0) / gamesB)) * 16, -3, 3)
+    : 0;
+  const seedFormEdge = clamp(seedBonus || 0, -2.8, 2.8);
+  const seasonFormEdge = recordFormEdge + seedFormEdge;
   const homeCourtEdge = isHomeA === true ? 2.2 : (isHomeA === false ? -2.2 : 0);
   // 兼容现有带伤接口：把概率乘数转换成预期分差惩罚，不再直接篡改胜率。
   const availabilityEdge = Number.isFinite(options.availabilityEdge)
@@ -6799,6 +6801,7 @@ function renderMyCard(isFinal, activeTab) {
 
   const awardItems = getMyCardAwardItems();
   const eventItems = getMyCardEventItems();
+  const tradeRequestHtml = typeof renderPlayerTradeRequestCard === 'function' ? renderPlayerTradeRequestCard() : '';
   
   let playoffInfo = '';
   if (isFinal) {
@@ -6908,6 +6911,8 @@ function renderMyCard(isFinal, activeTab) {
         <div class="mc-pct-line">投篮 ${playoffAvg.fgm}-${playoffAvg.fga} (${playoffPct}%) · 三分 ${playoffAvg.threeM}-${playoffAvg.threeA} (${playoffThreePct}%) · 罚球 ${playoffAvg.ftm}-${playoffAvg.fta} (${playoffFtPct}%)</div>
       ` : '<div class="mc-empty">暂无季后赛出场记录</div>'}
     </div>
+
+    ${tradeRequestHtml}
 
     <div class="mc-section">
       <div class="mc-section-title">🏷️ 个人属性</div>
@@ -9575,22 +9580,34 @@ var ROOKIE_CANDIDATES = DRAFT_CLASS_2027
 
 function generateRookie() {
   var allPos = ['PG','SG','SF','PF','C'];
-  var pos = allPos[Math.floor(rngNext() * allPos.length)];
   var available = ROOKIE_CANDIDATES.filter(function(x) { return !_usedRookieCandidateNames[x.id]; });
   if (available.length === 0) available = ROOKIE_CANDIDATES;
   var pick = _starRookieQueue.length > 0
     ? _starRookieQueue.shift()
     : available[Math.floor(rngNext() * available.length)];
   if (pick && pick.id) _usedRookieCandidateNames[pick.id] = true;
-  var ovr = pick.ovr || draftOvrByPick(pick.pick || 99); // 六位明星新秀先被抽出且 85 总评，其余按顺位分层
+  if (pick && pick.ratingId) _usedRookieCandidateNames[pick.ratingId] = true;
+  var fixedRating = typeof FUTURE_PROSPECT_RATINGS !== 'undefined' && pick
+    ? FUTURE_PROSPECT_RATINGS[pick.ratingId || pick.id]
+    : null;
+  var pos = fixedRating ? fixedRating.pos : allPos[Math.floor(rngNext() * allPos.length)];
+  var ovr = fixedRating ? fixedRating.ovr : (pick.ovr || draftOvrByPick(pick.pick || 99));
   var p = {
     id: 'R' + String(++_rookieNameSeq).padStart(6, '0'),
     _prospectId: pick.id,
     cname: pick.cn,
-    pos: pos, height: '6\'7"', type: '新秀', ovr: ovr,
+    pos: pos, height: fixedRating ? fixedRating.height : '6\'7"', type: '新秀', ovr: ovr,
     _age: 19 + Math.floor(rngNext() * 3),
     loyalty: 60,
   };
+  if (fixedRating) {
+    p._fixedProspectRating = true;
+    p._rookieProfile = fixedRating.profile;
+    p._rookieGenerationVersion = 2;
+    Object.keys(fixedRating.attributes).forEach(function(key) {
+      p[key] = fixedRating.attributes[key];
+    });
+  }
   return p;
 }
 
@@ -11430,9 +11447,12 @@ EVENT_REGISTRY.push({
     if (STATE.season.isPlayoffs || getEventGameNumber() < 38 || getEventGameNumber() > 56) return false;
     var flags = STATE.career && STATE.career.flags ? STATE.career.flags : {};
     if (flags.tradeRumorSeason === (STATE.career.seasonCount || 0)) return false;
+    if ((STATE.career.contract || 0) <= 1) return false;
+    var request = typeof getPlayerTradeRequest === 'function' ? getPlayerTradeRequest() : null;
+    if (request && request.season === getActiveTradeRequestSeason()) return false;
     var total = (STATE.season.wins || 0) + (STATE.season.losses || 0);
     var winPct = total ? (STATE.season.wins || 0) / total : 1;
-    return winPct < 0.48 || (STATE.career.contract || 0) <= 1 || (getCareerProfile().fame || 0) >= 7;
+    return winPct < 0.48 || (getCareerProfile().fame || 0) >= 7;
   },
   execute: function() {
     function mark() { STATE.career.flags = STATE.career.flags || {}; STATE.career.flags.tradeRumorSeason = STATE.career.seasonCount || 0; }
@@ -11451,9 +11471,14 @@ EVENT_REGISTRY.push({
           return '你的团队没有否认任何可能。影响：商业价值提升，但媒体信任略降。';
         }},
         { label: '主动要求交易', hint: '开启强硬的球员自主路线', apply: function() {
-          mark(); STATE.career.flags.tradeRequested = true; addProfileDelta('loyalty', -3); addProfileDelta('controversy', 2); addProfileDelta('businessValue', 1);
+          mark();
+          var submitted = createPlayerTradeRequest('', 'deadline_event', { applyEffects: false });
+          addProfileDelta('loyalty', -3); addProfileDelta('controversy', 2); addProfileDelta('businessValue', 1);
           addActiveEventEffect('deadline-demand', '交易风波', -0.8, 4);
-          return '交易申请很快泄露，更衣室不得不面对持续追问。影响：忠诚明显下降、争议上升；未来四场球队气势受损。';
+          var outcome = submitted && submitted.request.status === 'approved'
+            ? '管理层同意在休赛期寻找交易。'
+            : '管理层拒绝了申请，你本赛季不能再次提交。';
+          return '交易申请很快泄露，更衣室不得不面对持续追问。' + outcome + '影响：忠诚明显下降、争议上升；未来四场球队气势受损。';
         }}
       ]
     };
