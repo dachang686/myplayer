@@ -14,8 +14,8 @@ const SIM_CONFIG = {
     /** 自由建人属性起点 */
     POINT_BUILD_BASE_ATTR: 50,
     /** 自由建人随机可分配点数（含端点） */
-    POINT_BUILD_MIN_POINTS: 150,
-    POINT_BUILD_MAX_POINTS: 200,
+    POINT_BUILD_MIN_POINTS: 300,
+    POINT_BUILD_MAX_POINTS: 360,
     /** Classic 模式重roll次数 */
     CLASSIC_REROLLS: 3,
     /** 每支球队 roster 展示上限（不够的用实际人数） */

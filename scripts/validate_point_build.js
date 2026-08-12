@@ -14,8 +14,8 @@ if (config.ATTR_LIST.length !== build.TOTAL_ATTRS) {
 if (!Number.isInteger(build.POINT_BUILD_MIN_POINTS) || !Number.isInteger(build.POINT_BUILD_MAX_POINTS)) {
   throw new Error('自由建人点数范围必须为整数');
 }
-if (build.POINT_BUILD_MIN_POINTS !== 150 || build.POINT_BUILD_MAX_POINTS !== 200) {
-  throw new Error(`自由建人点数范围应为 150-200，实际为 ${build.POINT_BUILD_MIN_POINTS}-${build.POINT_BUILD_MAX_POINTS}`);
+if (build.POINT_BUILD_MIN_POINTS !== 300 || build.POINT_BUILD_MAX_POINTS !== 360) {
+  throw new Error(`自由建人点数范围应为 300-360，实际为 ${build.POINT_BUILD_MIN_POINTS}-${build.POINT_BUILD_MAX_POINTS}`);
 }
 if (build.POINT_BUILD_BASE_ATTR < build.ATTR_MIN || build.POINT_BUILD_BASE_ATTR > build.ATTR_MAX) {
   throw new Error('自由建人属性起点超出合法范围');
@@ -30,6 +30,8 @@ const requiredFragments = [
   'value < maxAttr',
   "id=\"point-build-list\"",
   'window.scrollTo({ top: pageScrollTop',
+  'changePointBuildAttr(key, 10)',
+  'setInterval(function()',
 ];
 requiredFragments.forEach((fragment) => {
   if (!indexSource.includes(fragment)) throw new Error(`缺少自由建人逻辑：${fragment}`);

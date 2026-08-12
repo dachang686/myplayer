@@ -1691,7 +1691,7 @@ function initGame() {
 // ==================== 玩法说明弹窗 ====================
 var _helpPage = 0;
 var _helpPages = [
-  { title: '建球员', content: '选择我的位置后，系统会随机发放 150 到 200 点能力点。十四项属性均从 50 起步，你可以自由分配点数，单项最高 99。点数用完后揭晓总评、模板风格和相似球员；位置会影响总评计算与赛场角色。' },
+  { title: '建球员', content: '选择我的位置后，系统会随机发放 300 到 360 点能力点。十四项属性均从 50 起步，你可以自由分配点数，单项最高 99。点数用完后揭晓总评、模板风格和相似球员；位置会影响总评计算与赛场角色。' },
   { title: '赛季', content: '抽签决定我的生涯球队后进入赛季。系统根据我与队内同位置球员的总评比较判定首发或替补。每场比赛可点单场推进，也可点击日历日期批量模拟到当天。比赛数据根据属性和位置动态生成，方差较大，有爆发也有低迷。赛季中可随时点我的数据查看场均表现。' },
   { title: '生涯事件', content: '赛季事件分为伤病、纪律、职业剧情和生活花絮，各自拥有独立概率、冷却和赛季名额。部分事件会根据单场表现、球队战绩、合同阶段和季后赛形势触发，并提供会影响信任、声望、伤病风险或未来数场球队气势的选择。同一随机事件不会在一个赛季内重复，所有结果可在“我的数据—事件”中回看。' },
   { title: '季后赛', content: '常规赛结束后根据排名决定季后赛或附加赛资格。附加赛在七到十名之间进行，逐场淘汰。季后赛每轮七场四胜，我的系列赛会一场一场模拟，每场生成简报。点击简报可展开查看详细比分、我的数据和全队数据。一路赢下去直到总冠军。' },
@@ -2097,22 +2097,23 @@ function renderTeamPicker() {
 }
 
 var _pointBuildPressTimer = null;
+var _pointBuildRepeatTimer = null;
 var _pointBuildLongPress = false;
 
 function changePointBuildAttr(key, delta, event) {
   if (event) event.preventDefault();
-  if (!isPointBuildActive()) return;
+  if (!isPointBuildActive()) return false;
   const pageScrollTop = window.scrollY;
   const min = SIM_CONFIG.BUILD.POINT_BUILD_BASE_ATTR;
   const max = SIM_CONFIG.BUILD.ATTR_MAX;
   const current = Number(STATE.attrs[key]) || min;
   if (delta > 0) {
-    if (STATE.buildPointsRemaining <= 0 || current >= max) return;
+    if (STATE.buildPointsRemaining <= 0 || current >= max) return false;
     const amount = Math.min(Math.floor(delta), STATE.buildPointsRemaining, max - current);
     STATE.attrs[key] = current + amount;
     STATE.buildPointsRemaining -= amount;
   } else {
-    if (current <= min) return;
+    if (current <= min) return false;
     STATE.attrs[key] = current - 1;
     STATE.buildPointsRemaining++;
   }
@@ -2122,30 +2123,44 @@ function changePointBuildAttr(key, delta, event) {
   requestAnimationFrame(() => {
     window.scrollTo({ top: pageScrollTop, left: 0, behavior: 'instant' });
   });
+  return true;
+}
+
+function stopPointBuildIncrease() {
+  clearTimeout(_pointBuildPressTimer);
+  clearInterval(_pointBuildRepeatTimer);
+  _pointBuildPressTimer = null;
+  _pointBuildRepeatTimer = null;
+  _pointBuildLongPress = false;
 }
 
 function startPointBuildIncrease(key, event) {
   event.preventDefault();
-  clearTimeout(_pointBuildPressTimer);
+  stopPointBuildIncrease();
   _pointBuildLongPress = false;
   _pointBuildPressTimer = setTimeout(function() {
     _pointBuildLongPress = true;
-    changePointBuildAttr(key, 5);
+    if (!changePointBuildAttr(key, 10)) { stopPointBuildIncrease(); return; }
+    _pointBuildRepeatTimer = setInterval(function() {
+      if (!changePointBuildAttr(key, 10)) stopPointBuildIncrease();
+    }, 130);
   }, 350);
 }
 
 function endPointBuildIncrease(key, event) {
   if (event) event.preventDefault();
-  clearTimeout(_pointBuildPressTimer);
-  if (!_pointBuildLongPress) changePointBuildAttr(key, 1);
-  _pointBuildLongPress = false;
+  var wasLongPress = _pointBuildLongPress;
+  stopPointBuildIncrease();
+  if (!wasLongPress) changePointBuildAttr(key, 1);
 }
 
 function cancelPointBuildIncrease(event) {
   if (event) event.preventDefault();
-  clearTimeout(_pointBuildPressTimer);
-  _pointBuildLongPress = false;
+  stopPointBuildIncrease();
 }
+
+document.addEventListener('pointerup', cancelPointBuildIncrease);
+document.addEventListener('pointercancel', cancelPointBuildIncrease);
 
 function finishPointBuild() {
   if (!isPointBuildActive() || STATE.buildPointsRemaining !== 0) return;
@@ -2168,7 +2183,7 @@ function renderPointBuildAllocator() {
       + '<span style="font-size:13px;font-weight:700;">' + attrCN(key) + '</span>'
       + '<b style="text-align:center;font-family:var(--font-display);font-size:15px;">' + value + '</b>'
       + '<button type="button" aria-label="降低' + attrCN(key) + '" onmousedown="event.preventDefault()" onclick="changePointBuildAttr(\'' + key + '\', -1, event)" ' + (canLower ? '' : 'disabled') + ' style="height:30px;border:1px solid var(--border);border-radius:7px;background:var(--bg-card);color:var(--text);font-weight:800;cursor:pointer;">−</button>'
-      + '<button type="button" aria-label="提高' + attrCN(key) + '，长按加五点" onpointerdown="startPointBuildIncrease(\'' + key + '\', event)" onpointerup="endPointBuildIncrease(\'' + key + '\', event)" onpointercancel="cancelPointBuildIncrease(event)" onclick="if (event.detail === 0) changePointBuildAttr(\'' + key + '\', 1, event)" ' + (canRaise ? '' : 'disabled') + ' style="height:30px;border:0;border-radius:7px;background:var(--orange);color:#fff;font-weight:800;cursor:pointer;">+</button>'
+      + '<button type="button" aria-label="提高' + attrCN(key) + '，长按连续加十点" onpointerdown="startPointBuildIncrease(\'' + key + '\', event)" onpointerup="endPointBuildIncrease(\'' + key + '\', event)" onpointercancel="cancelPointBuildIncrease(event)" onclick="if (event.detail === 0) changePointBuildAttr(\'' + key + '\', 1, event)" ' + (canRaise ? '' : 'disabled') + ' style="height:30px;border:0;border-radius:7px;background:var(--orange);color:#fff;font-weight:800;cursor:pointer;">+</button>'
       + '</div>';
   }).join('');
   slotArea.innerHTML = '<div class="br-slot-area">'
@@ -2177,7 +2192,7 @@ function renderPointBuildAllocator() {
     + '<div id="point-build-list" class="point-build-list">' + rows + '</div>'
     + '<button class="slot-btn slot-btn-primary" type="button" onclick="finishPointBuild()" ' + (canFinish ? '' : 'disabled') + ' style="width:100%;min-height:48px;margin-top:12px;">' + (canFinish ? '确认属性，揭晓球员' : '请用完全部点数') + '</button>'
     + '</div>';
-  if (rosterArea) rosterArea.innerHTML = '<div class="br-hint" style="padding:10px 4px;">14 项属性均从 ' + baseAttr + ' 开始；加点将实时更新预计总评。</div>';
+  if (rosterArea) rosterArea.innerHTML = '<div class="br-hint" style="padding:10px 4px;">14 项属性均从 ' + baseAttr + ' 开始；短按 +1，长按持续每次 +10；加点将实时更新预计总评。</div>';
 }
 
 /** 只更新按钮状态，不重建老虎机HTML（防止跳动）*/
