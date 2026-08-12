@@ -6,6 +6,7 @@ const root = path.resolve(__dirname, '..');
 const configSource = fs.readFileSync(path.join(root, 'js/data/simulation_config.js'), 'utf8');
 const offseasonSource = fs.readFileSync(path.join(root, 'js/offseason.js'), 'utf8');
 const leagueSource = fs.readFileSync(path.join(root, 'js/data/league_players.js'), 'utf8');
+const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const SIM_CONFIG = new Function(`${configSource}\nreturn SIM_CONFIG;`)();
 const LEAGUE_PLAYER_DATA = new Function(`${leagueSource}\nreturn LEAGUE_PLAYER_DATA;`)();
 const ATTR_KEYS = SIM_CONFIG.ATTR_LIST;
@@ -13,6 +14,16 @@ const start = offseasonSource.indexOf('function getOvrPositions');
 const end = offseasonSource.indexOf('// ==================== 联盟演变', start);
 
 if (start < 0 || end < 0) throw new Error('无法提取 OVR 同步函数');
+
+const previewStart = indexSource.indexOf('function renderLeftAttrs');
+const previewEnd = indexSource.indexOf('/** Render position select */', previewStart);
+const previewSource = indexSource.slice(previewStart, previewEnd);
+if (!/calcOVR\(previewAttrs, STATE\.position\)/.test(previewSource)) {
+  throw new Error('建人临时总评未使用正式 calcOVR 公式');
+}
+if (/OVR_WEIGHTS/.test(previewSource)) {
+  throw new Error('建人临时总评仍残留旧 OVR_WEIGHTS 公式');
+}
 
 const context = vm.createContext({
   SIM_CONFIG,

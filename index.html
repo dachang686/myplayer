@@ -1882,27 +1882,19 @@ function renderLeftAttrs() {
   if (ovrEl) {
     let ovr = STATE.finalOVR || 0;
     if (!ovr && STATE.position) {
-      const w = SIM_CONFIG.OVR_WEIGHTS[STATE.position];
-      if (w) {
-        // 先算已锁定属性的加权平均值
-        let lockedSum = 0, lockedWeight = 0;
+      const lockedValues = ATTR_KEYS
+        .map(k => STATE.attrs[k])
+        .filter(value => value !== null && value !== undefined && Number.isFinite(Number(value)))
+        .map(Number);
+      // 未锁定任何属性时显示 --；其余空位用已锁定属性均值估算，再走正式 OVR 公式。
+      if (lockedValues.length) {
+        const fillValue = Math.round(lockedValues.reduce((sum, value) => sum + value, 0) / lockedValues.length);
+        const previewAttrs = {};
         ATTR_KEYS.forEach(k => {
-          const val = STATE.attrs[k];
-          const weight = w[k] || 0.07;
-          if (val !== null) { lockedSum += val * weight; lockedWeight += weight; }
+          const value = STATE.attrs[k];
+          previewAttrs[k] = value !== null && value !== undefined ? Number(value) : fillValue;
         });
-        // 未锁定任何属性时显示 --
-        if (lockedWeight === 0) { ovr = 0; }
-        else {
-          const fillAvg = lockedSum / lockedWeight;
-          // 用填充值计算完整OVR
-          let c = 0;
-          ATTR_KEYS.forEach(k => {
-            const val = STATE.attrs[k] !== null ? STATE.attrs[k] : Math.round(fillAvg);
-            c += val * (w[k] || 0.07);
-          });
-          ovr = Math.round(c);
-        }
+        ovr = calcOVR(previewAttrs, STATE.position);
       }
     }
     ovrEl.textContent = ovr > 0 ? ovr : '--';
