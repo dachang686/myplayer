@@ -11,9 +11,12 @@
   var standingsConference = null;
   var playerRankingStat = 'pts';
   var playerRankingLimit = 10;
+  var seasonCalendarMonth = null;
+  var tradeMode = 'direct';
   var tradeOutgoingIds = [];
   var tradeIncomingIds = [];
   var tradePartnerTeamId = null;
+  var tradeInquiry = null;
   var toastTimer = null;
   var storageBusy = false;
 
@@ -56,18 +59,22 @@
     var reason = rotationBlocked ? (validation.errors[0] || '请先修正轮换配置。') : '';
     if (!root) return;
     root.classList.toggle('is-storage-busy', storageBusy);
-    root.querySelectorAll('[data-action="save-game"], [data-action="load-save"], [data-action="restart-game"]').forEach(function(button) {
+    root.querySelectorAll('[data-action="save-game"], [data-action="load-save"]').forEach(function(button) {
       button.disabled = storageBusy;
       button.setAttribute('aria-busy', storageBusy ? 'true' : 'false');
     });
     var tradeWindowClosed = !current || !current.season || current.season.phase !== 'regular';
-    root.querySelectorAll('[data-action="complete-trade"], [data-action="select-trade-outgoing"], [data-action="select-trade-incoming"], [data-trade-team]').forEach(function(button) {
-      var blocked = storageBusy || tradeWindowClosed;
+    root.querySelectorAll('[data-action="complete-trade"], [data-action="run-trade-inquiry"], [data-action="use-trade-inquiry-offer"], [data-action="select-trade-outgoing"], [data-action="select-trade-incoming"], [data-trade-team]').forEach(function(button) {
+      var blocked = storageBusy || tradeWindowClosed || button.dataset.tradeReady === 'false';
       button.disabled = blocked;
       button.setAttribute('aria-busy', storageBusy ? 'true' : 'false');
       button.setAttribute('aria-disabled', blocked ? 'true' : 'false');
     });
-    root.querySelectorAll('[data-action="next-step"], [data-action="simulate-next"], [data-action="simulate-regular"]').forEach(function(button) {
+    root.querySelectorAll('[data-action="set-trade-mode"]').forEach(function(button) {
+      button.disabled = storageBusy;
+      button.setAttribute('aria-busy', storageBusy ? 'true' : 'false');
+    });
+    root.querySelectorAll('[data-action="next-step"], [data-action="simulate-next"], [data-action="simulate-regular"], [data-action="simulate-to-season-day"]').forEach(function(button) {
       var blocked = storageBusy || rotationBlocked;
       button.disabled = blocked;
       button.setAttribute('aria-disabled', blocked ? 'true' : 'false');
@@ -105,6 +112,28 @@
     '</section>';
   }
 
+  function ownerDirective(current, record) {
+    var goal = current.owner.goal;
+    var wins = Number(record.wins) || 0;
+    var losses = Number(record.losses) || 0;
+    var gamesRemaining = Math.max(0, 82 - wins - losses);
+    var winsRemaining = Math.max(0, Number(goal.targetWins) - wins);
+    if (current.season.phase === 'regular') {
+      if (!winsRemaining) {
+        return { title: '常规赛胜场目标已达成', detail: '董事会要求“' + goal.label + '”。当前战绩 ' + wins + '-' + losses + '，请在剩余 ' + gamesRemaining + ' 场中为季后赛保持竞争状态。' };
+      }
+      if (winsRemaining > gamesRemaining) {
+        return { title: '常规赛胜场目标已无法达成', detail: '董事会原目标是“' + goal.label + '”。当前战绩 ' + wins + '-' + losses + '，剩余 ' + gamesRemaining + ' 场，赛季结束后将按最终表现评估。' };
+      }
+      return { title: '董事会要求：至少 ' + goal.targetWins + ' 胜', detail: '当前战绩 ' + wins + '-' + losses + '，剩余 ' + gamesRemaining + ' 场，还需要 ' + winsRemaining + ' 胜以达到常规赛目标。' };
+    }
+    if (current.season.phase === 'playoffs') {
+      return { title: '董事会要求：' + goal.label, detail: '常规赛已结束。请在季后赛中至少完成既定目标，当前已推进至第 ' + (Number(current.season.userRound) || 0) + ' 轮。' };
+    }
+    var evaluation = current.owner.evaluation || current.owner;
+    return { title: evaluation.label || '赛季评估已完成', detail: evaluation.summary || ('董事会目标为“' + goal.label + '”，最终战绩 ' + wins + '-' + losses + '。') };
+  }
+
   function renderDashboard() {
     var current = state();
     var record = current.season.standings[current.selectedTeam] || { wins: 0, losses: 0 };
@@ -114,6 +143,7 @@
     var opponent = next ? (next.home === current.selectedTeam ? next.away : next.home) : null;
     var phaseLabel = current.season.phase === 'regular' ? '常规赛进行中' : (current.season.phase === 'playoffs' ? '季后赛进行中' : '赛季已结束');
     var owner = current.owner.evaluation || current.owner;
+    var directive = ownerDirective(current, record);
     main.innerHTML = '<section class="manager-page manager-dashboard">' +
       '<div class="manager-page-head"><div><div class="manager-eyebrow">经理主页 / ' + escapeHtml(current.seasonLabel) + '</div><h1>' + escapeHtml(teamName(current.selectedTeam)) + '</h1><p>' + escapeHtml(phaseLabel) + ' · 董事会目标：' + escapeHtml(current.owner.goal.label) + '</p></div></div>' +
       '<div class="manager-stat-strip"><div><small>战绩</small><strong>' + record.wins + '-' + record.losses + '</strong></div><div><small>联盟排名</small><strong>#' + (place || '—') + '</strong></div><div><small>目标完成度</small><strong>' + (owner.score || current.owner.rating) + '<em>/100</em></strong></div></div>' +
@@ -121,15 +151,8 @@
         '<article class="manager-panel manager-next-game"><div class="manager-panel-kicker">NEXT GAME</div>' + (next ? '<div class="manager-matchup"><div><strong>' + escapeHtml(teamName(next.home)) + '</strong><small>' + escapeHtml(next.home) + '</small></div><span>VS</span><div class="manager-matchup-away"><strong>' + escapeHtml(teamName(next.away)) + '</strong><small>' + escapeHtml(next.away) + '</small></div></div><p>第 ' + next.gameNum + ' 场 · 赛季日程第 ' + next.day + ' 天</p>' : '<div class="manager-empty-line">常规赛已完成，准备迎接季后赛。</div>') + '</article>' +
         '<article class="manager-panel manager-owner-panel"><div class="manager-panel-kicker">OWNER CHECK-IN</div><div class="manager-owner-score"><strong>' + (owner.score || current.owner.rating) + '</strong><span>/100</span><small>' + escapeHtml(owner.label || '等待赛季结果') + '</small></div><p>' + escapeHtml(owner.summary || '先把轮换稳定下来，再让结果替你说话。') + '</p></article>' +
       '</div>' +
-      '<article class="manager-panel manager-command-panel"><div><div class="manager-panel-kicker">办公室指令</div><h2>' + (current.season.phase === 'regular' ? '把时间交给赛程' : (current.season.phase === 'playoffs' ? '向冠军推进' : '复盘本赛季')) + '</h2><p>' + (current.season.phase === 'regular' ? '每场推进可检查结果，也可以一次性模拟剩余常规赛。' : (current.season.phase === 'playoffs' ? '系列赛采用七场四胜制，完成后将生成董事会评价。' : '查看完整排名、轮换与最终评价。')) + '</p></div><div class="manager-command-actions"><button class="manager-button manager-button-secondary" type="button" data-action="open-roster">调整轮换</button><button class="manager-button manager-button-secondary" type="button" data-action="open-trade">交易中心</button>' + commandButtons(current) + '</div></article>' +
+      '<article class="manager-panel manager-command-panel"><div class="manager-owner-directive"><div class="manager-panel-kicker">董事会指令 / OWNER DIRECTIVE</div><h2>' + escapeHtml(directive.title) + '</h2><p>' + escapeHtml(directive.detail) + '</p></div></article>' +
     '</section>';
-  }
-
-  function commandButtons(current) {
-    var restart = '<button class="manager-button manager-button-quiet" type="button" data-action="restart-game">重开经理模式</button>';
-    if (current.season.phase === 'regular') return '<button class="manager-button manager-button-secondary" type="button" data-action="simulate-regular">模拟完常规赛</button>' + restart;
-    if (current.season.phase === 'playoffs') return '<button class="manager-button manager-button-secondary" type="button" data-action="simulate-playoffs">模拟至总冠军</button>' + restart;
-    return '<button class="manager-button manager-button-secondary" type="button" data-view="standings">查看赛季总结</button>' + restart;
   }
 
   function updateNextAction() {
@@ -221,6 +244,14 @@
     return next;
   }
 
+  function tradeInquiryKey(playerIds) {
+    return (playerIds || []).slice().sort().join('|');
+  }
+
+  function clearTradeInquiry() {
+    tradeInquiry = null;
+  }
+
   function tradeableTeams(current) {
     return teamIds().filter(function(teamId) {
       return teamId !== current.selectedTeam && Array.isArray(current.leagueData[teamId]);
@@ -244,6 +275,9 @@
     var incoming = selectedTradePlayers(partnerRoster, tradeIncomingIds);
     var proposal = global.ManagerEngine.evaluateTrade(current, tradeOutgoingIds, tradeIncomingIds);
     var windowOpen = current.season.phase === 'regular';
+    var inquiryKey = tradeInquiryKey(tradeOutgoingIds);
+    if (tradeInquiry && tradeInquiry.key !== inquiryKey) clearTradeInquiry();
+    var inquiryResult = tradeInquiry && tradeInquiry.result;
     var outgoingChoices = roster.map(function(player) {
       var selected = tradeOutgoingIds.indexOf(player.id) >= 0;
       return '<button type="button" class="manager-trade-player-choice ' + (selected ? 'is-selected' : '') + '" data-action="select-trade-outgoing" data-player="' + escapeHtml(player.id) + '" aria-pressed="' + selected + '"' + (windowOpen ? '' : ' disabled') + '>' +
@@ -261,10 +295,19 @@
     }).join('');
     var assessment = proposal.valid ? (proposal.accepted ? '对方接受报价' : '对方暂不接受') : proposal.reason;
     var assessmentDetail = proposal.valid ? '送出价值 ' + proposal.outgoingValue.toFixed(1) + ' · 得到价值 ' + proposal.incomingValue.toFixed(1) + ' · 对方评估 ' + (proposal.acceptedMargin >= 0 ? '+' : '') + proposal.acceptedMargin.toFixed(1) : '双方各选 1 至 ' + maxPlayers + ' 名球员后生成评估。';
-    main.innerHTML = '<section class="manager-page manager-trade-page"><div class="manager-page-head"><div><div class="manager-eyebrow">交易中心 / TRADE DESK</div><h1>组合资产，重塑阵容。</h1><p>' + (windowOpen ? '每边可组合 1 至 ' + maxPlayers + ' 名球员。报价按资产价值、位置需求和名单空间评估，不涉及薪资或选秀权。' : '交易窗口已关闭，季后赛与赛季结束后不能再交易。') + '</p></div></div>' +
-      '<section class="manager-trade-builder-grid"><article class="manager-panel manager-trade-builder"><div class="manager-trade-builder-heading"><div class="manager-panel-kicker">STEP 1 · 送出资产包</div><span class="manager-trade-selection-count">' + outgoing.length + ' / ' + maxPlayers + '</span></div><div class="manager-trade-player-grid">' + (outgoingChoices || '<div class="manager-empty-line">没有可交易球员。</div>') + '</div><p class="manager-trade-package-copy">送出：' + escapeHtml(tradePlayerNames(outgoing)) + '</p></article>' +
+    var outgoingBuilder = '<article class="manager-panel manager-trade-builder"><div class="manager-trade-builder-heading"><div class="manager-panel-kicker">STEP 1 · 送出资产包</div><span class="manager-trade-selection-count">' + outgoing.length + ' / ' + maxPlayers + '</span></div><div class="manager-trade-player-grid">' + (outgoingChoices || '<div class="manager-empty-line">没有可交易球员。</div>') + '</div><p class="manager-trade-package-copy">送出：' + escapeHtml(tradePlayerNames(outgoing)) + '</p></article>';
+    var directTradeBody = '<section class="manager-trade-builder-grid">' + outgoingBuilder +
       '<article class="manager-panel manager-trade-builder"><div class="manager-trade-partner"><label>STEP 2 · 交易对象<select data-trade-team' + (windowOpen ? '' : ' disabled') + '>' + teams.map(function(teamId) { return '<option value="' + escapeHtml(teamId) + '"' + (teamId === tradePartnerTeamId ? ' selected' : '') + '>' + escapeHtml(teamName(teamId)) + '</option>'; }).join('') + '</select></label><span class="manager-trade-selection-count">' + incoming.length + ' / ' + maxPlayers + '</span></div><div class="manager-trade-player-grid">' + (incomingChoices || '<div class="manager-empty-line">当前球队没有可交易球员。</div>') + '</div><p class="manager-trade-package-copy">得到：' + escapeHtml(tradePlayerNames(incoming)) + '</p></article></section>' +
-      '<article class="manager-panel manager-trade-assessment" aria-live="polite"><div><div class="manager-panel-kicker">STEP 3 · 对方评估</div><h2>' + escapeHtml(assessment) + '</h2><p>' + escapeHtml(assessmentDetail) + '</p></div><button class="manager-button ' + (proposal.valid && proposal.accepted ? 'manager-button-primary' : 'manager-button-secondary') + '" type="button" data-action="complete-trade"' + (proposal.valid && proposal.accepted && windowOpen ? '' : ' disabled') + '>' + (proposal.valid && proposal.accepted ? '提交报价' : '等待可成交报价') + '</button></article>' +
+      '<article class="manager-panel manager-trade-assessment" aria-live="polite"><div><div class="manager-panel-kicker">STEP 3 · 对方评估</div><h2>' + escapeHtml(assessment) + '</h2><p>' + escapeHtml(assessmentDetail) + '</p></div><button class="manager-button ' + (proposal.valid && proposal.accepted ? 'manager-button-primary' : 'manager-button-secondary') + '" type="button" data-action="complete-trade" data-trade-ready="' + (proposal.valid && proposal.accepted) + '"' + (proposal.valid && proposal.accepted && windowOpen ? '' : ' disabled') + '>' + (proposal.valid && proposal.accepted ? '提交报价' : '等待可成交报价') + '</button></article>';
+    var inquiryOffers = inquiryResult && inquiryResult.offers.length ? '<section class="manager-trade-inquiry-results" aria-live="polite"><div class="manager-section-heading"><span>有兴趣的球队</span><small>' + inquiryResult.offers.length + ' 支球队给出报价</small></div><div class="manager-trade-inquiry-offer-list" role="list">' + inquiryResult.offers.map(function(offer, index) {
+      var offeredPlayers = offer.incoming.map(function(location) { return location.player; });
+      return '<article class="manager-trade-inquiry-offer" role="listitem"><div><div class="manager-panel-kicker">' + escapeHtml(teamName(offer.partnerTeam)) + '</div><b>愿意送出：' + escapeHtml(tradePlayerNames(offeredPlayers)) + '</b><span>对方得到 ' + offer.outgoing.length + ' 人 · 送出 ' + offer.incoming.length + ' 人</span></div><div class="manager-trade-inquiry-offer-actions"><small>送出价值 ' + offer.outgoingValue.toFixed(1) + ' · 得到价值 ' + offer.incomingValue.toFixed(1) + '</small><button class="manager-button manager-button-secondary" type="button" data-action="use-trade-inquiry-offer" data-offer-index="' + index + '" data-trade-ready="true">采用报价</button></div></article>';
+    }).join('') + '</div></section>' : '<section class="manager-trade-inquiry-results" aria-live="polite"><div class="manager-section-heading"><span>有兴趣的球队</span><small>' + (inquiryResult ? '暂无回应' : '等待询价') + '</small></div><div class="manager-empty-line">' + (inquiryResult ? '暂时没有球队愿意为这组资产报价。' : '选好 1 至 ' + maxPlayers + ' 名球员后发起询价。') + '</div></section>';
+    var inquiryTradeBody = '<section class="manager-trade-builder-grid">' + outgoingBuilder + '</section><article class="manager-panel manager-trade-inquiry-action"><div><div class="manager-panel-kicker">STEP 2 · 向联盟询价</div><h2>让有兴趣的球队主动报价。</h2><p>系统会综合位置需求、资产价值与名单空间，每队最多给出一份资产包。</p></div><button class="manager-button manager-button-primary" type="button" data-action="run-trade-inquiry" data-trade-ready="' + (outgoing.length > 0) + '"' + (outgoing.length && windowOpen ? '' : ' disabled') + '>开始询价</button></article>' + inquiryOffers;
+    var modeIsInquiry = tradeMode === 'inquiry';
+    main.innerHTML = '<section class="manager-page manager-trade-page"><div class="manager-page-head"><div><div class="manager-eyebrow">交易中心 / TRADE DESK</div><h1>组合资产，重塑阵容。</h1><p>' + (windowOpen ? '每边可组合 1 至 ' + maxPlayers + ' 名球员。报价按资产价值、位置需求和名单空间评估，不涉及薪资或选秀权。' : '交易窗口已关闭，季后赛与赛季结束后不能再交易。') + '</p></div></div>' +
+      '<div class="manager-trade-mode-switch" role="group" aria-label="交易方式"><button type="button" data-action="set-trade-mode" data-trade-mode="direct" aria-pressed="' + (!modeIsInquiry) + '">直接报价</button><button type="button" data-action="set-trade-mode" data-trade-mode="inquiry" aria-pressed="' + modeIsInquiry + '">问价</button></div>' +
+      (modeIsInquiry ? inquiryTradeBody : directTradeBody) +
       '<article class="manager-panel manager-trade-history"><div class="manager-panel-kicker">TRADE LOG</div>' + (history || '<div class="manager-empty-line">本赛季尚未完成交易。</div>') + '</article></section>';
   }
 
@@ -310,6 +353,107 @@
 
   function statConfigValue(value) {
     return ['pts', 'reb', 'ast', 'stl', 'blk'].indexOf(value) >= 0 ? value : 'pts';
+  }
+
+  var SEASON_CALENDAR_MONTHS = [
+    { name: '10月', start: 0, end: 10, firstDate: 21, days: 31, firstWday: 3 },
+    { name: '11月', start: 11, end: 40, firstDate: 1, days: 30, firstWday: 6 },
+    { name: '12月', start: 41, end: 71, firstDate: 1, days: 31, firstWday: 1 },
+    { name: '1月', start: 72, end: 102, firstDate: 1, days: 31, firstWday: 4 },
+    { name: '2月', start: 103, end: 130, firstDate: 1, days: 28, firstWday: 0 },
+    { name: '3月', start: 131, end: 161, firstDate: 1, days: 31, firstWday: 0 },
+    { name: '4月', start: 162, end: 191, firstDate: 1, days: 30, firstWday: 3 }
+  ];
+
+  function calendarMonthForDay(day) {
+    return SEASON_CALENDAR_MONTHS.findIndex(function(month) { return day >= month.start && day <= month.end; });
+  }
+
+  function calendarResultMap(current) {
+    var results = {};
+    (current.season.games || []).filter(function(game) { return game.phase === 'regular'; }).forEach(function(game) {
+      results[String(game.index)] = game;
+    });
+    return results;
+  }
+
+  function renderSeasonCalendar(current, userSchedule) {
+    var next = current.season.phase === 'regular' ? global.ManagerEngine.getNextRegularGame(current) : null;
+    var activeMonth = calendarMonthForDay(next ? next.day : (userSchedule.length ? userSchedule[userSchedule.length - 1].day : 0));
+    if (seasonCalendarMonth == null || seasonCalendarMonth < 0 || seasonCalendarMonth >= SEASON_CALENDAR_MONTHS.length) seasonCalendarMonth = Math.max(0, activeMonth);
+    var month = SEASON_CALENDAR_MONTHS[seasonCalendarMonth];
+    var scheduleByDay = {};
+    userSchedule.forEach(function(game) { scheduleByDay[game.day] = game; });
+    var resultByIndex = calendarResultMap(current);
+    var cells = '';
+    for (var blankIndex = 0; blankIndex < month.firstWday; blankIndex++) cells += '<div class="manager-calendar-cell is-empty" aria-hidden="true"></div>';
+    for (var date = 1; date <= month.days; date++) {
+      var day = month.start + (date - month.firstDate);
+      var fixture = scheduleByDay[day];
+      if (!fixture) {
+        cells += '<div class="manager-calendar-cell is-rest"><span>' + date + '</span></div>';
+        continue;
+      }
+      var result = resultByIndex[String(fixture.gameNum)];
+      var isNext = next && fixture.gameNum === next.gameNum;
+      var opponent = fixture.home === current.selectedTeam ? fixture.away : fixture.home;
+      var prefix = fixture.home === current.selectedTeam ? 'vs' : '@';
+      var score = '';
+      var outcomeClass = 'is-future';
+      if (result) {
+        var won = result.winner === current.selectedTeam;
+        outcomeClass = won ? 'is-win' : 'is-loss';
+        score = '<small>' + (fixture.home === current.selectedTeam ? result.homeScore + '-' + result.awayScore : result.awayScore + '-' + result.homeScore) + '</small>';
+      } else if (isNext) {
+        outcomeClass = 'is-next';
+      }
+      var canSimulate = current.season.phase === 'regular' && !result;
+      var content = '<span class="manager-calendar-date">' + date + '</span><b>' + prefix + ' ' + escapeHtml(opponent) + '</b>' + score;
+      cells += canSimulate ? '<button type="button" class="manager-calendar-cell ' + outcomeClass + '" data-action="simulate-to-season-day" data-season-day="' + day + '" aria-label="' + date + ' 日，' + escapeHtml(prefix + ' ' + opponent) + '，模拟至当天">' + content + '</button>' : '<div class="manager-calendar-cell ' + outcomeClass + '">' + content + '</div>';
+    }
+    var record = current.season.standings[current.selectedTeam] || { wins: 0, losses: 0 };
+    var completed = userSchedule.filter(function(fixture) { return !!resultByIndex[String(fixture.gameNum)]; }).length;
+    var hint = current.season.phase === 'regular' ? '点击未赛比赛日，可模拟至当天。' : '常规赛赛程已结束，可回顾每场结果。';
+    return '<section class="manager-panel manager-season-calendar"><div class="manager-calendar-head"><button type="button" class="manager-calendar-nav" data-action="set-season-calendar-month" data-calendar-month="' + (seasonCalendarMonth - 1) + '"' + (seasonCalendarMonth === 0 ? ' disabled' : '') + ' aria-label="上个月">‹</button><div><div class="manager-panel-kicker">REGULAR SEASON / CALENDAR</div><strong>' + month.name + '</strong></div><button type="button" class="manager-calendar-nav" data-action="set-season-calendar-month" data-calendar-month="' + (seasonCalendarMonth + 1) + '"' + (seasonCalendarMonth >= SEASON_CALENDAR_MONTHS.length - 1 ? ' disabled' : '') + ' aria-label="下个月">›</button></div><div class="manager-calendar-weekdays"><span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span></div><div class="manager-calendar-grid">' + cells + '</div><div class="manager-calendar-footer"><span>' + hint + '</span><strong>' + record.wins + '-' + record.losses + '</strong><small>' + completed + ' / ' + userSchedule.length + ' 场</small></div>' + (current.season.phase === 'regular' ? '<button class="manager-button manager-button-secondary manager-calendar-sim-all" type="button" data-action="simulate-regular">模拟剩余常规赛</button>' : '') + '</section>';
+  }
+
+  function seasonImportantEvents(current, userGames) {
+    var record = current.season.standings[current.selectedTeam] || { wins: 0, losses: 0 };
+    var conference = conferenceForTeam(current.selectedTeam);
+    var conferenceName = conference === 'NORTH' ? '北部联盟' : '南部联盟';
+    var conferenceRows = global.ManagerEngine.standingsList(current, conference);
+    var conferencePlace = conferenceRows.indexOf(current.selectedTeam) + 1;
+    var overallPlace = global.ManagerEngine.overallStandingsList(current).indexOf(current.selectedTeam) + 1;
+    var directive = ownerDirective(current, record);
+    var regularGames = userGames.filter(function(game) { return game.phase === 'regular'; });
+    var events = [{ tag: '董事会', title: directive.title, detail: directive.detail }];
+    var rankTitle = '联盟 #' + (overallPlace || '—') + ' · ' + conferenceName + ' #' + (conferencePlace || '—');
+    var rankDetail = current.season.phase === 'regular'
+      ? (conferencePlace <= 8 ? '目前位于季后赛资格区，常规赛还剩 ' + Math.max(0, 82 - regularGames.length) + ' 场。' : '目前位于季后赛资格区外，需在剩余 ' + Math.max(0, 82 - regularGames.length) + ' 场中提升排名。')
+      : '常规赛最终战绩 ' + record.wins + '-' + record.losses + '。';
+    events.push({ tag: '排名', title: rankTitle, detail: rankDetail });
+
+    var latestTrade = (current.tradeHistory || []).slice(-1)[0];
+    if (latestTrade) {
+      events.push({
+        tag: '交易',
+        title: tradePlayerNames(latestTrade.sent) + ' 换回 ' + tradePlayerNames(latestTrade.received),
+        detail: '已与 ' + teamName(latestTrade.partnerTeam) + ' 完成最近一笔交易' + (latestTrade.rotationReset ? '，轮换需重新确认。' : '。')
+      });
+    } else if (current.season.phase === 'regular') {
+      events.push({ tag: '交易', title: '交易窗口开放', detail: '可在交易中心发起一对一、组合交易或向其他球队询价。' });
+    } else {
+      events.push({ tag: '交易', title: '本赛季未完成交易', detail: '交易动态会在完成交易后记录于此。' });
+    }
+
+    if (current.season.phase === 'regular') {
+      events.push({ tag: '走势', title: '近期 ' + recentStreak(current, current.selectedTeam), detail: '已完成 ' + regularGames.length + ' 场常规赛，当前战绩 ' + record.wins + '-' + record.losses + '。' });
+    } else if (current.season.phase === 'playoffs') {
+      events.push({ tag: '季后赛', title: '正在冲击第 ' + (Number(current.season.userRound) || 1) + ' 轮', detail: '季后赛已完成 ' + userGames.filter(function(game) { return game.phase === 'playoffs'; }).length + ' 场，继续推进可查看本轮结果。' });
+    } else {
+      events.push({ tag: '赛季结果', title: '总冠军：' + teamName(current.season.champion), detail: '赛季已结束，董事会已根据最终表现完成评价。' });
+    }
+    return events;
   }
 
   function renderStandings() {
@@ -382,15 +526,16 @@
 
   function renderSeason() {
     var current = state();
-    var next = current.season.phase === 'regular' ? global.ManagerEngine.getNextRegularGame(current) : null;
     var userSchedule = current.season.schedule.filter(function(game) { return game.home === current.selectedTeam || game.away === current.selectedTeam; });
     var userGames = current.season.games.filter(function(game) { return game.home === current.selectedTeam || game.away === current.selectedTeam; });
     var gameCount = userGames.filter(function(game) { return game.phase === 'regular'; }).length;
     var playoffCount = userGames.filter(function(game) { return game.phase === 'playoffs'; }).length;
-    main.innerHTML = '<section class="manager-page manager-season-page"><div class="manager-page-head"><div><div class="manager-eyebrow">赛季中心 / SEASON LOG</div><h1>结果会留下痕迹。</h1><p>逐场推进适合观察，批量模拟适合快速完成赛季。</p></div></div>' +
+    var importantEvents = seasonImportantEvents(current, userGames);
+    main.innerHTML = '<section class="manager-page manager-season-page"><div class="manager-page-head"><div><div class="manager-eyebrow">赛季中心 / SEASON LOG</div><h1>结果会留下痕迹。</h1><p>点击日历中的未赛比赛日，可模拟至当天；底部“下一步”继续推进当前赛程。</p></div></div>' +
+      renderSeasonCalendar(current, userSchedule) +
       '<div class="manager-season-timeline"><div class="is-done"><span>01</span><b>常规赛</b><small>' + gameCount + ' / ' + userSchedule.length + ' 场</small></div><div class="' + (current.season.phase === 'playoffs' || current.season.phase === 'complete' ? 'is-done' : '') + '"><span>02</span><b>季后赛</b><small>' + playoffCount + ' 场已完成</small></div><div class="' + (current.season.phase === 'complete' ? 'is-done' : '') + '"><span>03</span><b>董事会评价</b><small>' + (current.owner.evaluation ? '已生成' : '赛季结束后生成') + '</small></div></div>' +
-      '<article class="manager-panel manager-season-log"><div class="manager-panel-kicker">MY GAME LOG</div>' + (userGames.slice(-8).reverse().map(function(game) { return '<div class="manager-log-row"><span>' + (game.phase === 'regular' ? '常规赛' : '季后赛') + '</span><b>' + escapeHtml(teamName(game.home)) + ' ' + game.homeScore + ' : ' + game.awayScore + ' ' + escapeHtml(teamName(game.away)) + '</b><small>' + (game.winner === current.selectedTeam ? '你的球队获胜' : '你的球队失利') + '</small></div>'; }).join('') || '<div class="manager-empty-line">还没有你的比赛记录。</div>') + '</article>' +
-      '<div class="manager-season-actions">' + (current.season.phase === 'regular' ? '<button class="manager-button manager-button-primary" type="button" data-action="simulate-regular">模拟完常规赛</button>' : '') + (current.season.phase === 'playoffs' ? '<button class="manager-button manager-button-primary" type="button" data-action="simulate-playoffs">模拟至总冠军</button>' : '') + (next ? '<span>下一场：' + escapeHtml(teamName(next.home === current.selectedTeam ? next.away : next.home)) + '</span>' : '') + '</div></section>';
+      '<article class="manager-panel manager-season-log manager-season-highlights"><div class="manager-panel-kicker">赛季大事 / SEASON NOTES</div>' + importantEvents.map(function(event) { return '<div class="manager-season-event-row"><span>' + escapeHtml(event.tag) + '</span><b>' + escapeHtml(event.title) + '</b><small>' + escapeHtml(event.detail) + '</small></div>'; }).join('') + '</article>' +
+      '<div class="manager-season-actions">' + (current.season.phase === 'playoffs' ? '<button class="manager-button manager-button-primary" type="button" data-action="simulate-playoffs">模拟至总冠军</button>' : '') + '</div></section>';
   }
 
   function render() {
@@ -412,6 +557,7 @@
 
   function setState(nextState) {
     global.MANAGER_STATE = nextState;
+    seasonCalendarMonth = null;
     view = 'dashboard';
     render();
   }
@@ -480,6 +626,39 @@
     } catch (error) { showToast(error.message || '模拟失败。', true); }
   }
 
+  function simulateToSeasonDay(targetDay) {
+    var current = state();
+    var day = Math.floor(Number(targetDay));
+    if (!current || storageBusy || !Number.isFinite(day)) return;
+    var validation = rotationValidation(current);
+    if (current.season.phase !== 'regular' || !validation.valid) {
+      showToast(current.season.phase !== 'regular' ? '常规赛已经结束，无法继续按日历模拟。' : (validation.errors[0] || '请先修正轮换。'), true);
+      return;
+    }
+    try {
+      var count = 0;
+      while (current.season.phase === 'regular') {
+        var fixture = global.ManagerEngine.getNextRegularGame(current);
+        if (!fixture || fixture.day > day) break;
+        global.ManagerEngine.simulateNextRegularGame(current);
+        count++;
+      }
+      if (!count) {
+        showToast('该日期的赛程已经完成。');
+        renderSeason();
+        return;
+      }
+      renderSeason();
+      updateNextAction();
+      setStorageBusy(true);
+      global.ManagerStorage.save(current).then(function() {
+        showToast('已模拟至日历日期，推进 ' + count + ' 场联盟比赛并自动保存。');
+      }, function(error) {
+        showToast('已模拟至日历日期，但自动保存失败：' + (error.message || '请手动重试保存。'), true);
+      }).then(function() { setStorageBusy(false); });
+    } catch (error) { showToast(error.message || '日历模拟失败。', true); }
+  }
+
   function completeTrade() {
     var current = state();
     if (!current || storageBusy) return;
@@ -495,6 +674,7 @@
       var result = global.ManagerEngine.executeTrade(current, tradeOutgoingIds, tradeIncomingIds);
       tradeOutgoingIds = [];
       tradeIncomingIds = [];
+      clearTradeInquiry();
       render();
       setStorageBusy(true);
       global.ManagerStorage.save(state()).then(function() {
@@ -505,6 +685,40 @@
     } catch (error) {
       showToast(error.message || '交易失败。', true);
     }
+  }
+
+  function runTradeInquiry() {
+    var current = state();
+    if (!current || storageBusy) return;
+    var result = global.ManagerEngine.inquireTrade(current, tradeOutgoingIds);
+    if (!result.valid) {
+      showToast(result.reason || '无法发起问价。', true);
+      renderTrade();
+      return;
+    }
+    tradeInquiry = { key: tradeInquiryKey(tradeOutgoingIds), result: result };
+    renderTrade();
+    showToast(result.reason, !result.offers.length);
+  }
+
+  function useTradeInquiryOffer(offerIndex) {
+    var current = state();
+    var result = tradeInquiry && tradeInquiry.key === tradeInquiryKey(tradeOutgoingIds) ? tradeInquiry.result : null;
+    var offer = result && result.offers && result.offers[Number(offerIndex)];
+    if (!current || storageBusy || !offer) {
+      showToast('这份报价已失效，请重新询价。', true);
+      return;
+    }
+    var proposal = global.ManagerEngine.evaluateTrade(current, tradeOutgoingIds, offer.incoming.map(function(location) { return location.player.id; }));
+    if (!proposal.valid || !proposal.accepted) {
+      showToast(proposal.reason || '这份报价已失效，请重新询价。', true);
+      return;
+    }
+    tradePartnerTeamId = offer.partnerTeam;
+    tradeIncomingIds = offer.incoming.map(function(location) { return location.player.id; });
+    tradeMode = 'direct';
+    renderTrade();
+    showToast('已带入 ' + teamName(offer.partnerTeam) + ' 的报价，请确认后提交。');
   }
 
   function toggleStarter(playerId) {
@@ -530,13 +744,16 @@
     else if (action === 'set-standings-conference') { standingsConference = target.dataset.conference === 'NORTH' ? 'NORTH' : 'SOUTH'; renderStandings(); }
     else if (action === 'set-player-ranking-stat') { playerRankingStat = statConfigValue(target.dataset.stat); playerRankingLimit = 10; renderStandings(); }
     else if (action === 'show-more-player-stats') { playerRankingLimit += 10; renderStandings(); }
-    else if (action === 'open-roster') { view = 'roster'; render(); }
-    else if (action === 'open-trade') { view = 'trade'; render(); }
+    else if (action === 'set-season-calendar-month') { seasonCalendarMonth = Math.max(0, Math.min(SEASON_CALENDAR_MONTHS.length - 1, Number(target.dataset.calendarMonth) || 0)); renderSeason(); updateActionAvailability(); }
     else if (action === 'open-dashboard') { view = 'dashboard'; render(); }
     else if (action === 'toggle-starter') toggleStarter(target.dataset.player);
-    else if (action === 'select-trade-outgoing') { tradeOutgoingIds = toggleTradeSelection(tradeOutgoingIds, target.dataset.player); renderTrade(); }
+    else if (action === 'set-trade-mode') { tradeMode = target.dataset.tradeMode === 'inquiry' ? 'inquiry' : 'direct'; renderTrade(); }
+    else if (action === 'select-trade-outgoing') { tradeOutgoingIds = toggleTradeSelection(tradeOutgoingIds, target.dataset.player); clearTradeInquiry(); renderTrade(); }
     else if (action === 'select-trade-incoming') { tradeIncomingIds = toggleTradeSelection(tradeIncomingIds, target.dataset.player); renderTrade(); }
+    else if (action === 'run-trade-inquiry') runTradeInquiry();
+    else if (action === 'use-trade-inquiry-offer') useTradeInquiryOffer(target.dataset.offerIndex);
     else if (action === 'complete-trade') completeTrade();
+    else if (action === 'simulate-to-season-day') simulateToSeasonDay(target.dataset.seasonDay);
     else if (action === 'simulate-next' || action === 'simulate-regular' || action === 'simulate-playoff-next' || action === 'simulate-playoffs') simulate(action);
   }
 

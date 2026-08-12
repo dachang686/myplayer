@@ -180,6 +180,8 @@ async function main() {
   assert(rankedConference.indexOf(conference[0]) < rankedConference.indexOf(conference[1]), '排名没有让 1-0 排在 1-1 前');
   const appSource = fs.readFileSync(path.join(root, 'js/manager/app.js'), 'utf8');
   assert(appSource.includes('ManagerEngine.overallStandingsList(current)'), '经理主页没有复用统一排名结果');
+  assert(appSource.includes('SEASON_CALENDAR_MONTHS') && appSource.includes('renderSeasonCalendar(current, userSchedule)') && appSource.includes('data-action="simulate-to-season-day"'), '经理赛季页没有使用日历式赛程和按日推进操作');
+  assert(appSource.includes('seasonImportantEvents') && appSource.includes('赛季大事 / SEASON NOTES') && !appSource.includes('MY GAME LOG'), '经理赛季页应以重要事项替代重复的逐场比赛记录');
 
   const homeSeries = { homeSeed: 'HOME', awaySeed: 'AWAY' };
   const homePattern = [0, 1, 2, 3, 4, 5, 6].map(index => engine.seriesHomeTeam(homeSeries, index) === 'HOME' ? 'H' : 'A');
@@ -314,6 +316,30 @@ async function main() {
   const versionThreeMigrated = normalize(versionThreeTradeSave);
   assert(versionThreeMigrated.version === 4 && versionThreeMigrated.tradeHistory[0].sent.length === 1 && versionThreeMigrated.tradeHistory[0].received.length === 1, 'v3 一换一交易记录没有迁移为资产包');
 
+  const inquiryState = createState(teamIds[0], sourceLeague, teamIds, vm.runInContext('generateLeagueSchedule', context), vm.runInContext('SIM_CONFIG', context));
+  const inquiryOutgoing = inquiryState.leagueData[inquiryState.selectedTeam].slice().sort((first, second) => (Number(second.ovr) || 0) - (Number(first.ovr) || 0)).slice(0, 2).map(player => player.id);
+  const inquiryBefore = JSON.stringify(inquiryState);
+  const inquiryResult = engine.inquireTrade(inquiryState, inquiryOutgoing);
+  assert(inquiryResult.valid && inquiryResult.offers.length > 0, '问价没有返回感兴趣球队的报价');
+  assert(JSON.stringify(inquiryState) === inquiryBefore, '问价不应修改经理状态');
+  assert(new Set(inquiryResult.offers.map(offer => offer.partnerTeam)).size === inquiryResult.offers.length, '同一球队返回了多份问价报价');
+  assert(inquiryResult.offers.every(offer => offer.accepted && offer.partnerTeam !== inquiryState.selectedTeam && offer.outgoing.length === inquiryOutgoing.length && offer.incoming.length >= 1 && offer.incoming.length <= 3 && offer.outgoing.every(location => location.teamId === inquiryState.selectedTeam) && offer.incoming.every(location => location.teamId === offer.partnerTeam)), '问价报价的球队归属或资产包数量不正确');
+  const inquiryOffer = inquiryResult.offers[0];
+  const inquiryOfferCheck = engine.evaluateTrade(inquiryState, inquiryOutgoing, inquiryOffer.incoming.map(location => location.player.id));
+  assert(inquiryOfferCheck.valid && inquiryOfferCheck.accepted, '问价返回了不可执行报价');
+  const singlePlayerInquiry = engine.inquireTrade(inquiryState, inquiryOutgoing.slice(0, 1));
+  const threePlayerInquiry = engine.inquireTrade(inquiryState, inquiryState.leagueData[inquiryState.selectedTeam].slice().sort((first, second) => (Number(second.ovr) || 0) - (Number(first.ovr) || 0)).slice(0, 3).map(player => player.id));
+  assert(singlePlayerInquiry.valid && singlePlayerInquiry.outgoing.length === 1, '单人资产包无法发起问价');
+  assert(threePlayerInquiry.valid && threePlayerInquiry.outgoing.length === 3, '三人资产包无法发起问价');
+  const emptyInquiry = engine.inquireTrade(inquiryState, []);
+  const oversizedInquiry = engine.inquireTrade(inquiryState, inquiryState.leagueData[inquiryState.selectedTeam].slice(0, 4).map(player => player.id));
+  assert(!emptyInquiry.valid && /至少选择/.test(emptyInquiry.reason), '空资产包仍可发起问价');
+  assert(!oversizedInquiry.valid && /最多选择/.test(oversizedInquiry.reason), '超过三人的资产包仍可发起问价');
+  const closedInquiryState = createState(teamIds[0], sourceLeague, teamIds, vm.runInContext('generateLeagueSchedule', context), vm.runInContext('SIM_CONFIG', context));
+  closedInquiryState.season.phase = 'playoffs';
+  const closedInquiry = engine.inquireTrade(closedInquiryState, inquiryOutgoing);
+  assert(!closedInquiry.valid && /交易窗口已关闭/.test(closedInquiry.reason), '季后赛仍可发起问价');
+
   const sourceBefore = JSON.stringify(sourceLeague);
   const regularGames = engine.simulateRemainingRegularSeason(state);
   assert(regularGames === 1230 && state.season.games.filter(game => game.phase === 'regular').length === 1230, '完整常规赛场数不正确');
@@ -350,6 +376,9 @@ async function main() {
     oneForTwoTradeExecuted: true,
     tradePackageValidation: true,
     versionThreeTradeMigrated: true,
+    tradeInquiryOffers: inquiryResult.offers.length,
+    tradeInquiryStateUntouched: true,
+    tradeInquiryValidation: true,
     rejectedTradeBlocked,
     postseasonTradeBlocked: true,
     tradeHistoryRoundTrip: true,

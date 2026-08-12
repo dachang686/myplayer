@@ -288,7 +288,7 @@
         rotationReset: !!trade.rotationReset,
         createdAt: typeof trade.createdAt === 'string' ? trade.createdAt : null
       };
-    });
+    }).filter(function(trade) { return trade.sent.length && trade.received.length; });
   }
 
   function migrateVersionOne(state, teamIds) {

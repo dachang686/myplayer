@@ -1669,99 +1669,39 @@ function getOvrPositions(pos) {
   return positions.length ? positions.slice(0, 2) : ['SG'];
 }
 
-function calcOvrEffectiveAttribute(attrs, key) {
+function calcOvrAttribute(attrs, key) {
   var value = (attrs && attrs[key] != null) ? Number(attrs[key]) : 50;
-  value = Math.max(25, Math.min(99, Number.isFinite(value) ? value : 50));
-  return Math.pow((value - 25) / 74, 1.275);
+  return Math.max(25, Math.min(99, Number.isFinite(value) ? value : 50));
 }
 
-function calcOvrDimensionRating(value) {
-  var normalized = Math.max(0, Math.min(1, Number(value) || 0));
-  return Math.max(25, Math.min(99, 25 + 74 * Math.pow(normalized, 1 / 1.275)));
-}
-
-function calcOvrDimensions(attrs) {
-  function skill(key) { return calcOvrEffectiveAttribute(attrs, key); }
-  var three = skill('threePT');
-  var mid = skill('MID');
-  var finish = skill('FIN');
-  var dunk = skill('DNK');
-  var handle = skill('HAN');
-  var pass = skill('PAS');
-  var perimeterDefense = skill('PDEF');
-  var interiorDefense = skill('IDEF');
-  var block = skill('BLK');
-  var rebound = skill('REB');
-  var athletic = skill('ATH');
-  var strength = skill('STR');
-  var clutch = skill('CLU');
-
-  var scoringOptions = [
-    three * 0.60 + handle * 0.24 + athletic * 0.10 + clutch * 0.06,
-    mid * 0.58 + handle * 0.24 + clutch * 0.10 + strength * 0.08,
-    handle * 0.30 + athletic * 0.25 + finish * 0.23 + strength * 0.14 + dunk * 0.08,
-    finish * 0.34 + dunk * 0.28 + athletic * 0.22 + strength * 0.16,
-    strength * 0.34 + finish * 0.28 + mid * 0.23 + handle * 0.15,
-    athletic * 0.35 + finish * 0.28 + dunk * 0.25 + handle * 0.12
-  ].sort(function(a, b) { return b - a; });
-  var defenseOptions = [
-    perimeterDefense * 0.65 + athletic * 0.25 + strength * 0.10,
-    interiorDefense * 0.44 + block * 0.32 + strength * 0.14 + rebound * 0.10,
-    rebound * 0.52 + interiorDefense * 0.28 + strength * 0.20
-  ].sort(function(a, b) { return b - a; });
-  var allSkills = [three, mid, finish, dunk, handle, pass, perimeterDefense, interiorDefense, block, rebound, athletic, strength, clutch]
-    .sort(function(a, b) { return b - a; });
-  var versatility = allSkills.slice(0, 7).reduce(function(sum, value) { return sum + value; }, 0) / 7;
-
-  return {
-    scoring: calcOvrDimensionRating(scoringOptions[0] * 0.50 + scoringOptions[1] * 0.30 + scoringOptions[2] * 0.20),
-    playmaking: calcOvrDimensionRating(pass * 0.55 + handle * 0.30 + clutch * 0.15),
-    defense: calcOvrDimensionRating(defenseOptions[0] * 0.55 + defenseOptions[1] * 0.30 + defenseOptions[2] * 0.15),
-    physical: calcOvrDimensionRating(athletic * 0.45 + strength * 0.30 + dunk * 0.15 + rebound * 0.10),
-    clutch: calcOvrDimensionRating(clutch * 0.50 + handle * 0.15 + pass * 0.15 + three * 0.10 + mid * 0.10),
-    versatility: calcOvrDimensionRating(versatility)
-  };
-}
-
-function calcOvrPositionScore(dimensions, pos) {
-  var weights = SIM_CONFIG.OVR_MODEL.positionWeights[pos];
+function calcOvrPositionScore(attrs, pos) {
+  var model = SIM_CONFIG.OVR_MODEL;
+  var weights = model.positionWeights[pos];
   return Object.keys(weights).reduce(function(sum, key) {
-    return sum + dimensions[key] * weights[key];
-  }, 0);
-}
-
-function calcOvrFormulaScore(attrs, pos) {
-  var model = SIM_CONFIG && SIM_CONFIG.OVR_MODEL;
-  if (!model) return 50;
-  var positions = getOvrPositions(pos);
-  var dimensions = calcOvrDimensions(attrs);
-  var primaryScore = calcOvrPositionScore(dimensions, positions[0]);
-  var positionScore = primaryScore;
-  if (positions[1]) {
-    var secondaryWeight = Math.max(0, Math.min(0.5, Number(model.secondaryPositionWeight) || 0));
-    positionScore = primaryScore * (1 - secondaryWeight) + calcOvrPositionScore(dimensions, positions[1]) * secondaryWeight;
-  }
-  var calibration = model.calibration[positions[0]] || model.calibration.SG;
-  var eliteBonus = Math.max(0, positionScore - model.eliteThreshold) * calibration.eliteScale;
-  // 保留未截断的连续公式分作为成长基准，避免高 OVR 球员在 99 分平台上失去成长响应。
-  return calibration.offset + positionScore * calibration.scale + eliteBonus;
+    return sum + (calcOvrAttribute(attrs, key) - 25) * weights[key];
+  }, Number(model.positionOffsets[pos]) || 0);
 }
 
 function calcOVR(attrs, pos) {
-  var formulaScore = calcOvrFormulaScore(attrs, pos);
   var model = SIM_CONFIG && SIM_CONFIG.OVR_MODEL;
-  var anchor = model && model.sourceAnchor;
-  if (attrs && anchor && !isGeneratedLeaguePlayer(attrs)) {
-    var anchorVersion = Number(attrs._ovrAnchorVersion);
-    var anchorOvr = Number(attrs._ovrAnchorOvr);
-    var anchorScore = Number(attrs._ovrAnchorScore);
-    if (anchorVersion === Number(anchor.version) && Number.isFinite(anchorOvr) && Number.isFinite(anchorScore)) {
-      var deltaScale = Number(anchor.attributeDeltaScale);
-      if (!Number.isFinite(deltaScale)) deltaScale = 1;
-      return Math.max(40, Math.min(99, Math.round(anchorOvr + (formulaScore - anchorScore) * deltaScale)));
-    }
+  if (!model) return 50;
+  var positions = getOvrPositions(pos);
+  var primaryScore = calcOvrPositionScore(attrs, positions[0]);
+  var positionScore = primaryScore;
+  if (positions[1]) {
+    var secondaryWeight = Math.max(0, Math.min(0.5, Number(model.secondaryPositionWeight) || 0));
+    positionScore = primaryScore * (1 - secondaryWeight) + calcOvrPositionScore(attrs, positions[1]) * secondaryWeight;
   }
-  return Math.max(40, Math.min(99, Math.round(formulaScore)));
+  var values = ATTR_KEYS.map(function(key) { return calcOvrAttribute(attrs, key); }).sort(function(a, b) { return b - a; });
+  var scoringBreadth = Math.min(Math.max(calcOvrAttribute(attrs, 'threePT'), calcOvrAttribute(attrs, 'MID')), calcOvrAttribute(attrs, 'FIN'));
+  var topFourAverage = values.slice(0, 4).reduce(function(sum, value) { return sum + value; }, 0) / 4;
+  var bonuses = model.bonuses;
+  var eliteExcess = values.reduce(function(sum, value) { return sum + Math.max(0, value - bonuses.eliteThreshold); }, 0);
+  var raw = model.base + positionScore
+    + scoringBreadth * bonuses.scoringBreadth
+    + topFourAverage * bonuses.topFourAverage
+    + eliteExcess * bonuses.eliteExcess;
+  return Math.max(40, Math.min(99, Math.round(raw)));
 }
 
 function isGeneratedLeaguePlayer(player) {
@@ -1952,8 +1892,7 @@ function syncLeaguePlayerOvrs() {
   LEAGUE_TEAM_IDS.forEach(function(teamId) {
     (LEAGUE_PLAYER_DATA[teamId] || []).forEach(function(player) {
       if (!player || !player.pos) return;
-      var hadSourceOvr = Object.prototype.hasOwnProperty.call(player, '_sourceOvr');
-      if (!hadSourceOvr) {
+      if (!Object.prototype.hasOwnProperty.call(player, '_sourceOvr')) {
         try {
           Object.defineProperty(player, '_sourceOvr', { value: Number(player.ovr) || 50, writable: true, configurable: true, enumerable: true });
         } catch (error) {
@@ -1963,21 +1902,6 @@ function syncLeaguePlayerOvrs() {
       if (isGeneratedLeaguePlayer(player)) {
         rebalanceLegacyGeneratedPlayer(player);
         refreshGeneratedPlayerType(player);
-      } else {
-        var anchor = SIM_CONFIG && SIM_CONFIG.OVR_MODEL && SIM_CONFIG.OVR_MODEL.sourceAnchor;
-        var expectedAnchorVersion = anchor ? Number(anchor.version) : 0;
-        var hasCurrentAnchor = anchor
-          && Number(player._ovrAnchorVersion) === expectedAnchorVersion
-          && Number.isFinite(Number(player._ovrAnchorOvr))
-          && Number.isFinite(Number(player._ovrAnchorScore));
-        if (anchor && !hasCurrentAnchor) {
-          var seasonCount = Number(STATE && STATE.career && STATE.career.seasonCount) || 0;
-          // 新名单以审核 OVR 为基准；旧的长期存档升级公式时保留当时的运行 OVR，避免进度跳变。
-          var anchorOvr = hadSourceOvr && seasonCount > 0 ? Number(player.ovr) : Number(player._sourceOvr);
-          player._ovrAnchorVersion = expectedAnchorVersion;
-          player._ovrAnchorOvr = Math.max(40, Math.min(99, Math.round(anchorOvr || 50)));
-          player._ovrAnchorScore = calcOvrFormulaScore(player, player.pos);
-        }
       }
       var nextOvr = calcOVR(player, player.pos);
       if (player.ovr === nextOvr) return;

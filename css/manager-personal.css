@@ -255,6 +255,7 @@ body {
   box-shadow: 0 1px 0 var(--manager-border), 0 4px 10px rgba(0, 0, 0, 0.18);
 }
 
+
 .manager-welcome {
   max-width: none;
   padding: 18px 0 12px;
@@ -329,6 +330,172 @@ body {
   margin-top: 20px;
 }
 
+.manager-season-calendar {
+  padding: 14px;
+}
+
+.manager-calendar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 2px 0 12px;
+}
+
+.manager-calendar-head > div {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 3px;
+  text-align: center;
+}
+
+.manager-calendar-head strong {
+  font-family: "Arial Black", "Microsoft YaHei UI", sans-serif;
+  font-size: 19px;
+}
+
+.manager-calendar-nav {
+  display: grid;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--manager-border);
+  border-radius: 9px;
+  background: var(--manager-bg);
+  color: var(--manager-text);
+  font-size: 26px;
+  line-height: 1;
+}
+
+.manager-calendar-nav:focus-visible,
+.manager-calendar-cell:focus-visible {
+  outline: 2px solid var(--manager-accent);
+  outline-offset: 2px;
+}
+
+.manager-calendar-weekdays,
+.manager-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 3px;
+}
+
+.manager-calendar-weekdays {
+  margin-bottom: 3px;
+}
+
+.manager-calendar-weekdays span {
+  color: var(--manager-dim);
+  font-family: "Arial Black", "Microsoft YaHei UI", sans-serif;
+  font-size: 9px;
+  text-align: center;
+}
+
+.manager-calendar-cell {
+  display: flex;
+  min-width: 0;
+  min-height: 56px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 3px;
+  padding: 6px 2px;
+  border: 1px solid var(--manager-border-soft);
+  border-radius: 8px;
+  background: var(--manager-bg);
+  color: var(--manager-text);
+  font-family: "Microsoft YaHei UI", "PingFang SC", system-ui, sans-serif;
+}
+
+button.manager-calendar-cell {
+  cursor: pointer;
+}
+
+button.manager-calendar-cell:hover {
+  border-color: var(--manager-accent);
+  background: var(--manager-accent-soft);
+}
+
+.manager-calendar-cell.is-empty,
+.manager-calendar-cell.is-rest {
+  border-color: transparent;
+  background: transparent;
+}
+
+.manager-calendar-cell.is-rest {
+  align-items: flex-start;
+  color: var(--manager-dim);
+}
+
+.manager-calendar-cell.is-win {
+  border-color: rgba(91, 201, 140, 0.55);
+  background: rgba(91, 201, 140, 0.08);
+}
+
+.manager-calendar-cell.is-loss {
+  border-color: rgba(219, 101, 88, 0.55);
+  background: rgba(219, 101, 88, 0.07);
+}
+
+.manager-calendar-cell.is-next {
+  border-color: var(--manager-accent);
+  background: var(--manager-accent-soft);
+}
+
+.manager-calendar-date {
+  align-self: flex-start;
+  color: var(--manager-dim);
+  font-size: 10px;
+  line-height: 1;
+}
+
+.manager-calendar-cell b {
+  overflow: hidden;
+  width: 100%;
+  font-size: 9px;
+  line-height: 1.1;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.manager-calendar-cell small {
+  color: var(--manager-muted);
+  font-size: 9px;
+  line-height: 1;
+}
+
+.manager-calendar-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 2px 0;
+  color: var(--manager-dim);
+  font-size: 10px;
+}
+
+.manager-calendar-footer > span {
+  flex: 1 1 auto;
+}
+
+.manager-calendar-footer strong {
+  flex: 0 0 auto;
+  color: var(--manager-accent);
+  font-family: "Arial Black", "Microsoft YaHei UI", sans-serif;
+  font-size: 12px;
+}
+
+.manager-calendar-footer small {
+  flex: 0 0 auto;
+  font-size: 10px;
+}
+
+.manager-calendar-sim-all {
+  margin-top: 12px;
+}
+
 .manager-page-head {
   display: block;
   margin-bottom: 20px;
@@ -381,15 +548,26 @@ body {
 .manager-command-panel {
   align-items: stretch;
   flex-direction: column;
-  gap: 18px;
   margin-top: 10px;
   padding: 19px;
 }
 
-.manager-command-actions {
+.manager-owner-directive {
   display: grid;
-  grid-template-columns: 1fr;
-  width: 100%;
+  gap: 7px;
+}
+
+.manager-owner-directive h2 {
+  margin: 0;
+  font-size: 21px;
+}
+
+.manager-owner-directive p {
+  max-width: 62ch;
+  margin: 0;
+  color: var(--manager-muted);
+  font-size: 12px;
+  line-height: 1.65;
 }
 
 .manager-rotation-status {
@@ -405,6 +583,43 @@ body {
 .manager-standings-block,
 .manager-season-log {
   padding: 16px;
+}
+
+.manager-season-highlights {
+  display: grid;
+  gap: 0;
+}
+
+.manager-season-event-row {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 4px 12px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--manager-border-soft);
+}
+
+.manager-season-event-row:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.manager-season-event-row > span {
+  color: var(--manager-muted);
+  font-size: 10px;
+  letter-spacing: .08em;
+}
+
+.manager-season-event-row b {
+  color: var(--manager-text);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.manager-season-event-row small {
+  grid-column: 2;
+  color: var(--manager-muted);
+  font-size: 11px;
+  line-height: 1.55;
 }
 
 .manager-rankings-view-tabs,
@@ -639,6 +854,33 @@ body {
   gap: 12px;
 }
 
+.manager-trade-mode-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.manager-trade-mode-switch button {
+  min-height: 44px;
+  border: 1px solid var(--manager-border);
+  border-radius: 9px;
+  background: transparent;
+  color: var(--manager-dim);
+  font-family: "Arial Black", "Microsoft YaHei UI", sans-serif;
+  font-size: 11px;
+}
+
+.manager-trade-mode-switch button[aria-pressed="true"] {
+  border-color: var(--manager-accent);
+  background: var(--manager-accent-soft);
+  color: var(--manager-accent);
+}
+
+.manager-trade-mode-switch button:focus-visible {
+  outline: 2px solid var(--manager-accent);
+  outline-offset: 2px;
+}
+
 .manager-trade-builder,
 .manager-trade-history {
   padding: 16px;
@@ -726,6 +968,13 @@ body {
   background: var(--manager-accent-soft);
 }
 
+.manager-trade-player-choice:focus-visible,
+.manager-trade-partner select:focus-visible,
+.manager-trade-assessment .manager-button:focus-visible {
+  outline: 2px solid var(--manager-accent);
+  outline-offset: 2px;
+}
+
 .manager-trade-partner {
   margin: 0;
   padding: 0;
@@ -734,7 +983,9 @@ body {
 
 .manager-trade-partner label {
   display: grid;
+  flex: 1 1 auto;
   gap: 6px;
+  min-width: 0;
   color: var(--manager-dim);
   font-family: "Arial Black", "Microsoft YaHei UI", sans-serif;
   font-size: 10px;
@@ -759,10 +1010,8 @@ body {
 }
 
 .manager-trade-assessment {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
+  display: grid;
+  gap: 12px;
   padding: 16px;
 }
 
@@ -783,78 +1032,99 @@ body {
 }
 
 .manager-trade-assessment .manager-button {
-  flex: 0 0 auto;
+  width: 100%;
   min-height: 42px;
 }
 
-.manager-trade-offers {
+.manager-trade-inquiry-action {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.manager-trade-inquiry-action > div {
+  min-width: 0;
+}
+
+.manager-trade-inquiry-action h2 {
+  margin: 5px 0 0;
+  font-size: 18px;
+}
+
+.manager-trade-inquiry-action p {
+  margin: 5px 0 0;
+  color: var(--manager-muted);
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+.manager-trade-inquiry-action .manager-button {
+  width: 100%;
+  min-height: 42px;
+}
+
+.manager-trade-inquiry-results,
+.manager-trade-inquiry-offer-list {
   display: grid;
   gap: 8px;
 }
 
-.manager-trade-offers .manager-section-heading {
+.manager-trade-inquiry-results .manager-section-heading {
   margin: 2px 0 0;
 }
 
-.manager-trade-offer {
-  display: grid;
-  gap: 9px;
-  padding: 14px;
+.manager-trade-inquiry-offer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 14px;
   border: 1px solid var(--manager-border);
   border-radius: 12px;
   background: var(--manager-surface);
-  box-shadow: 0 3px 0 var(--manager-border-soft);
 }
 
-.manager-trade-offer.is-accepted {
-  border-color: rgba(91, 201, 140, 0.6);
-}
-
-.manager-trade-offer.is-rejected {
-  opacity: 0.7;
-}
-
-.manager-trade-offer-main {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.manager-trade-offer-main > div {
-  display: flex;
+.manager-trade-inquiry-offer > div:first-child {
+  display: grid;
   min-width: 0;
-  flex-direction: column;
+  gap: 4px;
 }
 
-.manager-trade-offer-main b {
-  margin-top: 4px;
-  font-size: 15px;
+.manager-trade-inquiry-offer b {
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.manager-trade-offer-main span,
-.manager-trade-offer p {
-  margin: 4px 0 0;
+.manager-trade-inquiry-offer span,
+.manager-trade-inquiry-offer small {
   color: var(--manager-muted);
   font-size: 10px;
 }
 
-.manager-trade-offer-main > strong {
+.manager-trade-inquiry-offer-actions {
+  display: grid;
   flex: 0 0 auto;
-  padding: 5px 7px;
-  border: 1px solid var(--manager-border);
-  border-radius: 999px;
-  color: var(--manager-red);
-  font-size: 10px;
+  gap: 7px;
+  justify-items: end;
 }
 
-.manager-trade-offer.is-accepted .manager-trade-offer-main > strong {
-  border-color: rgba(91, 201, 140, 0.45);
-  color: var(--manager-green);
+.manager-trade-inquiry-offer-actions small {
+  text-align: right;
 }
 
-.manager-trade-offer .manager-button {
-  min-height: 42px;
+.manager-trade-inquiry-offer .manager-button {
+  width: auto;
+  min-height: 38px;
+  padding: 8px 10px;
+  font-size: 11px;
+}
+
+.manager-trade-inquiry-action .manager-button:focus-visible,
+.manager-trade-inquiry-offer .manager-button:focus-visible {
+  outline: 2px solid var(--manager-accent);
+  outline-offset: 2px;
 }
 
 .manager-trade-history-row {

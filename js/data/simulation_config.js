@@ -292,30 +292,31 @@ const SIM_CONFIG = {
     }
   },
   /**
-   * OVR 分层模型：先把 13 项属性折算为篮球能力维度，再按主/副位置组合。
-   * 现实球员缺少 2K 的投篮智商、稳定性、传球视野等完整属性，因此以已审核
-   * OVR 为基准，属性公式只计算后续成长/衰退差值；自建与生成球员直接使用公式分。
+   * OVR 单调拟合模型：位置权重只使用 13 项可见属性，源 OVR 仅作为离线拟合与验收目标。
+   * 三项全局奖励分别表达进攻手段完整度、核心强项和 80+ 精英属性，不含球员个人修正。
    */
   OVR_MODEL: {
-    sourceAnchor: {
-      version: 1,
-      attributeDeltaScale: 1
-    },
     secondaryPositionWeight: 0.2,
-    eliteThreshold: 80,
-    positionWeights: {
-      PG: { scoring: 0.27, playmaking: 0.30, defense: 0.12, physical: 0.08, clutch: 0.11, versatility: 0.12 },
-      SG: { scoring: 0.34, playmaking: 0.18, defense: 0.16, physical: 0.08, clutch: 0.12, versatility: 0.12 },
-      SF: { scoring: 0.28, playmaking: 0.13, defense: 0.23, physical: 0.10, clutch: 0.12, versatility: 0.14 },
-      PF: { scoring: 0.23, playmaking: 0.10, defense: 0.28, physical: 0.14, clutch: 0.10, versatility: 0.15 },
-      C:  { scoring: 0.20, playmaking: 0.09, defense: 0.32, physical: 0.16, clutch: 0.08, versatility: 0.15 }
+    base: 22.902948,
+    positionOffsets: {
+      PG: 0,
+      SG: -5.750865,
+      SF: 21.573580,
+      PF: 16.960870,
+      C: 15.572184
     },
-    calibration: {
-      PG: { offset: -10.638868, scale: 1.162562, eliteScale: 0.581503 },
-      SG: { offset: -13.070713, scale: 1.204929, eliteScale: 0.440981 },
-      SF: { offset: 0.023679, scale: 1.059115, eliteScale: 0.093934 },
-      PF: { offset: 11.037907, scale: 0.899616, eliteScale: 0.614468 },
-      C:  { offset: 14.480180, scale: 0.863271, eliteScale: 1.353715 }
+    positionWeights: {
+      PG: { threePT: 0.140614, MID: 0.041471, FIN: 0.079041, DNK: 0.043274, HAN: 0.105239, PAS: 0.178565, PDEF: 0.020000, IDEF: 0.008000, BLK: 0.004000, REB: 0.057892, ATH: 0.123443, STR: 0.008000, CLU: 0.111021 },
+      SG: { threePT: 0.252855, MID: 0.115776, FIN: 0.020000, DNK: 0.060303, HAN: 0.029061, PAS: 0.184151, PDEF: 0.086271, IDEF: 0.008000, BLK: 0.006684, REB: 0.096431, ATH: 0.062975, STR: 0.018505, CLU: 0.134814 },
+      SF: { threePT: 0.030732, MID: 0.020000, FIN: 0.042375, DNK: 0.016000, HAN: 0.016000, PAS: 0.116000, PDEF: 0.099816, IDEF: 0.046275, BLK: 0.008000, REB: 0.050671, ATH: 0.016000, STR: 0.012000, CLU: 0.118434 },
+      PF: { threePT: 0.056800, MID: 0.012000, FIN: 0.038727, DNK: 0.085646, HAN: 0.025591, PAS: 0.056799, PDEF: 0.032672, IDEF: 0.033041, BLK: 0.031367, REB: 0.057834, ATH: 0.012000, STR: 0.087317, CLU: 0.115291 },
+      C:  { threePT: 0.018746, MID: 0.010581, FIN: 0.028000, DNK: 0.085189, HAN: 0.025301, PAS: 0.057856, PDEF: 0.016000, IDEF: 0.111469, BLK: 0.024000, REB: 0.085352, ATH: 0.042149, STR: 0.064902, CLU: 0.121518 }
+    },
+    bonuses: {
+      scoringBreadth: 0.033882,
+      topFourAverage: 0.049261,
+      eliteThreshold: 80,
+      eliteExcess: 0.087269
     }
   },
   // ============================================================

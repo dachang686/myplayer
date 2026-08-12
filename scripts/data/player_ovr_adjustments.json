@@ -1,0 +1,382 @@
+{
+  "method": "公式残差逐人复核；只允许有本地2K完整字段或现实表现依据的属性压缩修正，禁止用源OVR作为运行时锚点",
+  "players": [
+    {
+      "localId": "P0001",
+      "name": "Jalen Johnson",
+      "reason": "运动能力由敏捷单项改为速度、敏捷、弹跳与体力的综合判断；终结结合近筐、上篮和突破扣篮",
+      "changes": {
+        "FIN": [89, 90],
+        "ATH": [76, 80]
+      }
+    },
+    {
+      "localId": "P0008",
+      "name": "Devin Carter",
+      "reason": "项目HAN承担控球作用，原值误取2K Hands 95，改用本地完整数据中的Ball Handle 79",
+      "changes": {
+        "HAN": [95, 79]
+      }
+    },
+    {
+      "localId": "P0255",
+      "name": "Taylor Hendricks",
+      "reason": "终结改用上篮82而非近筐89，HAN改用Ball Handle 69而非Hands 85；CLU结合Shot IQ 70与Off. Consistency 45压缩为60",
+      "changes": {
+        "FIN": [89, 82],
+        "HAN": [85, 69],
+        "CLU": [80, 60]
+      }
+    },
+    {
+      "localId": "P0212",
+      "name": "Brook Lopez",
+      "reason": "项目HAN承担控球作用，原值误取2K Hands 95，改用本地完整数据中的Ball Handle 35",
+      "changes": {
+        "HAN": [95, 35]
+      }
+    },
+    {
+      "localId": "P0182",
+      "name": "Aaron Holiday",
+      "reason": "FIN由近筐92改用上篮70，HAN改用Ball Handle 86；CLU按Shot IQ 70与Off. Consistency 50压缩为60",
+      "changes": {
+        "FIN": [92, 70],
+        "HAN": [80, 86],
+        "CLU": [70, 60]
+      }
+    },
+    {
+      "localId": "P0222",
+      "name": "Cam Christie",
+      "reason": "HAN改用Ball Handle 70而非Hands 90；Shot IQ 50、Off. Consistency 40及现实24.5%三分不支持原CLU 85，压缩为55",
+      "changes": {
+        "HAN": [90, 70],
+        "CLU": [85, 55]
+      }
+    },
+    {
+      "localId": "P0099",
+      "name": "Craig Porter Jr.",
+      "reason": "FIN改用上篮79，HAN改用Ball Handle 73；CLU按Shot IQ 75与Off. Consistency 50压缩为63",
+      "changes": {
+        "FIN": [81, 79],
+        "HAN": [85, 73],
+        "CLU": [85, 63]
+      }
+    },
+    {
+      "localId": "P0192",
+      "name": "Andrew Nembhard",
+      "reason": "FIN改用上篮80而非近筐95，HAN改用Ball Handle 79；ATH按速度76、敏捷88、弹跳71与体力85综合为80",
+      "changes": {
+        "FIN": [95, 80],
+        "HAN": [75, 79],
+        "ATH": [88, 80]
+      }
+    },
+    {
+      "localId": "P0233",
+      "name": "Jake LaRavia",
+      "reason": "FIN改用上篮79，HAN改用Ball Handle 68；ATH按速度、敏捷、弹跳与体力综合为74，CLU按Shot IQ 75与Off. Consistency 60压缩为68",
+      "changes": {
+        "FIN": [91, 79],
+        "HAN": [70, 68],
+        "ATH": [78, 74],
+        "CLU": [70, 68]
+      }
+    },
+    {
+      "localId": "P0295",
+      "name": "Alex Antetokounmpo",
+      "reason": "HAN改用Ball Handle 69而非Hands 80；CLU按Shot IQ 60与Off. Consistency 30压缩为45",
+      "changes": {
+        "HAN": [80, 69],
+        "CLU": [60, 45]
+      }
+    },
+    {
+      "localId": "P0302",
+      "name": "Terrence Shannon Jr.",
+      "reason": "HAN改用Ball Handle 79；PDEF按外防72、抢断38、防守稳定性50与协防62压缩为61",
+      "changes": {
+        "HAN": [85, 79],
+        "PDEF": [72, 61]
+      }
+    },
+    {
+      "localId": "P0310",
+      "name": "Enrique Freeman",
+      "reason": "HAN改用Ball Handle 62；PAS按传球准确率59、Pass IQ 60与视野32压缩为52，CLU按Shot IQ 35与Off. Consistency 30压缩为35",
+      "changes": {
+        "HAN": [80, 62],
+        "PAS": [59, 52],
+        "CLU": [75, 35]
+      }
+    },
+    {
+      "localId": "P0371",
+      "name": "Jevon Carter",
+      "reason": "FIN改用上篮75，HAN改用Ball Handle 79；CLU按Shot IQ 80与Off. Consistency 60压缩为70",
+      "changes": {
+        "FIN": [92, 75],
+        "HAN": [80, 79],
+        "CLU": [85, 70]
+      }
+    },
+    {
+      "localId": "P0069",
+      "name": "Tre Mann",
+      "reason": "HAN改用Ball Handle 83，FIN改用上篮87；MID 93与场均5.5分的低使用角色不相称，保守回调为85",
+      "changes": {
+        "MID": [93, 85],
+        "FIN": [93, 87],
+        "HAN": [85, 83]
+      }
+    },
+    {
+      "localId": "P0046",
+      "name": "Luka Garza",
+      "reason": "现实57.7%命中率、43.3%三分及2K进攻篮板94说明原压缩模型遗漏二次进攻价值；适度补入内防、综合篮板和对抗，不直接抬高投射",
+      "changes": {
+        "IDEF": [54, 60],
+        "REB": [57, 78],
+        "STR": [69, 72]
+      }
+    },
+    {
+      "localId": "P0057",
+      "name": "Brandon Miller",
+      "reason": "场均20.2分的核心侧翼表现支持在2K细项基础上补入持球、终结和进攻稳定性；幅度控制在82至92的核心球员区间",
+      "changes": {
+        "threePT": [79, 82],
+        "MID": [76, 80],
+        "FIN": [77, 82],
+        "HAN": [80, 86],
+        "ATH": [82, 85],
+        "CLU": [88, 92]
+      }
+    },
+    {
+      "localId": "P0058",
+      "name": "Kon Knueppel",
+      "reason": "新秀场均18.5分并领跑联盟三分命中数，投射和稳定性应高于原压缩值；HAN改用Ball Handle 76，运动和传球结合完整2K字段与赛季角色压缩",
+      "changes": {
+        "threePT": [87, 94],
+        "MID": [82, 86],
+        "FIN": [84, 86],
+        "HAN": [95, 76],
+        "PAS": [69, 72],
+        "ATH": [70, 78],
+        "CLU": [80, 92]
+      }
+    },
+    {
+      "localId": "P0061",
+      "name": "Grayson Allen",
+      "reason": "FIN采用2K上篮85；ATH结合速度84、敏捷78、弹跳81和体力85，CLU结合Shot IQ与Off. Consistency均为70，并按Pass IQ 78小幅补足传球",
+      "changes": {
+        "FIN": [76, 85],
+        "PAS": [70, 74],
+        "ATH": [78, 82],
+        "CLU": [50, 70]
+      }
+    },
+    {
+      "localId": "P0089",
+      "name": "Mac McClung",
+      "reason": "本地备份没有额外细项；保留94扣篮并按体型与扣篮表现提高运动能力，但6尺2后卫REB 67和稳定性70与NBA 71总评定位冲突，按发展联盟与NBA层级差异回调",
+      "changes": {
+        "REB": [67, 45],
+        "ATH": [70, 90],
+        "CLU": [70, 45]
+      }
+    },
+    {
+      "localId": "P0097",
+      "name": "Jaylon Tyson",
+      "reason": "场均13.2分、5.1篮板且三分44.6%支持轮换升级；FIN与HAN按上篮79、Ball Handle75压缩，篮板、运动、防守与稳定性结合二年级赛季表现适度上调",
+      "changes": {
+        "FIN": [86, 83],
+        "HAN": [80, 75],
+        "PDEF": [67, 72],
+        "REB": [61, 70],
+        "ATH": [76, 80],
+        "CLU": [60, 75]
+      }
+    },
+    {
+      "localId": "P0105",
+      "name": "Kyrie Irving",
+      "reason": "本地完整2K字段明确给出Layup 97、Ball Handle 99与Off. Consistency 95，直接用于FIN、HAN和CLU压缩",
+      "changes": {
+        "FIN": [91, 97],
+        "HAN": [96, 99],
+        "CLU": [75, 95]
+      }
+    },
+    {
+      "localId": "P0140",
+      "name": "Jalen Duren",
+      "reason": "HAN改用Ball Handle 59；内防结合Interior D 88与Help Defense IQ 89，篮板纳入Off. Rebound 94，ATH纳入速度、弹跳和体力；19.5分10.5篮板支持CLU 85",
+      "changes": {
+        "HAN": [70, 59],
+        "IDEF": [88, 89],
+        "REB": [90, 94],
+        "ATH": [68, 82],
+        "CLU": [65, 85]
+      }
+    },
+    {
+      "localId": "P0142",
+      "name": "Daniss Jenkins",
+      "reason": "场均20.2分钟贡献9.3分3.9助攻、三分37.4%，按每36分钟轮换产量补足投射、组织、外防与运动能力；所有调整仍处于普通首发至优质轮换区间",
+      "changes": {
+        "threePT": [79, 84],
+        "MID": [76, 80],
+        "FIN": [79, 80],
+        "HAN": [70, 76],
+        "PAS": [74, 80],
+        "PDEF": [63, 72],
+        "ATH": [75, 80],
+        "CLU": [80, 85]
+      }
+    },
+    {
+      "localId": "P0145",
+      "name": "Isaiah Joe",
+      "reason": "42.3%三分支持threePT 92；FIN改用Layup 81、HAN改用Ball Handle 74，Shot IQ与Off. Consistency均为80用于CLU",
+      "changes": {
+        "threePT": [88, 92],
+        "FIN": [91, 81],
+        "HAN": [85, 74],
+        "CLU": [50, 80]
+      }
+    },
+    {
+      "localId": "P0261",
+      "name": "Dariq Whitehead",
+      "reason": "本地备份仅确认同一组旧细项；现实仅6场且投篮39.8%、三分31.7%，因此保留80扣篮和79运动能力，同时保守下调投射、终结、持球组织与进攻稳定性",
+      "changes": {
+        "threePT": [84, 78],
+        "MID": [76, 72],
+        "FIN": [77, 74],
+        "HAN": [80, 76],
+        "PAS": [67, 65],
+        "CLU": [85, 60]
+      }
+    },
+    {
+      "localId": "P0317",
+      "name": "Saddiq Bey",
+      "reason": "72场场均17.7分5.6篮板、三分36.7%说明旧压缩进攻值偏低；按主力侧翼角色提高投射终结、外防篮板和稳定性，HAN仍采用Ball Handle 76",
+      "changes": {
+        "threePT": [77, 84],
+        "MID": [71, 82],
+        "FIN": [71, 84],
+        "HAN": [84, 76],
+        "PAS": [64, 70],
+        "PDEF": [69, 76],
+        "REB": [59, 68],
+        "ATH": [72, 78],
+        "CLU": [80, 90]
+      }
+    },
+    {
+      "localId": "P0319",
+      "name": "Derik Queen",
+      "reason": "现实主要担任中锋，主副位置改为C/PF；81场场均7.1篮板3.7助攻支持提高组织、篮板和对抗，稳定性保持在78的轮换核心区间",
+      "changes": {
+        "pos": ["PF / C", "C / PF"],
+        "PAS": [65, 72],
+        "REB": [77, 82],
+        "STR": [73, 78],
+        "CLU": [70, 78]
+      }
+    },
+    {
+      "localId": "P0336",
+      "name": "Jose Alvarado",
+      "reason": "HAN采用Ball Handle 73；Steal 90、Help Defense IQ和Def. Consistency均85支持PDEF 92，场均20分钟3.4助攻支持PAS 78；轮换影响力和防守稳定性压缩为CLU 85",
+      "changes": {
+        "threePT": [77, 80],
+        "HAN": [85, 73],
+        "PAS": [70, 78],
+        "PDEF": [85, 92],
+        "CLU": [60, 85]
+      }
+    },
+    {
+      "localId": "P0358",
+      "name": "Aaron Wiggins",
+      "reason": "Shot IQ与Off. Consistency均80用于CLU；HAN采用Ball Handle70，结合65场轮换表现适度补足投射、终结和外防，ATH由敏捷单项改为综合80",
+      "changes": {
+        "threePT": [82, 84],
+        "MID": [73, 78],
+        "FIN": [80, 82],
+        "HAN": [76, 70],
+        "PDEF": [59, 68],
+        "ATH": [84, 80],
+        "CLU": [40, 80]
+      }
+    },
+    {
+      "localId": "P0437",
+      "name": "Maxime Raynaud",
+      "reason": "74场12.5分7.5篮板、57.1%命中率支持补足FIN与REB；HAN改用Ball Handle52，ATH综合速度67、敏捷52、弹跳66和体力80，内防、传球和对抗只做克制上调",
+      "changes": {
+        "FIN": [76, 82],
+        "HAN": [80, 52],
+        "PAS": [50, 58],
+        "IDEF": [59, 65],
+        "REB": [67, 78],
+        "ATH": [52, 66],
+        "STR": [63, 70]
+      }
+    },
+    {
+      "localId": "P0487",
+      "name": "Lauri Markkanen",
+      "reason": "HAN改用Ball Handle65；场均26.7分6.9篮板及Off. Consistency95支持CLU95，运动和篮板按现实主力前锋角色小幅补足",
+      "changes": {
+        "HAN": [95, 65],
+        "REB": [63, 70],
+        "ATH": [65, 70],
+        "CLU": [80, 95]
+      }
+    },
+    {
+      "localId": "P0488",
+      "name": "Keyonte George",
+      "reason": "场均23.6分6.1助攻、三分37.1%支持主控得分手升级；HAN采用Ball Handle86，补足投射、运动和关键稳定性但保留防守短板",
+      "changes": {
+        "threePT": [78, 82],
+        "MID": [69, 78],
+        "HAN": [90, 86],
+        "ATH": [78, 82],
+        "CLU": [88, 92]
+      }
+    },
+    {
+      "localId": "P0510",
+      "name": "Trae Young",
+      "reason": "本地完整2K字段给出Layup94、Ball Handle96和Off. Consistency95，分别用于FIN、HAN与CLU；保留既有92传球和防守短板",
+      "changes": {
+        "FIN": [90, 94],
+        "HAN": [80, 96],
+        "CLU": [75, 95]
+      }
+    },
+    {
+      "localId": "P0513",
+      "name": "Will Riley",
+      "reason": "现实与本地映射均以侧翼为主，主副位置改为SF/PF；ATH综合速度82、弹跳67和体力85，FIN与PAS仅按轮换表现小幅补足",
+      "changes": {
+        "pos": ["PF / SF", "SF / PF"],
+        "FIN": [76, 80],
+        "PAS": [66, 70],
+        "ATH": [65, 78]
+      }
+    }
+  ]
+}

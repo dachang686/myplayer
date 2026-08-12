@@ -92,6 +92,21 @@
     }, 0) * 10) / 10;
   }
 
+  function playerPackages(players, maxPlayers) {
+    var packages = [];
+    function visit(start, selected) {
+      if (selected.length) packages.push(selected.slice());
+      if (selected.length >= maxPlayers) return;
+      for (var index = start; index < players.length; index++) {
+        selected.push(players[index]);
+        visit(index + 1, selected);
+        selected.pop();
+      }
+    }
+    visit(0, []);
+    return packages;
+  }
+
   function normalizeTradePackage(playerIds, sideLabel) {
     var ids = typeof playerIds === 'string' ? [playerIds] : playerIds;
     if (!Array.isArray(ids) || !ids.length) {
@@ -220,6 +235,69 @@
     }).filter(function(proposal) { return proposal.valid; }).sort(function(first, second) {
       return Number(second.accepted) - Number(first.accepted) || second.acceptedMargin - first.acceptedMargin || first.incomingValue - second.incomingValue || String(first.incoming[0].player.id).localeCompare(String(second.incoming[0].player.id));
     });
+  }
+
+  function inquiryCandidatePool(roster, targetValue) {
+    return roster.slice().sort(function(first, second) {
+      var firstValue = playerTradeValue(first);
+      var secondValue = playerTradeValue(second);
+      var firstFit = Math.min(Math.abs(firstValue - targetValue), Math.abs(firstValue * 2 - targetValue), Math.abs(firstValue * 3 - targetValue));
+      var secondFit = Math.min(Math.abs(secondValue - targetValue), Math.abs(secondValue * 2 - targetValue), Math.abs(secondValue * 3 - targetValue));
+      return firstFit - secondFit || firstValue - secondValue || String(first.id).localeCompare(String(second.id));
+    }).slice(0, 8);
+  }
+
+  function inquiryOfferScore(proposal) {
+    var needDifference = Number(proposal.partnerNeedForIncoming) - Number(proposal.partnerNeedForOutgoing);
+    return Math.abs(proposal.acceptedMargin) - needDifference * 0.35;
+  }
+
+  function inquireTrade(state, outgoingIds) {
+    if (!state || !state.leagueData || !state.selectedTeam) {
+      return { valid: false, reason: '经理状态无效，无法发起问价。', offers: [] };
+    }
+    if (!state.season || state.season.phase !== 'regular') {
+      return { valid: false, reason: '交易窗口已关闭，只能在常规赛期间问价。', offers: [] };
+    }
+    var outgoingPackage = normalizeTradePackage(outgoingIds, '送出');
+    if (!outgoingPackage.valid) return { valid: false, reason: outgoingPackage.reason, offers: [] };
+    var outgoing = outgoingPackage.ids.map(function(playerId) { return findPlayerLocation(state, playerId); });
+    if (outgoing.some(function(location) { return !location; })) {
+      return { valid: false, reason: '询价球员不存在。', offers: [] };
+    }
+    if (outgoing.some(function(location) { return location.teamId !== state.selectedTeam; })) {
+      return { valid: false, reason: '只能为本队球员发起问价。', offers: [] };
+    }
+
+    var outgoingPlayers = outgoing.map(function(location) { return location.player; });
+    var targetValue = packageTradeValue(outgoingPlayers);
+    var offers = Object.keys(state.leagueData).filter(function(teamId) {
+      return teamId !== state.selectedTeam && Array.isArray(state.leagueData[teamId]);
+    }).map(function(partnerTeam) {
+      var candidates = inquiryCandidatePool(state.leagueData[partnerTeam], targetValue);
+      var proposals = playerPackages(candidates, MAX_TRADE_PLAYERS).map(function(players) {
+        return evaluateTrade(state, outgoingPackage.ids, players.map(function(player) { return player.id; }));
+      }).filter(function(proposal) {
+        if (!proposal.valid || !proposal.accepted || proposal.partnerTeam !== partnerTeam) return false;
+        return proposal.partnerNeedForIncoming >= proposal.partnerNeedForOutgoing || proposal.acceptedMargin >= 1;
+      }).sort(function(first, second) {
+        return inquiryOfferScore(first) - inquiryOfferScore(second) || second.acceptedMargin - first.acceptedMargin || first.incomingValue - second.incomingValue;
+      });
+      if (!proposals.length) return null;
+      var offer = proposals[0];
+      offer.interestScore = Math.round((offer.partnerNeedForIncoming - offer.partnerNeedForOutgoing + Math.max(0, offer.acceptedMargin) * 0.2) * 10) / 10;
+      return offer;
+    }).filter(function(offer) { return !!offer; }).sort(function(first, second) {
+      return second.interestScore - first.interestScore || inquiryOfferScore(first) - inquiryOfferScore(second) || String(first.partnerTeam).localeCompare(String(second.partnerTeam));
+    });
+
+    return {
+      valid: true,
+      reason: offers.length ? offers.length + ' 支球队对这组资产感兴趣。' : '暂时没有球队愿意为这组资产报价。',
+      outgoing: outgoing,
+      outgoingValue: targetValue,
+      offers: offers
+    };
   }
 
   function restoreRotationAfterTrade(state, outgoingPlayers, incomingPlayers) {
@@ -686,6 +764,7 @@
     playerTradeValue: playerTradeValue,
     evaluateTrade: evaluateTrade,
     tradeTargets: tradeTargets,
+    inquireTrade: inquireTrade,
     executeTrade: executeTrade,
     standingsList: standingsList,
     overallStandingsList: overallStandingsList,

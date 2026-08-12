@@ -5,6 +5,7 @@ const { execFileSync } = require('child_process');
 const root = path.resolve(__dirname, '..');
 const leaguePath = path.join(root, 'js', 'data', 'league_players.js');
 const reviewPath = path.join(__dirname, 'data', 'player_rating_reviews.json');
+const ovrAdjustmentPath = path.join(__dirname, 'data', 'player_ovr_adjustments.json');
 const identityPath = path.join(__dirname, 'data', 'nba2k_player_identity.json');
 const attributes = [
   'ovr', 'threePT', 'MID', 'FIN', 'DNK', 'HAN', 'PAS',
@@ -29,10 +30,21 @@ const league = loadLeague();
 const baselineLeague = parseLeague(execFileSync(
   'git', ['show', 'HEAD:js/data/league_players.js'], { cwd: root, encoding: 'utf8' },
 ));
+const baselinePlayersById = new Map(
+  Object.values(baselineLeague).flat().map(player => [player.id, player]),
+);
 const reviewData = JSON.parse(fs.readFileSync(reviewPath, 'utf8'));
+const ovrAdjustmentData = JSON.parse(fs.readFileSync(ovrAdjustmentPath, 'utf8'));
 const identities = JSON.parse(fs.readFileSync(identityPath, 'utf8')).players || [];
 const identityById = new Map(identities.map(identity => [identity.localId, identity]));
 const reviews = reviewData.players || [];
+const ovrAdjustments = ovrAdjustmentData.players || [];
+const ovrAdjustmentById = new Map();
+for (const adjustment of ovrAdjustments) {
+  if (ovrAdjustmentById.has(adjustment.localId)) fail(`duplicate OVR adjustment: ${adjustment.localId}`);
+  if (!adjustment.reason) fail(`missing OVR adjustment reason: ${adjustment.localId}`);
+  ovrAdjustmentById.set(adjustment.localId, adjustment);
+}
 const playersById = new Map();
 
 for (const [team, players] of Object.entries(league)) {
@@ -74,7 +86,13 @@ for (let index = 0; index < reviews.length; index++) {
     if (hasChange === hasUnchanged) {
       fail(`${review.localId} must record ${attribute} exactly once`);
     }
-    const expected = hasChange ? changed[attribute][1] : unchanged[attribute];
+    const reviewedValue = hasChange ? changed[attribute][1] : unchanged[attribute];
+    const adjustment = ovrAdjustmentById.get(review.localId);
+    const adjustmentTuple = adjustment && adjustment.changes && adjustment.changes[attribute];
+    if (adjustmentTuple && (!Array.isArray(adjustmentTuple) || adjustmentTuple.length !== 2 || adjustmentTuple[0] !== reviewedValue)) {
+      fail(`${review.localId} invalid OVR adjustment tuple: ${attribute}`);
+    }
+    const expected = adjustmentTuple ? adjustmentTuple[1] : reviewedValue;
     if (leagueEntry.player[attribute] !== expected) {
       fail(`${review.localId} ${attribute}: league=${leagueEntry.player[attribute]}, review=${expected}`);
     }
@@ -88,6 +106,24 @@ for (let index = 0; index < reviews.length; index++) {
   }
   for (const attribute of Object.keys(unchanged)) {
     if (!attributes.includes(attribute)) fail(`${review.localId} unknown unchanged field: ${attribute}`);
+  }
+}
+
+for (const adjustment of ovrAdjustments) {
+  if (!reviewedIds.has(adjustment.localId)) fail(`OVR adjustment has no player review: ${adjustment.localId}`);
+  for (const attribute of Object.keys(adjustment.changes || {})) {
+    if ((!attributes.includes(attribute) && attribute !== 'pos') || attribute === 'ovr') {
+      fail(`${adjustment.localId} invalid OVR-adjusted field: ${attribute}`);
+    }
+  }
+  const positionTuple = adjustment.changes && adjustment.changes.pos;
+  if (positionTuple) {
+    const baselinePlayer = baselinePlayersById.get(adjustment.localId);
+    const leaguePlayer = playersById.get(adjustment.localId)?.player;
+    if (!Array.isArray(positionTuple) || positionTuple.length !== 2
+      || baselinePlayer?.pos !== positionTuple[0] || leaguePlayer?.pos !== positionTuple[1]) {
+      fail(`${adjustment.localId} invalid OVR adjustment tuple: pos`);
+    }
   }
 }
 
@@ -110,6 +146,7 @@ for (const [team, players] of Object.entries(league)) {
 const result = {
   leaguePlayers: playersById.size,
   reviewedPlayers: reviews.length,
+  ovrAdjustedPlayers: ovrAdjustments.length,
   lastReviewedId: reviews.at(-1)?.localId || null,
   validationErrors: errors.length,
   errors,

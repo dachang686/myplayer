@@ -53,28 +53,10 @@ if (Math.max(...migratedValues) - Math.min(...migratedValues) < 14) throw new Er
 if (migratedValues.filter(value => value <= 75).length < 3) throw new Error('81 OVR 球员至少应有 3 项明显短板');
 if (published.ovr !== 95) throw new Error(`现实球员人工 OVR 不应改变，实际 ${published.ovr}`);
 
-const publishedFormulaOvr = vm.runInContext('Math.round(calcOvrFormulaScore(LEAGUE_PLAYER_DATA.POR[1], LEAGUE_PLAYER_DATA.POR[1].pos))', context);
+const expectedPublishedOvr = vm.runInContext('calcOVR(LEAGUE_PLAYER_DATA.POR[1], LEAGUE_PLAYER_DATA.POR[1].pos)', context);
 vm.runInContext('syncLeaguePlayerOvrs()', context);
 if (published._sourceOvr !== 95) throw new Error(`现实球员来源 OVR 应保留 95，实际 ${published._sourceOvr}`);
-if (published.ovr !== 95) throw new Error(`现实球员基准 OVR 应保持审核值 95，实际 ${published.ovr}`);
-if (publishedFormulaOvr === published.ovr) throw new Error('测试球员未覆盖公式分与审核 OVR 不同的锚定场景');
-if (!Number.isFinite(published._ovrAnchorScore)) throw new Error('现实球员未保存初始公式分');
-const declinedPublished = { ...published };
-ATTR_KEYS.forEach(key => { declinedPublished[key] = Math.max(25, declinedPublished[key] - 8); });
-context.declinedPublished = declinedPublished;
-const declinedPublishedOvr = vm.runInContext('calcOVR(declinedPublished, declinedPublished.pos)', context);
-if (declinedPublishedOvr >= published.ovr) throw new Error('现实球员属性下降后锚定 OVR 没有下降');
-const improvedPublished = { ...published, FIN: 99, PAS: 99, PDEF: 99, STR: 99 };
-context.improvedPublished = improvedPublished;
-const improvedPublishedOvr = vm.runInContext('calcOVR(improvedPublished, improvedPublished.pos)', context);
-if (improvedPublishedOvr <= published.ovr) throw new Error('高 OVR 球员属性提升后被内部 99 分平台锁死');
-
-const legacyPublished = { id: 'P9998', pos: 'PG / SG', ovr: 82, _sourceOvr: 88, ...attributes };
-context.LEAGUE_PLAYER_DATA.POR.push(legacyPublished);
-vm.runInContext('syncLeaguePlayerOvrs()', context);
-if (legacyPublished.ovr !== 82 || legacyPublished._ovrAnchorOvr !== 82) {
-  throw new Error(`旧长期存档升级公式时应保留当前 OVR 82，实际 ${legacyPublished.ovr}`);
-}
+if (published.ovr !== expectedPublishedOvr) throw new Error(`现实球员运行 OVR 应按新公式同步为 ${expectedPublishedOvr}，实际 ${published.ovr}`);
 
 vm.runInContext('evolveGeneratedPlayerAttributes(LEAGUE_PLAYER_DATA.POR[0], 81, 85)', context);
 if (generated.ovr !== 85) throw new Error(`成长后 OVR 应为 85，实际 ${generated.ovr}`);
@@ -99,16 +81,33 @@ const formulaContext = vm.createContext({
 });
 vm.runInContext(offseasonSource.slice(start, end), formulaContext, { filename: 'league-ovr-formula.js' });
 const leaguePlayers = Object.values(LEAGUE_PLAYER_DATA).flat();
-const sourceOvrById = new Map(leaguePlayers.map(player => [player.id, player.ovr]));
 const sourceAverage = leaguePlayers.reduce((sum, player) => sum + player.ovr, 0) / leaguePlayers.length;
+const formulaResiduals = leaguePlayers.map(player => {
+  const formulaOvr = formulaContext.calcOVR(player, player.pos);
+  return {
+    id: player.id,
+    name: player.cname,
+    sourceOvr: player.ovr,
+    formulaOvr,
+    error: formulaOvr - player.ovr,
+  };
+});
+const meanAbsoluteError = formulaResiduals.reduce((sum, item) => sum + Math.abs(item.error), 0) / formulaResiduals.length;
+const withinThree = formulaResiduals.filter(item => Math.abs(item.error) <= 3).length;
+const largeResiduals = formulaResiduals
+  .filter(item => Math.abs(item.error) >= 5)
+  .sort((a, b) => Math.abs(b.error) - Math.abs(a.error) || a.id.localeCompare(b.id));
+if (meanAbsoluteError > 1.7) {
+  throw new Error(`全联盟 OVR 平均绝对误差过大：${meanAbsoluteError.toFixed(3)} > 1.700`);
+}
+if (withinThree / formulaResiduals.length < 0.9) {
+  throw new Error(`全联盟 OVR ±3 命中率不足：${withinThree}/${formulaResiduals.length}`);
+}
+if (largeResiduals.length) {
+  throw new Error(`仍有 ${largeResiduals.length} 名球员的公式 OVR 与来源 OVR 相差至少 5 点`);
+}
 let monotonicChecks = 0;
-let rawAbsoluteError = 0;
-let rawLargeErrors = 0;
 leaguePlayers.forEach((player) => {
-  const rawOvr = formulaContext.calcOVR(player, player.pos);
-  const rawError = Math.abs(rawOvr - player.ovr);
-  rawAbsoluteError += rawError;
-  if (rawError >= 5) rawLargeErrors++;
   const base = formulaContext.calcOVR(player, player.pos);
   ATTR_KEYS.forEach((key) => {
     if (player[key] >= 99) return;
@@ -120,33 +119,19 @@ leaguePlayers.forEach((player) => {
 });
 formulaContext.syncLeaguePlayerOvrs();
 const formulaAverage = leaguePlayers.reduce((sum, player) => sum + player.ovr, 0) / leaguePlayers.length;
-const baselineMismatches = leaguePlayers.filter(player => player.ovr !== sourceOvrById.get(player.id));
-if (baselineMismatches.length) throw new Error(`现实球员基准 OVR 与审核值不一致：${baselineMismatches.length} 人`);
-if (formulaAverage !== sourceAverage) throw new Error(`锚定后联盟 OVR 均值不一致：${sourceAverage.toFixed(2)} -> ${formulaAverage.toFixed(2)}`);
-if (leaguePlayers.some(player => player._sourceOvr == null)) throw new Error('全联盟同步后存在未保留来源 OVR 的球员');
-if (leaguePlayers.some(player => !Number.isFinite(player._ovrAnchorScore))) throw new Error('全联盟存在未保存初始公式分的现实球员');
-
-const jalenJohnson = leaguePlayers.find(player => player.id === 'P0001');
-const devinCarter = leaguePlayers.find(player => player.id === 'P0008');
-if (!jalenJohnson || jalenJohnson.ovr !== 90) throw new Error(`P0001 基准 OVR 应为 90，实际 ${jalenJohnson && jalenJohnson.ovr}`);
-if (!devinCarter || devinCarter.ovr !== 77) throw new Error(`P0008 基准 OVR 应为 77，实际 ${devinCarter && devinCarter.ovr}`);
-
-let anchoredMonotonicChecks = 0;
-leaguePlayers.forEach((player) => {
-  const base = formulaContext.calcOVR(player, player.pos);
-  ATTR_KEYS.forEach((key) => {
-    if (player[key] >= 99) return;
-    const probe = { ...player, [key]: player[key] + 1 };
-    const next = formulaContext.calcOVR(probe, probe.pos);
-    anchoredMonotonicChecks++;
-    if (next < base) throw new Error(`${player.id} 锚定后 ${key} +1，OVR 从 ${base} 降为 ${next}`);
-  });
-});
-
-const improvedCarter = { ...devinCarter };
-ATTR_KEYS.forEach(key => { improvedCarter[key] = Math.min(99, improvedCarter[key] + 8); });
-if (formulaContext.calcOVR(improvedCarter, improvedCarter.pos) <= devinCarter.ovr) {
-  throw new Error('P0008 属性整体提升后 OVR 没有增长');
+if (Math.abs(formulaAverage - sourceAverage) > 0.5) {
+  throw new Error(`公式导致联盟 OVR 均值漂移过大：${sourceAverage.toFixed(2)} -> ${formulaAverage.toFixed(2)}`);
 }
+if (leaguePlayers.some(player => player._sourceOvr == null)) throw new Error('全联盟同步后存在未保留来源 OVR 的球员');
 
-console.log(`OVR 验证通过：${leaguePlayers.length} 名现实球员基准误差 0；底层公式原始 MAE ${(rawAbsoluteError / leaguePlayers.length).toFixed(2)}、原始误差>=5 共 ${rawLargeErrors} 人；${monotonicChecks + anchoredMonotonicChecks} 次单调性检查无下降；现实球员按属性差值成长，新秀按目标生成`);
+console.log(JSON.stringify({
+  players: leaguePlayers.length,
+  sourceAverage: Number(sourceAverage.toFixed(2)),
+  formulaAverage: Number(formulaAverage.toFixed(2)),
+  meanAbsoluteError: Number(meanAbsoluteError.toFixed(3)),
+  withinThree: `${withinThree}/${leaguePlayers.length}`,
+  withinThreeRate: `${(withinThree / leaguePlayers.length * 100).toFixed(2)}%`,
+  largeResidualCount: largeResiduals.length,
+  largeResiduals,
+  monotonicChecks,
+}, null, 2));
