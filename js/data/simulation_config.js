@@ -291,6 +291,28 @@ const SIM_CONFIG = {
       CLU: 0.04
     }
   },
+  /**
+   * OVR 分层模型：先把 13 项属性折算为篮球能力维度，再按主/副位置组合。
+   * 位置校准参数由当前联盟名单拟合，只负责把维度分映射到现有 OVR 标尺。
+   */
+  OVR_MODEL: {
+    secondaryPositionWeight: 0.2,
+    eliteThreshold: 80,
+    positionWeights: {
+      PG: { scoring: 0.27, playmaking: 0.30, defense: 0.12, physical: 0.08, clutch: 0.11, versatility: 0.12 },
+      SG: { scoring: 0.34, playmaking: 0.18, defense: 0.16, physical: 0.08, clutch: 0.12, versatility: 0.12 },
+      SF: { scoring: 0.28, playmaking: 0.13, defense: 0.23, physical: 0.10, clutch: 0.12, versatility: 0.14 },
+      PF: { scoring: 0.23, playmaking: 0.10, defense: 0.28, physical: 0.14, clutch: 0.10, versatility: 0.15 },
+      C:  { scoring: 0.20, playmaking: 0.09, defense: 0.32, physical: 0.16, clutch: 0.08, versatility: 0.15 }
+    },
+    calibration: {
+      PG: { offset: -10.638868, scale: 1.162562, eliteScale: 0.581503 },
+      SG: { offset: -13.070713, scale: 1.204929, eliteScale: 0.440981 },
+      SF: { offset: 0.023679, scale: 1.059115, eliteScale: 0.093934 },
+      PF: { offset: 11.037907, scale: 0.899616, eliteScale: 0.614468 },
+      C:  { offset: 14.480180, scale: 0.863271, eliteScale: 1.353715 }
+    }
+  },
   // ============================================================
   // 4. 赛季模拟参数 — 你可以随意调整
   // ============================================================

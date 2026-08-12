@@ -1619,6 +1619,7 @@ function createFreshCareer() {
 
 function initGame() {
   restoreBaseLeagueRoster();
+  if (typeof syncLeaguePlayerOvrs === 'function') syncLeaguePlayerOvrs();
   _rngState = null;
   _rookieNameSeq = 0;
   // 重置状态（保留 gameId 持久不变，直到下一次显式重置）
@@ -8772,7 +8773,7 @@ function manualLoadGame(slot, options) {
         if (snap.league && typeof LEAGUE_PLAYER_DATA !== 'undefined') {
           Object.keys(LEAGUE_PLAYER_DATA).forEach(function(k) { delete LEAGUE_PLAYER_DATA[k]; });
           Object.assign(LEAGUE_PLAYER_DATA, snap.league);
-          if (typeof syncGeneratedLeaguePlayerOvrs === 'function') syncGeneratedLeaguePlayerOvrs();
+          if (typeof syncLeaguePlayerOvrs === 'function') syncLeaguePlayerOvrs();
         }
         _playerAges = snap.ages || {};
         _playerGenes = {};

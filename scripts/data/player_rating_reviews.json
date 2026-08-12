@@ -550,19 +550,19 @@
       "status": "confirmed",
       "ratingSource": "https://ovrbase.com/nba/gabe-vincent-1629216",
       "performanceSource": "https://www.nba.com/stats/player/1629216",
-      "performance": "2025-26 赛季中转入 ATL，球队样本有限，不据此额外调整 OVR",
+      "performance": "2025-26 赛季中转入 ATL，球队样本有限，不据此额外调整 OVR；项目 FIN/MID 为综合能力，撤销把 2K 近筐细分值直接映射为综合终结和中投的错误",
       "changes": {
         "threePT": [
           76,
           81
         ],
         "MID": [
-          70,
-          94
+          94,
+          70
         ],
         "FIN": [
-          63,
-          93
+          93,
+          63
         ],
         "BLK": [
           32,
@@ -6804,7 +6804,7 @@
       "status": "confirmed",
       "ratingSource": "https://ovrbase.com/nba/kevin-durant-201142",
       "performanceSource": "https://www.nba.com/stats/player/201142",
-      "performance": "2025-26 出战 78 场、场均 36.4 分钟，得到 26.0 分、5.5 篮板和 4.8 助攻，投篮 52.0%、三分 41.3%；顶级效率与产量支持 93 总评。按最新 2K 明细小幅修正近框、盖帽和防守篮板",
+      "performance": "2025-26 出战 78 场、场均 36.4 分钟，得到 26.0 分、5.5 篮板和 4.8 助攻，投篮 52.0%、三分 41.3%；顶级效率与产量支持 93 总评。按最新 2K 明细小幅修正近框、盖帽和防守篮板；项目 CLU 表示关键球综合能力，原 40 为错误映射，按顶级关键得分手定位修正为 90",
       "changes": {
         "FIN": [
           98,
@@ -6817,6 +6817,10 @@
         "REB": [
           62,
           67
+        ],
+        "CLU": [
+          40,
+          90
         ]
       },
       "unchanged": {
@@ -6829,8 +6833,7 @@
         "PDEF": 77,
         "IDEF": 70,
         "ATH": 78,
-        "STR": 63,
-        "CLU": 40
+        "STR": 63
       }
     },
     {
@@ -16206,7 +16209,7 @@
       "status": "confirmed",
       "ratingSource": "https://ovrbase.com/nba/ryan-dunn-1642346",
       "performanceSource": "https://www.nba.com/stats/player/1642346",
-      "performance": "2025-26：70场 19.4分钟，5.8分、4.2篮板、1.5助攻、0.9抢断、0.4盖帽，投篮45.3%、三分33.1%；结合最新 2K 明细逐项确认；70场5.8分4.2篮板；采用2K总评75与完整属性，近筐95和盖帽72按2K确认，三分75与33.1%表现相符",
+      "performance": "2025-26：70场 19.4分钟，5.8分、4.2篮板、1.5助攻、0.9抢断、0.4盖帽，投篮45.3%、三分33.1%；项目 FIN 为综合终结而非 2K 近距离投篮单项，原 95 会把低使用率防守球员误算为高端得分手，恢复综合终结 77；盖帽72和三分75保留",
       "changes": {
         "threePT": [
           76,
@@ -16217,8 +16220,8 @@
           73
         ],
         "FIN": [
-          77,
-          95
+          95,
+          77
         ],
         "BLK": [
           60,

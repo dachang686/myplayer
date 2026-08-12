@@ -1110,7 +1110,7 @@ function applyDraftClass2026() {
         ATTR_KEYS.forEach(function(key) {
           rookie[key] = fixedRating.attributes[key];
         });
-        rookie.ovr = calcOVR(rookie, rookie.pos);
+        normalizeRookieAttributesToOvr(rookie, fixedRating.ovr);
       } else {
         applyRookieAttributeProfile(rookie, ovr, Math.random);
       }
@@ -1158,7 +1158,7 @@ function processDraft() {
     rookie._justSigned = true;
     var targetOvr = ovrRange.min + Math.floor(rngNext() * (ovrRange.max - ovrRange.min + 1));
     if (rookie._fixedProspectRating) {
-      rookie.ovr = calcOVR(rookie, rookie.pos);
+      normalizeRookieAttributesToOvr(rookie, rookie.ovr);
       rookie._rookieSeason = getCurrentLeagueSeasonNumber();
     } else {
       rookie.ovr = targetOvr;
@@ -1661,20 +1661,89 @@ function processTrades() {
   }
 }
 
+function getOvrPositions(pos) {
+  var fallback = (typeof STATE !== 'undefined' && STATE && STATE.position) ? STATE.position : 'SG';
+  var positions = String(pos || fallback).split('/').map(function(value) { return value.trim(); }).filter(Boolean);
+  var valid = SIM_CONFIG && SIM_CONFIG.OVR_MODEL ? SIM_CONFIG.OVR_MODEL.positionWeights : null;
+  positions = positions.filter(function(value) { return valid && valid[value]; });
+  return positions.length ? positions.slice(0, 2) : ['SG'];
+}
+
+function calcOvrEffectiveAttribute(attrs, key) {
+  var value = (attrs && attrs[key] != null) ? Number(attrs[key]) : 50;
+  value = Math.max(25, Math.min(99, Number.isFinite(value) ? value : 50));
+  return Math.pow((value - 25) / 74, 1.275);
+}
+
+function calcOvrDimensionRating(value) {
+  var normalized = Math.max(0, Math.min(1, Number(value) || 0));
+  return Math.max(25, Math.min(99, 25 + 74 * Math.pow(normalized, 1 / 1.275)));
+}
+
+function calcOvrDimensions(attrs) {
+  function skill(key) { return calcOvrEffectiveAttribute(attrs, key); }
+  var three = skill('threePT');
+  var mid = skill('MID');
+  var finish = skill('FIN');
+  var dunk = skill('DNK');
+  var handle = skill('HAN');
+  var pass = skill('PAS');
+  var perimeterDefense = skill('PDEF');
+  var interiorDefense = skill('IDEF');
+  var block = skill('BLK');
+  var rebound = skill('REB');
+  var athletic = skill('ATH');
+  var strength = skill('STR');
+  var clutch = skill('CLU');
+
+  var scoringOptions = [
+    three * 0.60 + handle * 0.24 + athletic * 0.10 + clutch * 0.06,
+    mid * 0.58 + handle * 0.24 + clutch * 0.10 + strength * 0.08,
+    handle * 0.30 + athletic * 0.25 + finish * 0.23 + strength * 0.14 + dunk * 0.08,
+    finish * 0.34 + dunk * 0.28 + athletic * 0.22 + strength * 0.16,
+    strength * 0.34 + finish * 0.28 + mid * 0.23 + handle * 0.15,
+    athletic * 0.35 + finish * 0.28 + dunk * 0.25 + handle * 0.12
+  ].sort(function(a, b) { return b - a; });
+  var defenseOptions = [
+    perimeterDefense * 0.65 + athletic * 0.25 + strength * 0.10,
+    interiorDefense * 0.44 + block * 0.32 + strength * 0.14 + rebound * 0.10,
+    rebound * 0.52 + interiorDefense * 0.28 + strength * 0.20
+  ].sort(function(a, b) { return b - a; });
+  var allSkills = [three, mid, finish, dunk, handle, pass, perimeterDefense, interiorDefense, block, rebound, athletic, strength, clutch]
+    .sort(function(a, b) { return b - a; });
+  var versatility = allSkills.slice(0, 7).reduce(function(sum, value) { return sum + value; }, 0) / 7;
+
+  return {
+    scoring: calcOvrDimensionRating(scoringOptions[0] * 0.50 + scoringOptions[1] * 0.30 + scoringOptions[2] * 0.20),
+    playmaking: calcOvrDimensionRating(pass * 0.55 + handle * 0.30 + clutch * 0.15),
+    defense: calcOvrDimensionRating(defenseOptions[0] * 0.55 + defenseOptions[1] * 0.30 + defenseOptions[2] * 0.15),
+    physical: calcOvrDimensionRating(athletic * 0.45 + strength * 0.30 + dunk * 0.15 + rebound * 0.10),
+    clutch: calcOvrDimensionRating(clutch * 0.50 + handle * 0.15 + pass * 0.15 + three * 0.10 + mid * 0.10),
+    versatility: calcOvrDimensionRating(versatility)
+  };
+}
+
+function calcOvrPositionScore(dimensions, pos) {
+  var weights = SIM_CONFIG.OVR_MODEL.positionWeights[pos];
+  return Object.keys(weights).reduce(function(sum, key) {
+    return sum + dimensions[key] * weights[key];
+  }, 0);
+}
+
 function calcOVR(attrs, pos) {
-  var weights = SIM_CONFIG && SIM_CONFIG.OVR_WEIGHTS ? SIM_CONFIG.OVR_WEIGHTS[pos || STATE.position] : null;
-  if (weights) {
-    var weighted = 0;
-    ATTR_KEYS.forEach(function(k) {
-      weighted += ((attrs && attrs[k] != null) ? attrs[k] : 50) * (weights[k] || 0.07);
-    });
-    return Math.round(weighted);
+  var model = SIM_CONFIG && SIM_CONFIG.OVR_MODEL;
+  if (!model) return 50;
+  var positions = getOvrPositions(pos);
+  var dimensions = calcOvrDimensions(attrs);
+  var primaryScore = calcOvrPositionScore(dimensions, positions[0]);
+  var positionScore = primaryScore;
+  if (positions[1]) {
+    var secondaryWeight = Math.max(0, Math.min(0.5, Number(model.secondaryPositionWeight) || 0));
+    positionScore = primaryScore * (1 - secondaryWeight) + calcOvrPositionScore(dimensions, positions[1]) * secondaryWeight;
   }
-  var sum = 0, count = 0;
-  ATTR_KEYS.forEach(function(k) {
-    if (attrs && attrs[k] != null) { sum += attrs[k]; count++; }
-  });
-  return count > 0 ? Math.round(sum / count) : 50;
+  var calibration = model.calibration[positions[0]] || model.calibration.SG;
+  var eliteBonus = Math.max(0, positionScore - model.eliteThreshold) * calibration.eliteScale;
+  return Math.max(40, Math.min(99, Math.round(calibration.offset + positionScore * calibration.scale + eliteBonus)));
 }
 
 function isGeneratedLeaguePlayer(player) {
@@ -1737,16 +1806,25 @@ function normalizeRookieAttributesToOvr(player, targetOvr) {
   }
   var guard = 0;
   current = calcOVR(player, pos);
-  while (current !== target && guard++ < 12) {
+  while (current !== target && guard++ < 320) {
     var step = current < target ? 1 : -1;
     var changed = false;
-    ATTR_KEYS.forEach(function(key) {
-      var next = clampLeagueAttribute((Number(player[key]) || 50) + step);
-      if (next !== player[key]) changed = true;
+    for (var i = 0; i < ATTR_KEYS.length; i++) {
+      var key = ATTR_KEYS[i];
+      var before = Number(player[key]) || 50;
+      var next = clampLeagueAttribute(before + step);
+      if (next === before) continue;
       player[key] = next;
-    });
+      var candidate = calcOVR(player, pos);
+      var staysOnTargetSide = step > 0 ? candidate <= target : candidate >= target;
+      if (staysOnTargetSide) {
+        current = candidate;
+        changed = true;
+        break;
+      }
+      player[key] = before;
+    }
     if (!changed) break;
-    current = calcOVR(player, pos);
   }
   player.ovr = calcOVR(player, pos);
   return player.ovr;
@@ -1844,6 +1922,33 @@ function syncGeneratedLeaguePlayerOvrs() {
       if (refreshGeneratedPlayerType(player)) playerChanged = true;
       if (syncGeneratedLeaguePlayerOvr(player)) playerChanged = true;
       if (playerChanged) changed++;
+    });
+  });
+  if (changed && typeof clearLineupCache === 'function') clearLineupCache();
+  return changed;
+}
+
+function syncLeaguePlayerOvrs() {
+  if (typeof LEAGUE_PLAYER_DATA === 'undefined' || typeof LEAGUE_TEAM_IDS === 'undefined') return 0;
+  var changed = 0;
+  LEAGUE_TEAM_IDS.forEach(function(teamId) {
+    (LEAGUE_PLAYER_DATA[teamId] || []).forEach(function(player) {
+      if (!player || !player.pos) return;
+      if (!Object.prototype.hasOwnProperty.call(player, '_sourceOvr')) {
+        try {
+          Object.defineProperty(player, '_sourceOvr', { value: Number(player.ovr) || 50, writable: true, configurable: true, enumerable: true });
+        } catch (error) {
+          player._sourceOvr = Number(player.ovr) || 50;
+        }
+      }
+      if (isGeneratedLeaguePlayer(player)) {
+        rebalanceLegacyGeneratedPlayer(player);
+        refreshGeneratedPlayerType(player);
+      }
+      var nextOvr = calcOVR(player, player.pos);
+      if (player.ovr === nextOvr) return;
+      player.ovr = nextOvr;
+      changed++;
     });
   });
   if (changed && typeof clearLineupCache === 'function') clearLineupCache();
@@ -2129,7 +2234,7 @@ function advanceSpecialLeaguePlayerAge(player, age) {
 function evolveLeague() {
   STATE._leagueChanges = { retired: [], rookies: [], teamChanges: {}, trades: [] };
   var teams = typeof LEAGUE_TEAM_IDS !== 'undefined' ? LEAGUE_TEAM_IDS : [];
-  syncGeneratedLeaguePlayerOvrs();
+  syncLeaguePlayerOvrs();
   var seasonRoleContexts = {};
   teams.forEach(function(t) {
     var roleRoster = LEAGUE_PLAYER_DATA[t] || [];
@@ -2177,7 +2282,7 @@ function evolveLeague() {
             }
             p[attrKey] = Math.max(25, Math.min(99, Math.round(p[attrKey] * r)));
           });
-          p.ovr = Math.round(newOvr);
+          p.ovr = calcOVR(p, p.pos);
         }
       }
       var retireChance = 0;
@@ -2207,11 +2312,11 @@ function evolveLeague() {
       var fillerOvr = draftSlot <= 3
         ? 68 + Math.floor(rngNext() * 7)
         : 60 + Math.floor(rngNext() * 8);
-      rk.ovr = fillerOvr;
       if (rk._fixedProspectRating) {
-        rk.ovr = calcOVR(rk, rk.pos);
+        normalizeRookieAttributesToOvr(rk, rk.ovr);
         rk._rookieSeason = getCurrentLeagueSeasonNumber();
       } else {
+        rk.ovr = fillerOvr;
         applyRookieAttributeProfile(rk, fillerOvr, rngNext);
       }
       rk.contract = draftSlot <= 3 ? 3 : 2;

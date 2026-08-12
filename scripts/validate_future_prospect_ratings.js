@@ -13,7 +13,14 @@ vm.runInContext(configSource, context);
 vm.runInContext(draftSource, context);
 
 const ratings = vm.runInContext('FUTURE_PROSPECT_RATINGS', context);
-const weights = vm.runInContext('SIM_CONFIG.OVR_WEIGHTS', context);
+const configAttrKeys = vm.runInContext('SIM_CONFIG.ATTR_LIST', context);
+context.ATTR_KEYS = configAttrKeys;
+context.STATE = { position: 'SG' };
+const ovrStart = offseasonSource.indexOf('function getOvrPositions');
+const ovrEnd = offseasonSource.indexOf('function getCurrentLeagueSeasonNumber', ovrStart);
+if (ovrStart >= 0 && ovrEnd > ovrStart) {
+  vm.runInContext(offseasonSource.slice(ovrStart, ovrEnd), context, { filename: 'future-prospect-ovr.js' });
+}
 const candidates = vm.runInContext('DRAFT_CLASS_2027.concat(ROOKIE_NAMES)', context);
 const candidatePools = vm.runInContext('DRAFT_CLASS_2027.concat(ROOKIE_NAMES, STAR_ROOKIES)', context);
 const attrKeys = ['threePT','MID','FIN','DNK','HAN','PAS','PDEF','IDEF','BLK','REB','ATH','STR','CLU'];
@@ -47,16 +54,18 @@ Object.keys(ratings).forEach((id) => {
   if (!profile) errors.push(`${id} 缺少证据档案`);
   if (!review || review.status !== 'confirmed') errors.push(`${id} 缺少已确认审核记录`);
   if (profile && review && profile.name !== review.name) errors.push(`${id} 证据名 ${profile.name} 与审核名 ${review.name} 不一致`);
-  if (!rating || !weights[rating.pos]) errors.push(`${id} 位置无效`);
+  if (!rating || !vm.runInContext(`!!SIM_CONFIG.OVR_MODEL.positionWeights[${JSON.stringify(rating && rating.pos)}]`, context)) errors.push(`${id} 位置无效`);
   if (!rating.height) errors.push(`${id} 缺少身高`);
   if (!profilesByPosition[rating.pos] || !profilesByPosition[rating.pos].includes(rating.profile)) errors.push(`${id} 模板 ${rating.profile} 与位置 ${rating.pos} 不匹配`);
   attrKeys.forEach((key) => {
     const value = rating.attributes && rating.attributes[key];
     if (!Number.isInteger(value) || value < 25 || value > 99) errors.push(`${id} ${key} 无效：${value}`);
   });
-  if (rating && weights[rating.pos] && rating.attributes) {
-    const calculated = Math.round(attrKeys.reduce((sum, key) => sum + rating.attributes[key] * weights[rating.pos][key], 0));
-    if (calculated !== rating.ovr) errors.push(`${id} OVR ${rating.ovr} 与实算 ${calculated} 不一致`);
+  if (rating && rating.attributes && ovrStart >= 0 && ovrEnd > ovrStart) {
+    context.ratingProbe = { pos: rating.pos, ovr: rating.ovr, ...rating.attributes };
+    vm.runInContext(`normalizeRookieAttributesToOvr(ratingProbe, ${Number(rating.ovr)})`, context);
+    const calculated = vm.runInContext('calcOVR(ratingProbe, ratingProbe.pos)', context);
+    if (calculated !== rating.ovr) errors.push(`${id} 新公式归一失败：目标 ${rating.ovr}，实算 ${calculated}`);
   }
 });
 
@@ -76,6 +85,8 @@ if (!/height:\s*fixedRating\s*\?\s*fixedRating\.height/.test(indexSource)) error
 if (!/_usedRookieCandidateNames\[pick\.ratingId\]\s*=\s*true/.test(indexSource)) errors.push('明星评级身份未同步去重，可能重复生成');
 const fixedBranches = offseasonSource.match(/(?:rookie|rk)\._fixedProspectRating/g) || [];
 if (fixedBranches.length < 2) errors.push('正常选秀或补位流程仍可能覆盖固定评级');
+if (!/normalizeRookieAttributesToOvr\(rookie, rookie\.ovr\)/.test(offseasonSource)) errors.push('未来固定新秀未按审核 OVR 归一属性');
+if (!/normalizeRookieAttributesToOvr\(rk, rk\.ovr\)/.test(offseasonSource)) errors.push('补位固定新秀未按审核 OVR 归一属性');
 
 console.log(JSON.stringify({
   fixedFutureRatings: Object.keys(ratings).length,

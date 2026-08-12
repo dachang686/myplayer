@@ -13,8 +13,14 @@ const context = {};
 vm.createContext(context);
 vm.runInContext(`${configSource}\n${draftSource}`, context);
 const ratings = vm.runInContext('DRAFT_CLASS_2026_RATINGS', context);
-const weights = vm.runInContext('SIM_CONFIG.OVR_WEIGHTS', context);
 const attrKeys = vm.runInContext('SIM_CONFIG.ATTR_LIST', context);
+context.ATTR_KEYS = attrKeys;
+context.STATE = { position: 'SG' };
+const ovrStart = offseasonSource.indexOf('function getOvrPositions');
+const ovrEnd = offseasonSource.indexOf('function getCurrentLeagueSeasonNumber', ovrStart);
+if (ovrStart >= 0 && ovrEnd > ovrStart) {
+  vm.runInContext(offseasonSource.slice(ovrStart, ovrEnd), context, { filename: 'draft-2026-ovr.js' });
+}
 const draftClassMatch = offseasonSource.match(/var DRAFT_CLASS_2026\s*=\s*(\[[\s\S]*?\n\]);/);
 
 const errors = [];
@@ -49,20 +55,22 @@ reviews.forEach((review, index) => {
 
 ratingIds.forEach((id) => {
   const rating = ratings[id];
-  if (!weights[rating.pos]) errors.push(`${id} 位置无效：${rating.pos}`);
+  if (!vm.runInContext(`!!SIM_CONFIG.OVR_MODEL.positionWeights[${JSON.stringify(rating.pos)}]`, context)) errors.push(`${id} 位置无效：${rating.pos}`);
   const attributes = rating.attributes || {};
   attrKeys.forEach((key) => {
     const value = attributes[key];
     if (!Number.isFinite(value) || value < 25 || value > 99) errors.push(`${id} ${key} 无效：${value}`);
   });
-  if (weights[rating.pos]) {
-    const calculated = Math.round(attrKeys.reduce((sum, key) => sum + attributes[key] * (weights[rating.pos][key] || 0), 0));
-    if (calculated !== rating.ovr) errors.push(`${id} OVR 不一致：声明 ${rating.ovr}，重算 ${calculated}`);
+  if (ovrStart >= 0 && ovrEnd > ovrStart) {
+    context.ratingProbe = { pos: rating.pos, ovr: rating.ovr, ...attributes };
+    vm.runInContext(`normalizeRookieAttributesToOvr(ratingProbe, ${Number(rating.ovr)})`, context);
+    const calculated = vm.runInContext('calcOVR(ratingProbe, ratingProbe.pos)', context);
+    if (calculated !== rating.ovr) errors.push(`${id} 新公式归一失败：目标 ${rating.ovr}，实算 ${calculated}`);
   }
 });
 
 if (!/fixedRating\.attributes\[key\]/.test(offseasonSource)) errors.push('休赛期未读取固定新秀属性');
-if (!/rookie\.ovr\s*=\s*calcOVR\(rookie, rookie\.pos\)/.test(offseasonSource)) errors.push('休赛期未按固定属性重算新秀 OVR');
+if (!/normalizeRookieAttributesToOvr\(rookie, fixedRating\.ovr\)/.test(offseasonSource)) errors.push('2026 固定新秀未按审核 OVR 归一属性');
 
 console.log(JSON.stringify({
   officialProfiles: profiles.length,

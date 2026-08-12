@@ -5,12 +5,20 @@ const root = path.resolve(__dirname, '..');
 const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const leagueSource = fs.readFileSync(path.join(root, 'js/data/league_players.js'), 'utf8');
 const configSource = fs.readFileSync(path.join(root, 'js/data/simulation_config.js'), 'utf8');
+const offseasonSource = fs.readFileSync(path.join(root, 'js/offseason.js'), 'utf8');
 const scheduleSource = fs.readFileSync(path.join(root, 'js/data/league_schedule.js'), 'utf8');
 const league = new Function(`${leagueSource}\nreturn { LEAGUE_PLAYER_DATA, LEAGUE_TEAM_IDS };`)();
 const SIM_CONFIG = new Function(`${configSource}\nreturn SIM_CONFIG;`)();
 const generateLeagueSchedule = new Function(`${scheduleSource}\nreturn generateLeagueSchedule;`)();
 const trials = Number(process.argv[2]) || 1000;
 const STATE = { careerTeam: null, finalOVR: 0, position: null, attrs: {}, season: {}, _lineupCache: {} };
+const ovrStart = offseasonSource.indexOf('function getOvrPositions');
+const ovrEnd = offseasonSource.indexOf('// ==================== 联盟演变', ovrStart);
+const syncLeaguePlayerOvrs = new Function(
+  'SIM_CONFIG', 'ATTR_KEYS', 'STATE', 'LEAGUE_PLAYER_DATA', 'LEAGUE_TEAM_IDS', 'clearLineupCache',
+  `${offseasonSource.slice(ovrStart, ovrEnd)}\nreturn syncLeaguePlayerOvrs;`,
+)(SIM_CONFIG, SIM_CONFIG.ATTR_LIST, STATE, league.LEAGUE_PLAYER_DATA, league.LEAGUE_TEAM_IDS, () => {});
+syncLeaguePlayerOvrs();
 const engineStart = indexSource.indexOf('function getPlayerPositions');
 const engineEnd = indexSource.indexOf('function leagueStatClamp', engineStart);
 if (engineStart < 0 || engineEnd < 0) throw new Error('无法定位比赛引擎');
