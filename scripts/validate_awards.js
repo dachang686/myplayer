@@ -12,7 +12,7 @@ const state = {
   careerTeam: 'WAS',
   position: 'C',
   finalOVR: 88,
-  attrs: { PDEF: 65, IDEF: 72, BLK: 80, ATH: 82 },
+  attrs: { PDEF: 65, STL: 58, IDEF: 72, BLK: 80, ATH: 82 },
   career: { seasonCount: 1, currentAge: 23 },
   season: {
     playerStats: {
@@ -39,6 +39,7 @@ LEAGUE_TEAM_IDS.forEach((team, teamIndex) => {
     const ovr = Number(player.ovr) || 70;
     const rebAttr = Number(player.REB) || 50;
     const pdef = Number(player.PDEF) || 50;
+    const stealAttr = Number(player.STL) || 50;
     const blkAttr = Number(player.BLK) || 50;
     const pos = String(player.pos || 'SF').split('/')[0];
     const bigBonus = pos === 'C' ? 1.8 : (pos === 'PF' ? 1.2 : 0);
@@ -46,7 +47,7 @@ LEAGUE_TEAM_IDS.forEach((team, teamIndex) => {
       pts: clamp(7, 31, 7 + (ovr - 70) * 0.65),
       reb: clamp(2, 12.5, 2 + (rebAttr - 45) * 0.11 + bigBonus),
       ast: clamp(1, 9, 1 + ((Number(player.PAS) || 50) - 45) * 0.08),
-      stl: clamp(0.4, 2, 0.4 + (pdef - 45) * 0.025),
+      stl: clamp(0.4, 2, 0.4 + (stealAttr - 45) * 0.021 + (pdef - 45) * 0.004),
       blk: clamp(0.1, 2.1, 0.1 + (blkAttr - 40) * 0.035 + bigBonus * 0.12),
     };
     const totals = { gp: 82 };

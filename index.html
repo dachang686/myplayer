@@ -775,12 +775,12 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
       <section class="home-hero">
         <div class="home-eyebrow">本地单机生涯模拟</div>
         <h1>抽能力，<br><span>打完整个生涯</span></h1>
-        <p>从随机球队中挑选球员，拼出十三项能力，再把这名新秀带进漫长赛季。</p>
+        <p>从随机球队中挑选球员，拼出十四项能力，再把这名新秀带进漫长赛季。</p>
       </section>
 
       <div class="home-loop" aria-label="游戏流程">
         <div class="home-loop-item"><b>01</b><strong>抽球队</strong><small>每轮随机一队</small></div>
-        <div class="home-loop-item"><b>02</b><strong>取能力</strong><small>锁定十三项属性</small></div>
+        <div class="home-loop-item"><b>02</b><strong>取能力</strong><small>锁定十四项属性</small></div>
         <div class="home-loop-item"><b>03</b><strong>跑生涯</strong><small>赛季、季后赛与休赛期</small></div>
       </div>
 
@@ -788,7 +788,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     </main>
 
     <div class="home-meta" aria-label="游戏特性">
-      <span>30 支球队</span><i></i><span>13 项能力</span><i></i><span>IndexedDB 本地存档</span>
+      <span>30 支球队</span><i></i><span>14 项能力</span><i></i><span>IndexedDB 本地存档</span>
     </div>
   </div>
 
@@ -1671,7 +1671,7 @@ function initGame() {
 // ==================== 玩法说明弹窗 ====================
 var _helpPage = 0;
 var _helpPages = [
-  { title: '建球员', content: '选择我的位置后进入抽签选队，随机抽取球队后从该队球员列表中选一人，点击左侧属性槽锁定一项属性。锁定后自动进入下一轮，可继续抽新球队选人锁属性。每局限换三次球员，用完只能重新随机球队。跨位置选人会触发属性衰减，集满十三项属性后自动揭晓总评、模板风格和相似球员。' },
+  { title: '建球员', content: '选择我的位置后进入抽签选队，随机抽取球队后从该队球员列表中选一人，点击左侧属性槽锁定一项属性。锁定后自动进入下一轮，可继续抽新球队选人锁属性。每局限换三次球员，用完只能重新随机球队。跨位置选人会触发属性衰减，集满十四项属性后自动揭晓总评、模板风格和相似球员。' },
   { title: '赛季', content: '抽签决定我的生涯球队后进入赛季。系统根据我与队内同位置球员的总评比较判定首发或替补。每场比赛可点单场推进，也可点击日历日期批量模拟到当天。比赛数据根据属性和位置动态生成，方差较大，有爆发也有低迷。赛季中可随时点我的数据查看场均表现。' },
   { title: '生涯事件', content: '赛季事件分为伤病、纪律、职业剧情和生活花絮，各自拥有独立概率、冷却和赛季名额。部分事件会根据单场表现、球队战绩、合同阶段和季后赛形势触发，并提供会影响信任、声望、伤病风险或未来数场球队气势的选择。同一随机事件不会在一个赛季内重复，所有结果可在“我的数据—事件”中回看。' },
   { title: '季后赛', content: '常规赛结束后根据排名决定季后赛或附加赛资格。附加赛在七到十名之间进行，逐场淘汰。季后赛每轮七场四胜，我的系列赛会一场一场模拟，每场生成简报。点击简报可展开查看详细比分、我的数据和全队数据。一路赢下去直到总冠军。' },
@@ -2307,7 +2307,7 @@ function lockAttr(key) {
   STATE.selectedPlayer = null;
   STATE._mustLockAfterSpin = false; // 已锁定属性，可以再次随机
   
-  if (STATE.lockedCount >= 13) {
+  if (STATE.lockedCount >= SIM_CONFIG.BUILD.TOTAL_ATTRS) {
     renderLeftAttrs();
     setTimeout(() => { STATE._locking = false; revealPlayer(); }, 500);
     return;
@@ -2358,7 +2358,7 @@ function confirmLock(playerName, attrKey, value) {
   // 更新 UI
   renderAttrSlots();
   
-  if (STATE.lockedCount >= 13) {
+  if (STATE.lockedCount >= SIM_CONFIG.BUILD.TOTAL_ATTRS) {
     revealPlayer();
     return;
   }
@@ -2367,12 +2367,12 @@ function confirmLock(playerName, attrKey, value) {
   html('roster-area').innerHTML = `<div class="locked-msg">
     <div class="locked-icon">✅</div>
     <div class="locked-title">${attrCN(attrKey)}（${value}）来自 ${playerName}</div>
-    <div class="locked-sub">${13 - STATE.lockedCount > 0 ? `剩余 ${13 - STATE.lockedCount} 项属性` : '全部属性已锁定！'} · 自动进入下一轮...</div>
+    <div class="locked-sub">${SIM_CONFIG.BUILD.TOTAL_ATTRS - STATE.lockedCount > 0 ? `剩余 ${SIM_CONFIG.BUILD.TOTAL_ATTRS - STATE.lockedCount} 项属性` : '全部属性已锁定！'} · 自动进入下一轮...</div>
   </div>`;
   
   setTimeout(() => {
     STATE._locking = false;
-    if (STATE.lockedCount < 13) {
+    if (STATE.lockedCount < SIM_CONFIG.BUILD.TOTAL_ATTRS) {
       html('roster-area').innerHTML = '';
       spinTeam();
     }
@@ -2480,7 +2480,7 @@ const POS_GROUP = {
  * 按位置筛选 → 余弦匹配最相似球员 → 输出其 archetype
  */
 function matchPlayerArchetype(attrs, topN = 3) {
-  const ATTRS = ['threePT', 'MID', 'FIN', 'DNK', 'HAN', 'PAS', 'PDEF', 'IDEF', 'BLK', 'REB', 'ATH', 'STR', 'CLU'];
+  const ATTRS = ['threePT', 'MID', 'FIN', 'DNK', 'HAN', 'PAS', 'PDEF', 'STL', 'IDEF', 'BLK', 'REB', 'ATH', 'STR', 'CLU'];
   const userPos = STATE.position || 'SF';
   const allowedPositions = POS_GROUP[userPos] || ['PG', 'SG', 'SF', 'PF', 'C'];
   
@@ -3421,7 +3421,7 @@ function selectCareerTeamFromPicker(team) {
   selectCareerTeam(team);
 }
 
-/** 保存本次建球员数据到 Storage（球队、位置、13项属性、总评） */
+/** 保存本次建球员数据到 Storage（球队、位置、14项属性、总评） */
 function saveBuildPlayerData(team) {
   var playerData = {
     team: team,
@@ -3956,7 +3956,7 @@ function estimatePlayerStats(player) {
   var pts = (f(player.FIN) * 0.4 + f(player.MID) * 0.3 + f(player.threePT) * 0.3) * 22 + 2;
   var reb = f(player.REB) * (pos === 'C' ? 14 : pos === 'PF' ? 10 : 6) + 1;
   var ast = f(player.PAS) * (pos === 'PG' ? 10 : pos === 'SG' ? 6 : 4) + 1;
-  var stl = f(player.PDEF) * 3 + 0.3;
+  var stl = (f(player.STL) * 0.72 + f(player.PDEF) * 0.18 + f(player.ATH) * 0.10) * 3 + 0.3;
   var blk = f(player.BLK) * (pos === 'C' ? 4 : pos === 'PF' ? 2.5 : 0.5) + 0.2;
   return { pts: Math.round(pts * 10) / 10, reb: Math.round(reb * 10) / 10, ast: Math.round(ast * 10) / 10, stl: Math.round(stl * 10) / 10, blk: Math.round(blk * 10) / 10, pos: pos, ovr: parseInt(player.ovr) || 50 };
 }
@@ -4652,7 +4652,7 @@ function getLeagueOffenseProfile(player) {
 /** 防守影响力同样取球员最擅长的防守方式，避免防守核心因低使用率丢失分钟。 */
 function getLeagueDefenseImpact(player) {
   function skill(key) { return af(parseInt(player[key]) || 50); }
-  var perimeter = skill('PDEF') * 0.65 + skill('ATH') * 0.25 + skill('STR') * 0.10;
+  var perimeter = skill('PDEF') * 0.52 + skill('STL') * 0.20 + skill('ATH') * 0.18 + skill('STR') * 0.10;
   var interior = skill('IDEF') * 0.44 + skill('BLK') * 0.32 + skill('STR') * 0.14 + skill('REB') * 0.10;
   var possession = skill('REB') * 0.52 + skill('IDEF') * 0.28 + skill('STR') * 0.20;
   var options = [perimeter, interior, possession].sort(function(a, b) { return b - a; });
@@ -4746,7 +4746,7 @@ function generateBoxScore(teamA, teamB, totalA, totalB) {
     var offSkill = offenseProfiles.map(function(profile) { return profile.scoring; });
     var rebSkill = players.map(function(player) { return af(parseInt(player.REB) || 50); });
     var passSkill = players.map(function(player) { return af(parseInt(player.PAS) || 50) * 0.68 + af(parseInt(player.HAN) || 50) * 0.24 + af(parseInt(player.CLU) || 50) * 0.08; });
-    var stealSkill = players.map(function(player) { return af(parseInt(player.PDEF) || 50) * 0.72 + af(parseInt(player.ATH) || 50) * 0.28; });
+    var stealSkill = players.map(function(player) { return af(parseInt(player.STL) || 50) * 0.72 + af(parseInt(player.PDEF) || 50) * 0.18 + af(parseInt(player.ATH) || 50) * 0.10; });
     var blockSkill = players.map(function(player) { return af(parseInt(player.BLK) || 50) * 0.62 + af(parseInt(player.IDEF) || 50) * 0.38; });
     var handleSkill = players.map(function(player) { return af(parseInt(player.HAN) || 50) * 0.65 + af(parseInt(player.CLU) || 50) * 0.35; });
 
@@ -5011,10 +5011,10 @@ function generatePlayerStatsNew(attrs, gameResult, isPlayoff) {
   const astVal = af(pasAvg) * teamScoreFactor * astScale * 9 * statMinsFactor;
   const ast = sampleCountingStat(astVal);
   
-  // ★ 抢断 = PDEF主导 + ATH/HAN辅助（按位置权重）
+  // ★ 抢断 = STL主导 + PDEF/ATH/HAN辅助（按位置权重）
   const stlF = SIM_CONFIG.PLAYER_STATS.FACTORS[pos].stl;
-  const stlSum = stlF.PDEF + (stlF.ATH || 0) + (stlF.HAN || 0);
-  const stlAvg = (af(attrs.PDEF||50) * stlF.PDEF + af(attrs.ATH||50) * (stlF.ATH || 0) + af(attrs.HAN||50) * (stlF.HAN || 0)) / stlSum;
+  const stlSum = stlF.STL + (stlF.PDEF || 0) + (stlF.ATH || 0) + (stlF.HAN || 0);
+  const stlAvg = (af(attrs.STL||50) * stlF.STL + af(attrs.PDEF||50) * (stlF.PDEF || 0) + af(attrs.ATH||50) * (stlF.ATH || 0) + af(attrs.HAN||50) * (stlF.HAN || 0)) / stlSum;
   // ★ 抢断 ±30% 波动 (原±60%)
   const stlVal = stlAvg * (totalScore / 200) * 2.0 * statMinsFactor * (0.7 + Math.random() * 0.6);
   const stl = Math.round(Math.max(0, stlVal));
@@ -8762,6 +8762,12 @@ function manualLoadGame(slot, options) {
         // STATE 与 LEAGUE_PLAYER_DATA 是 const，只能原地清空后填充，保证所有引用仍然有效
         Object.keys(STATE).forEach(function(k) { delete STATE[k]; });
         Object.assign(STATE, snap.state);
+        STATE.attrs = STATE.attrs || {};
+        STATE.attrSlots = STATE.attrSlots || {};
+        if (!Number.isFinite(Number(STATE.attrs.STL))) STATE.attrs.STL = Number(STATE.attrs.PDEF) || 50;
+        if (!Object.prototype.hasOwnProperty.call(STATE.attrSlots, 'STL')) STATE.attrSlots.STL = null;
+        STATE.lockedCount = ATTR_KEYS.filter(function(key) { return STATE.attrs[key] !== null && STATE.attrs[key] !== undefined; }).length;
+        STATE.finalOVR = calcOVR(STATE.attrs, STATE.position);
         ensureSeasonEventState();
         // 页面刷新后原来的模拟定时器已不存在，恢复为可手动继续的状态。
         STATE._calendarAutoSimulating = false;

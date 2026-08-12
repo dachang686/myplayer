@@ -41,7 +41,7 @@ const result = vm.runInContext(`({
 
 const failures = [];
 if (result.teams !== 30 || result.rosters !== 30 || result.scheduleTeams !== 30) failures.push('联盟球队或赛程数量发生变化');
-if (result.attributes !== 13) failures.push('能力属性数量发生变化');
+if (result.attributes !== 14) failures.push('能力属性数量发生变化');
 if (result.newYork !== '纽约大鲨鱼') failures.push('球队名称覆盖失败');
 if (result.logos !== 30) failures.push('球队卡通徽章数量错误');
 if (result.playerCount !== 525 || result.uniqueIds !== 525) failures.push('球员 ID 数量或唯一性错误');

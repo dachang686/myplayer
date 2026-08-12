@@ -37,6 +37,9 @@ players.forEach((player, index) => {
   if (!player.cname || /[-A-Za-z]/.test(player.cname) || Object.prototype.hasOwnProperty.call(player, 'shortName')) {
     failures.push(`${player.id} 的 cname 不是规范中文姓氏：${player.cname || '(空)'}`);
   }
+  if (!Number.isInteger(player.STL) || player.STL < 25 || player.STL > 99) {
+    failures.push(`${player.id} 的 STL 无效：${player.STL}`);
+  }
 });
 
 if (new Set(draftPlayers.map((player) => player.id)).size !== draftPlayers.length) failures.push('新秀 ID 不唯一');

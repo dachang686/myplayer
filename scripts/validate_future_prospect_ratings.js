@@ -23,7 +23,7 @@ if (ovrStart >= 0 && ovrEnd > ovrStart) {
 }
 const candidates = vm.runInContext('DRAFT_CLASS_2027.concat(ROOKIE_NAMES)', context);
 const candidatePools = vm.runInContext('DRAFT_CLASS_2027.concat(ROOKIE_NAMES, STAR_ROOKIES)', context);
-const attrKeys = ['threePT','MID','FIN','DNK','HAN','PAS','PDEF','IDEF','BLK','REB','ATH','STR','CLU'];
+const attrKeys = configAttrKeys;
 const profilesByPosition = {
   PG: ['playmaker', 'scoring_guard'],
   SG: ['perimeter_scorer', 'two_way_slasher'],

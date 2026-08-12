@@ -182,7 +182,7 @@ function runUserSeason(seed) {
   const user = {
     id: '__validation_user__', cname: '验证球员', pos: 'PG', ovr: 91, _isUser: true,
     threePT: 95, MID: 90, FIN: 88, DNK: 82, HAN: 94, PAS: 90,
-    PDEF: 85, IDEF: 55, BLK: 45, REB: 55, ATH: 90, STR: 65, CLU: 90,
+    PDEF: 85, STL: 88, IDEF: 55, BLK: 45, REB: 55, ATH: 90, STR: 65, CLU: 90,
   };
   leagueData.LEAGUE_PLAYER_DATA.WAS = originalRoster.concat(user);
   const totals = { gp: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, mins: 0, bestPts: 0 };

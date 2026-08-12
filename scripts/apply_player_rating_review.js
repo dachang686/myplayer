@@ -7,7 +7,7 @@ const queuePath = path.join(__dirname, 'data', 'player_rating_review_queue.json'
 const reviewPath = path.join(__dirname, 'data', 'player_rating_reviews.json');
 const attributes = [
   'ovr', 'threePT', 'MID', 'FIN', 'DNK', 'HAN', 'PAS',
-  'PDEF', 'IDEF', 'BLK', 'REB', 'ATH', 'STR', 'CLU',
+  'PDEF', 'STL', 'IDEF', 'BLK', 'REB', 'ATH', 'STR', 'CLU',
 ];
 
 function readJson(filePath) {

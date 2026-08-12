@@ -10,7 +10,7 @@ const SIM_CONFIG = {
   // ============================================================
   BUILD: {
     /** 总属性数 */
-    TOTAL_ATTRS: 13,
+    TOTAL_ATTRS: 14,
     /** Classic 模式重roll次数 */
     CLASSIC_REROLLS: 3,
     /** 每支球队 roster 展示上限（不够的用实际人数） */
@@ -32,6 +32,7 @@ const SIM_CONFIG = {
       HAN: 85.2,
       PAS: 79.4,
       PDEF: 69.5,
+      STL: 62.4,
       IDEF: 42,
       BLK: 44.6,
       REB: 52.2,
@@ -47,6 +48,7 @@ const SIM_CONFIG = {
       HAN: 83,
       PAS: 71.7,
       PDEF: 69.6,
+      STL: 53.1,
       IDEF: 48.3,
       BLK: 45.5,
       REB: 51.9,
@@ -62,6 +64,7 @@ const SIM_CONFIG = {
       HAN: 82.8,
       PAS: 65.2,
       PDEF: 71.1,
+      STL: 54.1,
       IDEF: 58.7,
       BLK: 50.5,
       REB: 57.3,
@@ -77,6 +80,7 @@ const SIM_CONFIG = {
       HAN: 83.4,
       PAS: 62.4,
       PDEF: 67.6,
+      STL: 51.1,
       IDEF: 68.1,
       BLK: 59.7,
       REB: 66.4,
@@ -92,6 +96,7 @@ const SIM_CONFIG = {
       HAN: 80.3,
       PAS: 53,
       PDEF: 50.8,
+      STL: 46.7,
       IDEF: 72.8,
       BLK: 72.7,
       REB: 77,
@@ -111,6 +116,7 @@ const SIM_CONFIG = {
     HAN: "手感",
     PAS: "传球",
     PDEF: "外防",
+    STL: "抢断",
     IDEF: "内防",
     BLK: "盖帽",
     REB: "篮板",
@@ -127,6 +133,7 @@ const SIM_CONFIG = {
     HAN: "控球与接球手感",
     PAS: "传球精准度",
     PDEF: "外线防守能力",
+    STL: "制造抢断与破坏传球路线的能力",
     IDEF: "内线防守能力",
     BLK: "盖帽能力",
     REB: "篮板能力",
@@ -135,7 +142,7 @@ const SIM_CONFIG = {
     CLU: "关键球能力"
   },
   /** 属性列表（顺序决定 UI 排列） */
-  ATTR_LIST: ["threePT", "MID", "FIN", "DNK", "HAN", "PAS", "PDEF", "IDEF", "BLK", "REB", "ATH", "STR", "CLU"],
+  ATTR_LIST: ["threePT", "MID", "FIN", "DNK", "HAN", "PAS", "PDEF", "STL", "IDEF", "BLK", "REB", "ATH", "STR", "CLU"],
   /** 数字→字母等级转换 */
   GRADE: {
     /** 根据数值返回 { letter, color } */
@@ -222,7 +229,8 @@ const SIM_CONFIG = {
       DNK: 0.04,
       HAN: 0.14,
       PAS: 0.14,
-      PDEF: 0.1,
+      PDEF: 0.07,
+      STL: 0.03,
       IDEF: 0.04,
       BLK: 0.02,
       REB: 0.04,
@@ -237,7 +245,8 @@ const SIM_CONFIG = {
       DNK: 0.06,
       HAN: 0.1,
       PAS: 0.08,
-      PDEF: 0.1,
+      PDEF: 0.07,
+      STL: 0.03,
       IDEF: 0.04,
       BLK: 0.02,
       REB: 0.04,
@@ -252,7 +261,8 @@ const SIM_CONFIG = {
       DNK: 0.08,
       HAN: 0.08,
       PAS: 0.06,
-      PDEF: 0.1,
+      PDEF: 0.07,
+      STL: 0.03,
       IDEF: 0.08,
       BLK: 0.04,
       REB: 0.06,
@@ -267,7 +277,8 @@ const SIM_CONFIG = {
       DNK: 0.06,
       HAN: 0.06,
       PAS: 0.04,
-      PDEF: 0.1,
+      PDEF: 0.07,
+      STL: 0.03,
       IDEF: 0.12,
       BLK: 0.08,
       REB: 0.1,
@@ -282,7 +293,8 @@ const SIM_CONFIG = {
       DNK: 0.06,
       HAN: 0.04,
       PAS: 0.04,
-      PDEF: 0.08,
+      PDEF: 0.06,
+      STL: 0.02,
       IDEF: 0.14,
       BLK: 0.12,
       REB: 0.12,
@@ -292,25 +304,25 @@ const SIM_CONFIG = {
     }
   },
   /**
-   * OVR 单调拟合模型：位置权重只使用 13 项可见属性，源 OVR 仅作为离线拟合与验收目标。
+   * OVR 单调拟合模型：位置权重只使用 14 项可见属性，源 OVR 仅作为离线拟合与验收目标。
    * 三项全局奖励分别表达进攻手段完整度、核心强项和 80+ 精英属性，不含球员个人修正。
    */
   OVR_MODEL: {
     secondaryPositionWeight: 0.2,
     base: 22.902948,
     positionOffsets: {
-      PG: 0,
-      SG: -5.750865,
-      SF: 21.573580,
-      PF: 16.960870,
-      C: 15.572184
+      PG: 0.014200,
+      SG: -5.608518,
+      SF: 21.743267,
+      PF: 17.014779,
+      C: 15.578744
     },
     positionWeights: {
-      PG: { threePT: 0.140614, MID: 0.041471, FIN: 0.079041, DNK: 0.043274, HAN: 0.105239, PAS: 0.178565, PDEF: 0.020000, IDEF: 0.008000, BLK: 0.004000, REB: 0.057892, ATH: 0.123443, STR: 0.008000, CLU: 0.111021 },
-      SG: { threePT: 0.252855, MID: 0.115776, FIN: 0.020000, DNK: 0.060303, HAN: 0.029061, PAS: 0.184151, PDEF: 0.086271, IDEF: 0.008000, BLK: 0.006684, REB: 0.096431, ATH: 0.062975, STR: 0.018505, CLU: 0.134814 },
-      SF: { threePT: 0.030732, MID: 0.020000, FIN: 0.042375, DNK: 0.016000, HAN: 0.016000, PAS: 0.116000, PDEF: 0.099816, IDEF: 0.046275, BLK: 0.008000, REB: 0.050671, ATH: 0.016000, STR: 0.012000, CLU: 0.118434 },
-      PF: { threePT: 0.056800, MID: 0.012000, FIN: 0.038727, DNK: 0.085646, HAN: 0.025591, PAS: 0.056799, PDEF: 0.032672, IDEF: 0.033041, BLK: 0.031367, REB: 0.057834, ATH: 0.012000, STR: 0.087317, CLU: 0.115291 },
-      C:  { threePT: 0.018746, MID: 0.010581, FIN: 0.028000, DNK: 0.085189, HAN: 0.025301, PAS: 0.057856, PDEF: 0.016000, IDEF: 0.111469, BLK: 0.024000, REB: 0.085352, ATH: 0.042149, STR: 0.064902, CLU: 0.121518 }
+      PG: { threePT: 0.140614, MID: 0.041471, FIN: 0.079041, DNK: 0.043274, HAN: 0.105239, PAS: 0.178565, PDEF: 0.018000, STL: 0.002000, IDEF: 0.008000, BLK: 0.004000, REB: 0.057892, ATH: 0.123443, STR: 0.008000, CLU: 0.111021 },
+      SG: { threePT: 0.252855, MID: 0.115776, FIN: 0.020000, DNK: 0.060303, HAN: 0.029061, PAS: 0.184151, PDEF: 0.077644, STL: 0.008627, IDEF: 0.008000, BLK: 0.006684, REB: 0.096431, ATH: 0.062975, STR: 0.018505, CLU: 0.134814 },
+      SF: { threePT: 0.030732, MID: 0.020000, FIN: 0.042375, DNK: 0.016000, HAN: 0.016000, PAS: 0.116000, PDEF: 0.089834, STL: 0.009982, IDEF: 0.046275, BLK: 0.008000, REB: 0.050671, ATH: 0.016000, STR: 0.012000, CLU: 0.118434 },
+      PF: { threePT: 0.056800, MID: 0.012000, FIN: 0.038727, DNK: 0.085646, HAN: 0.025591, PAS: 0.056799, PDEF: 0.029405, STL: 0.003267, IDEF: 0.033041, BLK: 0.031367, REB: 0.057834, ATH: 0.012000, STR: 0.087317, CLU: 0.115291 },
+      C:  { threePT: 0.018746, MID: 0.010581, FIN: 0.028000, DNK: 0.085189, HAN: 0.025301, PAS: 0.057856, PDEF: 0.014400, STL: 0.001600, IDEF: 0.111469, BLK: 0.024000, REB: 0.085352, ATH: 0.042149, STR: 0.064902, CLU: 0.121518 }
     },
     bonuses: {
       scoringBreadth: 0.033882,
@@ -346,8 +358,9 @@ const SIM_CONFIG = {
       ATH: 0.1
     },
     defense: {
-      PDEF: 0.25,
-      IDEF: 0.25,
+      PDEF: 0.2,
+      STL: 0.1,
+      IDEF: 0.2,
       BLK: 0.15,
       REB: 0.15,
       ATH: 0.1,
@@ -479,9 +492,10 @@ const SIM_CONFIG = {
           threePT: 0.15
         },
         stl: {
-          PDEF: 0.4,
-          ATH: 0.25,
-          HAN: 0.2
+          STL: 0.65,
+          PDEF: 0.15,
+          ATH: 0.1,
+          HAN: 0.1
         },
         blk: {
           BLK: 0.3,
@@ -515,9 +529,10 @@ const SIM_CONFIG = {
           threePT: 0.1
         },
         stl: {
-          PDEF: 0.4,
-          ATH: 0.25,
-          HAN: 0.15
+          STL: 0.65,
+          PDEF: 0.15,
+          ATH: 0.1,
+          HAN: 0.1
         },
         blk: {
           BLK: 0.3,
@@ -550,9 +565,10 @@ const SIM_CONFIG = {
           ATH: 0.1
         },
         stl: {
-          PDEF: 0.4,
-          ATH: 0.2,
-          HAN: 0.15
+          STL: 0.65,
+          PDEF: 0.15,
+          ATH: 0.1,
+          HAN: 0.1
         },
         blk: {
           BLK: 0.35,
@@ -586,8 +602,9 @@ const SIM_CONFIG = {
           ATH: 0.05
         },
         stl: {
-          PDEF: 0.3,
-          ATH: 0.15,
+          STL: 0.65,
+          PDEF: 0.15,
+          ATH: 0.1,
           HAN: 0.1
         },
         blk: {
@@ -622,9 +639,10 @@ const SIM_CONFIG = {
           ATH: 0.05
         },
         stl: {
-          PDEF: 0.2,
-          ATH: 0.1,
-          HAN: 0.08
+          STL: 0.55,
+          PDEF: 0.15,
+          ATH: 0.15,
+          HAN: 0.15
         },
         blk: {
           BLK: 0.45,

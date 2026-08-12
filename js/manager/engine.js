@@ -36,7 +36,9 @@
     var finishing = Number(player && player.FIN) || 60;
     var shooting = Number(player && player.threePT) || 60;
     var passing = Number(player && player.PAS) || 60;
-    var defense = ((Number(player && player.PDEF) || 60) + (Number(player && player.IDEF) || 60)) / 2;
+    var defense = (Number(player && player.PDEF) || 60) * 0.38
+      + (Number(player && player.STL) || 60) * 0.22
+      + (Number(player && player.IDEF) || 60) * 0.40;
     var rebounding = Number(player && player.REB) || 60;
     if (offense) return base * 0.52 + finishing * 0.16 + shooting * 0.16 + passing * 0.10 + rebounding * 0.06;
     return base * 0.48 + defense * 0.25 + rebounding * 0.17 + (Number(player && player.ATH) || 60) * 0.10;
@@ -79,9 +81,9 @@
 
   function playerTradeValue(player) {
     var overall = Number(player && player.ovr) || 0;
-    var skills = ['threePT', 'FIN', 'PAS', 'PDEF', 'IDEF', 'REB'].reduce(function(sum, key) {
+    var skills = ['threePT', 'FIN', 'PAS', 'PDEF', 'STL', 'IDEF', 'REB'].reduce(function(sum, key) {
       return sum + (Number(player && player[key]) || 0);
-    }, 0) / 6;
+    }, 0) / 7;
     var coreValue = Math.pow(Math.max(0, overall - 55), 1.35) * 1.2;
     return Math.round((coreValue + skills * 0.12) * 10) / 10;
   }
@@ -439,7 +441,10 @@
       var minutesRatio = entry.minutes / 36;
       var rebounds = Math.max(0, Math.round(minutesRatio * (1.2 + (Number(player.REB) || 60) / 10.5)));
       var assists = Math.max(0, Math.round(minutesRatio * (0.8 + (Number(player.PAS) || 60) / 12.5)));
-      var steals = Math.max(0, Math.round(minutesRatio * (0.15 + ((Number(player.PDEF) || 60) + (Number(player.ATH) || 60)) / 150)));
+      var steals = Math.max(0, Math.round(minutesRatio * (0.12
+        + (Number(player.STL) || 60) / 95
+        + (Number(player.PDEF) || 60) / 300
+        + (Number(player.ATH) || 60) / 400)));
       var blocks = Math.max(0, Math.round(minutesRatio * (0.08 + (Number(player.IDEF) || 60) / 95)));
       var totals = state.season.playerStats[key] || {
         playerId: player.id,

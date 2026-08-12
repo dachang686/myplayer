@@ -1718,10 +1718,10 @@ var ROOKIE_ATTRIBUTE_PROFILES = {
   ],
   SG: [
     { id: 'perimeter_scorer', label: '外线得分手', strengths: ['threePT','MID','FIN','HAN'], weaknesses: ['IDEF','BLK','REB','STR'] },
-    { id: 'two_way_slasher', label: '双向突破手', strengths: ['FIN','DNK','PDEF','ATH'], weaknesses: ['IDEF','BLK','REB','PAS'] }
+    { id: 'two_way_slasher', label: '双向突破手', strengths: ['FIN','DNK','PDEF','STL','ATH'], weaknesses: ['IDEF','BLK','REB','PAS'] }
   ],
   SF: [
-    { id: 'two_way_wing', label: '双向锋线', strengths: ['FIN','PDEF','ATH','STR'], weaknesses: ['PAS','BLK','REB','MID'] },
+    { id: 'two_way_wing', label: '双向锋线', strengths: ['FIN','PDEF','STL','ATH','STR'], weaknesses: ['PAS','BLK','REB','MID'] },
     { id: 'point_forward', label: '组织前锋', strengths: ['HAN','PAS','FIN','PDEF'], weaknesses: ['BLK','REB','threePT','STR'] }
   ],
   PF: [
@@ -1892,6 +1892,8 @@ function syncLeaguePlayerOvrs() {
   LEAGUE_TEAM_IDS.forEach(function(teamId) {
     (LEAGUE_PLAYER_DATA[teamId] || []).forEach(function(player) {
       if (!player || !player.pos) return;
+      // 旧存档没有独立抢断属性时，以外防作为一次性迁移基准；新名单和新秀均保存独立 STL。
+      if (!Number.isFinite(Number(player.STL))) player.STL = calcOvrAttribute(player, 'PDEF');
       if (!Object.prototype.hasOwnProperty.call(player, '_sourceOvr')) {
         try {
           Object.defineProperty(player, '_sourceOvr', { value: Number(player.ovr) || 50, writable: true, configurable: true, enumerable: true });
@@ -2229,7 +2231,7 @@ function evolveLeague() {
         var oldOvr = p.ovr;
         if (!evolveGeneratedPlayerAttributes(p, oldOvr, newOvr)) {
           var baseRatio = Math.round(newOvr) / oldOvr;
-          var decayFast    = ['ATH', 'STR', 'PDEF'];
+          var decayFast    = ['ATH', 'STR', 'PDEF', 'STL'];
           var decayResist  = ['threePT', 'MID', 'PAS', 'HAN', 'CLU'];
           SIM_CONFIG.ATTR_LIST.forEach(function(attrKey) {
             if (p[attrKey] == null) return;

@@ -7,10 +7,14 @@ const leaguePath = path.join(root, 'js', 'data', 'league_players.js');
 const reviewPath = path.join(__dirname, 'data', 'player_rating_reviews.json');
 const ovrAdjustmentPath = path.join(__dirname, 'data', 'player_ovr_adjustments.json');
 const identityPath = path.join(__dirname, 'data', 'nba2k_player_identity.json');
+const mappingPath = path.join(__dirname, 'data', 'nba2k26_player_mapping.json');
+const ratingsPath = path.join(__dirname, 'data', 'nba2k26_player_ratings.json');
+const stealOverridesPath = path.join(__dirname, 'data', 'player_steal_overrides.json');
 const attributes = [
   'ovr', 'threePT', 'MID', 'FIN', 'DNK', 'HAN', 'PAS',
   'PDEF', 'IDEF', 'BLK', 'REB', 'ATH', 'STR', 'CLU',
 ];
+const adjustableAttributes = [...attributes, 'STL'];
 
 function parseLeague(source) {
   return new Function(`${source}\nreturn LEAGUE_PLAYER_DATA;`)();
@@ -36,7 +40,12 @@ const baselinePlayersById = new Map(
 const reviewData = JSON.parse(fs.readFileSync(reviewPath, 'utf8'));
 const ovrAdjustmentData = JSON.parse(fs.readFileSync(ovrAdjustmentPath, 'utf8'));
 const identities = JSON.parse(fs.readFileSync(identityPath, 'utf8')).players || [];
+const mappings = JSON.parse(fs.readFileSync(mappingPath, 'utf8')).players || [];
+const ratings = JSON.parse(fs.readFileSync(ratingsPath, 'utf8')).players || [];
+const stealOverrides = JSON.parse(fs.readFileSync(stealOverridesPath, 'utf8')).players || {};
 const identityById = new Map(identities.map(identity => [identity.localId, identity]));
+const ratingByUrl = new Map(ratings.map(rating => [rating.url, rating]));
+const mappingById = new Map(mappings.filter(mapping => mapping.accepted).map(mapping => [mapping.localId, mapping]));
 const reviews = reviewData.players || [];
 const ovrAdjustments = ovrAdjustmentData.players || [];
 const ovrAdjustmentById = new Map();
@@ -57,6 +66,23 @@ for (const [team, players] of Object.entries(league)) {
     }
     playersById.set(player.id, { team, player });
   }
+}
+
+for (const [localId, entry] of playersById) {
+  const mapping = mappingById.get(localId);
+  const cachedRating = mapping && ratingByUrl.get(mapping.url);
+  const cachedSteal = cachedRating?.attributes?.Steal;
+  const override = stealOverrides[localId];
+  const expectedSteal = Number.isInteger(cachedSteal) ? cachedSteal : override?.value;
+  if (!Number.isInteger(expectedSteal) || expectedSteal < 25 || expectedSteal > 99) {
+    fail(`${localId} missing auditable STL source`);
+  } else if (entry.player.STL !== expectedSteal) {
+    fail(`${localId} STL: league=${entry.player.STL}, source=${expectedSteal}`);
+  }
+  if (override && !String(override.basis || '').trim()) fail(`${localId} STL override missing basis`);
+}
+for (const localId of Object.keys(stealOverrides)) {
+  if (!playersById.has(localId)) fail(`unused STL override: ${localId}`);
 }
 
 const reviewedIds = new Set();
@@ -112,7 +138,7 @@ for (let index = 0; index < reviews.length; index++) {
 for (const adjustment of ovrAdjustments) {
   if (!reviewedIds.has(adjustment.localId)) fail(`OVR adjustment has no player review: ${adjustment.localId}`);
   for (const attribute of Object.keys(adjustment.changes || {})) {
-    if ((!attributes.includes(attribute) && attribute !== 'pos') || attribute === 'ovr') {
+    if ((!adjustableAttributes.includes(attribute) && attribute !== 'pos') || attribute === 'ovr') {
       fail(`${adjustment.localId} invalid OVR-adjusted field: ${attribute}`);
     }
   }
@@ -121,7 +147,7 @@ for (const adjustment of ovrAdjustments) {
     const baselinePlayer = baselinePlayersById.get(adjustment.localId);
     const leaguePlayer = playersById.get(adjustment.localId)?.player;
     if (!Array.isArray(positionTuple) || positionTuple.length !== 2
-      || baselinePlayer?.pos !== positionTuple[0] || leaguePlayer?.pos !== positionTuple[1]) {
+      || !positionTuple.includes(baselinePlayer?.pos) || leaguePlayer?.pos !== positionTuple[1]) {
       fail(`${adjustment.localId} invalid OVR adjustment tuple: pos`);
     }
   }

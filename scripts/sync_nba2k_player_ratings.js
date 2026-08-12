@@ -27,6 +27,7 @@ const ATTRIBUTE_MAP = {
   HAN: 'Hands',
   PAS: 'Pass Accuracy',
   PDEF: 'Perimeter D',
+  STL: 'Steal',
   IDEF: 'Interior D',
   BLK: 'Block',
   REB: 'Def. Rebound',

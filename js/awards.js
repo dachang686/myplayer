@@ -394,6 +394,7 @@ function calcSeasonAwards() {
       age: (STATE.career && STATE.career.currentAge) || 22,
       raw: {
         PDEF: (STATE.attrs && STATE.attrs.PDEF) || 60,
+        STL: (STATE.attrs && STATE.attrs.STL) || 50,
         IDEF: (STATE.attrs && STATE.attrs.IDEF) || 60,
         BLK: (STATE.attrs && STATE.attrs.BLK) || 50,
         ATH: (STATE.attrs && STATE.attrs.ATH) || 60
@@ -443,18 +444,20 @@ function calcSeasonAwards() {
       if (c.stats.gp < 50) return -999;
       var s = c.stats;
       var p = c.raw || {};
-      var pdef, idef, blkAttr;
+      var pdef, stealAttr, idef, blkAttr;
       if (c.isUser) {
         pdef = parseInt(STATE.attrs && STATE.attrs.PDEF) || 60;
+        stealAttr = parseInt(STATE.attrs && STATE.attrs.STL) || 50;
         idef = parseInt(STATE.attrs && STATE.attrs.IDEF) || 60;
         blkAttr = parseInt(STATE.attrs && STATE.attrs.BLK) || 50;
       } else {
         pdef = parseInt(p.PDEF) || 60;
+        stealAttr = parseInt(p.STL) || 50;
         idef = parseInt(p.IDEF) || 60;
         blkAttr = parseInt(p.BLK) || 50;
       }
       // DPOY 以本赛季场上产出为主；属性只作为能力底盘，球队战绩仅小幅加成。
-      var defenseAttr = (pdef + idef + blkAttr) / 3;
+      var defenseAttr = (pdef + stealAttr + idef + blkAttr) / 4;
       var score =
         defenseAttr * 0.08 +
         s.reb * 0.40 +
