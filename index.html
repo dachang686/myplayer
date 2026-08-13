@@ -710,6 +710,34 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     .awards-milestone{margin:0 0 10px;padding:12px 14px;border:1.5px solid var(--orange);border-radius:var(--radius-sm);background:var(--orange-bg)}
     .awards-milestone-title{font-family:var(--font-display);font-size:14px;font-weight:800;color:var(--orange)}
     .awards-milestone-copy{margin-top:3px;font-size:11px;color:var(--text-dim)}
+    .historic-stat-overlay{--historic-accent:var(--orange);--historic-soft:oklch(0.74 0.17 45 / .16);position:fixed;inset:0;z-index:10020;display:grid;place-items:center;padding:calc(18px + var(--safe-t)) calc(18px + var(--safe-r)) calc(18px + var(--safe-b)) calc(18px + var(--safe-l));overflow:hidden;background:oklch(0.125 0.025 48 / .97);animation:historicStatFade .22s cubic-bezier(.16,1,.3,1)}
+    .historic-stat-overlay.is-quintuple{--historic-accent:oklch(0.82 0.18 82);--historic-soft:oklch(0.64 0.18 305 / .2);background:oklch(0.125 0.04 305 / .98)}
+    .historic-stat-overlay::before{content:'';position:absolute;inset:-30%;background:radial-gradient(circle at 50% 42%,var(--historic-soft) 0%,transparent 48%);pointer-events:none}
+    .historic-stat-stage{position:relative;z-index:2;width:min(100%,520px);text-align:center;animation:historicStatStageIn .38s cubic-bezier(.16,1,.3,1)}
+    .historic-stat-close{position:absolute;z-index:4;top:calc(12px + var(--safe-t));right:calc(12px + var(--safe-r));width:40px;height:40px;border:1px solid oklch(0.95 0.01 80 / .25);border-radius:12px;background:oklch(0.2 0.02 50 / .78);color:var(--text);font-size:17px;cursor:pointer}
+    .historic-stat-close:focus-visible,.historic-stat-action:focus-visible{outline:3px solid var(--historic-accent);outline-offset:3px}
+    .historic-stat-kicker{display:inline-flex;align-items:center;gap:8px;margin-bottom:14px;color:var(--historic-accent);font:800 11px var(--font-body);letter-spacing:2.5px}
+    .historic-stat-kicker::before,.historic-stat-kicker::after{content:'';width:28px;height:1px;background:currentColor}
+    .historic-stat-mark{display:grid;place-items:center;width:112px;height:112px;margin:0 auto 16px;border:2px solid var(--historic-accent);border-radius:50%;color:var(--historic-accent);font:900 38px/1 var(--font-display);box-shadow:0 0 0 10px var(--historic-soft),0 20px 50px oklch(0.08 0.02 40 / .55)}
+    .historic-stat-title{font:900 clamp(31px,9vw,50px)/1.02 var(--font-display);letter-spacing:-1.5px;color:var(--text)}
+    .historic-stat-copy{max-width:440px;margin:10px auto 0;color:var(--text-dim);font-size:13px;line-height:1.55}
+    .historic-stat-player{margin-top:24px;font:800 clamp(21px,6vw,30px)/1.15 var(--font-display);color:var(--historic-accent)}
+    .historic-stat-team{margin-top:5px;color:var(--text-muted);font-size:11px;font-weight:700;letter-spacing:1px}
+    .historic-stat-line{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));margin:22px auto 0;border-top:1px solid oklch(0.95 0.01 80 / .18);border-bottom:1px solid oklch(0.95 0.01 80 / .18)}
+    .historic-stat-item{padding:13px 4px;color:var(--text-muted)}
+    .historic-stat-item+.historic-stat-item{border-left:1px solid oklch(0.95 0.01 80 / .12)}
+    .historic-stat-item strong{display:block;font:800 clamp(18px,5vw,24px)/1 var(--font-display);color:var(--text-dim)}
+    .historic-stat-item span{display:block;margin-top:5px;font-size:9px;font-weight:700;letter-spacing:.5px}
+    .historic-stat-item.is-double strong,.historic-stat-item.is-double span{color:var(--historic-accent)}
+    .historic-stat-action{min-width:180px;margin-top:24px;padding:13px 28px;border:0;border-radius:12px;background:var(--historic-accent);color:var(--on-accent);font:800 14px var(--font-display);cursor:pointer;box-shadow:0 4px 0 oklch(0.42 0.09 45),0 12px 26px oklch(0.08 0.02 40 / .35);transition:transform .16s cubic-bezier(.16,1,.3,1),box-shadow .16s cubic-bezier(.16,1,.3,1)}
+    .is-quintuple .historic-stat-action{box-shadow:0 4px 0 oklch(0.48 0.11 77),0 12px 26px oklch(0.08 0.03 300 / .42)}
+    .historic-stat-action:active{transform:translateY(3px);box-shadow:0 1px 0 oklch(0.42 0.09 45)}
+    .historic-stat-particle{position:absolute;z-index:1;left:var(--particle-x);top:-8vh;width:7px;height:18px;border-radius:2px;background:var(--particle-color);opacity:.85;transform:translate3d(0,0,0) rotate(var(--particle-rotate));animation:historicStatFall var(--particle-duration) cubic-bezier(.22,.61,.36,1) var(--particle-delay) forwards;pointer-events:none}
+    @keyframes historicStatFade{from{opacity:0}to{opacity:1}}
+    @keyframes historicStatStageIn{from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+    @keyframes historicStatFall{0%{opacity:0;transform:translate3d(0,-8vh,0) rotate(var(--particle-rotate))}12%{opacity:.9}100%{opacity:0;transform:translate3d(var(--particle-drift),112vh,0) rotate(520deg)}}
+    @media(max-width:390px){.historic-stat-mark{width:94px;height:94px;font-size:32px}.historic-stat-line{margin-top:18px}.historic-stat-item{padding:11px 2px}.historic-stat-copy{font-size:12px}}
+    @media(prefers-reduced-motion:reduce){.historic-stat-overlay,.historic-stat-stage{animation:none}.historic-stat-particle{display:none}}
     @keyframes fadeInUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
     .section-card{opacity:0;animation:fadeInUp .8s ease forwards}
 
@@ -4051,6 +4079,7 @@ function quickSimAllGames(targetDay) {
           updateStreak(STATE.careerTeam, hurtResult.won);
           var hurtStats = scaleHurtStats(generatePlayerStatsNew(buildHurtAttrs(STATE.attrs, severity), hurtResult, false), severity);
           syncUserStatsToBoxScore(hurtResult, hurtStats);
+          queueUserHistoricStatCelebration(hurtResult);
           var psH = STATE.season.playerStats;
           psH.pts += hurtStats.pts; psH.reb += hurtStats.reb; psH.ast += hurtStats.ast;
           psH.stl += hurtStats.stl; psH.blk += hurtStats.blk; psH.tov += hurtStats.tov;
@@ -4099,6 +4128,7 @@ function quickSimAllGames(targetDay) {
       updateStreak(STATE.careerTeam, result.won);
 
       var stats = generatePlayerStatsNew(STATE.attrs, result, false);
+      queueUserHistoricStatCelebration(result);
       var ps = STATE.season.playerStats;
       ps.pts += stats.pts; ps.reb += stats.reb; ps.ast += stats.ast;
       ps.stl += stats.stl; ps.blk += stats.blk; ps.tov += stats.tov;
@@ -4259,6 +4289,120 @@ function buildRealSchedule() {
   STATE.season._leagueGameLog = [];
   
   // renderGameList();  // 日历模式已注释
+}
+
+/** 四双、五双庆祝事件按顺序展示，避免批量模拟时互相覆盖。 */
+var historicStatCelebrationQueue = [];
+
+function getHistoricStatAchievement(row) {
+  if (!row) return null;
+  var fields = ['pts', 'reb', 'ast', 'stl', 'blk'];
+  var doubleDigitCount = fields.filter(function(field) { return (Number(row[field]) || 0) >= 10; }).length;
+  if (doubleDigitCount < 4) return null;
+  return {
+    tier: doubleDigitCount >= 5 ? 'quintuple' : 'quadruple',
+    doubleDigitCount: doubleDigitCount,
+  };
+}
+
+function escapeHistoricStatText(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, function(character) {
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[character];
+  });
+}
+
+function queueHistoricStatCelebrations(boxScore, gameId, options) {
+  if (!STATE.season || !boxScore) return 0;
+  var opts = options || {};
+  var queued = 0;
+  var celebrated = STATE.season._historicCelebrationIds || (STATE.season._historicCelebrationIds = {});
+  Object.keys(boxScore).forEach(function(teamId) {
+    (boxScore[teamId] || []).forEach(function(row) {
+      if (!row) return;
+      var isUser = !!(row._isUser || row.isUser);
+      if (opts.userOnly && !isUser) return;
+      if (!opts.userOnly && isUser && opts.includeUser === false) return;
+      var achievement = getHistoricStatAchievement(row);
+      if (!achievement) return;
+      var identity = row.playerId || row.name || 'unknown';
+      var eventKey = [gameId || 'game', teamId, identity, achievement.tier].join(':');
+      if (celebrated[eventKey]) return;
+      celebrated[eventKey] = true;
+      historicStatCelebrationQueue.push({
+        tier: achievement.tier,
+        playerName: row.name || (isUser ? getMyPlayerDisplayName() : '球员'),
+        teamId: teamId,
+        stats: {
+          pts: Number(row.pts) || 0,
+          reb: Number(row.reb) || 0,
+          ast: Number(row.ast) || 0,
+          stl: Number(row.stl) || 0,
+          blk: Number(row.blk) || 0,
+        },
+      });
+      queued++;
+    });
+  });
+  if (queued) showNextHistoricStatCelebration();
+  return queued;
+}
+
+function queueUserHistoricStatCelebration(gameResult) {
+  if (!gameResult || !gameResult.boxScore) return 0;
+  return queueHistoricStatCelebrations(gameResult.boxScore, gameResult._celebrationGameId || 'user-game', { userOnly: true });
+}
+
+function buildHistoricStatParticles(tier) {
+  var colors = tier === 'quintuple'
+    ? ['oklch(0.82 0.18 82)', 'oklch(0.74 0.19 305)', 'oklch(0.93 0.04 85)']
+    : ['oklch(0.74 0.17 45)', 'oklch(0.82 0.17 82)', 'oklch(0.93 0.04 75)'];
+  var html = '';
+  for (var i = 0; i < 22; i++) {
+    html += '<i class="historic-stat-particle" aria-hidden="true" style="--particle-x:' + ((i * 43) % 101) + '%;--particle-drift:' + ((i % 2 ? -1 : 1) * (18 + (i % 5) * 7)) + 'px;--particle-duration:' + (1.9 + (i % 6) * 0.18) + 's;--particle-delay:' + ((i % 8) * 0.07) + 's;--particle-rotate:' + (i * 31) + 'deg;--particle-color:' + colors[i % colors.length] + '"></i>';
+  }
+  return html;
+}
+
+function showNextHistoricStatCelebration() {
+  if (typeof document === 'undefined' || document.getElementById('historic-stat-celebration')) return;
+  var event = historicStatCelebrationQueue.shift();
+  if (!event) return;
+  var isQuintuple = event.tier === 'quintuple';
+  var labels = { pts:'得分', reb:'篮板', ast:'助攻', stl:'抢断', blk:'盖帽' };
+  var statHtml = Object.keys(labels).map(function(field) {
+    var value = event.stats[field];
+    return '<div class="historic-stat-item' + (value >= 10 ? ' is-double' : '') + '"><strong>' + value + '</strong><span>' + labels[field] + '</span></div>';
+  }).join('');
+  var overlay = document.createElement('div');
+  overlay.id = 'historic-stat-celebration';
+  overlay.className = 'historic-stat-overlay' + (isQuintuple ? ' is-quintuple' : '');
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-labelledby', 'historic-stat-title');
+  overlay.innerHTML = buildHistoricStatParticles(event.tier)
+    + '<button class="historic-stat-close" type="button" onclick="closeHistoricStatCelebration()" aria-label="关闭庆祝画面">✕</button>'
+    + '<div class="historic-stat-stage">'
+    +   '<div class="historic-stat-kicker">HISTORIC NIGHT</div>'
+    +   '<div class="historic-stat-mark">' + (isQuintuple ? '5×10' : '4×10') + '</div>'
+    +   '<h2 class="historic-stat-title" id="historic-stat-title">' + (isQuintuple ? '极限五双' : '历史级四双') + '</h2>'
+    +   '<p class="historic-stat-copy">' + (isQuintuple ? '五项主要数据全部上双，这是一场前所未见的全面统治。' : '四项主要数据同时上双，今晚已经写进联盟历史。') + '</p>'
+    +   '<div class="historic-stat-player">' + escapeHistoricStatText(event.playerName) + '</div>'
+    +   '<div class="historic-stat-team">' + escapeHistoricStatText(getTeamName(event.teamId)) + '</div>'
+    +   '<div class="historic-stat-line" aria-label="本场五项数据">' + statHtml + '</div>'
+    +   '<button class="historic-stat-action" type="button" onclick="closeHistoricStatCelebration()">铭记这一夜</button>'
+    + '</div>';
+  overlay.addEventListener('keydown', function(keyEvent) {
+    if (keyEvent.key === 'Escape') closeHistoricStatCelebration();
+  });
+  document.body.appendChild(overlay);
+  var action = overlay.querySelector('.historic-stat-action');
+  if (action) action.focus();
+}
+
+function closeHistoricStatCelebration() {
+  var overlay = document.getElementById('historic-stat-celebration');
+  if (overlay) overlay.remove();
+  setTimeout(showNextHistoricStatCelebration, 120);
 }
 
 /** 将一场联盟比赛的 Box Score 累计到球员赛季统计。 */
@@ -4712,6 +4856,15 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
     keyEvents.push('⚡ 关键回合决胜');
   }
 
+  var boxScore = generateBoxScore(teamA, teamB, scoreA, scoreB);
+  var celebrationSequence = STATE.season
+    ? (STATE.season._historicCelebrationSequence = (STATE.season._historicCelebrationSequence || 0) + 1)
+    : Date.now();
+  var celebrationGameId = 'sim:' + ((STATE.career && STATE.career.seasonCount) || 0) + ':' + celebrationSequence;
+  if (typeof document !== 'undefined' && typeof queueHistoricStatCelebrations === 'function') {
+    queueHistoricStatCelebrations(boxScore, celebrationGameId, { includeUser: false });
+  }
+
   return {
     won, scoreA, scoreB,
     qScoresA, qScoresB,
@@ -4724,7 +4877,8 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
     expectedMargin,
     eventTeamEdge,
     estimatedWinProb,
-    boxScore: generateBoxScore(teamA, teamB, scoreA, scoreB),
+    boxScore: boxScore,
+    _celebrationGameId: celebrationGameId,
   };
 }
 
@@ -4847,6 +5001,72 @@ function allocateLeagueCountingTotal(total, weights, caps) {
     }
   }
   return allocated;
+}
+
+/**
+ * NBA 自 1973-74 开始完整记录抢断/盖帽后，约每 13,509 场比赛出现一次四双。
+ * generateBoxScore 每场会为两队各调用一次，因此四双概率按 team-game 折半；五双无正式先例，
+ * 仅保留约每 500 万场比赛一次的彩蛋级通道。
+ */
+const LEAGUE_VERSATILITY_BURST_RATES = Object.freeze({
+  quadruple: 1 / 27018,
+  quintuple: 1 / 10000000,
+});
+
+function getLeagueVersatilityBurst(players, metrics) {
+  if (!players.length) return null;
+  var roll = Math.random();
+  var tier = null;
+  if (roll < LEAGUE_VERSATILITY_BURST_RATES.quintuple) tier = 'quintuple';
+  else if (roll < LEAGUE_VERSATILITY_BURST_RATES.quintuple + LEAGUE_VERSATILITY_BURST_RATES.quadruple) tier = 'quadruple';
+  if (!tier) return null;
+
+  var candidateIndex = 0;
+  var bestScore = -1;
+  players.forEach(function(player, index) {
+    var allAround = metrics.offSkill[index] * 0.10
+      + metrics.rebSkill[index] * 0.25
+      + metrics.passSkill[index] * 0.25
+      + metrics.stealSkill[index] * 0.20
+      + metrics.blockSkill[index] * 0.20;
+    var score = allAround * (0.72 + metrics.minutes[index] / 120);
+    if (score > bestScore) {
+      bestScore = score;
+      candidateIndex = index;
+    }
+  });
+  return {
+    tier: tier,
+    candidateIndex: candidateIndex,
+    defenseField: metrics.stealSkill[candidateIndex] >= metrics.blockSkill[candidateIndex] ? 'stl' : 'blk',
+  };
+}
+
+/** 从队友处转移计数数据，保证历史级比赛仍严格保持球队总量不变。 */
+function ensureLeagueCountingMinimum(values, candidateIndex, minimum) {
+  var needed = Math.max(0, minimum - values[candidateIndex]);
+  if (!needed) return true;
+  var donors = values.map(function(value, index) { return index; })
+    .filter(function(index) { return index !== candidateIndex; })
+    .sort(function(a, b) { return values[b] - values[a]; });
+  donors.forEach(function(index) {
+    if (!needed) return;
+    var moved = Math.min(needed, values[index]);
+    values[index] -= moved;
+    values[candidateIndex] += moved;
+    needed -= moved;
+  });
+  return needed === 0;
+}
+
+function applyLeagueVersatilityBurst(burst, stats) {
+  if (!burst) return false;
+  var fields = burst.tier === 'quintuple'
+    ? ['pts', 'reb', 'ast', 'stl', 'blk']
+    : ['pts', 'reb', 'ast', burst.defenseField];
+  return fields.every(function(field) {
+    return ensureLeagueCountingMinimum(stats[field], burst.candidateIndex, 10);
+  });
 }
 
 const LEAGUE_SCORING_BURST_RATES = Object.freeze({
@@ -5018,6 +5238,14 @@ function generateBoxScore(teamA, teamB, totalA, totalB) {
     var stealSkill = players.map(function(player) { return af(parseInt(player.STL) || 50) * 0.72 + af(parseInt(player.PDEF) || 50) * 0.18 + af(parseInt(player.ATH) || 50) * 0.10; });
     var blockSkill = players.map(function(player) { return af(parseInt(player.BLK) || 50) * 0.62 + af(parseInt(player.IDEF) || 50) * 0.38; });
     var handleSkill = players.map(function(player) { return af(parseInt(player.HAN) || 50) * 0.65 + af(parseInt(player.CLU) || 50) * 0.35; });
+    var versatilityBurst = getLeagueVersatilityBurst(players, {
+      minutes: minutes,
+      offSkill: offSkill,
+      rebSkill: rebSkill,
+      passSkill: passSkill,
+      stealSkill: stealSkill,
+      blockSkill: blockSkill,
+    });
 
     var scoreCaps = [];
     var scoreWeights = players.map(function(player, index) {
@@ -5040,6 +5268,10 @@ function generateBoxScore(teamA, teamB, totalA, totalB) {
     var teamSteals = leagueStatClamp(Math.round(leagueStatNormal(6.4 + minuteWeighted(stealSkill) * 2.2, 1.35)), 3, 13);
     var teamBlocks = leagueStatClamp(Math.round(leagueStatNormal(3.0 + minuteWeighted(blockSkill) * 3.0, 1.25)), 1, 11);
     var teamTurnovers = leagueStatClamp(Math.round(leagueStatNormal(13.2 + minuteWeighted(offSkill) * 1.5, 2.1)), 8, 21);
+    if (versatilityBurst) {
+      if (versatilityBurst.tier === 'quintuple' || versatilityBurst.defenseField === 'stl') teamSteals = Math.max(teamSteals, 10);
+      if (versatilityBurst.tier === 'quintuple' || versatilityBurst.defenseField === 'blk') teamBlocks = Math.max(teamBlocks, 10);
+    }
 
     var rebPos = { PG:0.78, SG:0.85, SF:1.00, PF:1.12, C:1.10 };
     var stlPos = { PG:1.00, SG:1.00, SF:1.00, PF:0.92, C:0.88 };
@@ -5054,6 +5286,13 @@ function generateBoxScore(teamA, teamB, totalA, totalB) {
     var steals = allocateLeagueCountingTotal(teamSteals, stealWeights, players.map(function() { return 7; }));
     var blocks = allocateLeagueCountingTotal(teamBlocks, blockWeights, players.map(function() { return 8; }));
     var turnovers = allocateLeagueCountingTotal(teamTurnovers, turnoverWeights, players.map(function() { return 9; }));
+    applyLeagueVersatilityBurst(versatilityBurst, {
+      pts: points,
+      reb: rebounds,
+      ast: assists,
+      stl: steals,
+      blk: blocks,
+    });
 
     return players.map(function(player, i) {
       var pts = points[i];
@@ -5080,6 +5319,7 @@ function generateBoxScore(teamA, teamB, totalA, totalB) {
         mins: minutes[i],
         _isUser: !!player._isUser,
         isUser: !!player._isUser,
+        _versatilityBurst: versatilityBurst && versatilityBurst.candidateIndex === i ? versatilityBurst.tier : null,
       };
     });
   }

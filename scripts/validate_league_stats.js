@@ -16,6 +16,61 @@ inlineScripts.forEach((match, index) => {
   }
 });
 
+function validateHistoricCelebrationUi(source) {
+  const start = source.indexOf('/** 四双、五双庆祝事件按顺序展示');
+  const end = source.indexOf('/** 将一场联盟比赛的 Box Score 累计到球员赛季统计。', start);
+  if (start < 0 || end < 0) throw new Error('无法定位四双/五双庆祝逻辑');
+
+  const elements = {};
+  let focusCount = 0;
+  const fakeDocument = {
+    body: {
+      appendChild(element) { elements[element.id] = element; },
+    },
+    getElementById(id) { return elements[id] || null; },
+    createElement() {
+      return {
+        id: '', className: '', innerHTML: '', attributes: {},
+        setAttribute(name, value) { this.attributes[name] = value; },
+        addEventListener() {},
+        querySelector(selector) { return selector === '.historic-stat-action' ? { focus() { focusCount++; } } : null; },
+        remove() { delete elements[this.id]; },
+      };
+    },
+  };
+  const testState = { season: {} };
+  const harness = new Function(
+    'document', 'STATE', 'getTeamName', 'getMyPlayerDisplayName', 'setTimeout',
+    `${source.slice(start, end)}\nreturn { getHistoricStatAchievement, queueHistoricStatCelebrations, closeHistoricStatCelebration };`,
+  )(fakeDocument, testState, team => `球队-${team}`, () => '我的球员', callback => callback());
+
+  const quadrupleRow = { name: '<四双球员>', playerId: 'quad', pts: 24, reb: 12, ast: 11, stl: 10, blk: 3 };
+  const quadrupleQueued = harness.queueHistoricStatCelebrations({ AAA: [quadrupleRow] }, 'quad-game', { includeUser: false });
+  const quadrupleOverlay = elements['historic-stat-celebration'];
+  if (quadrupleQueued !== 1 || !quadrupleOverlay || quadrupleOverlay.className.includes('is-quintuple')) {
+    throw new Error('四双庆祝画面未正确生成');
+  }
+  if (!quadrupleOverlay.innerHTML.includes('历史级四双') || !quadrupleOverlay.innerHTML.includes('&lt;四双球员&gt;') || !quadrupleOverlay.innerHTML.includes('24')) {
+    throw new Error('四双庆祝画面缺少标题、球员或数据');
+  }
+  const duplicateQueued = harness.queueHistoricStatCelebrations({ AAA: [quadrupleRow] }, 'quad-game', { includeUser: false });
+  if (duplicateQueued !== 0) throw new Error('同一场四双被重复加入庆祝队列');
+  harness.closeHistoricStatCelebration();
+
+  const quintupleRow = { name: '五双球员', playerId: 'quint', _isUser: true, pts: 20, reb: 10, ast: 10, stl: 10, blk: 10 };
+  const quintupleQueued = harness.queueHistoricStatCelebrations({ BBB: [quintupleRow] }, 'quint-game', { userOnly: true });
+  const quintupleOverlay = elements['historic-stat-celebration'];
+  if (quintupleQueued !== 1 || !quintupleOverlay || !quintupleOverlay.className.includes('is-quintuple')) {
+    throw new Error('五双庆祝主题未正确生成');
+  }
+  if (!quintupleOverlay.innerHTML.includes('极限五双') || !quintupleOverlay.innerHTML.includes('5×10') || !quintupleOverlay.innerHTML.includes('铭记这一夜')) {
+    throw new Error('五双庆祝画面缺少标题、标记或关闭操作');
+  }
+  if (focusCount !== 2) throw new Error('庆祝画面的主要操作未自动获得焦点');
+}
+
+validateHistoricCelebrationUi(indexSource);
+
 const dataSource = fs.readFileSync(path.join(root, 'js/data/league_players.js'), 'utf8');
 const leagueData = new Function(`${dataSource}\nreturn { LEAGUE_PLAYER_DATA, LEAGUE_TEAM_IDS };`)();
 const blockStart = indexSource.indexOf('function leagueStatClamp');
@@ -96,7 +151,7 @@ const simulation = new Function(
   'af',
   'calcTeamLineup',
   'getLeaguePlayerAge',
-  `${simulationSource}\nreturn { generateBoxScore, syncUserStatsToBoxScore, getLeagueScoringBurst, LEAGUE_SCORING_BURST_RATES };`,
+  `${simulationSource}\nreturn { generateBoxScore, syncUserStatsToBoxScore, getLeagueScoringBurst, LEAGUE_SCORING_BURST_RATES, getLeagueVersatilityBurst, applyLeagueVersatilityBurst, LEAGUE_VERSATILITY_BURST_RATES };`,
 )(state, af, calcTeamLineup, player => Number(player._age) || 27);
 
 function seededRandom(seed) {
@@ -114,6 +169,7 @@ function runSeason(seed) {
   const totals = {};
   const teamAssistTotals = [];
   const scoringBursts = { fiftyPlus: 0, sixtyPlus: 0, seventyPlus: 0, eightyPlus: 0, max: 0 };
+  const versatilityBursts = { quadruple: 0, quintuple: 0 };
   let invariantErrors = 0;
 
   try {
@@ -138,6 +194,10 @@ function runSeason(seed) {
             if (points >= 60) scoringBursts.sixtyPlus++;
             if (points >= 70) scoringBursts.seventyPlus++;
             if (points >= 80) scoringBursts.eightyPlus++;
+            const doubleDigitCategories = ['pts', 'reb', 'ast', 'stl', 'blk']
+              .filter(field => (Number(row[field]) || 0) >= 10).length;
+            if (doubleDigitCategories >= 4) versatilityBursts.quadruple++;
+            if (doubleDigitCategories >= 5) versatilityBursts.quintuple++;
             if (row._isUser) return;
             const key = `${team}:${row.playerId}`;
             const record = totals[key] || (totals[key] = {
@@ -174,6 +234,7 @@ function runSeason(seed) {
     full82: rows.filter(row => row.gp === 82).length,
     averageTeamAssists: teamAssistTotals.reduce((sum, value) => sum + value, 0) / teamAssistTotals.length,
     scoringBursts,
+    versatilityBursts,
   };
 }
 
@@ -251,6 +312,7 @@ const report = {
     averageTeamAssists: Number(season.averageTeamAssists.toFixed(1)),
     invariantErrors: season.invariantErrors,
     scoringBursts: season.scoringBursts,
+    versatilityBursts: season.versatilityBursts,
     leaderRanges: Object.fromEntries(fields.map(field => [
       field,
       [season.leaders[field][0][field], season.leaders[field][9][field]],
@@ -344,6 +406,41 @@ try {
   }
   if (seventyBurst.tier !== 'seventyPlus' || seventyBurst.hardCap < 70 || seventyBurst.hardCap >= 80) {
     console.error(`70+ 爆发通道无效：${JSON.stringify(seventyBurst)}`);
+    process.exitCode = 1;
+  }
+
+  Math.random = () => 0;
+  const quintupleBurst = simulation.getLeagueVersatilityBurst([{}], {
+    minutes: [36], offSkill: [1], rebSkill: [1], passSkill: [1], stealSkill: [1], blockSkill: [1],
+  });
+  Math.random = () => simulation.LEAGUE_VERSATILITY_BURST_RATES.quintuple + simulation.LEAGUE_VERSATILITY_BURST_RATES.quadruple / 2;
+  const quadrupleBurst = simulation.getLeagueVersatilityBurst([{}], {
+    minutes: [36], offSkill: [1], rebSkill: [1], passSkill: [1], stealSkill: [1], blockSkill: [0.5],
+  });
+  const forcedStats = {
+    pts: [5, 95], reb: [4, 38], ast: [3, 22], stl: [2, 8], blk: [1, 5],
+  };
+  const totalsBefore = Object.fromEntries(Object.entries(forcedStats).map(([field, values]) => [field, values.reduce((sum, value) => sum + value, 0)]));
+  const applied = simulation.applyLeagueVersatilityBurst(quadrupleBurst, forcedStats);
+  const quadCategories = Object.values(forcedStats).filter(values => values[0] >= 10).length;
+  const totalsPreserved = Object.entries(forcedStats).every(([field, values]) => values.reduce((sum, value) => sum + value, 0) === totalsBefore[field]);
+  if (!quintupleBurst || quintupleBurst.tier !== 'quintuple') {
+    console.error(`五双彩蛋级通道无效：${JSON.stringify(quintupleBurst)}`);
+    process.exitCode = 1;
+  }
+  if (!quadrupleBurst || quadrupleBurst.tier !== 'quadruple' || !applied || quadCategories !== 4 || !totalsPreserved) {
+    console.error(`四双通道或球队总量守恒无效：${JSON.stringify({ quadrupleBurst, forcedStats, totalsPreserved })}`);
+    process.exitCode = 1;
+  }
+
+  const expectedQuadruplesPerSeason = 1230 * 2 * simulation.LEAGUE_VERSATILITY_BURST_RATES.quadruple;
+  const expectedQuintuplesPerSeason = 1230 * 2 * simulation.LEAGUE_VERSATILITY_BURST_RATES.quintuple;
+  if (expectedQuadruplesPerSeason < 0.08 || expectedQuadruplesPerSeason > 0.10) {
+    console.error(`四双赛季期望频率异常：${expectedQuadruplesPerSeason}`);
+    process.exitCode = 1;
+  }
+  if (expectedQuintuplesPerSeason >= 0.001) {
+    console.error(`五双概率不够低：${expectedQuintuplesPerSeason}`);
     process.exitCode = 1;
   }
 } finally {

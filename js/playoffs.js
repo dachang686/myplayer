@@ -873,6 +873,7 @@ function simOnePlayoffGame(round, seriesIdx, teamA, teamB, isMySeries, gameNum, 
       const hurtNewWinsB = winsB + (hurtWon ? 0 : 1);
       const hurtStats = scaleHurtStats(generatePlayerStatsNew(buildHurtAttrs(STATE.attrs, severity), hurtResult, true), severity);
       syncUserStatsToBoxScore(hurtResult, hurtStats);
+      queueUserHistoricStatCelebration(hurtResult);
       userGameStats.push(hurtStats);
       const poH = STATE.season.playoffStats;
       poH.pts += hurtStats.pts; poH.reb += hurtStats.reb; poH.ast += hurtStats.ast;
@@ -926,6 +927,7 @@ function simOnePlayoffGame(round, seriesIdx, teamA, teamB, isMySeries, gameNum, 
   
   if (isMySeries) {
     const stats = generatePlayerStatsNew(STATE.attrs, gameResult, true);
+    queueUserHistoricStatCelebration(gameResult);
     gameEntry.myStats = stats;
     userGameStats.push(stats);
     
