@@ -208,6 +208,34 @@ if (!Object.values(ACHIEVEMENT_FEATURES).some(v => v)) {
     return data;
   }
 
+  /** 计算当前夺冠在球员生涯中的连续冠军次数 */
+  function getCurrentChampionshipStreak(state) {
+    var career = state && state.career;
+    if (!career) return 1;
+
+    var seasons = career.seasons || [];
+    var seasonByNumber = {};
+    seasons.forEach(function (season) {
+      var seasonNum = parseInt(season && season.seasonNum, 10);
+      if (seasonNum > 0) seasonByNumber[seasonNum] = season;
+    });
+
+    var previousSeasonNum = parseInt(career.seasonCount, 10) || 0;
+    var streak = 1;
+    while (previousSeasonNum > 0) {
+      var previousSeason = seasonByNumber[previousSeasonNum];
+      if (!previousSeason || String(previousSeason.playoffResult || "").indexOf("总冠军") === -1) break;
+      streak++;
+      previousSeasonNum--;
+    }
+    return streak;
+  }
+
+  function getChampionshipStreakLabel(streak) {
+    var numerals = ["", "", "二", "三", "四", "五", "六", "七", "八", "九", "十"];
+    return (numerals[streak] || streak) + "连冠";
+  }
+
   // ============================================================
   // ④ 征服联盟模块
   // ============================================================
@@ -227,6 +255,7 @@ if (!Object.values(ACHIEVEMENT_FEATURES).some(v => v)) {
 
         // ★ championships 永远追加（记录每一次夺冠详情）
         var isFirst = data.championTeams.indexOf(team) === -1;
+        var championshipStreak = getCurrentChampionshipStreak(STATE);
         if (isFirst) data.championTeams.push(team);
         function calcAvg(src, field, games) {
           return Math.round((src[field] || 0) / games * 10) / 10;
@@ -245,6 +274,7 @@ if (!Object.values(ACHIEVEMENT_FEATURES).some(v => v)) {
         data.championships.push({
           gameId: STATE.gameId || null,
           team: team,
+          seasonNum: (parseInt(STATE.career && STATE.career.seasonCount, 10) || 0) + 1,
           wonAt: Date.now(),
           ovr: STATE.finalOVR || 0,
           position: STATE.position || null,
@@ -283,8 +313,16 @@ if (!Object.values(ACHIEVEMENT_FEATURES).some(v => v)) {
         saveData(data, function () {
           var total = data.championTeams.length;
           var cn = getTeamCN(team);
+          var progress = '<span class="cq-toast-detail">征服联盟 ' + total + '/30</span>';
+          if (championshipStreak > 1) {
+            showToast("🏆 " + getChampionshipStreakLabel(championshipStreak) + "！<br><span class=\"cq-toast-team\">带领 " + cn + " 夺冠</span><br>" + progress);
+          } else if (isFirst) {
+            showToast("🏆 首次带领 " + cn + " 夺冠！<br>" + progress);
+          } else {
+            showToast("🏆 " + cn + " 再夺冠！<br>" + progress);
+          }
+
           if (isFirst) {
-            showToast("🏆 首次带领 " + cn + " 夺冠！(" + total + "/30)");
             // 里程碑检测
             var milestones = {
               1: "征途开始",
@@ -300,10 +338,8 @@ if (!Object.values(ACHIEVEMENT_FEATURES).some(v => v)) {
                 var msg = "🎉 " + milestones[total];
                 if (total === 30) msg += " 🏆🏆🏆";
                 showToast(msg);
-              }, 1200);
+              }, 3300);
             }
-          } else {
-            showToast("🏆 " + cn + " 再夺冠！(第 " + data.championTeams.length + " 队)");
           }
         });
       });
@@ -982,7 +1018,8 @@ if (!Object.values(ACHIEVEMENT_FEATURES).some(v => v)) {
 
 
 /* ── Toast — 金牌弹出 ── */
-.cq-toast{position:fixed;top:clamp(50px,8vh,70px);left:50%;transform:translateX(-50%);z-index:500;background:linear-gradient(145deg,#3a2a1a,#2a2015);border:2px solid #d4af37;border-radius:16px;padding:14px 28px;font-family:var(--font-display);font-size:15px;font-weight:600;color:#f5e6c8;box-shadow:0 8px 40px rgba(212,175,55,0.15),0 0 0 1px rgba(212,175,55,0.05);white-space:nowrap;max-width:88vw;text-align:center;animation:cqToastIn .45s cubic-bezier(0.34,1.56,0.64,1) forwards;letter-spacing:.5px}
+.cq-toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:500;width:min(520px,calc(100vw - 32px));box-sizing:border-box;background:linear-gradient(145deg,#3a2a1a,#2a2015);border:2px solid #d4af37;border-radius:20px;padding:24px 32px;font-family:var(--font-display);font-size:clamp(22px,5vw,30px);font-weight:700;color:#f5e6c8;box-shadow:0 16px 56px rgba(212,175,55,0.22),0 0 0 1px rgba(212,175,55,0.08);text-align:center;line-height:1.35;animation:cqToastIn .45s cubic-bezier(.16,1,.3,1) forwards;letter-spacing:.5px}
+.cq-toast-team{font-size:.62em;font-weight:600}.cq-toast-detail{font-family:var(--font-body);font-size:.48em;font-weight:600;color:var(--text-dim)}
 .cq-toast-out{animation:cqToastOut .4s ease forwards!important}
 
 /* ── Keyframes ── */
@@ -990,8 +1027,8 @@ if (!Object.values(ACHIEVEMENT_FEATURES).some(v => v)) {
 @keyframes cqBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 @keyframes cqShimmer{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}
 @keyframes cqRibbonPop{0%{transform:scale(0) rotate(-20deg);opacity:0}100%{transform:scale(1) rotate(0);opacity:1}}
-@keyframes cqToastIn{0%{opacity:0;transform:translateX(-50%) translateY(-24px) scale(0.92)}100%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}
-@keyframes cqToastOut{0%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}100%{opacity:0;transform:translateX(-50%) translateY(-20px) scale(0.92)}}
+@keyframes cqToastIn{0%{opacity:0;transform:translate(-50%,-50%) translateY(16px) scale(.92)}100%{opacity:1;transform:translate(-50%,-50%) translateY(0) scale(1)}}
+@keyframes cqToastOut{0%{opacity:1;transform:translate(-50%,-50%) translateY(0) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) translateY(-12px) scale(.96)}}
 
 /* ── 响应式 ── */
 @media(max-width:440px){
