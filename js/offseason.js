@@ -2262,31 +2262,6 @@ function evolveLeague() {
       refreshGeneratedPlayerType(p);
       newRoster.push(p);
     });
-    var draftSlot = 0;
-    while (newRoster.length < 18) { // 休赛期名单补齐到 18 人
-      draftSlot++;
-      var rk = generateRookie();
-      // 补位新秀与选秀新秀一致，只保护当前休赛期，避免刚加入就被交易。
-      rk._justSigned = true;
-      // 前3个空位（更弱的队）：OVR 68-74（彩票区球员）；之后：OVR 60-67（次轮/末签）
-      var fillerOvr = draftSlot <= 3
-        ? 68 + Math.floor(rngNext() * 7)
-        : 60 + Math.floor(rngNext() * 8);
-      if (rk._fixedProspectRating) {
-        normalizeRookieAttributesToOvr(rk, rk.ovr);
-        rk._rookieSeason = getCurrentLeagueSeasonNumber();
-      } else {
-        rk.ovr = fillerOvr;
-        applyRookieAttributeProfile(rk, fillerOvr, rngNext);
-      }
-      rk.contract = draftSlot <= 3 ? 3 : 2;
-      rk.loyalty = getRookieContractLoyalty(rk.contract);
-      newRoster.push(rk);
-      STATE._leagueChanges.rookies.push({ name: rk.cname, playerId: rk.id, team: t });
-      if (t === STATE.careerTeam && STATE._leagueChanges.teamChanges[t]) {
-        STATE._leagueChanges.teamChanges[t].rookies.push(rk.cname);
-      }
-    }
     LEAGUE_PLAYER_DATA[t] = newRoster;
   });
 

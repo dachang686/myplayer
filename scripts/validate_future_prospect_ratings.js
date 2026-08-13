@@ -5,6 +5,8 @@ const draftSource = fs.readFileSync('js/data/draft_data.js', 'utf8');
 const configSource = fs.readFileSync('js/data/simulation_config.js', 'utf8');
 const indexSource = fs.readFileSync('index.html', 'utf8');
 const offseasonSource = fs.readFileSync('js/offseason.js', 'utf8');
+const draftEngineSource = fs.existsSync('js/draft.js') ? fs.readFileSync('js/draft.js', 'utf8') : '';
+const rookieFlowSource = `${offseasonSource}\n${draftEngineSource}`;
 const evidence = JSON.parse(fs.readFileSync('scripts/data/future_prospect_profiles.json', 'utf8')).profiles;
 const reviews = JSON.parse(fs.readFileSync('scripts/data/future_prospect_reviews.json', 'utf8')).reviews;
 const fairAdjustments = JSON.parse(fs.readFileSync('scripts/data/fair_ovr_rookie_adjustments.json', 'utf8')).players
@@ -95,10 +97,10 @@ candidatePools.forEach((candidate) => {
 if (!/FUTURE_PROSPECT_RATINGS\[pick\.ratingId\s*\|\|\s*pick\.id\]/.test(indexSource)) errors.push('generateRookie 未读取未来球员固定评级');
 if (!/height:\s*fixedRating\s*\?\s*fixedRating\.height/.test(indexSource)) errors.push('generateRookie 未使用固定身高');
 if (!/_usedRookieCandidateNames\[pick\.ratingId\]\s*=\s*true/.test(indexSource)) errors.push('明星评级身份未同步去重，可能重复生成');
-const fixedBranches = offseasonSource.match(/(?:rookie|rk)\._fixedProspectRating/g) || [];
+const fixedBranches = rookieFlowSource.match(/(?:rookie|rk|player)\._fixedProspectRating/g) || [];
 if (fixedBranches.length < 2) errors.push('正常选秀或补位流程仍可能覆盖固定评级');
-if (!/normalizeRookieAttributesToOvr\(rookie, rookie\.ovr\)/.test(offseasonSource)) errors.push('未来固定新秀未按审核 OVR 归一属性');
-if (!/normalizeRookieAttributesToOvr\(rk, rk\.ovr\)/.test(offseasonSource)) errors.push('补位固定新秀未按审核 OVR 归一属性');
+if (!/normalizeRookieAttributesToOvr\((?:rookie|player), (?:rookie|player)\.ovr\)/.test(rookieFlowSource)) errors.push('未来固定新秀未按审核 OVR 归一属性');
+if (!/normalizeRookieAttributesToOvr\((?:rk|player), (?:rk|player)\.ovr\)/.test(rookieFlowSource)) errors.push('补位固定新秀未按审核 OVR 归一属性');
 
 console.log(JSON.stringify({
   fixedFutureRatings: Object.keys(ratings).length,

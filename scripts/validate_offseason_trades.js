@@ -5,6 +5,10 @@ const vm = require('vm');
 const root = path.resolve(__dirname, '..');
 const indexText = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const offseasonText = fs.readFileSync(path.join(root, 'js/offseason.js'), 'utf8');
+const draftText = fs.existsSync(path.join(root, 'js/draft.js'))
+  ? fs.readFileSync(path.join(root, 'js/draft.js'), 'utf8')
+  : '';
+const offseasonRosterText = `${offseasonText}\n${draftText}`;
 const playerText = fs.readFileSync(path.join(root, 'js/data/league_players.js'), 'utf8');
 const failures = [];
 
@@ -19,7 +23,7 @@ const candidateSource = offseasonText.slice(candidateStart, candidateEnd);
 if (!/p\._justSigned/.test(candidateSource)) failures.push('当前休赛期的新签球员没有交易保护');
 if (/indexOf\(['"]R['"]\)/.test(candidateSource)) failures.push('程序生成新秀仍被按 ID 永久禁止交易');
 
-const rookieProtectionCount = (offseasonText.match(/(?:rookie|rk)\._justSigned\s*=\s*true/g) || []).length;
+const rookieProtectionCount = (offseasonRosterText.match(/(?:rookie|rk|player)\._justSigned\s*=\s*true/g) || []).length;
 if (rookieProtectionCount < 2) failures.push('选秀新秀和补位新秀没有完整设置当届保护');
 
 const context = {

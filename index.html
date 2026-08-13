@@ -25,6 +25,7 @@ window.open = function(){ return null; };
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>篮坛造星局 · Court Forge</title>
+  <link rel="stylesheet" href="css/draft.css">
   <style>
 /* ============================================================
    BuildPlayer — Mobile-First Game Edition
@@ -1009,6 +1010,16 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     <div id="training-content" style="padding:0 10px 20px;"></div>
   </div>
 
+  <!-- ====== 选秀抽签 ====== -->
+  <div class="screen" id="screen-draft-lottery">
+    <div id="draft-lottery-content"></div>
+  </div>
+
+  <!-- ====== 选秀大会 ====== -->
+  <div class="screen" id="screen-draft">
+    <div id="draft-content"></div>
+  </div>
+
   <!-- ====== 阵容预览 ====== -->
   <div class="screen" id="screen-roster-review">
     <div id="roster-review-content" style="padding:0 12px 20px;overflow-y:auto;-webkit-overflow-scrolling:touch;"></div>
@@ -1194,6 +1205,7 @@ const STATE = {
     playoffStats: { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, fgm: 0, fga: 0, ftm: 0, fta: 0, threeM: 0, threeA: 0, games: 0, mins: 0 },
     honors: [],
     offseasonHistory: [],
+    draftHistory: [],
     branchHistory: [],
     branches: {},
     profile: { fame: 0, businessValue: 0, mediaTrust: 0, controversy: 0, chinaPopularity: 0, loyalty: 0, leadership: 0, coachTrust: 0, lockerRoomTrust: 0, fanSupport: 0, legacyBonus: 0 },
@@ -1631,6 +1643,7 @@ function createFreshCareer() {
     playoffStats: { pts:0, reb:0, ast:0, stl:0, blk:0, tov:0, fgm:0, fga:0, ftm:0, fta:0, threeM:0, threeA:0, games:0, mins:0 },
     honors: [],
     offseasonHistory: [],
+    draftHistory: [],
     branchHistory: [],
     branches: {},
     profile: { fame:0, businessValue:0, mediaTrust:0, controversy:0, chinaPopularity:0, loyalty:0, leadership:0, coachTrust:0, lockerRoomTrust:0, fanSupport:0, legacyBonus:0 },
@@ -1684,6 +1697,7 @@ function initGame() {
   delete STATE._draftModalStep;
   delete STATE._draftSceneStep;
   delete STATE._draftResultDone;
+  delete STATE.offseasonDraft;
   delete STATE._mobilityChoice;
   clearLineupCache();
   
@@ -7613,6 +7627,10 @@ function beginOffseason() {
     startCountdownLegacyFlow();
     return;
   }
+  if (typeof shouldRunOffseasonDraftLottery === 'function' && shouldRunOffseasonDraftLottery()) {
+    showOffseasonDraftLottery();
+    return;
+  }
   applyAnnualAttributeDrift();
   var c = STATE.career;
   c.flags = c.flags || {};
@@ -9084,7 +9102,11 @@ function manualClearSave(slot) {
 }
 
 function renderAfterSaveLoad(targetScreen) {
-  if (targetScreen === 'screen-roster-review' && typeof showRosterReview === 'function') {
+  if (targetScreen === 'screen-draft-lottery' && typeof showOffseasonDraftLottery === 'function') {
+    showOffseasonDraftLottery();
+  } else if (targetScreen === 'screen-draft' && typeof showOffseasonDraftScreen === 'function') {
+    showOffseasonDraftScreen();
+  } else if (targetScreen === 'screen-roster-review' && typeof showRosterReview === 'function') {
     showRosterReview();
   } else {
     renderTrainingCamp();
@@ -9322,9 +9344,18 @@ function continueCareerAfterTraining() {
   clearPreviousOffseasonTransactionFlags();
   evolveLeague();
   saveStandings();
+  if (typeof beginOffseasonDraft === 'function') {
+    beginOffseasonDraft();
+    return;
+  }
   processDraft();
+  continueCareerAfterLeagueDraft();
+}
+
+function continueCareerAfterLeagueDraft() {
   assignFreeAgents();
   processTrades();
+  if (typeof fillLeagueRostersAfterDraft === 'function') fillLeagueRostersAfterDraft();
   maybeMoveUserInOffseason(finishOffseasonPipeline);
 }
 
@@ -9841,6 +9872,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <script src="js/awards.js"></script>
 <script src="js/offseason.js"></script>
+<script src="js/draft.js"></script>
 <script src="js/career_branch_data.js"></script>
 
 <!-- ====== 随机事件系统 — EVENT REGISTRY ====== -->

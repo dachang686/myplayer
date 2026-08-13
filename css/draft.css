@@ -1,0 +1,405 @@
+#screen-draft-lottery.screen.active,
+#screen-draft.screen.active {
+  display: block !important;
+  min-height: calc(100dvh - 32px - var(--safe-t) - var(--safe-b));
+  padding-bottom: calc(112px + var(--safe-b));
+}
+
+.draft-shell {
+  width: 100%;
+  padding: 18px 12px 24px;
+}
+
+.draft-page-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 2px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.draft-page-head h1 {
+  margin-top: 3px;
+  color: var(--text);
+  font: 800 24px/1.1 var(--font-display);
+  letter-spacing: .4px;
+}
+
+.draft-kicker,
+.draft-year {
+  color: var(--orange);
+  font: 700 10px/1.2 var(--font-display);
+  letter-spacing: 1.2px;
+}
+
+.draft-year {
+  padding-top: 3px;
+  color: var(--text-dim);
+  letter-spacing: .3px;
+  white-space: nowrap;
+}
+
+.draft-context {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 2px 11px;
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.draft-context strong {
+  color: var(--orange-light);
+  font: 700 12px var(--font-display);
+}
+
+.draft-lottery-board,
+.draft-results-list,
+.draft-prospects {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-card);
+}
+
+.draft-lottery-row {
+  display: grid;
+  grid-template-columns: 32px 34px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 7px;
+  min-height: 48px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+.draft-lottery-row:last-child,
+.draft-prospect-row:last-child,
+.draft-result-row:last-child {
+  border-bottom: 0;
+}
+
+.draft-lottery-row.is-revealed {
+  color: var(--text);
+}
+
+.draft-lottery-row.is-mine {
+  border-color: var(--orange-dim);
+  background: var(--orange-bg);
+}
+
+.draft-pick-no,
+.draft-board-rank {
+  color: var(--text-dim);
+  font: 800 14px var(--font-display);
+  text-align: center;
+}
+
+.draft-team-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+}
+
+.draft-team-logo.is-hidden {
+  width: 26px;
+  height: 26px;
+  border: 1px dashed var(--border-light);
+  border-radius: 50%;
+  color: var(--text-muted);
+  font: 700 11px var(--font-display);
+}
+
+.draft-team-name {
+  min-width: 0;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.draft-team-name small {
+  display: block;
+  margin-top: 1px;
+  color: var(--orange);
+  font-size: 9px;
+}
+
+.draft-team-name.is-hidden {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.draft-movement {
+  color: var(--text-muted);
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.draft-lottery-row.is-revealed .draft-movement {
+  color: var(--text-dim);
+}
+
+.draft-live-status {
+  min-height: 34px;
+  padding: 10px 2px 0;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.draft-actions {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  z-index: 245;
+  display: flex;
+  width: min(560px, 100vw);
+  gap: 8px;
+  padding: 9px max(12px, var(--safe-r)) calc(9px + var(--safe-b)) max(12px, var(--safe-l));
+  border-top: 1px solid var(--border);
+  background: oklch(0.17 0.018 50 / .97);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, .3);
+}
+
+.draft-action-primary,
+.draft-action-secondary {
+  flex: 1 1 auto;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-light);
+  border-radius: 10px;
+  background: var(--bg-card);
+  color: var(--text);
+  font: 700 11px var(--font-display);
+  cursor: pointer;
+  transition: transform .16s cubic-bezier(.22, 1, .36, 1), background-color .16s, border-color .16s;
+}
+
+.draft-action-primary {
+  border-color: var(--orange);
+  background: var(--orange);
+  color: var(--on-accent);
+}
+
+.draft-action-primary:active,
+.draft-action-secondary:active,
+.draft-prospect-side button:active {
+  transform: scale(.97);
+}
+
+.draft-action-primary:focus-visible,
+.draft-action-secondary:focus-visible,
+.draft-prospect-side button:focus-visible {
+  outline: 2px solid var(--orange-light);
+  outline-offset: 2px;
+}
+
+.draft-clock {
+  margin: 12px 0;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-card);
+}
+
+.draft-clock.is-mine {
+  border-color: var(--orange);
+  background: var(--orange-bg);
+}
+
+.draft-clock-pick {
+  display: block;
+  margin-bottom: 9px;
+  color: var(--orange);
+  font: 800 11px var(--font-display);
+  letter-spacing: .5px;
+}
+
+.draft-clock > div,
+.draft-my-result > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.draft-clock strong,
+.draft-my-result strong {
+  display: block;
+  color: var(--text);
+  font: 750 16px var(--font-display);
+}
+
+.draft-clock small,
+.draft-my-result small {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-dim);
+  font-size: 10px;
+}
+
+.draft-clock p,
+.draft-my-result p {
+  margin-top: 10px;
+  color: var(--text-dim);
+  font-size: 11px;
+  line-height: 1.55;
+}
+
+.draft-section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 10px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.draft-section-head h2,
+.draft-results-list h2 {
+  color: var(--text);
+  font: 750 12px var(--font-display);
+}
+
+.draft-section-head span {
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+.draft-prospect-row {
+  display: grid;
+  grid-template-columns: 27px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 66px;
+  padding: 7px 9px;
+  border-bottom: 1px solid var(--border);
+}
+
+.draft-prospect-row.is-suggested {
+  background: var(--orange-bg);
+}
+
+.draft-prospect-main {
+  min-width: 0;
+}
+
+.draft-prospect-main strong,
+.draft-result-row strong {
+  display: block;
+  overflow: hidden;
+  color: var(--text);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.draft-prospect-main span,
+.draft-prospect-main small,
+.draft-result-row span,
+.draft-advice-result {
+  display: block;
+  overflow: hidden;
+  margin-top: 2px;
+  color: var(--text-dim);
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.draft-prospect-main small {
+  color: var(--text-muted);
+}
+
+.draft-prospect-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 5px;
+}
+
+.draft-prospect-side > span {
+  color: var(--orange-light);
+  font: 700 9px var(--font-display);
+}
+
+.draft-prospect-side button {
+  min-height: 30px;
+  padding: 5px 8px;
+  border: 1px solid var(--orange-dim);
+  border-radius: 7px;
+  background: var(--orange-bg);
+  color: var(--orange);
+  font: 700 9px var(--font-body);
+  cursor: pointer;
+}
+
+.draft-results-list {
+  margin-top: 12px;
+}
+
+.draft-results-list h2 {
+  padding: 11px 10px 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.draft-result-row {
+  display: grid;
+  grid-template-columns: 30px 32px minmax(0, 1fr);
+  align-items: center;
+  gap: 7px;
+  min-height: 51px;
+  padding: 6px 9px;
+  border-bottom: 1px solid var(--border);
+}
+
+.draft-result-row.is-mine {
+  background: var(--orange-bg);
+}
+
+.draft-advice-result.is-accepted {
+  color: var(--green);
+}
+
+.draft-advice-result.is-declined {
+  color: var(--gold);
+}
+
+.draft-empty {
+  padding: 24px 10px;
+  color: var(--text-muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+.draft-my-result {
+  margin: 14px 0;
+  padding: 14px;
+  border: 1px solid var(--orange);
+  border-radius: 12px;
+  background: var(--orange-bg);
+}
+
+.draft-my-result > span {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--orange);
+  font: 750 10px var(--font-display);
+  letter-spacing: .5px;
+}
+
+@media (max-width: 390px) {
+  .draft-shell { padding-right: 9px; padding-left: 9px; }
+  .draft-actions { flex-wrap: wrap; }
+  .draft-action-primary { flex-basis: 100%; }
+  .draft-prospect-main span { max-width: 175px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .draft-action-primary,
+  .draft-action-secondary,
+  .draft-prospect-side button {
+    transition: none;
+  }
+}
