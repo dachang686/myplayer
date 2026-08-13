@@ -1506,12 +1506,15 @@ function getGrade(val) { return GRADE.getGrade(val); }
 function getOvrGrade(ovr) { return GRADE.getOvrGrade(ovr); }
 
 // ==================== 跨位置衰减 ====================
-/** 计算跨位置衰减系数：你建的位置 vs 来源球员位置 */
-function getPosPenalty(userPos, srcPos, attrKey) {
-  const srcAvg = SIM_CONFIG.POS_AVG[srcPos] && SIM_CONFIG.POS_AVG[srcPos][attrKey];
-  const userAvg = SIM_CONFIG.POS_AVG[userPos] && SIM_CONFIG.POS_AVG[userPos][attrKey];
-  if (!srcAvg || srcAvg <= 0) return 1.0;
-  return Math.min(1.0, userAvg / srcAvg);
+/** 固定跨位置衰减：同位置 100%，相邻位置 90%，其他位置 80%。 */
+function getPosPenalty(userPos, srcPos) {
+  const positionOrder = ['PG', 'SG', 'SF', 'PF', 'C'];
+  const userIndex = positionOrder.indexOf(userPos);
+  const sourceIndex = positionOrder.indexOf(srcPos);
+  if (userIndex < 0 || sourceIndex < 0) return 0.8;
+  const distance = Math.abs(userIndex - sourceIndex);
+  if (distance === 0) return 1.0;
+  return distance === 1 ? 0.9 : 0.8;
 }
 
 /** 从球员的 pos 字段提取全部有效位置（'PG / SG' → ['PG', 'SG']） */
@@ -1532,10 +1535,9 @@ function playerCanPlayPosition(player, position) {
   return getBuildPlayerPositions(player).includes(position);
 }
 
-/** 任一登记位置匹配时不折损；完全不匹配时按主位置计算，且最多保留 80%。 */
+/** 多位置球员按最有利的登记位置计算折损。 */
 function getPlayerPosPenalty(userPos, player, attrKey) {
-  if (playerCanPlayPosition(player, userPos)) return 1.0;
-  return Math.min(0.8, getPosPenalty(userPos, getPlayerMainPos(player), attrKey));
+  return Math.max(...getBuildPlayerPositions(player).map(srcPos => getPosPenalty(userPos, srcPos)));
 }
 // ==================== 初始化 ====================
 

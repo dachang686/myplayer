@@ -87,9 +87,11 @@ if (positionLogicStart < 0 || positionLogicEnd < 0) {
     "towns && towns.pos === 'C / PF' && getPlayerPosPenalty('PF', towns, 'REB') === 1 && " +
     "getPlayerPosPenalty('PF', { pos: 'C / PF' }, 'REB') === 1 && " +
     "getPlayerPosPenalty('C', { pos: 'C / PF' }, 'REB') === 1 && " +
-    "getPlayerPosPenalty('PF', { pos: 'C' }, 'REB') < 1 && " +
-    "getPlayerPosPenalty('PG', { pos: 'C' }, 'FIN') === 0.8 && " +
-    "getPlayerPosPenalty('PG', { pos: 'C / PF' }, 'REB') === getPosPenalty('PG', 'C', 'REB')",
+    "getPosPenalty('PG', 'SG') === 0.9 && getPosPenalty('SG', 'PG') === 0.9 && " +
+    "getPosPenalty('SG', 'SF') === 0.9 && getPosPenalty('SF', 'PF') === 0.9 && getPosPenalty('PF', 'C') === 0.9 && " +
+    "getPosPenalty('PG', 'SF') === 0.8 && getPosPenalty('SG', 'C') === 0.8 && getPosPenalty('PG', 'C') === 0.8 && " +
+    "getPlayerPosPenalty('SF', { pos: 'C / PF' }, 'REB') === 0.9 && " +
+    "getPlayerPosPenalty('PG', { pos: 'C / PF' }, 'REB') === 0.8",
     positionContext
   );
   if (!multiPositionPenaltyWorks) failures.push('多位置球员的跨位置折损规则错误');
