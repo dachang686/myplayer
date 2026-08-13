@@ -5,7 +5,8 @@
 (function(root) {
   'use strict';
 
-  var LEGACY_VERSION = 1;
+  var LEGACY_VERSION = 3;
+  var RANKING_LIMIT = 10;
   var CATEGORY_CONFIG = {
     points: { field: 'pts', label: '总得分', shortLabel: '得分' },
     rebounds: { field: 'reb', label: '总篮板', shortLabel: '篮板' },
@@ -14,32 +15,43 @@
     blocks: { field: 'blk', label: '总盖帽', shortLabel: '盖帽' }
   };
 
-  // 原创虚构联盟的内置历史基准，用来提供可追逐的长期目标；不是 NBA 官方历史统计。
+  // NBA 官方常规赛历史累计统计快照，数据截至 2025-26 赛季结束。
+  // 采用静态快照而非运行时请求，确保离线游戏的存档排名和里程碑可复现。
   var BASELINE_RECORDS = {
     points: [
-      ['legacy-points-1', '远航者·一号', 'NORTH', 28640], ['legacy-points-2', '北境火种', 'SOUTH', 26480],
-      ['legacy-points-3', '城市灯塔', 'EAST', 24720], ['legacy-points-4', '海港左手', 'WEST', 22960],
-      ['legacy-points-5', '金色第六人', 'NORTH', 21380]
+      ['nba-points-1', '勒布朗·詹姆斯', 'LAL', 43440], ['nba-points-2', '卡里姆·阿卜杜尔-贾巴尔', 'LAL', 38387],
+      ['nba-points-3', '卡尔·马龙', 'UTA', 36928], ['nba-points-4', '科比·布莱恩特', 'LAL', 33643],
+      ['nba-points-5', '凯文·杜兰特', 'HOU', 32597], ['nba-points-6', '迈克尔·乔丹', 'CHI', 32292],
+      ['nba-points-7', '德克·诺维茨基', 'DAL', 31560], ['nba-points-8', '威尔特·张伯伦', 'LAL', 31419],
+      ['nba-points-9', '詹姆斯·哈登', 'HOU', 29339], ['nba-points-10', '卡梅隆·安东尼', 'NYK', 28289]
     ],
     rebounds: [
-      ['legacy-rebounds-1', '禁区守望者', 'SOUTH', 13240], ['legacy-rebounds-2', '高塔旧将', 'EAST', 12110],
-      ['legacy-rebounds-3', '蓝领之王', 'WEST', 11280], ['legacy-rebounds-4', '篮板诗人', 'NORTH', 10360],
-      ['legacy-rebounds-5', '海岸巨人', 'SOUTH', 9480]
+      ['nba-rebounds-1', '威尔特·张伯伦', 'LAL', 23924], ['nba-rebounds-2', '比尔·拉塞尔', 'BOS', 21620],
+      ['nba-rebounds-3', '卡里姆·阿卜杜尔-贾巴尔', 'LAL', 17440], ['nba-rebounds-4', '埃尔文·海耶斯', 'HOU', 16279],
+      ['nba-rebounds-5', '摩西·马龙', 'PHI', 16212], ['nba-rebounds-6', '蒂姆·邓肯', 'SAS', 15091],
+      ['nba-rebounds-7', '卡尔·马龙', 'UTA', 14968], ['nba-rebounds-8', '罗伯特·帕里什', 'BOS', 14715],
+      ['nba-rebounds-9', '凯文·加内特', 'MIN', 14662], ['nba-rebounds-10', '德怀特·霍华德', 'ORL', 14627]
     ],
     assists: [
-      ['legacy-assists-1', '节拍大师', 'EAST', 11420], ['legacy-assists-2', '长传先生', 'WEST', 10180],
-      ['legacy-assists-3', '球场地图', 'NORTH', 9180], ['legacy-assists-4', '午夜指挥官', 'SOUTH', 8310],
-      ['legacy-assists-5', '白线魔术师', 'EAST', 7520]
+      ['nba-assists-1', '约翰·斯托克顿', 'UTA', 15806], ['nba-assists-2', '克里斯·保罗', 'LAC', 12552],
+      ['nba-assists-3', '贾森·基德', 'DAL', 12091], ['nba-assists-4', '勒布朗·詹姆斯', 'LAL', 12016],
+      ['nba-assists-5', '拉塞尔·威斯布鲁克', 'SAC', 10351], ['nba-assists-6', '史蒂夫·纳什', 'PHX', 10335],
+      ['nba-assists-7', '马克·杰克逊', 'IND', 10334], ['nba-assists-8', '魔术师·约翰逊', 'LAL', 10141],
+      ['nba-assists-9', '奥斯卡·罗伯特森', 'CIN', 9887], ['nba-assists-10', '伊塞亚·托马斯', 'DET', 9061]
     ],
     steals: [
-      ['legacy-steals-1', '影子猎手', 'WEST', 2860], ['legacy-steals-2', '铁网后卫', 'NORTH', 2510],
-      ['legacy-steals-3', '锋线镰刀', 'SOUTH', 2220], ['legacy-steals-4', '压迫之眼', 'EAST', 1960],
-      ['legacy-steals-5', '抢断钟摆', 'WEST', 1740]
+      ['nba-steals-1', '约翰·斯托克顿', 'UTA', 3265], ['nba-steals-2', '克里斯·保罗', 'LAC', 2728],
+      ['nba-steals-3', '贾森·基德', 'DAL', 2684], ['nba-steals-4', '迈克尔·乔丹', 'CHI', 2514],
+      ['nba-steals-5', '加里·佩顿', 'SEA', 2445], ['nba-steals-6', '莫里斯·奇克斯', 'PHI', 2310],
+      ['nba-steals-7', '斯科蒂·皮蓬', 'CHI', 2307], ['nba-steals-8', '克莱德·德雷克斯勒', 'POR', 2207],
+      ['nba-steals-9', '哈基姆·奥拉朱旺', 'HOU', 2162], ['nba-steals-10', '阿尔文·罗伯特森', 'SAS', 2112]
     ],
     blocks: [
-      ['legacy-blocks-1', '天空封锁者', 'SOUTH', 3180], ['legacy-blocks-2', '篮筐卫士', 'EAST', 2790],
-      ['legacy-blocks-3', '禁飞区', 'NORTH', 2450], ['legacy-blocks-4', '玻璃城墙', 'WEST', 2180],
-      ['legacy-blocks-5', '最后的高墙', 'SOUTH', 1920]
+      ['nba-blocks-1', '哈基姆·奥拉朱旺', 'HOU', 3830], ['nba-blocks-2', '迪肯贝·穆托姆博', 'DEN', 3289],
+      ['nba-blocks-3', '卡里姆·阿卜杜尔-贾巴尔', 'LAL', 3189], ['nba-blocks-4', '马克·伊顿', 'UTA', 3064],
+      ['nba-blocks-5', '蒂姆·邓肯', 'SAS', 3020], ['nba-blocks-6', '大卫·罗宾逊', 'SAS', 2954],
+      ['nba-blocks-7', '帕特里克·尤因', 'NYK', 2894], ['nba-blocks-8', '沙奎尔·奥尼尔', 'LAL', 2732],
+      ['nba-blocks-9', '特里·罗林斯', 'ATL', 2542], ['nba-blocks-10', '罗伯特·帕里什', 'BOS', 2361]
     ]
   };
 
@@ -97,9 +109,9 @@
         playerName: row[1],
         teamId: row[2],
         value: row[3],
-        season: '联盟历史基准',
+        season: 'NBA 常规赛 · 截至 2025-26',
         date: null,
-        source: '内置联盟历史基准',
+        source: 'NBA 官方常规赛历史统计',
         baselineOrder: index + 1
       };
     });
@@ -112,7 +124,7 @@
     });
     return {
       version: LEGACY_VERSION,
-      baselineLabel: '原创虚构联盟内置历史基准（非 NBA 官方统计）',
+      baselineLabel: 'NBA 官方常规赛历史统计 · 数据截至 2025-26 赛季结束',
       categories: categories,
       milestones: {
         fourOneOne: {
@@ -143,7 +155,7 @@
       playerName: String(record.playerName || '未知球员'),
       teamId: String(record.teamId || ''),
       value: Math.max(0, numberValue(record.value)),
-      season: record.season || '联盟历史基准',
+      season: record.season || 'NBA 常规赛 · 截至 2025-26',
       date: record.date || null,
       source: record.source || '历史预置',
       baselineOrder: numberValue(record.baselineOrder) || undefined
@@ -155,6 +167,8 @@
     (Array.isArray(records) ? records : []).forEach(function(item) {
       var row = normalizeRecord(item);
       if (!row) return;
+      // v1 的原创联盟基准不能与真实 NBA 基准并存；玩家自身累计记录仍会保留。
+      if (row.playerId.indexOf('legacy-') === 0) return;
       var previous = byPlayerId[row.playerId];
       if (!previous || row.value > previous.value || (row.value === previous.value && row.baselineOrder < previous.baselineOrder)) {
         byPlayerId[row.playerId] = row;
@@ -166,7 +180,7 @@
     return Object.keys(byPlayerId).map(function(playerId) { return byPlayerId[playerId]; }).sort(function(a, b) {
       if (b.value !== a.value) return b.value - a.value;
       return a.playerId.localeCompare(b.playerId);
-    }).slice(0, 5);
+    }).slice(0, RANKING_LIMIT);
   }
 
   function buildArchivedTotals(career) {
@@ -275,6 +289,37 @@
     return milestone;
   }
 
+  function isCategoryRecordEventId(eventId) {
+    return /^legacy:(points|rebounds|assists|steals|blocks):/.test(String(eventId || ''));
+  }
+
+  function removeCategoryRecordHistory(career, records) {
+    records.events = records.events.filter(function(event) {
+      return !event || event.kind !== 'category';
+    });
+    records.badges = records.badges.filter(function(badge) {
+      return !badge || !isCategoryRecordEventId(badge.id);
+    });
+    Object.keys(records.triggeredEventIds).forEach(function(eventId) {
+      if (isCategoryRecordEventId(eventId)) delete records.triggeredEventIds[eventId];
+    });
+    career.honors = (career.honors || []).filter(function(honor) {
+      return !honor || !isCategoryRecordEventId(honor.legacyEventId);
+    });
+    (career.seasons || []).forEach(function(season) {
+      if (!season || !season.events || !Array.isArray(season.events.storyTimeline)) return;
+      season.events.storyTimeline = season.events.storyTimeline.filter(function(event) {
+        return !event || !isCategoryRecordEventId(event.legacyEventId);
+      });
+    });
+    var state = getState();
+    if (state && state.season && state.season.events && Array.isArray(state.season.events.storyTimeline)) {
+      state.season.events.storyTimeline = state.season.events.storyTimeline.filter(function(event) {
+        return !event || !isCategoryRecordEventId(event.legacyEventId);
+      });
+    }
+  }
+
   function ensureCareerLegacyRecords(options) {
     options = options || {};
     var career = getCareer();
@@ -284,17 +329,24 @@
       records = createDefaultCareerLegacyRecords();
       career.legacyRecords = records;
     }
+    var shouldMigrateToNbaBaseline = numberValue(records.version) < LEGACY_VERSION;
     records.categories = records.categories || {};
     Object.keys(CATEGORY_CONFIG).forEach(function(category) {
       records.categories[category] = normalizeCategory(records.categories[category], category);
     });
     records.version = LEGACY_VERSION;
-    records.baselineLabel = records.baselineLabel || '原创虚构联盟内置历史基准（非 NBA 官方统计）';
+    records.baselineLabel = 'NBA 官方常规赛历史统计 · 数据截至 2025-26 赛季结束';
     records.triggeredEventIds = records.triggeredEventIds && typeof records.triggeredEventIds === 'object' ? records.triggeredEventIds : {};
     records.processedGameIds = records.processedGameIds && typeof records.processedGameIds === 'object' ? records.processedGameIds : {};
     records.events = Array.isArray(records.events) ? records.events : [];
     records.badges = Array.isArray(records.badges) ? records.badges : [];
     ensureFourOneOneShape(records);
+
+    if (shouldMigrateToNbaBaseline) {
+      // v1 原创榜单和 v2 前五榜的名次、勋章、荣誉无法代表当前 NBA 前十榜，应清除。
+      // 411 与其他非排名型生涯里程碑仍保持原样。
+      removeCategoryRecordHistory(career, records);
+    }
 
     if (options.reconcile !== false) {
       var totals = getCareerTotals();
@@ -366,7 +418,7 @@
     var playerId = getPlayerId(career);
     var config = CATEGORY_CONFIG[category];
     var label = config.shortLabel;
-    var tierText = tier === 'top5' ? '跻身历史前五' : (tier === 'top3' ? '杀入历史前三' : '登顶历史第一');
+    var tierText = tier === 'top10' ? '跻身历史前十' : (tier === 'top3' ? '杀入历史前三' : '登顶历史第一');
     var holderText = previousHolder && previousHolder.playerName ? '，超越 ' + previousHolder.playerName : '';
     return createLegacyEvent(records, {
       id: 'legacy:' + category + ':' + tier + ':' + playerId,
@@ -388,7 +440,7 @@
       title: '历史' + label + '榜' + tierText,
       desc: '生涯常规赛累计 ' + numberValue(totals[config.field]) + ' ' + label + '，当前位列联盟历史第 ' + rank + ' 名' + holderText + '。',
       emoji: tier === 'first' ? '👑' : (tier === 'top3' ? '🏅' : '📈'),
-      badgeLabel: '历史' + label + (tier === 'first' ? '第一' : (tier === 'top3' ? '前三' : '前五')),
+      badgeLabel: '历史' + label + (tier === 'first' ? '第一' : (tier === 'top3' ? '前三' : '前十')),
       honorLabel: tier === 'first' ? '联盟历史' + label + '第一' : '历史' + label + '榜前三'
     });
   }
@@ -470,7 +522,7 @@
       var afterRows = upsertPlayerRecord(records, category, career, totals, meta);
       var nextRank = getPlayerRank(afterRows, playerId);
       var thresholds = [
-        { tier: 'top5', maxRank: 5 },
+        { tier: 'top10', maxRank: RANKING_LIMIT },
         { tier: 'top3', maxRank: 3 },
         { tier: 'first', maxRank: 1 }
       ];
@@ -534,7 +586,7 @@
 
   function queueLegacyFeedback(events) {
     if (!events || !events.length || !root.document) return;
-    var priority = { top5: 1, milestone: 1, top3: 2, first: 3, fourOneOne: 4 };
+    var priority = { top10: 1, milestone: 1, top3: 2, first: 3, fourOneOne: 4 };
     var event = events.slice().sort(function(a, b) { return (priority[b.tier] || 0) - (priority[a.tier] || 0); })[0];
     root.setTimeout(function() {
       if (event.tier === 'first' || event.tier === 'fourOneOne') showLegacyCelebration(event);
@@ -605,7 +657,7 @@
       html += '<button type="button" class="' + (key === category ? 'active' : '') + '" onclick="setCareerLegacyHallCategory(\'' + key + '\')">' + CATEGORY_CONFIG[key].label + '</button>';
     });
     html += '</div>';
-    html += '<div class="sr-section cs-section"><div class="sr-section-title">🏆 联盟历史 ' + config.label + ' 前五</div><div class="legacy-rank-list">';
+    html += '<div class="sr-section cs-section"><div class="sr-section-title">🏆 联盟历史 ' + config.label + ' 前十</div><div class="legacy-rank-list">';
     (records.categories[category] || []).forEach(function(row, index) {
       var mine = row.playerId === playerId;
       html += '<div class="legacy-rank-row' + (mine ? ' me' : '') + '"><span class="legacy-rank-number">' + (index + 1) + '</span><div><div class="legacy-rank-name">' + escapeHtml(row.playerName) + (mine ? ' · 你' : '') + '</div><div class="legacy-rank-meta">' + escapeHtml(row.source || '') + (row.season ? ' · ' + escapeHtml(row.season) : '') + '</div></div><span class="legacy-rank-value">' + formatValue(row.value) + '</span></div>';

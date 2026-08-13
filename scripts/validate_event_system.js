@@ -112,6 +112,24 @@ if (registryStart < 0 || registryEnd < 0) {
     else if (eventModule.getRandomEventLane(event) !== 'career') failures.push(`${id} 未进入职业剧情通道`);
   }
 
+  const coachRoleMeeting = registry.find(item => item.id === 'career_coach_role_meeting');
+  if (coachRoleMeeting) {
+    state.season.games = Array.from({ length: 20 }, () => ({ game: { opponent: 'AWAY' } }));
+    state.season.isUserStarter = true;
+    state.finalOVR = 92;
+    state.career.seasonCount = 5;
+    state.career.flags = {};
+    if (coachRoleMeeting.condition()) failures.push('已建立核心地位的球员仍会触发角色会议');
+
+    state.career.seasonCount = 1;
+    state.finalOVR = 78;
+    state.season.isUserStarter = false;
+    if (!coachRoleMeeting.condition()) failures.push('早期未稳定角色的球员无法触发角色会议');
+
+    state.career.flags = { coachRoleMeetingDone: true };
+    if (coachRoleMeeting.condition()) failures.push('已完成的角色会议仍会重复触发');
+  }
+
   registry.splice(0, registry.length, {
     id: 'validation_suspension',
     lane: 'discipline',

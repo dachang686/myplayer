@@ -262,6 +262,10 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .br-slot-actions .slot-btn:hover:not(:disabled),.br-slot-actions .slot-btn:focus-visible:not(:disabled){border-color:var(--orange);outline:none}
 .br-slot-actions .slot-btn:active:not(:disabled){transform:translateY(1px)}
 .br-slot-actions .slot-btn:disabled{opacity:.34;cursor:default}
+#point-build-area .slot-btn-primary{border:1px solid var(--border-light);border-radius:8px;background:var(--bg-elevated);color:var(--text-dim);font:750 14px var(--font-body);cursor:default;transition:background .18s cubic-bezier(.16,1,.3,1),border-color .18s cubic-bezier(.16,1,.3,1),box-shadow .18s cubic-bezier(.16,1,.3,1),transform .18s cubic-bezier(.16,1,.3,1)}
+#point-build-area .slot-btn-primary:not(:disabled){border-color:var(--orange);background:var(--orange);color:var(--on-accent);cursor:pointer;box-shadow:0 5px 14px rgba(255,107,53,.22)}
+#point-build-area .slot-btn-primary:hover:not(:disabled),#point-build-area .slot-btn-primary:focus-visible:not(:disabled){background:var(--orange-light);border-color:var(--orange-light);outline:none}
+#point-build-area .slot-btn-primary:active:not(:disabled){transform:translateY(1px);box-shadow:0 2px 7px rgba(255,107,53,.18)}
 .br-slot-warn{min-height:14px;margin-top:8px;color:var(--orange);font-size:9px;line-height:1.4;text-align:right}
 #br-roster-area:not(:empty){padding:13px 14px 14px;border:1px solid var(--border);border-radius:12px;background:var(--bg-card)}
 .br-roster-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:9px}
@@ -634,11 +638,13 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     .dot-l{background:#e63946;box-shadow:0 1px 3px rgba(230,57,70,0.3)}
     .dot-x{display:inline-block;width:14px;height:14px;line-height:14px;font-size:9px;text-align:center;border-radius:50%;background:var(--bg-surface);color:var(--text-dim);border:1px solid var(--border);margin:2px;vertical-align:middle;cursor:default;opacity:0.6}
     .awards-card{background:linear-gradient(170deg,var(--bg-elevated) 0%,var(--bg-card-hover) 50%,var(--bg-card) 100%);border:2px solid var(--border);border-radius:20px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.38);position:relative}
+    .event-modal-card{width:min(100%,408px);animation:eventModalIn .24s cubic-bezier(.16,1,.3,1)}
     .awards-card::before{content:'';position:absolute;top:-80px;right:-80px;width:200px;height:200px;background:radial-gradient(circle,rgba(255,107,53,0.07) 0%,transparent 70%);pointer-events:none;border-radius:50%}
     .awards-card-header{background:linear-gradient(180deg,rgba(255,107,53,0.12) 0%,rgba(255,107,53,0.03) 100%);padding:24px 16px 16px;text-align:center;border-bottom:1px solid rgba(240,224,204,0.6);position:relative}
     .awards-card-header::after{content:'';position:absolute;bottom:-1px;left:20%;right:20%;height:2px;background:linear-gradient(90deg,transparent,var(--orange),transparent);border-radius:2px}
     .awards-overlay{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .3s ease;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
     @keyframes flyInRight{from{opacity:0;transform:translateX(160px) scale(0.88)}to{opacity:1;transform:translateX(0) scale(1)}}
+    @keyframes eventModalIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:scale(1)}}
     .awards-badge{display:inline-block;padding:5px 18px;border-radius:20px;font-family:var(--font-display);font-size:13px;font-weight:700;background:linear-gradient(135deg,var(--orange),var(--orange-light));color:var(--on-accent);letter-spacing:1.5px;text-transform:uppercase;box-shadow:0 2px 8px rgba(255,107,53,0.25)}
     .awards-card-body{padding:20px 16px;text-align:center;position:relative}
     .awards-winner-label{font-size:11px;color:var(--text-muted);letter-spacing:2px;text-transform:uppercase;font-weight:600;margin-bottom:2px}
@@ -7162,7 +7168,7 @@ function showCareerStats(tab) {
   saveCurrentSeasonToCareer();
   var c = STATE.career;
   tab = tab || 0;
-  var subText = tab === 0 ? (getCurrentSeasonLabel() + ' · ' + STATE.finalPosition + ' · OVR ' + STATE.finalOVR) : (tab === 1 ? ('生涯共 ' + c.honors.length + ' 项荣誉') : (tab === 2 ? ('休赛期纪事 ' + ((c.offseasonHistory || []).length) + ' 条') : '原创联盟历史基准 · 常规赛累计'));
+  var subText = tab === 0 ? (getCurrentSeasonLabel() + ' · ' + STATE.finalPosition + ' · OVR ' + STATE.finalOVR) : (tab === 1 ? ('生涯共 ' + c.honors.length + ' 项荣誉') : (tab === 2 ? ('休赛期纪事 ' + ((c.offseasonHistory || []).length) + ' 条') : 'NBA 历史常规赛纪录 · 数据截至 2025-26'));
   document.getElementById('career-stats-sub').textContent = subText;
 
   var html = '';
@@ -7184,16 +7190,14 @@ function showCareerStats(tab) {
     html += typeof renderCareerLegacyHall === 'function' ? renderCareerLegacyHall() : '';
   }
 
-  html += '<div style="display:flex;flex-direction:column;gap:6px;align-items:center;margin-top:6px;">';
   if (STATE.career && STATE.career.retired) {
+    html += '<div style="display:flex;flex-direction:column;gap:6px;align-items:center;margin-top:6px;">';
     html += '<div style="text-align:center;font-size:12px;color:var(--text-dim);padding:4px 0;">🏁 生涯已结束，感谢你带来的每一个赛季</div>';
     html += '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">';
     html += '<button class="btn btn-secondary btn-sm" onclick="exitToHomepage()">🚪 回到主页</button>';
     html += '</div>';
-  } else {
-    html += '<button class="btn btn-primary btn-sm" onclick="showScreen(\'screen-mycard\')">📋 返回休赛期面板</button>';
+    html += '</div>';
   }
-  html += '</div>';
 
   document.getElementById('career-stats-content').innerHTML = html;
   var careerEnded = !!(STATE.career && STATE.career.retired);
@@ -9100,18 +9104,16 @@ function renderMenuSavePanel() {
   var el = document.getElementById('menu-save-panel');
   if (!el) return;
   var html = '<div style="padding:12px;border:2px solid var(--border);border-radius:10px;background:var(--bg-card);">';
-  html += '<div style="font-size:12px;font-weight:700;color:var(--orange);margin-bottom:8px;">💾 读取存档</div>';
-  for (var si = 1; si <= 2; si++) {
-    var sum = getManualSaveSummary(si);
-    html += '<div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--border-light);">';
-    html += '<div style="flex:1;min-width:0;">';
-    html += '<div style="font-size:12px;font-weight:700;">存档' + si + '</div>';
-    html += '<div style="font-size:10px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (sum ? sum.label + ' · ' + new Date(sum.savedAt).toLocaleString() : '空槽位') + '</div>';
-    html += '</div>';
-    html += '<button class="btn btn-xs" onclick="manualLoadGame(' + si + ')">读取</button>';
-    html += '<button class="btn btn-xs" onclick="manualClearSave(' + si + ')">清除</button>';
-    html += '</div>';
-  }
+  var sum = getManualSaveSummary(1);
+  html += '<div style="font-size:12px;font-weight:700;color:var(--orange);margin-bottom:8px;">💾 当前进度</div>';
+  html += '<div style="display:flex;align-items:center;gap:6px;padding:6px 0;">';
+  html += '<div style="flex:1;min-width:0;">';
+  html += '<div style="font-size:12px;font-weight:700;">自动存档</div>';
+  html += '<div style="font-size:10px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + (sum ? sum.label + ' · ' + new Date(sum.savedAt).toLocaleString() : '暂无自动存档') + '</div>';
+  html += '</div>';
+  html += '<button class="btn btn-xs" onclick="manualLoadGame(1)">读取</button>';
+  html += '<button class="btn btn-xs" onclick="manualClearSave(1)">清除</button>';
+  html += '</div>';
   html += '</div>';
   el.innerHTML = html;
 }
@@ -9875,7 +9877,7 @@ function showEventModal(data, callback) {
       });
     }
     overlay.innerHTML =
-      '<div class="awards-card" style="animation:flyInRight .45s ease">' +
+      '<div class="awards-card event-modal-card">' +
         '<div class="awards-card-header" style="padding:32px 24px 24px;">' +
           '<span style="font-size:44px;display:block;margin-bottom:8px;">' + (data.emoji || '📌') + '</span>' +
           '<div class="awards-badge">' + data.title + '</div>' +
@@ -11622,12 +11624,24 @@ EVENT_REGISTRY.push({
   condition: function() {
     if (STATE.season.isPlayoffs || getEventGameNumber() < 15 || getEventGameNumber() > 48) return false;
     var flags = STATE.career && STATE.career.flags ? STATE.career.flags : {};
-    if (flags.coachRoleMeetingSeason === (STATE.career.seasonCount || 0)) return false;
+    // 这是新人或角色尚未稳定时的首次沟通，不应在核心球员的每个赛季重复出现。
+    if (flags.coachRoleMeetingDone) return false;
+    var seasonNum = STATE.career.seasonCount || 0;
+    if (seasonNum > 2) return false;
     var avg = typeof getUserAvg === 'function' ? getUserAvg() : { pts: 0, ast: 0 };
-    return !STATE.season.isUserStarter || avg.pts >= 21 || avg.ast >= 8 || (getCareerProfile().coachTrust || 0) <= 0;
+    var isEstablishedCore = !!STATE.season.isUserStarter && (
+      (Number(avg.pts) || 0) >= 18 ||
+      (Number(avg.ast) || 0) >= 7 ||
+      (Number(STATE.finalOVR) || 0) >= 88
+    );
+    return !isEstablishedCore;
   },
   execute: function() {
-    function mark() { STATE.career.flags = STATE.career.flags || {}; STATE.career.flags.coachRoleMeetingSeason = STATE.career.seasonCount || 0; }
+    function mark() {
+      STATE.career.flags = STATE.career.flags || {};
+      STATE.career.flags.coachRoleMeetingSeason = STATE.career.seasonCount || 0;
+      STATE.career.flags.coachRoleMeetingDone = true;
+    }
     return {
       emoji: '📋', title: '关上门的角色会议',
       body: '教练把你叫进录像室，桌上放着你的回合占有率、无球跑动和防守对位报告。他说球队需要更清楚地知道你想承担什么，而你也有权听到教练组的真实计划。',
