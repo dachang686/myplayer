@@ -1186,7 +1186,7 @@ const STATE = {
   // 生涯
   career: {
     seasonCount: 0,
-    currentAge: 22,
+    currentAge: 18,
     contract: 4,
     seasons: [],
     totalStats: { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, fgm: 0, fga: 0, ftm: 0, fta: 0, threeM: 0, threeA: 0, games: 0, mins: 0 },
@@ -1532,10 +1532,10 @@ function playerCanPlayPosition(player, position) {
   return getBuildPlayerPositions(player).includes(position);
 }
 
-/** 任一登记位置匹配时不折损；完全不匹配时按主位置计算，且最多保留 94%。 */
+/** 任一登记位置匹配时不折损；完全不匹配时按主位置计算，且最多保留 80%。 */
 function getPlayerPosPenalty(userPos, player, attrKey) {
   if (playerCanPlayPosition(player, userPos)) return 1.0;
-  return Math.min(0.94, getPosPenalty(userPos, getPlayerMainPos(player), attrKey));
+  return Math.min(0.8, getPosPenalty(userPos, getPlayerMainPos(player), attrKey));
 }
 // ==================== 初始化 ====================
 
@@ -1621,7 +1621,7 @@ function restoreBaseLeagueRoster() {
 function createFreshCareer() {
   return {
     seasonCount: 0,
-    currentAge: 22,
+    currentAge: 18,
     contract: 4,
     seasons: [],
     totalStats: { pts:0, reb:0, ast:0, stl:0, blk:0, tov:0, fgm:0, fga:0, ftm:0, fta:0, threeM:0, threeA:0, games:0, mins:0 },
@@ -7603,7 +7603,7 @@ function beginOffseason() {
   }
   saveCurrentSeasonToCareer();
   if (STATE.career && STATE.career.flags && (STATE.career.flags.countdownDone || STATE.career.flags.playOneMore)) {
-    showPlayerRetirementChoice();
+    showPlayerRetirementChoice('offseason');
     return;
   }
   var cdNode = getBranchNode('retirement_countdown');
@@ -8448,7 +8448,7 @@ function continueOffseasonEvent() {
   if (modal) modal.remove();
   STATE._offseasonResultDone = null;
   if (STATE.career && STATE.career.flags && STATE.career.flags.countdownDone) {
-    announcePlayerRetirement(); // 放下球衣的那天：退役休赛期直接进入退役结算
+    showPlayerRetirementChoice('offseason-events');
     return;
   }
   showNextOffseasonEvent();
@@ -9355,22 +9355,17 @@ function shouldOfferPlayerRetirement() {
   return false;
 }
 
-function showPlayerRetirementChoice() {
+function showPlayerRetirementChoice(continueAction) {
   var c = STATE.career || {};
-  var flags = c.flags || {};
-  var canPlayMore = (c.currentAge || 22) < 40 && !flags.playOneMore; // 只能选择一次“继续战斗”
+  STATE._retirementContinueAction = continueAction || 'career';
   var html = '<div class="team-picker-overlay" id="player-retirement-choice">';
   html += '<div class="team-picker-modal">';
   html += '<div class="team-picker-header"><span>职业生涯节点</span></div>';
   html += '<div style="padding:14px;">';
   html += '<div style="font-family:var(--font-display);font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px;">是否宣布退役？</div>';
-  html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.65;margin-bottom:14px;">' + (c.currentAge || 0) + '岁，OVR ' + (STATE.finalOVR || 0) + '。' + (canPlayMore ? '漫长赛季之后，团队把两份方案放在你面前：继续战斗，或者让职业生涯停在这里，等待历史给出评价。' : '漫长赛季之后，你的身体和联盟都认定，这是生涯的终点。') + '</div>';
+  html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.65;margin-bottom:14px;">' + (c.currentAge || 0) + '岁，OVR ' + (STATE.finalOVR || 0) + '。漫长赛季之后，你可以继续战斗，也可以让职业生涯停在这里，等待历史给出评价。</div>';
   html += '<button class="btn btn-primary btn-sm" style="width:100%;margin-bottom:8px;" onclick="announcePlayerRetirement()">宣布退役</button>';
-  if (canPlayMore) {
-    html += '<button class="btn btn-secondary btn-sm" style="width:100%;" onclick="playOneMoreSeason()">继续战斗</button>';
-  } else {
-    html += '<div style="text-align:center;font-size:11px;color:var(--text-dim);margin-top:4px;">联盟与球队已确认，这是生涯终点。</div>';
-  }
+  html += '<button class="btn btn-secondary btn-sm" style="width:100%;" onclick="playOneMoreSeason()">继续战斗</button>';
   html += '</div></div></div>';
   document.body.insertAdjacentHTML('beforeend', html);
 }
@@ -9379,13 +9374,17 @@ function playOneMoreSeason() {
   var modal = document.getElementById('player-retirement-choice');
   if (modal) modal.remove();
   STATE.career.flags = STATE.career.flags || {};
-  if (STATE.career.flags.playOneMore || (STATE.career.currentAge || 22) >= 40) {
-    announcePlayerRetirement();
-    return;
+  delete STATE.career.flags.playOneMore;
+  delete STATE.career.flags.countdownDone;
+  var continueAction = STATE._retirementContinueAction || 'career';
+  delete STATE._retirementContinueAction;
+  if (continueAction === 'offseason') {
+    beginOffseason();
+  } else if (continueAction === 'offseason-events') {
+    showNextOffseasonEvent();
+  } else {
+    continueCareerAfterTraining();
   }
-  STATE.career.flags.playOneMore = true;
-  delete STATE.career.flags.countdownDone; // 继续战斗后不再强制退役
-  continueCareerAfterTraining();
 }
 
 function announcePlayerRetirement() {
@@ -9395,6 +9394,7 @@ function announcePlayerRetirement() {
   });
   var c = STATE.career;
   if (!c) return;
+  delete STATE._retirementContinueAction;
   c.flags = c.flags || {};
   c.flags.retiredFromContractChoice = true;
   c.flags.postCareerDeferred = false;
@@ -14686,7 +14686,7 @@ var _countdownLegacyScenePage = 0;
 
 function startCountdownLegacyFlow() {
   var ev = getBranchEventById('countdown_legacy');
-  if (!ev) { showPlayerRetirementChoice(); return; }
+  if (!ev) { showPlayerRetirementChoice('offseason'); return; }
   _countdownLegacyEvent = ev;
   _countdownLegacyScenePage = 0;
   showCountdownLegacyModal();
@@ -14762,7 +14762,7 @@ function showCountdownLegacyResultModal(title, msg) {
 function finishCountdownLegacy() {
   var modal = document.getElementById('countdown-legacy-result-modal');
   if (modal) modal.remove();
-  showPlayerRetirementChoice();
+  showPlayerRetirementChoice('offseason');
 }
 
 // ── 本地海报导出 ──

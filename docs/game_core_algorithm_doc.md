@@ -27,7 +27,7 @@ const STATE = {
   },
   career: {
     seasonCount: 0,
-    currentAge: 22,
+    currentAge: 18,
     contract: 4,
     seasons: [],        // 历赛季存档
     totalStats: {},     // 生涯累计

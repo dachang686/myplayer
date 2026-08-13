@@ -70,11 +70,11 @@ if (positionLogicStart < 0 || positionLogicEnd < 0) {
     towns: JSON.parse(JSON.stringify(players.find((player) => player.cname === '唐斯') || null)),
     SIM_CONFIG: {
       POS_AVG: {
-        PG: { REB: 60 },
-        SG: { REB: 65 },
-        SF: { REB: 70 },
-        PF: { REB: 80 },
-        C: { REB: 90 }
+        PG: { REB: 60, FIN: 90 },
+        SG: { REB: 65, FIN: 85 },
+        SF: { REB: 70, FIN: 80 },
+        PF: { REB: 80, FIN: 75 },
+        C: { REB: 90, FIN: 70 }
       }
     }
   };
@@ -88,6 +88,7 @@ if (positionLogicStart < 0 || positionLogicEnd < 0) {
     "getPlayerPosPenalty('PF', { pos: 'C / PF' }, 'REB') === 1 && " +
     "getPlayerPosPenalty('C', { pos: 'C / PF' }, 'REB') === 1 && " +
     "getPlayerPosPenalty('PF', { pos: 'C' }, 'REB') < 1 && " +
+    "getPlayerPosPenalty('PG', { pos: 'C' }, 'FIN') === 0.8 && " +
     "getPlayerPosPenalty('PG', { pos: 'C / PF' }, 'REB') === getPosPenalty('PG', 'C', 'REB')",
     positionContext
   );
