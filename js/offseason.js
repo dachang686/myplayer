@@ -1552,6 +1552,7 @@ function findTradeCandidate(roster, pos, excludeOvr, tradedSet) {
     var p = roster[i];
     if (p._isUser) continue;
     if (p._justSigned) continue;
+    if (p._draftPickTradeSeason === Math.max(1, Number(STATE.career && STATE.career.seasonCount) || 1)) continue;
     if (p.ovr > 92) continue;
     if (tradedSet && tradedSet.has(p)) continue;
     if (excludeOvr != null && Math.abs(p.ovr - excludeOvr) > 10) continue;

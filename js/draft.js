@@ -153,7 +153,7 @@
     var seed = hashText((STATE.gameId || 'career') + '|draft|' + seasonNum);
     var order = buildDraftOrder(seed);
     return {
-      version: 1,
+      version: 2,
       seasonNum: seasonNum,
       yearLabel: getDraftYearLabel(seasonNum),
       seed: seed,
@@ -164,6 +164,12 @@
         revealedCount: 0
       },
       draftOrder: order.draftOrder,
+      pickTrades: {
+        strategy: 'hold',
+        submitted: false,
+        result: '',
+        transactions: []
+      },
       prospects: [],
       picks: [],
       currentPick: 0,
@@ -178,7 +184,20 @@
     if (!STATE.offseasonDraft || STATE.offseasonDraft.seasonNum !== seasonNum) {
       STATE.offseasonDraft = createOffseasonDraftState();
     }
-    return STATE.offseasonDraft;
+    var draft = STATE.offseasonDraft;
+    draft.version = Math.max(2, Number(draft.version) || 1);
+    draft.pickTrades = draft.pickTrades || {
+      strategy: 'hold',
+      submitted: false,
+      result: '',
+      transactions: []
+    };
+    draft.pickTrades.transactions = draft.pickTrades.transactions || [];
+    (draft.draftOrder || []).forEach(function(entry) {
+      if (!entry.ownerTeam) entry.ownerTeam = entry.originalTeam;
+      if (!Array.isArray(entry.tradeHistory)) entry.tradeHistory = [];
+    });
+    return draft;
   }
 
   window.shouldRunOffseasonDraftLottery = function() {
@@ -248,7 +267,7 @@
         (revealed ? '揭晓第 ' + nextPick + ' 顺位' : '开始抽签') + '</button>' +
         '<button type="button" class="draft-action-secondary" onclick="revealAllLotteryPicks()">全部揭晓</button>';
     } else {
-      actionHtml = '<button type="button" class="draft-action-primary" onclick="completeOffseasonDraftLottery()">继续休赛期</button>';
+      actionHtml = '<button type="button" class="draft-action-primary" onclick="completeOffseasonDraftLottery()">进入选秀签交易窗口</button>';
     }
     target.innerHTML = '<main class="draft-shell">' +
       '<header class="draft-page-head"><div><span class="draft-kicker">DRAFT LOTTERY</span><h1>选秀抽签</h1></div><span class="draft-year">' + draft.yearLabel + '</span></header>' +
@@ -280,6 +299,303 @@
   window.completeOffseasonDraftLottery = function() {
     var draft = ensureOffseasonDraftState();
     if (draft.lottery.revealedCount < 14) return;
+    draft.phase = 'pick_trades';
+    persistDraftProgress();
+    showDraftPickTradeScreen();
+  };
+
+  function getDraftPickTradeValue(pick) {
+    pick = Math.max(1, Math.min(30, Number(pick) || 30));
+    if (pick <= 4) return 105 - (pick - 1) * 8;
+    if (pick <= 14) return 77 - (pick - 5) * 3;
+    if (pick <= 22) return 47 - (pick - 15) * 2;
+    return 31 - (pick - 23) * 1.5;
+  }
+
+  function getDraftPlayerTradeValue(player) {
+    var ovr = Number(player && player.ovr) || 60;
+    var value = ovr >= 90 ? 95 + (ovr - 90) * 8
+      : ovr >= 86 ? 73 + (ovr - 86) * 6
+      : ovr >= 82 ? 53 + (ovr - 82) * 5
+      : ovr >= 78 ? 37 + (ovr - 78) * 4
+      : ovr >= 74 ? 23 + (ovr - 74) * 3
+      : Math.max(6, 10 + (ovr - 68) * 2);
+    var age = typeof getLeaguePlayerAge === 'function' ? getLeaguePlayerAge(player) : 27;
+    var ageFactor = age <= 25 ? 1.15 : age <= 29 ? 1 : age <= 32 ? 0.85 : 0.66;
+    var contract = Number(player && player.contract) || 1;
+    var contractFactor = contract >= 3 ? 1.05 : contract === 1 ? 0.94 : 1;
+    return Math.max(4, Math.round(value * ageFactor * contractFactor));
+  }
+
+  window.getDraftPickTradeValue = getDraftPickTradeValue;
+  window.getDraftPlayerTradeValue = getDraftPlayerTradeValue;
+
+  function isPickTradePlayerAvailable(player, draft, team) {
+    if (!player || player._isUser || player._justSigned || (Number(player.ovr) || 0) > 92 ||
+      player._draftPickTradeSeason === draft.seasonNum) return false;
+    var roster = (LEAGUE_PLAYER_DATA[team] || []).slice().sort(function(a, b) {
+      return (Number(b.ovr) || 0) - (Number(a.ovr) || 0);
+    });
+    return roster.indexOf(player) >= 4;
+  }
+
+  function closestTradePlayer(team, targetValue, draft, minimumValue, maximumValue) {
+    var roster = LEAGUE_PLAYER_DATA[team] || [];
+    var candidates = roster.filter(function(player) {
+      if (!isPickTradePlayerAvailable(player, draft, team)) return false;
+      var value = getDraftPlayerTradeValue(player);
+      return value >= (minimumValue || 0) && value <= (maximumValue || 999);
+    });
+    candidates.sort(function(a, b) {
+      var delta = Math.abs(getDraftPlayerTradeValue(a) - targetValue) - Math.abs(getDraftPlayerTradeValue(b) - targetValue);
+      return delta || seededValue(draft.seed, 'trade-player|' + a.id) - seededValue(draft.seed, 'trade-player|' + b.id);
+    });
+    return candidates[0] || null;
+  }
+
+  function moveTradePlayer(fromTeam, toTeam, player, draft) {
+    var fromRoster = LEAGUE_PLAYER_DATA[fromTeam] || [];
+    var toRoster = LEAGUE_PLAYER_DATA[toTeam] || (LEAGUE_PLAYER_DATA[toTeam] = []);
+    var index = fromRoster.indexOf(player);
+    if (index < 0) return false;
+    fromRoster.splice(index, 1);
+    toRoster.push(player);
+    player._draftPickTradeSeason = draft.seasonNum;
+    return true;
+  }
+
+  function swapTradePlayers(teamA, playerA, teamB, playerB, draft) {
+    var rosterA = LEAGUE_PLAYER_DATA[teamA] || [];
+    var rosterB = LEAGUE_PLAYER_DATA[teamB] || [];
+    var indexA = rosterA.indexOf(playerA);
+    var indexB = rosterB.indexOf(playerB);
+    if (indexA < 0 || indexB < 0) return false;
+    rosterA[indexA] = playerB;
+    rosterB[indexB] = playerA;
+    playerA._draftPickTradeSeason = draft.seasonNum;
+    playerB._draftPickTradeSeason = draft.seasonNum;
+    return true;
+  }
+
+  function updatePickOwner(entry, newOwner, transactionId) {
+    var previousOwner = entry.ownerTeam;
+    entry.ownerTeam = newOwner;
+    entry.tradeHistory.push({ from: previousOwner, to: newOwner, transactionId: transactionId });
+  }
+
+  function recordPickTrade(draft, transaction) {
+    draft.pickTrades.transactions.push(transaction);
+    clearLineupCache();
+  }
+
+  function executePickSwap(draft, higherEntry, lowerEntry, bridgePlayer, playerFromTeam, source) {
+    var higherOwner = higherEntry.ownerTeam;
+    var lowerOwner = lowerEntry.ownerTeam;
+    if (!moveTradePlayer(playerFromTeam, playerFromTeam === higherOwner ? lowerOwner : higherOwner, bridgePlayer, draft)) return false;
+    var transactionId = 'pick-trade-' + draft.seasonNum + '-' + (draft.pickTrades.transactions.length + 1);
+    updatePickOwner(higherEntry, lowerOwner, transactionId);
+    updatePickOwner(lowerEntry, higherOwner, transactionId);
+    recordPickTrade(draft, {
+      id: transactionId,
+      kind: 'pick_swap',
+      source: source,
+      teams: [higherOwner, lowerOwner],
+      picks: [higherEntry.pick, lowerEntry.pick],
+      playerId: bridgePlayer.id,
+      playerName: bridgePlayer.cname,
+      playerFrom: playerFromTeam,
+      playerTo: playerFromTeam === higherOwner ? lowerOwner : higherOwner
+    });
+    return true;
+  }
+
+  function findUserPickSwap(draft, strategy) {
+    var mine = draft.draftOrder.filter(function(entry) { return entry.ownerTeam === STATE.careerTeam && !entry.tradeHistory.length; })[0];
+    if (!mine) return null;
+    var targets = draft.draftOrder.filter(function(entry) {
+      if (entry.ownerTeam === STATE.careerTeam || entry.tradeHistory.length) return false;
+      return strategy === 'move_up' ? entry.pick < mine.pick : entry.pick > mine.pick;
+    }).sort(function(a, b) {
+      var targetA = Math.abs(a.pick - mine.pick);
+      var targetB = Math.abs(b.pick - mine.pick);
+      return targetA - targetB || seededValue(draft.seed, 'user-target|' + a.pick) - seededValue(draft.seed, 'user-target|' + b.pick);
+    });
+    for (var i = 0; i < targets.length; i++) {
+      var target = targets[i];
+      if (Math.abs(target.pick - mine.pick) > 10) continue;
+      var higher = strategy === 'move_up' ? target : mine;
+      var lower = strategy === 'move_up' ? mine : target;
+      var bridgeTeam = lower.ownerTeam;
+      var gap = getDraftPickTradeValue(higher.pick) - getDraftPickTradeValue(lower.pick);
+      var player = closestTradePlayer(bridgeTeam, gap, draft, Math.max(4, gap * 0.72), gap * 1.28 + 4);
+      if (player) return { higher: higher, lower: lower, player: player, gap: gap };
+    }
+    return null;
+  }
+
+  function executeAiPickTrades(draft, limit) {
+    limit = Math.max(0, Number(limit) || 0);
+    var completed = 0;
+    var entries = draft.draftOrder.slice().sort(function(a, b) {
+      return seededValue(draft.seed, 'ai-pick|' + a.pick) - seededValue(draft.seed, 'ai-pick|' + b.pick);
+    });
+    for (var i = 0; i < entries.length && completed < limit; i++) {
+      var first = entries[i];
+      if (first.ownerTeam === STATE.careerTeam || first.tradeHistory.length) continue;
+      for (var j = i + 1; j < entries.length; j++) {
+        var second = entries[j];
+        if (second.ownerTeam === STATE.careerTeam || second.ownerTeam === first.ownerTeam || second.tradeHistory.length) continue;
+        var higher = first.pick < second.pick ? first : second;
+        var lower = first.pick < second.pick ? second : first;
+        if (lower.pick - higher.pick > 8) continue;
+        var gap = getDraftPickTradeValue(higher.pick) - getDraftPickTradeValue(lower.pick);
+        var player = closestTradePlayer(lower.ownerTeam, gap, draft, Math.max(4, gap * 0.76), gap * 1.24 + 3);
+        if (!player) continue;
+        if (seededValue(draft.seed, 'ai-accept|' + higher.pick + '|' + lower.pick) > 0.58) continue;
+        if (executePickSwap(draft, higher, lower, player, lower.ownerTeam, 'ai')) completed++;
+        break;
+      }
+    }
+  }
+
+  function executeAiPickAcquisition(draft) {
+    var entries = draft.draftOrder.slice().sort(function(a, b) {
+      return seededValue(draft.seed, 'ai-acquire-pick|' + a.pick) - seededValue(draft.seed, 'ai-acquire-pick|' + b.pick);
+    });
+    for (var i = 0; i < entries.length; i++) {
+      var entry = entries[i];
+      var seller = entry.ownerTeam;
+      if (entry.pick < 15 || seller === STATE.careerTeam || entry.tradeHistory.length) continue;
+      var sellerPlayer = closestTradePlayer(seller, 16, draft, 6, 30);
+      if (!sellerPlayer) continue;
+      var sellerPlayerValue = getDraftPlayerTradeValue(sellerPlayer);
+      var targetValue = getDraftPickTradeValue(entry.pick) + sellerPlayerValue;
+      var buyers = LEAGUE_TEAM_IDS.slice().filter(function(team) { return team !== seller && team !== STATE.careerTeam; });
+      buyers.sort(function(a, b) {
+        return seededValue(draft.seed, 'ai-buyer|' + entry.pick + '|' + a) - seededValue(draft.seed, 'ai-buyer|' + entry.pick + '|' + b);
+      });
+      for (var j = 0; j < buyers.length; j++) {
+        var buyer = buyers[j];
+        var buyerPlayer = closestTradePlayer(buyer, targetValue, draft, targetValue * 0.82, targetValue * 1.18);
+        if (!buyerPlayer) continue;
+        if (seededValue(draft.seed, 'ai-acquire-accept|' + entry.pick + '|' + buyer) > 0.52) continue;
+        if (!swapTradePlayers(seller, sellerPlayer, buyer, buyerPlayer, draft)) continue;
+        var transactionId = 'pick-trade-' + draft.seasonNum + '-' + (draft.pickTrades.transactions.length + 1);
+        updatePickOwner(entry, buyer, transactionId);
+        recordPickTrade(draft, {
+          id: transactionId,
+          kind: 'pick_acquisition',
+          source: 'ai',
+          teams: [seller, buyer],
+          picks: [entry.pick],
+          playerId: buyerPlayer.id,
+          playerName: buyerPlayer.cname,
+          playerFrom: buyer,
+          playerTo: seller,
+          returnedPlayerId: sellerPlayer.id,
+          returnedPlayerName: sellerPlayer.cname
+        });
+        return true;
+      }
+    }
+    return false;
+  }
+
+  function strategyLabel(strategy) {
+    if (strategy === 'move_up') return '尝试向上交易';
+    if (strategy === 'move_down') return '考虑向下交易';
+    return '保留当前签位';
+  }
+
+  window.setDraftPickTradeStrategy = function(strategy) {
+    var draft = ensureOffseasonDraftState();
+    if (draft.phase !== 'pick_trades' || draft.pickTrades.submitted) return;
+    if (['hold', 'move_up', 'move_down'].indexOf(strategy) < 0) return;
+    draft.pickTrades.strategy = strategy;
+    showDraftPickTradeScreen();
+  };
+
+  window.submitDraftPickTradeAdvice = function() {
+    var draft = ensureOffseasonDraftState();
+    var tradeState = draft.pickTrades;
+    if (draft.phase !== 'pick_trades' || tradeState.submitted) return;
+    tradeState.submitted = true;
+    var strategy = tradeState.strategy || 'hold';
+    if (strategy === 'hold') {
+      tradeState.result = '管理层采纳了保留建议：你的球队不会在本窗口主动交易首轮签。';
+    } else {
+      var offer = findUserPickSwap(draft, strategy);
+      if (!offer) {
+        tradeState.result = '管理层询价后没有找到价值匹配的方案，本轮保留现有签位。';
+      } else {
+        var profile = typeof getCareerProfile === 'function' ? getCareerProfile() : {};
+        var influence = (Number(profile.coachTrust) || 0) * 1.5 + (Number(profile.leadership) || 0);
+        var chance = Math.max(48, Math.min(88, Math.round(68 + influence)));
+        var accepted = seededValue(draft.seed, 'user-pick-advice|' + strategy + '|' + offer.higher.pick + '|' + offer.lower.pick) * 100 < chance;
+        if (accepted && executePickSwap(draft, offer.higher, offer.lower, offer.player, offer.lower.ownerTeam, 'user_advice')) {
+          var acquired = draft.draftOrder.filter(function(entry) { return entry.ownerTeam === STATE.careerTeam && entry.tradeHistory.length; })[0];
+          tradeState.result = '管理层采纳建议并完成交易，你的球队现持有首轮第 ' + acquired.pick + ' 顺位。';
+        } else {
+          tradeState.result = '管理层听取了建议，但认为对方报价过高，本轮保留现有签位。';
+        }
+      }
+    }
+    var aiBudget = Math.max(0, 3 - draft.pickTrades.transactions.length);
+    if (aiBudget && executeAiPickAcquisition(draft)) aiBudget--;
+    executeAiPickTrades(draft, aiBudget);
+    showDraftPickTradeScreen();
+    persistDraftProgress();
+  };
+
+  function renderPickTradeTransaction(transaction) {
+    var playerMove = getTeamName(transaction.playerFrom) + '送出 ' + transaction.playerName + ' 至 ' + getTeamName(transaction.playerTo);
+    if (transaction.returnedPlayerName) playerMove += '，换回 ' + transaction.returnedPlayerName;
+    var pickMove = transaction.kind === 'pick_acquisition'
+      ? getTeamName(transaction.teams[0]) + '送出首轮第 ' + transaction.picks[0] + ' 顺位'
+      : '首轮第 ' + transaction.picks[0] + ' 顺位 ↔ 第 ' + transaction.picks[1] + ' 顺位';
+    return '<div class="draft-trade-row"><div><strong>' + getTeamName(transaction.teams[0]) + ' ↔ ' + getTeamName(transaction.teams[1]) + '</strong>' +
+      '<span>' + pickMove + '</span><small>' + playerMove + '</small></div>' +
+      '<em>' + (transaction.source === 'user_advice' ? '你的建议' : '联盟交易') + '</em></div>';
+  }
+
+  window.showDraftPickTradeScreen = function() {
+    var draft = ensureOffseasonDraftState();
+    if (draft.phase !== 'pick_trades') {
+      beginOffseason();
+      return;
+    }
+    showScreen('screen-draft-trades');
+    var target = document.getElementById('draft-trades-content');
+    if (!target) return;
+    var tradeState = draft.pickTrades;
+    var myPicks = draft.draftOrder.filter(function(entry) { return entry.ownerTeam === STATE.careerTeam; });
+    var pickText = myPicks.length ? myPicks.map(function(entry) { return '首轮第 ' + entry.pick + ' 顺位'; }).join('、') : '当前没有首轮签';
+    var choices = ['hold', 'move_up', 'move_down'].map(function(strategy) {
+      var descriptions = {
+        hold: '不主动报价，锁定当前签位',
+        move_up: '用较低签位和球员报价更高签位',
+        move_down: '退后选秀并争取获得一名轮换球员'
+      };
+      return '<button type="button" class="draft-strategy-card' + (tradeState.strategy === strategy ? ' is-selected' : '') + '" onclick="setDraftPickTradeStrategy(\'' + strategy + '\')" ' + (tradeState.submitted ? 'disabled' : '') + '>' +
+        '<strong>' + strategyLabel(strategy) + '</strong><span>' + descriptions[strategy] + '</span></button>';
+    }).join('');
+    var transactions = tradeState.transactions.map(renderPickTradeTransaction).join('');
+    target.innerHTML = '<main class="draft-shell">' +
+      '<header class="draft-page-head"><div><span class="draft-kicker">PICK TRADE WINDOW</span><h1>选秀签交易</h1></div><span class="draft-year">仅限当年首轮</span></header>' +
+      '<section class="draft-trade-summary"><span>你的球队当前资产</span><strong>' + pickText + '</strong><small>签位归属一旦交易，将直接决定选秀大会由哪支球队选择。</small></section>' +
+      '<section class="draft-strategy-panel"><div class="draft-section-head"><h2>向管理层提出建议</h2><span>最终决定由球队做出</span></div>' + choices + '</section>' +
+      (tradeState.result ? '<p class="draft-trade-result" aria-live="polite">' + tradeState.result + '</p>' : '') +
+      '<section class="draft-trade-log"><div class="draft-section-head"><h2>本窗口成交</h2><span>' + tradeState.transactions.length + ' 笔</span></div>' +
+        (transactions || '<p class="draft-empty">提交建议后，联盟球队将同步完成选秀签交易。</p>') + '</section>' +
+      '<div class="draft-actions">' + (tradeState.submitted
+        ? '<button type="button" class="draft-action-primary" onclick="completeDraftPickTradeWindow()">关闭窗口，继续休赛期</button>'
+        : '<button type="button" class="draft-action-primary" onclick="submitDraftPickTradeAdvice()">提交给管理层</button>') + '</div>' +
+      '</main>';
+  };
+
+  window.completeDraftPickTradeWindow = function() {
+    var draft = ensureOffseasonDraftState();
+    if (draft.phase !== 'pick_trades' || !draft.pickTrades.submitted) return;
     draft.phase = 'offseason';
     persistDraftProgress();
     beginOffseason();
@@ -444,6 +760,7 @@
       STATE.career.draftHistory.push({
         seasonNum: draft.seasonNum,
         yearLabel: draft.yearLabel,
+        pickTrades: draft.pickTrades.transactions.slice(),
         picks: draft.picks.map(function(pick) {
           return {
             pick: pick.pick, team: pick.team, playerId: pick.playerId,

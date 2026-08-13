@@ -397,7 +397,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .season-zone{padding:8px 6px 4px;border-top:1px solid var(--border);font-size:10px;color:var(--text-muted);letter-spacing:.5px}
 .season-zone:first-child{padding-top:2px;border-top:none}
 .season-standings .st-row{margin-bottom:3px}
-@media (min-width:520px){.season-stats-grid{grid-template-columns:repeat(6,minmax(0,1fr))}.season-stat-val{font-size:20px}.season-best-stat{flex-basis:calc((100% - 25px)/6)}.season-best-stat strong{font-size:20px}}
+@media (min-width:520px){.season-stats-grid{grid-template-columns:repeat(6,minmax(0,1fr))}.season-stat-val{font-size:20px}.season-best-stat{flex-basis:calc((100% - 20px)/5)}.season-best-stat strong{font-size:20px}}
 .modal-overlay{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.45);display:flex;align-items:center;justify-content:center;padding:16px;animation:fadeIn .2s ease;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
 .modal-content{background:var(--bg);border:2px solid var(--border);border-radius:16px;width:100%;max-width:380px;max-height:80vh;overflow-y:auto;box-shadow:0 8px 48px rgba(0,0,0,0.25);animation:slideUp .25s ease}
 .season-team-modal{max-width:390px;max-height:78vh}
@@ -605,6 +605,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .mc-section:last-child{border-bottom:none}
 .mc-section-title{font-family:var(--font-display);font-size:13px;color:var(--orange);letter-spacing:1px;margin-bottom:6px}
 .mc-stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.mc-highs-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
 .mc-stat{text-align:center;background:var(--orange-bg);border-radius:8px;padding:6px 4px}
 .mc-stat-val{font-family:var(--font-display);font-size:20px;color:var(--text);line-height:1}
 .mc-stat-lbl{font-family:var(--font-body);font-size:9px;color:var(--text-dim);margin-top:2px}
@@ -633,6 +634,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .mc-tabs button:active{transform:scale(.98)}
 .mc-chip{display:inline-block;padding:4px 10px;border-radius:20px;font-family:var(--font-display);font-size:11px;background:var(--bg-card);border:2px solid var(--border)}
 .mc-chip-gold{border-color:var(--gold);color:var(--gold)}
+@media (min-width:520px){.mc-highs-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
 .card-award{display:inline-block;padding:4px 10px;border-radius:8px;font-family:var(--font-display);font-size:12px;background:var(--orange-dim);color:var(--orange)}
     .dot{width:14px;height:14px;border-radius:50%;display:inline-block;margin:1px 2px;flex-shrink:0}
     .dot-w{background:#2ec4b6;box-shadow:0 1px 3px rgba(46,196,182,0.3)}
@@ -1013,6 +1015,11 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   <!-- ====== 选秀抽签 ====== -->
   <div class="screen" id="screen-draft-lottery">
     <div id="draft-lottery-content"></div>
+  </div>
+
+  <!-- ====== 选秀签交易窗口 ====== -->
+  <div class="screen" id="screen-draft-trades">
+    <div id="draft-trades-content"></div>
   </div>
 
   <!-- ====== 选秀大会 ====== -->
@@ -5756,6 +5763,52 @@ function renderCalendar() {
   document.getElementById('game-list').innerHTML = htmlStr;
 }
 
+const SINGLE_GAME_HIGH_FIELDS = Object.freeze(['pts', 'reb', 'ast', 'stl', 'blk']);
+
+function createEmptySingleGameHighs() {
+  var highs = { games: 0 };
+  SINGLE_GAME_HIGH_FIELDS.forEach(function(field) { highs[field] = 0; });
+  return highs;
+}
+
+function getSingleGameHighsFromGames(games) {
+  var highs = createEmptySingleGameHighs();
+  (Array.isArray(games) ? games : []).forEach(function(game) {
+    if (!game || !game.stats) return;
+    highs.games++;
+    SINGLE_GAME_HIGH_FIELDS.forEach(function(field) {
+      highs[field] = Math.max(highs[field], Math.max(0, Number(game.stats[field]) || 0));
+    });
+  });
+  return highs;
+}
+
+function mergeSingleGameHighs(highSets) {
+  var merged = createEmptySingleGameHighs();
+  (Array.isArray(highSets) ? highSets : []).forEach(function(highs) {
+    if (!highs || typeof highs !== 'object') return;
+    merged.games += Math.max(0, Math.floor(Number(highs.games) || 0));
+    SINGLE_GAME_HIGH_FIELDS.forEach(function(field) {
+      merged[field] = Math.max(merged[field], Math.max(0, Number(highs[field]) || 0));
+    });
+  });
+  return merged;
+}
+
+function getCurrentSeasonSingleGameHighs() {
+  return getSingleGameHighsFromGames((STATE.season && STATE.season.games) || []);
+}
+
+function getCareerSingleGameHighs() {
+  var seasons = (STATE.career && STATE.career.seasons) || [];
+  var archivedHighs = seasons.map(function(season) {
+    return season && season.singleGameHighs;
+  }).filter(Boolean);
+  var latestSeasonAlreadyArchived = !!(STATE._careerSaved && seasons.length && seasons[seasons.length - 1].singleGameHighs);
+  if (!latestSeasonAlreadyArchived) archivedHighs.push(getCurrentSeasonSingleGameHighs());
+  return mergeSingleGameHighs(archivedHighs);
+}
+
 function renderSeasonInsights() {
   var root = document.getElementById('game-list');
   if (!root || !STATE.season) return;
@@ -5785,30 +5838,21 @@ function renderSeasonInsights() {
     return '<div class="season-stat"><span class="season-stat-val">' + item[1] + '</span><span class="season-stat-lbl">' + item[0] + '</span></div>';
   }).join('');
 
-  var bestGame = null;
-  var bestScore = -1;
-  (STATE.season.games || []).forEach(function(game) {
-    if (!game.stats) return;
-    var score = (game.stats.pts || 0) + (game.stats.reb || 0) + (game.stats.ast || 0);
-    if (score > bestScore) { bestScore = score; bestGame = game; }
-  });
-  var bestHtml = '';
-  if (bestGame) {
-    var bs = bestGame.stats || {};
-    var bestResult = bestGame.result || {};
-    bestHtml = '<div class="season-panel season-best">' +
-      '<div class="season-best-title">🔥 赛季最佳表现</div>' +
-      '<div class="season-best-opponent">对阵 ' + getTeamName(bestGame.game.opponent) + ' · ' +
-        (bestResult.won ? '胜' : '负') + ' ' + (bestResult.scoreA || 0) + '-' + (bestResult.scoreB || 0) + '</div>' +
-      '<div class="season-best-stats">' +
-        '<div class="season-best-stat"><strong>' + (bs.pts || 0) + '</strong><span>得分</span></div>' +
-        '<div class="season-best-stat"><strong>' + (bs.reb || 0) + '</strong><span>篮板</span></div>' +
-        '<div class="season-best-stat"><strong>' + (bs.ast || 0) + '</strong><span>助攻</span></div>' +
-        '<div class="season-best-stat"><strong>' + Math.round(bs.stl || 0) + '</strong><span>抢断</span></div>' +
-        '<div class="season-best-stat"><strong>' + Math.round(bs.blk || 0) + '</strong><span>盖帽</span></div>' +
-      '</div>' +
-    '</div>';
-  }
+  var seasonHighs = getCurrentSeasonSingleGameHighs();
+  var highValue = function(field) { return seasonHighs.games > 0 ? seasonHighs[field] : '—'; };
+  var bestHtml = '<div class="season-panel season-best" aria-label="本赛季常规赛单场最高纪录">' +
+    '<div class="season-panel-head">' +
+      '<div><div class="season-best-title">本赛季单场最高</div><div class="season-panel-sub">常规赛五项个人纪录</div></div>' +
+      '<span class="season-panel-meta">' + (seasonHighs.games > 0 ? '已统计 ' + seasonHighs.games + ' 场' : '等待首场比赛') + '</span>' +
+    '</div>' +
+    '<div class="season-best-stats">' +
+      '<div class="season-best-stat"><strong>' + highValue('pts') + '</strong><span>得分</span></div>' +
+      '<div class="season-best-stat"><strong>' + highValue('reb') + '</strong><span>篮板</span></div>' +
+      '<div class="season-best-stat"><strong>' + highValue('ast') + '</strong><span>助攻</span></div>' +
+      '<div class="season-best-stat"><strong>' + highValue('stl') + '</strong><span>抢断</span></div>' +
+      '<div class="season-best-stat"><strong>' + highValue('blk') + '</strong><span>盖帽</span></div>' +
+    '</div>' +
+  '</div>';
 
   var seasonScreen = document.getElementById('screen-season');
   var seasonScreenActive = seasonScreen && seasonScreen.classList.contains('active');
@@ -7006,6 +7050,8 @@ function renderMyCard(isFinal, activeTab) {
   const ftPct = avg.fta > 0 ? (avg.ftm / avg.fta * 100).toFixed(1) : '—';
   const gamesPlayed = STATE.season.schedule?.filter(g => g.simulated).length || 0;
   const careerAvg = getMyCardCareerStats();
+  const careerHighs = getCareerSingleGameHighs();
+  const careerHighValue = function(field) { return careerHighs.games > 0 ? careerHighs[field] : '—'; };
   const careerPct = careerAvg.fga > 0 ? (careerAvg.fgm / careerAvg.fga * 100).toFixed(1) : '—';
   const careerThreePct = careerAvg.threeA > 0 ? (careerAvg.threeM / careerAvg.threeA * 100).toFixed(1) : '—';
   const careerFtPct = careerAvg.fta > 0 ? (careerAvg.ftm / careerAvg.fta * 100).toFixed(1) : '—';
@@ -7109,6 +7155,17 @@ function renderMyCard(isFinal, activeTab) {
         <div class="mc-stat"><span class="mc-stat-val">${careerAvg.tov}</span><span class="mc-stat-lbl">失误</span></div>
       </div>
       <div class="mc-pct-line">投篮 ${careerAvg.fgm}-${careerAvg.fga} (${careerPct}%) · 三分 ${careerAvg.threeM}-${careerAvg.threeA} (${careerThreePct}%) · 罚球 ${careerAvg.ftm}-${careerAvg.fta} (${careerFtPct}%)</div>
+    </div>
+
+    <div class="mc-section" aria-label="职业生涯常规赛单场最高纪录">
+      <div class="mc-section-title">🏔️ 职业生涯单场最高 · 常规赛</div>
+      <div class="mc-stats-grid mc-highs-grid">
+        <div class="mc-stat"><span class="mc-stat-val">${careerHighValue('pts')}</span><span class="mc-stat-lbl">得分</span></div>
+        <div class="mc-stat"><span class="mc-stat-val">${careerHighValue('reb')}</span><span class="mc-stat-lbl">篮板</span></div>
+        <div class="mc-stat"><span class="mc-stat-val">${careerHighValue('ast')}</span><span class="mc-stat-lbl">助攻</span></div>
+        <div class="mc-stat"><span class="mc-stat-val">${careerHighValue('stl')}</span><span class="mc-stat-lbl">抢断</span></div>
+        <div class="mc-stat"><span class="mc-stat-val">${careerHighValue('blk')}</span><span class="mc-stat-lbl">盖帽</span></div>
+      </div>
     </div>
 
     <div class="mc-section">
@@ -7434,6 +7491,7 @@ function saveCurrentSeasonToCareer() {
     seasonNum: c.seasonCount, team: STATE.careerTeam, ovr: STATE.finalOVR,
     wins: STATE.season.wins || 0, losses: STATE.season.losses || 0,
     playerStats: JSON.parse(JSON.stringify(sp)),
+    singleGameHighs: getCurrentSeasonSingleGameHighs(),
     events: JSON.parse(JSON.stringify((STATE.season.events && STATE.season.events.storyTimeline) || [])),
     playoffResult: playoffResult || (STATE.season.playoffBracket ? '季后赛' : '未晋级'),
     awards: honorList,
@@ -9104,6 +9162,8 @@ function manualClearSave(slot) {
 function renderAfterSaveLoad(targetScreen) {
   if (targetScreen === 'screen-draft-lottery' && typeof showOffseasonDraftLottery === 'function') {
     showOffseasonDraftLottery();
+  } else if (targetScreen === 'screen-draft-trades' && typeof showDraftPickTradeScreen === 'function') {
+    showDraftPickTradeScreen();
   } else if (targetScreen === 'screen-draft' && typeof showOffseasonDraftScreen === 'function') {
     showOffseasonDraftScreen();
   } else if (targetScreen === 'screen-roster-review' && typeof showRosterReview === 'function') {
