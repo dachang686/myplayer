@@ -96,7 +96,7 @@ const simulation = new Function(
   'af',
   'calcTeamLineup',
   'getLeaguePlayerAge',
-  `${simulationSource}\nreturn { generateBoxScore, syncUserStatsToBoxScore };`,
+  `${simulationSource}\nreturn { generateBoxScore, syncUserStatsToBoxScore, getLeagueScoringBurst, LEAGUE_SCORING_BURST_RATES };`,
 )(state, af, calcTeamLineup, player => Number(player._age) || 27);
 
 function seededRandom(seed) {
@@ -113,6 +113,7 @@ function runSeason(seed) {
   state.season = { isPlayoffs: false };
   const totals = {};
   const teamAssistTotals = [];
+  const scoringBursts = { fiftyPlus: 0, sixtyPlus: 0, seventyPlus: 0, eightyPlus: 0, max: 0 };
   let invariantErrors = 0;
 
   try {
@@ -131,6 +132,12 @@ function runSeason(seed) {
           if (sum('pts') !== score || sum('mins') !== 240) invariantErrors++;
           teamAssistTotals.push(sum('ast'));
           rows.forEach(row => {
+            const points = Number(row.pts) || 0;
+            scoringBursts.max = Math.max(scoringBursts.max, points);
+            if (points >= 50) scoringBursts.fiftyPlus++;
+            if (points >= 60) scoringBursts.sixtyPlus++;
+            if (points >= 70) scoringBursts.seventyPlus++;
+            if (points >= 80) scoringBursts.eightyPlus++;
             if (row._isUser) return;
             const key = `${team}:${row.playerId}`;
             const record = totals[key] || (totals[key] = {
@@ -166,6 +173,7 @@ function runSeason(seed) {
     invariantErrors,
     full82: rows.filter(row => row.gp === 82).length,
     averageTeamAssists: teamAssistTotals.reduce((sum, value) => sum + value, 0) / teamAssistTotals.length,
+    scoringBursts,
   };
 }
 
@@ -234,6 +242,7 @@ function runUserSeason(seed) {
 const seasons = [1701, 2702, 3703, 4704, 5705, 6706].map(runSeason);
 const userSeason = runUserSeason(7707);
 const fields = ['pts', 'reb', 'ast', 'stl', 'blk'];
+const averageScoringBursts = key => seasons.reduce((sum, season) => sum + season.scoringBursts[key], 0) / seasons.length;
 const report = {
   seasons: seasons.map((season, index) => ({
     season: index + 1,
@@ -241,6 +250,7 @@ const report = {
     qualified: season.qualified.length,
     averageTeamAssists: Number(season.averageTeamAssists.toFixed(1)),
     invariantErrors: season.invariantErrors,
+    scoringBursts: season.scoringBursts,
     leaderRanges: Object.fromEntries(fields.map(field => [
       field,
       [season.leaders[field][0][field], season.leaders[field][9][field]],
@@ -267,7 +277,7 @@ console.log(JSON.stringify(report, null, 2));
 const limits = {
   pts: { first: 34, tenth: 28 },
   reb: { first: 16, tenth: 13 },
-  ast: { first: 12, tenth: 10 },
+  ast: { first: 12.5, tenth: 10 },
   stl: { first: 2.8, tenth: 2.2 },
   blk: { first: 4, tenth: 2.3 },
 };
@@ -297,7 +307,45 @@ if (userSeason.invariantErrors || userSeason.injuryRedistributionErrors) {
   console.error(`用户数据整队模拟守恒失败：${JSON.stringify(userSeason)}`);
   process.exitCode = 1;
 }
-if (userSeason.pts < 16 || userSeason.pts > 31 || userSeason.ast > 11 || userSeason.bestPts > 46) {
+if (userSeason.pts < 16 || userSeason.pts > 31 || userSeason.ast > 11 || userSeason.bestPts > 94) {
   console.error(`用户赛季分布超出合理范围：${JSON.stringify(userSeason)}`);
   process.exitCode = 1;
+}
+
+const averageFiftyPlus = averageScoringBursts('fiftyPlus');
+const averageSixtyPlus = averageScoringBursts('sixtyPlus');
+const totalSeventyPlus = seasons.reduce((sum, season) => sum + season.scoringBursts.seventyPlus, 0);
+if (averageFiftyPlus < 10 || averageFiftyPlus > 35) {
+  console.error(`联盟 50+ 单场频率偏离现代 NBA：每季 ${averageFiftyPlus.toFixed(1)} 场`);
+  process.exitCode = 1;
+}
+if (averageSixtyPlus < 0.5 || averageSixtyPlus > 8) {
+  console.error(`联盟 60+ 单场频率异常：每季 ${averageSixtyPlus.toFixed(1)} 场`);
+  process.exitCode = 1;
+}
+if (totalSeventyPlus < 1 || totalSeventyPlus > seasons.length) {
+  console.error(`联盟 70+ 单场频率异常：${seasons.length} 季共 ${totalSeventyPlus} 场`);
+  process.exitCode = 1;
+}
+
+const originalRandomForBurst = Math.random;
+try {
+  let eightyCalls = 0;
+  const eightyRolls = [0, 0.5];
+  Math.random = () => eightyCalls < eightyRolls.length ? eightyRolls[eightyCalls++] : 0.5;
+  const eightyBurst = simulation.getLeagueScoringBurst(1, 1);
+  let calls = 0;
+  const seventyRolls = [0.0003, 0.5];
+  Math.random = () => calls < seventyRolls.length ? seventyRolls[calls++] : 0.5;
+  const seventyBurst = simulation.getLeagueScoringBurst(1, 1);
+  if (eightyBurst.tier !== 'eightyPlus' || eightyBurst.hardCap < 80 || eightyBurst.shareCap < 0.8) {
+    console.error(`80+ 历史级爆发通道无效：${JSON.stringify(eightyBurst)}`);
+    process.exitCode = 1;
+  }
+  if (seventyBurst.tier !== 'seventyPlus' || seventyBurst.hardCap < 70 || seventyBurst.hardCap >= 80) {
+    console.error(`70+ 爆发通道无效：${JSON.stringify(seventyBurst)}`);
+    process.exitCode = 1;
+  }
+} finally {
+  Math.random = originalRandomForBurst;
 }

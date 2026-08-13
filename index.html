@@ -4849,6 +4849,42 @@ function allocateLeagueCountingTotal(total, weights, caps) {
   return allocated;
 }
 
+const LEAGUE_SCORING_BURST_RATES = Object.freeze({
+  hot: 0.045,
+  seventyPlus: 0.0012,
+  eightyPlus: 0.00025,
+});
+
+/**
+ * 单场得分爆发分层。70+ 与 80+ 只对顶级得分手开放，概率同时受总评与进攻能力压低。
+ * 这里返回的是允许冲击对应分数段的比赛状态，最终得分仍由球队总分和全队球权共同分配。
+ */
+function getLeagueScoringBurst(star, scoringSkill) {
+  var eligibility = Math.pow(leagueStatClamp(star * scoringSkill, 0, 1), 2.2);
+  var roll = Math.random();
+  var eightyChance = LEAGUE_SCORING_BURST_RATES.eightyPlus * eligibility;
+  var seventyChance = LEAGUE_SCORING_BURST_RATES.seventyPlus * eligibility;
+
+  if (roll < eightyChance) {
+    return { tier: 'eightyPlus', gameForm: 5.8 + Math.random() * 1.2, shareCap: 0.86, hardCap: 94 };
+  }
+  if (roll < eightyChance + seventyChance) {
+    return { tier: 'seventyPlus', gameForm: 4.0 + Math.random() * 0.9, shareCap: 0.72, hardCap: 79 };
+  }
+  if (roll < eightyChance + seventyChance + LEAGUE_SCORING_BURST_RATES.hot) {
+    return {
+      tier: 'hot',
+      gameForm: 1.65 + Math.random() * 0.65 + eligibility * 0.40,
+      shareCap: 0.46 + eligibility * 0.15,
+      hardCap: 58 + Math.round(eligibility * 14),
+    };
+  }
+  if (Math.random() < 0.08) {
+    return { tier: 'cold', gameForm: 0.68 + Math.random() * 0.16, shareCap: null, hardCap: 40 };
+  }
+  return { tier: 'normal', gameForm: 0.84 + Math.random() * 0.32, shareCap: null, hardCap: 40 };
+}
+
 /** 用球员最擅长的进攻行为评估影响力；位置不限制投射、突破、扣篮或背身。 */
 function getLeagueOffenseProfile(player) {
   function skill(key) { return af(parseInt(player[key]) || 50); }
@@ -4987,14 +5023,12 @@ function generateBoxScore(teamA, teamB, totalA, totalB) {
     var scoreWeights = players.map(function(player, index) {
       var ovr = parseInt(player.ovr) || 70;
       var star = leagueStatClamp((ovr - 82) / 17, 0, 1);
-      var hot = Math.random() < 0.055;
-      var cold = !hot && Math.random() < 0.08;
-      var gameForm = hot ? 1.38 + Math.random() * 0.28 : (cold ? 0.68 + Math.random() * 0.16 : 0.84 + Math.random() * 0.32);
+      var burst = getLeagueScoringBurst(star, offSkill[index]);
       var roleUsage = roleRanks[index] < 5 ? 1.08 : leagueStatClamp(0.88 - (roleRanks[index] - 5) * 0.055, 0.55, 0.88);
       var starUsage = 1 + Math.pow(star * offSkill[index], 2) * 0.90;
-      var shareCap = hot ? 0.37 : (0.235 + star * 0.065);
-      scoreCaps[index] = Math.max(14, Math.min(hot ? 46 : 36, Math.round(totalPts * shareCap)));
-      return minutes[index] * (0.10 + Math.pow(offSkill[index], 1.65) * 1.55) * roleUsage * starUsage * profiles[index].scoring * gameForm;
+      var shareCap = burst.shareCap == null ? (0.235 + star * 0.065) : burst.shareCap;
+      scoreCaps[index] = Math.max(14, Math.min(burst.hardCap, Math.round(totalPts * shareCap)));
+      return minutes[index] * (0.10 + Math.pow(offSkill[index], 1.65) * 1.55) * roleUsage * starUsage * profiles[index].scoring * burst.gameForm;
     });
     var points = allocateLeagueCountingTotal(totalPts, scoreWeights, scoreCaps);
 
