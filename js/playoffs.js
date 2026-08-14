@@ -41,6 +41,7 @@ function renderPlayInUI() {
   let nextPlayInGame = null;
   
   let h = `<div class="playin-container" style="padding:8px 0;">`;
+  h += typeof renderSeasonPhaseTabs === 'function' ? renderSeasonPhaseTabs('playoffs') : '';
   h += `<div style="text-align:center;margin-bottom:12px;">
     <div style="font-size:14px;color:var(--text-dim);">🔥 附加赛</div>
     <div style="font-size:20px;font-weight:800;">${getConference(STATE.careerTeam) === 'SOUTH' ? '南方' : '北方'} Play-In</div>
@@ -644,6 +645,7 @@ function renderPlayoffBracketUI() {
   
   const pi = STATE.season.playInState;
   let h = `<div class="bv-wrap">`;
+  h += typeof renderSeasonPhaseTabs === 'function' ? renderSeasonPhaseTabs('playoffs') : '';
   
   // ===== 分区切换标签 =====
   const myConfName = bracket.conf === 'SOUTH' ? '南方' : '北方';

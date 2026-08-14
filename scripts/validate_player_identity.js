@@ -108,6 +108,22 @@ if (!ageMatch) {
   });
 }
 
+const teamAgeHelperStart = html.indexOf('function getSeasonTeamPlayerAge');
+const teamAgeHelperEnd = html.indexOf('function showSeasonTeamModal', teamAgeHelperStart);
+if (teamAgeHelperStart < 0 || teamAgeHelperEnd < 0) {
+  failures.push('球队阵容缺少统一年龄读取逻辑');
+} else {
+  const getSeasonTeamPlayerAge = new Function(
+    'STATE', 'getLeaguePlayerAge',
+    `${html.slice(teamAgeHelperStart, teamAgeHelperEnd)}\nreturn getSeasonTeamPlayerAge;`,
+  )({ career: { currentAge: 29 } }, player => player._testAge || 0);
+  if (getSeasonTeamPlayerAge({ _isUser: true }) !== 29) failures.push('球队阵容中的玩家年龄读取错误');
+  if (getSeasonTeamPlayerAge({ _testAge: 34 }) !== 34) failures.push('球队阵容中的联盟球员年龄读取错误');
+}
+if (!html.includes('class="season-team-age-cell"') || !html.includes('<th scope="col" title="球员年龄">年龄</th>') || !html.includes("' · ' + age + '岁'")) {
+  failures.push('球队阵容或球员统计列表没有输出年龄');
+}
+
 let baselineCompared = false;
 try {
   const trackedPlayerFiles = childProcess.execFileSync('git', ['ls-tree', '-r', '--name-only', 'HEAD', 'js/data'], {

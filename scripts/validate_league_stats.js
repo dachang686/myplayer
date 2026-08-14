@@ -17,9 +17,9 @@ inlineScripts.forEach((match, index) => {
 });
 
 function validateHistoricCelebrationUi(source) {
-  const start = source.indexOf('/** 四双、五双庆祝事件按顺序展示');
+  const start = source.indexOf('/** 70+、80+、四双、五双等历史级比赛按顺序庆祝');
   const end = source.indexOf('/** 将一场联盟比赛的 Box Score 累计到球员赛季统计。', start);
-  if (start < 0 || end < 0) throw new Error('无法定位四双/五双庆祝逻辑');
+  if (start < 0 || end < 0) throw new Error('无法定位历史级单场庆祝逻辑');
 
   const elements = {};
   let focusCount = 0;
@@ -66,7 +66,34 @@ function validateHistoricCelebrationUi(source) {
   if (!quintupleOverlay.innerHTML.includes('极限五双') || !quintupleOverlay.innerHTML.includes('5×10') || !quintupleOverlay.innerHTML.includes('铭记这一夜')) {
     throw new Error('五双庆祝画面缺少标题、标记或关闭操作');
   }
-  if (focusCount !== 2) throw new Error('庆祝画面的主要操作未自动获得焦点');
+  harness.closeHistoricStatCelebration();
+
+  const seventyRow = { name: '七十分球员', playerId: 'seventy', pts: 70, reb: 8, ast: 6, stl: 2, blk: 1 };
+  const seventyQueued = harness.queueHistoricStatCelebrations({ CCC: [seventyRow] }, 'seventy-game', { includeUser: false });
+  const seventyOverlay = elements['historic-stat-celebration'];
+  if (seventyQueued !== 1 || !seventyOverlay || !seventyOverlay.className.includes('is-seventy')) {
+    throw new Error('70+ 得分庆祝主题未正确生成');
+  }
+  if (!seventyOverlay.innerHTML.includes('传奇得分之夜') || !seventyOverlay.innerHTML.includes('70+')) {
+    throw new Error('70+ 得分庆祝画面缺少标题或标记');
+  }
+  harness.closeHistoricStatCelebration();
+
+  const eightyRow = { name: '八十分球员', playerId: 'eighty', pts: 84, reb: 7, ast: 5, stl: 1, blk: 0 };
+  const eightyQueued = harness.queueHistoricStatCelebrations({ DDD: [eightyRow] }, 'eighty-game', { includeUser: false });
+  const eightyOverlay = elements['historic-stat-celebration'];
+  if (eightyQueued !== 1 || !eightyOverlay || !eightyOverlay.className.includes('is-eighty')) {
+    throw new Error('80+ 得分庆祝主题未正确生成');
+  }
+  if (!eightyOverlay.innerHTML.includes('史诗得分之夜') || !eightyOverlay.innerHTML.includes('80+')) {
+    throw new Error('80+ 得分庆祝画面缺少标题或标记');
+  }
+  harness.closeHistoricStatCelebration();
+
+  if (harness.getHistoricStatAchievement({ pts: 69, reb: 9, ast: 9, stl: 2, blk: 1 }) !== null) {
+    throw new Error('69 分普通比赛不应触发历史级庆祝');
+  }
+  if (focusCount !== 4) throw new Error('庆祝画面的主要操作未自动获得焦点');
 }
 
 validateHistoricCelebrationUi(indexSource);

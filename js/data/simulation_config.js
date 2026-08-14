@@ -16,6 +16,9 @@ const SIM_CONFIG = {
     /** 自由建人随机可分配点数（含端点） */
     POINT_BUILD_MIN_POINTS: 300,
     POINT_BUILD_MAX_POINTS: 360,
+    /** 新秀创建阶段上限；进入生涯后仍可成长到 ATTR_MAX */
+    STARTING_ATTR_MAX: 90,
+    STARTING_OVR_MAX: 90,
     /** Classic 模式重roll次数 */
     CLASSIC_REROLLS: 3,
     /** 每支球队 roster 展示上限（不够的用实际人数） */
