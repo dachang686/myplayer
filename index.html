@@ -383,6 +383,11 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .cal-team-alert-player{min-width:0;overflow:hidden;color:var(--text);font-size:10px;font-weight:700;text-overflow:ellipsis;white-space:nowrap}
 .cal-team-alert-player small{margin-left:5px;color:var(--text-muted);font-size:8px;font-weight:600}
 .cal-team-alert-status{color:var(--red);font-size:9px;font-weight:650;white-space:nowrap}
+.bv-po-availability{margin:6px 0 8px;border-color:var(--border);background:var(--bg-card)}
+.bv-po-availability .cal-team-alert-icon{background:var(--orange-bg)}
+.bv-po-availability .cal-team-alert-list{border-top-color:var(--border-light)}
+.bv-po-availability .cal-team-alert-item.is-suspension .cal-team-alert-status{color:var(--gold)}
+.bv-po-availability .cal-team-alert-item.is-injury .cal-team-alert-status{color:var(--red)}
 .cal-footer{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 2px 4px}
 .cal-footer-summary{flex:0 0 auto;display:flex;align-items:center;gap:10px;white-space:nowrap}
 .cal-team-record{font-family:var(--font-display);font-size:11px;color:var(--text-dim)}
@@ -3545,11 +3550,14 @@ function previewTeamRosterModal(team, onConfirmSign, offerYears) {
     var pOvr = parseInt(p.ovr) || 0;
     var pPos = p.posCn || p.pos || '—';
     var pName = p.cname;
+    var pAge = getSeasonTeamPlayerAge(p);
+    var ageText = pAge > 0 ? pAge + '岁' : '—';
     var hs = typeof getPlayerHeadshotStyle === 'function' ? getPlayerHeadshotStyle(p.id, 26) : '';
     var imgHtml = hs ? '<div style="' + hs + ';border-radius:50%;border:1px solid var(--border);width:26px;height:26px;flex-shrink:0;"></div>' : '<div style="width:26px;height:26px;border-radius:50%;background:var(--border);flex-shrink:0;"></div>';
     rosterHtml += '<div style="display:flex;align-items:center;gap:6px;padding:5px 6px;border-bottom:1px solid var(--border-light);font-size:12px;">'
       + imgHtml
-      + '<span style="width:36px;font-size:11px;color:var(--text-dim);">' + pPos + '</span>'
+      + '<span style="width:36px;font-size:11px;color:var(--text-dim);flex-shrink:0;">' + pPos + '</span>'
+      + '<span style="width:30px;text-align:right;font-size:10px;color:var(--text-muted);flex-shrink:0;">' + ageText + '</span>'
       + '<span style="flex:1;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + pName + '</span>'
       + '<span style="font-family:var(--font-display);font-weight:700;font-size:13px;color:var(--orange);">' + pOvr + '</span>'
       + '</div>';
@@ -3561,11 +3569,14 @@ function previewTeamRosterModal(team, onConfirmSign, offerYears) {
       var pOvr = parseInt(p.ovr) || 0;
       var pPos = p.posCn || p.pos || '—';
       var pName = p.cname;
+      var pAge = getSeasonTeamPlayerAge(p);
+      var ageText = pAge > 0 ? pAge + '岁' : '—';
       var hs = typeof getPlayerHeadshotStyle === 'function' ? getPlayerHeadshotStyle(p.id, 24) : '';
       var imgHtml = hs ? '<div style="' + hs + ';border-radius:50%;border:1px solid var(--border);width:24px;height:24px;flex-shrink:0;"></div>' : '<div style="width:24px;height:24px;border-radius:50%;background:var(--border);flex-shrink:0;"></div>';
       rosterHtml += '<div style="display:flex;align-items:center;gap:6px;padding:4px 6px;border-bottom:1px solid var(--border-light);font-size:11px;color:var(--text-dim);">'
         + imgHtml
-        + '<span style="width:36px;font-size:10px;">' + pPos + '</span>'
+        + '<span style="width:36px;font-size:10px;flex-shrink:0;">' + pPos + '</span>'
+        + '<span style="width:30px;text-align:right;font-size:10px;color:var(--text-muted);flex-shrink:0;">' + ageText + '</span>'
         + '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + pName + '</span>'
         + '<span style="font-family:var(--font-display);font-weight:600;">' + pOvr + '</span>'
         + '</div>';
@@ -4969,11 +4980,9 @@ function refreshNpcShortTermForm(profile, player) {
 }
 
 /** NPC 伤病以连续缺阵呈现，另有小概率轮休；季后赛只取消轮休，不会清除已有伤病。 */
-function shouldNpcPlayLeagueGame(team, player, roleRank) {
+function shouldNpcPlayLeagueGame(team, player, roleRank, careerTeamGameNumber) {
   var profile = getNpcSeasonProfile(team, player);
-  var careerTeamGameNumber = team === STATE.careerTeam
-    ? (STATE.season.schedule || []).filter(function(game) { return !!game.simulated; }).length + 1
-    : 0;
+  careerTeamGameNumber = Number(careerTeamGameNumber) || 0;
   refreshNpcShortTermForm(profile, player);
   if (profile.injuryGamesLeft > 0) {
     profile.injuryGamesLeft--;
@@ -5234,9 +5243,16 @@ function buildLeagueGameRotation(team) {
   var unique = [];
   ordered.forEach(function(player) { if (player && unique.indexOf(player) < 0) unique.push(player); });
   var user = unique.find(function(player) { return !!player._isUser; });
+  var careerTeamGameNumber = 0;
+  if (team === STATE.careerTeam && STATE.season) {
+    var completedRegularGames = (STATE.season.schedule || []).filter(function(game) { return !!game.simulated; }).length;
+    var previousAvailabilityGame = Math.max(completedRegularGames, Number(STATE.season._careerTeamAvailabilityGame) || 0);
+    careerTeamGameNumber = previousAvailabilityGame + 1;
+    STATE.season._careerTeamAvailabilityGame = careerTeamGameNumber;
+  }
   var available = [];
   unique.forEach(function(player, roleRank) {
-    if (player._isUser || shouldNpcPlayLeagueGame(team, player, roleRank)) available.push(player);
+    if (player._isUser || shouldNpcPlayLeagueGame(team, player, roleRank, careerTeamGameNumber)) available.push(player);
   });
   var targetSize = 9 + (Math.random() < 0.68 ? 1 : (Math.random() < 0.70 ? 2 : 0));
   var selected = available.slice(0, targetSize);
@@ -5968,11 +5984,12 @@ function getCareerTeamInjuryNotices() {
   if (!STATE.season || !STATE.careerTeam) return [];
   var profiles = STATE.season._npcSeasonProfiles || {};
   var completedGames = (STATE.season.schedule || []).filter(function(game) { return !!game.simulated; }).length;
+  var latestCareerTeamGame = Math.max(completedGames, Number(STATE.season._careerTeamAvailabilityGame) || 0);
   return (LEAGUE_PLAYER_DATA[STATE.careerTeam] || []).map(function(player) {
     var profile = profiles[STATE.careerTeam + ':' + (player.id || 'unknown')];
     if (!profile) return null;
     var gamesLeft = Math.max(0, Number(profile.injuryGamesLeft) || 0);
-    var missedLatestGame = completedGames > 0 && Number(profile.lastMissedCareerTeamGame) === completedGames;
+    var missedLatestGame = latestCareerTeamGame > 0 && Number(profile.lastMissedCareerTeamGame) === latestCareerTeamGame;
     if (gamesLeft <= 0 && !missedLatestGame) return null;
     return {
       id: player.id || '',

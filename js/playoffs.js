@@ -623,6 +623,63 @@ function renderPlayoffTreeSeries(confBracket, round, seriesIdx) {
   '</div>';
 }
 
+function renderPlayoffAvailabilityNotices() {
+  var escapeText = typeof escapeCalendarText === 'function'
+    ? escapeCalendarText
+    : function(value) { return String(value == null ? '' : value); };
+  var notices = [];
+  var events = STATE.season && STATE.season.events ? STATE.season.events : {};
+  var latestCareerTeamGame = Number(STATE.season && STATE.season._careerTeamAvailabilityGame) || 0;
+  var lastAbsenceIsLatest = latestCareerTeamGame > 0 && Number(events.lastMissedCareerTeamGame) === latestCareerTeamGame;
+  var playerName = typeof getMyPlayerDisplayName === 'function' ? getMyPlayerDisplayName() : '我的球员';
+
+  if ((Number(events.suspensionGamesLeft) || 0) > 0 || (lastAbsenceIsLatest && events.lastPlayoffAbsenceType === 'suspension')) {
+    var suspensionLeft = Math.max(0, Number(events.suspensionGamesLeft) || 0);
+    notices.push({
+      type: 'suspension',
+      name: playerName,
+      meta: '我的球员 · 禁赛',
+      status: suspensionLeft > 0 ? '还需禁赛 ' + suspensionLeft + ' 场' : '本场禁赛，下一场恢复'
+    });
+  }
+  if ((Number(events.injuryGamesLeft) || 0) > 0 || (lastAbsenceIsLatest && events.lastPlayoffAbsenceType === 'injury')) {
+    var injuryLeft = Math.max(0, Number(events.injuryGamesLeft) || 0);
+    notices.push({
+      type: 'injury',
+      name: playerName,
+      meta: '我的球员 · 伤病',
+      status: injuryLeft > 0 ? '预计还需休战 ' + injuryLeft + ' 场' : '本场因伤缺阵，预计下场复出'
+    });
+  }
+
+  var teammateInjuries = typeof getCareerTeamInjuryNotices === 'function' ? getCareerTeamInjuryNotices() : [];
+  teammateInjuries.forEach(function(notice) {
+    var meta = ['队友', notice.pos, notice.ovr ? 'OVR ' + notice.ovr : ''].filter(Boolean).join(' · ');
+    notices.push({
+      type: 'injury',
+      name: notice.name,
+      meta: meta,
+      status: notice.gamesLeft > 0 ? '预计再缺席 ' + notice.gamesLeft + ' 场' : '本场因伤缺阵，预计下场复出'
+    });
+  });
+
+  if (!notices.length) return '';
+  var rows = notices.map(function(notice) {
+    return '<li class="cal-team-alert-item is-' + notice.type + '">' +
+      '<span class="cal-team-alert-player">' + escapeText(notice.name) + '<small>' + escapeText(notice.meta) + '</small></span>' +
+      '<span class="cal-team-alert-status">' + escapeText(notice.status) + '</span>' +
+    '</li>';
+  }).join('');
+  return '<section class="cal-team-alerts bv-po-availability" role="status" aria-live="polite" aria-label="季后赛人员动态">' +
+    '<div class="cal-team-alert-head">' +
+      '<span class="cal-team-alert-icon" aria-hidden="true">🏥</span>' +
+      '<span class="cal-team-alert-title"><strong>球队人员动态</strong><span>伤病与禁赛随比赛更新</span></span>' +
+      '<span class="cal-team-alert-count">' + notices.length + ' 项</span>' +
+    '</div>' +
+    '<ul class="cal-team-alert-list">' + rows + '</ul>' +
+  '</section>';
+}
+
 function renderPlayoffBracketUI() {
   const bracket = STATE.season?.playoffBracket;
   if (!bracket) { renderPlayoffs(); return; }
@@ -708,6 +765,9 @@ function renderPlayoffBracketUI() {
   // gamecast（放在 bv-po-stats 上方）
   h += `<div id="playoff-gamecast" style="display:none;padding:0 12px 8px;"></div>`;
 
+  // 人员状态放在个人季后赛数据卡上方，仅展示自己的季后赛页面。
+  if (!isViewingOther) h += renderPlayoffAvailabilityNotices();
+
   // 季后赛场均数据
   if (!isViewingOther) {
     const po = STATE.season.playoffStats;
@@ -774,6 +834,8 @@ function renderPlayoffGameBrief(gameEntry, teamA, teamB, isMySeries, roundName, 
   const oppScore = isUserA ? gameEntry.oppScore : gameEntry.myScore;
   const oppName = isUserA ? teamB : teamA;
   const stats = gameEntry.myStats;
+  const resultColor = gameEntry.won ? 'var(--green)' : 'var(--red)';
+  const briefBorderColor = gameEntry.suspended ? 'var(--border-light)' : resultColor;
   
   let statsLine = '';
   if (stats) {
@@ -785,13 +847,13 @@ function renderPlayoffGameBrief(gameEntry, teamA, teamB, isMySeries, roundName, 
   brief.style.cssText = `
     display:flex;align-items:center;gap:8px;
     padding:8px 12px;margin-bottom:6px;
-    background:var(--bg-card);border:1.5px solid ${gameEntry.suspended ? '#000' : (gameEntry.won ? 'var(--green)' : 'var(--red)')};
+    background:var(--bg-card);border:1.5px solid ${briefBorderColor};
     border-radius:10px;animation:slideUp 0.2s ease;cursor:pointer;
   `;
   brief.innerHTML = `
     <span style="font-size:13px;">${gameEntry.won ? '✅' : '❌'}</span>
     <span style="font-family:var(--font-display);font-size:12px;font-weight:700;min-width:36px;">G${gameEntry.game}</span>
-    <span style="font-family:var(--font-display);font-size:14px;font-weight:700;color:${gameEntry.suspended ? '#000' : (gameEntry.won ? 'var(--green)' : 'var(--red)')};">${myScore}-${oppScore}</span>
+    <span style="font-family:var(--font-display);font-size:14px;font-weight:700;color:${resultColor};">${myScore}-${oppScore}</span>
     <span style="font-size:10px;color:var(--text-dim);flex:1;">G${gameEntry.game} vs ${getTeamName(oppName)}${gameEntry.ot ? ' · '+(gameEntry.ot>1?gameEntry.ot+'OT':'OT') : ''}${gameEntry.suspended ? (gameEntry.skipReason === 'injury' ? ' · 🏥 伤病' : ' · 🔇 禁赛') : ''}${gameEntry.playedThroughInjury ? ' · 🏥 带伤出战' : ''}</span>
     ${gameEntry.suspended ? '' : statsLine}
     <span style="font-size:16px;color:var(--text-muted);">›</span>
@@ -847,6 +909,8 @@ function simOnePlayoffGame(round, seriesIdx, teamA, teamB, isMySeries, gameNum, 
       if (skipReason === 'suspension') skipEv.suspensionGamesLeft--;
       else skipEv.injuryGamesLeft--;
       var skipResult = simulateGameNew(teamA, teamB, seedBonus, userDebuff, { isHomeA: isHomeA, isB2B: false, availabilityEdge: -4 });
+      skipEv.lastMissedCareerTeamGame = Number(STATE.season && STATE.season._careerTeamAvailabilityGame) || 0;
+      skipEv.lastPlayoffAbsenceType = skipReason;
       const skipWon = skipResult.won;
       const skipNewWinsA = winsA + (skipWon ? 1 : 0);
       const skipNewWinsB = winsB + (skipWon ? 0 : 1);
