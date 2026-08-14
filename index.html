@@ -11878,7 +11878,12 @@ EVENT_REGISTRY.push({
   eventRate: 68,
   condition: function(ctx) {
     var rivalry = STATE.career && STATE.career.flags && STATE.career.flags.eventRivalry;
-    if (!rivalry || !ctx.game || ctx.game.opponent !== rivalry.team) return false;
+    if (!rivalry || !rivalry.playerId || !ctx.game) return false;
+    var opponentRoster = typeof LEAGUE_PLAYER_DATA !== 'undefined' && LEAGUE_PLAYER_DATA[ctx.game.opponent];
+    var rivalIsActiveOpponent = (opponentRoster || []).some(function(player) {
+      return player && player.id === rivalry.playerId;
+    });
+    if (!rivalIsActiveOpponent) return false;
     if (getEventGameNumber() - (rivalry.sinceGame || 0) < 8) return false;
     return rivalry.lastRematchSeason !== (STATE.career.seasonCount || 0);
   },

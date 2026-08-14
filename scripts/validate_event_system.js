@@ -85,12 +85,13 @@ if (registryStart < 0 || registryEnd < 0) {
   const eventModule = new Function(
     'window',
     'STATE',
+    'LEAGUE_PLAYER_DATA',
     'addProfileDelta',
     'getCareerProfile',
     'getBondedTeammateName',
     'ensureSeasonEventState',
     `${indexSource.slice(registryStart, registryEnd)}\nreturn { EVENT_REGISTRY, checkRandomEvents, getRandomEventLane };`,
-  )({}, state, addProfileDelta, profile, () => '测试队友', ensureEventState);
+  )({}, state, { AWAY: [{ id: 'active-rival', cname: '现役宿敌', ovr: 90 }] }, addProfileDelta, profile, () => '测试队友', ensureEventState);
 
   const registry = eventModule.EVENT_REGISTRY;
   const ids = registry.map(event => event.id);
@@ -110,6 +111,23 @@ if (registryStart < 0 || registryEnd < 0) {
     const event = registry.find(item => item.id === id);
     if (!event) failures.push(`缺少职业剧情事件 ${id}`);
     else if (eventModule.getRandomEventLane(event) !== 'career') failures.push(`${id} 未进入职业剧情通道`);
+  }
+
+  const rivalryRematch = registry.find(item => item.id === 'career_rivalry_rematch');
+  if (rivalryRematch) {
+    state.season.games = Array.from({ length: 20 }, () => ({ game: { opponent: 'AWAY' } }));
+    state.career.seasonCount = 2;
+    state.career.flags = {
+      eventRivalry: { playerId: 'retired-rival', team: 'AWAY', sinceGame: 1, sinceSeason: 1 },
+    };
+    if (rivalryRematch.condition({ game: { opponent: 'AWAY' } })) {
+      failures.push('已退役或转会的宿敌仍会触发再次相遇事件');
+    }
+
+    state.career.flags.eventRivalry.playerId = 'active-rival';
+    if (!rivalryRematch.condition({ game: { opponent: 'AWAY' } })) {
+      failures.push('现役且在对手阵容中的宿敌无法触发再次相遇事件');
+    }
   }
 
   const coachRoleMeeting = registry.find(item => item.id === 'career_coach_role_meeting');
