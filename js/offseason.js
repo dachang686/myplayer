@@ -503,7 +503,7 @@ function generateContractOffers() {
 
 function showContractOffers() {
   if (STATE.career && STATE.career.retired) {
-    showCareerStats(1);
+    showMyCard();
     return;
   }
   if (typeof showMyCard === 'function') showMyCard();

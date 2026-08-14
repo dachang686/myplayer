@@ -581,7 +581,7 @@
       '<div class="legacy-celebration-icon">' + escapeHtml(event.emoji || '🏛️') + '</div>' +
       '<div class="legacy-celebration-title">' + escapeHtml(event.title) + '</div>' +
       '<div class="legacy-celebration-copy">' + escapeHtml(event.desc) + '</div>' +
-      '<div class="legacy-celebration-actions"><button type="button" onclick="closeLegacyCelebration()">跳过</button><button type="button" class="primary" onclick="closeLegacyCelebration();showCareerStats(3)">查看历史殿堂</button></div></div>';
+      '<div class="legacy-celebration-actions"><button type="button" onclick="closeLegacyCelebration()">跳过</button><button type="button" class="primary" onclick="closeLegacyCelebration();showMyCardLegacyHall()">查看历史殿堂</button></div></div>';
     root.document.body.appendChild(overlay);
   }
 
@@ -688,7 +688,7 @@
     var state = getState();
     if (!state || !CATEGORY_CONFIG[category]) return;
     state._legacyHallCategory = category;
-    if (typeof root.showCareerStats === 'function') root.showCareerStats(3);
+    if (typeof root.showMyCardLegacyHall === 'function') root.showMyCardLegacyHall();
   }
 
   function reconcileCareerLegacyRecords(options) {

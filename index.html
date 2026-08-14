@@ -649,7 +649,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .mc-summary-list{display:flex;gap:6px;flex-wrap:wrap}
 .mc-summary-item{display:inline-flex;align-items:center;gap:4px;padding:5px 9px;border-radius:8px;background:var(--orange-bg);font-family:var(--font-display);font-size:11px;color:var(--text-dim)}
 .mc-summary-item strong{font-size:12px;color:var(--orange)}
-.mc-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:10px 14px;border-bottom:1px solid var(--border)}
+.mc-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;padding:10px 14px;border-bottom:1px solid var(--border)}
 .mc-tabs button{min-width:0;min-height:42px;padding:8px 6px;border:1px solid var(--border);border-radius:10px;background:transparent;color:var(--text-dim);font-family:var(--font-display);font-size:12px;font-weight:700;cursor:pointer;transition:background-color .16s,border-color .16s,color .16s,transform .12s}
 .mc-tabs button.active{border-color:var(--orange);background:var(--orange-bg);color:var(--orange)}
 .mc-tabs button:active{transform:scale(.98)}
@@ -1032,15 +1032,6 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     <div id="ach-wall-content"></div>
   </div>
 
-  <!-- ====== 生涯数据 ====== -->
-  <div class="screen" id="screen-career-stats">
-    <div class="section-title">
-      <h1>📊 生涯数据</h1>
-      <div class="sub" id="career-stats-sub"></div>
-    </div>
-    <div id="career-stats-content" style="padding:0 10px 20px;"></div>
-  </div>
-
   <!-- ====== 荣誉墙 ====== -->
   <div class="screen" id="screen-career-honors">
     <div class="section-title">
@@ -1355,7 +1346,6 @@ function ensureSeasonEventState() {
 // 每个赛季内页面只在这里声明所属底部菜单，避免页面函数各自维护高亮状态。
 var SEASON_NAV_SECTION_BY_SCREEN = Object.freeze({
   'screen-mycard': 'player',
-  'screen-career-stats': 'player',
   'screen-career-honors': 'player',
   'screen-achievements': 'player',
   'screen-training': 'player',
@@ -1493,7 +1483,7 @@ function setDefaultGlobalNextAction(screenId) {
   if (screenId === 'screen-season' || screenId === 'screen-team' || screenId === 'screen-mycard' ||
       screenId === 'screen-rankings' || screenId === 'screen-achievements') {
     setSeasonProgressGlobalAction();
-  } else if (screenId === 'screen-career-stats' || screenId === 'screen-career-honors') {
+  } else if (screenId === 'screen-career-honors') {
     setGlobalNextAction('🧍 返回我的球员', showMyCard);
   } else if (screenId === 'screen-awards') {
     setGlobalNextStatus('⏳ 正在统计奖项');
@@ -7203,6 +7193,12 @@ function showMyCard() {
   renderMyCard(isFinal, 'data');
 }
 
+function showMyCardLegacyHall() {
+  const isFinal = !!(STATE.season && STATE.season._resultsViewed) || !!(STATE.career && STATE.career.retired);
+  showScreen('screen-mycard');
+  renderMyCard(isFinal, 'legacy');
+}
+
 function setMyCardTab(tab) {
   const isFinal = !!(STATE.season && STATE.season._resultsViewed) || !!(STATE.career && STATE.career.retired);
   renderMyCard(isFinal, tab);
@@ -7439,7 +7435,7 @@ function renderMyCardEventsTab(eventItems) {
 }
 
 function renderMyCard(isFinal, activeTab) {
-  activeTab = activeTab === 'awards' || activeTab === 'events' ? activeTab : 'data';
+  activeTab = activeTab === 'awards' || activeTab === 'events' || activeTab === 'legacy' ? activeTab : 'data';
   const ps = STATE.season.playerStats;
   const gp = ps.games || 1;
   const avg = {
@@ -7571,6 +7567,21 @@ function renderMyCard(isFinal, activeTab) {
       <div class="mc-pct-line">投篮 ${careerAvg.fgm}-${careerAvg.fga} (${careerPct}%) · 三分 ${careerAvg.threeM}-${careerAvg.threeA} (${careerThreePct}%) · 罚球 ${careerAvg.ftm}-${careerAvg.fta} (${careerFtPct}%)</div>
     </div>
 
+    <div class="mc-section">
+      <div class="mc-section-title">🏀 季后赛场均 · 生涯 ${playoffAvg.games} 场</div>
+      ${playoffAvg.games > 0 ? `
+        <div class="mc-stats-grid">
+          <div class="mc-stat"><span class="mc-stat-val">${playoffAvg.pts}</span><span class="mc-stat-lbl">得分</span></div>
+          <div class="mc-stat"><span class="mc-stat-val">${playoffAvg.reb}</span><span class="mc-stat-lbl">篮板</span></div>
+          <div class="mc-stat"><span class="mc-stat-val">${playoffAvg.ast}</span><span class="mc-stat-lbl">助攻</span></div>
+          <div class="mc-stat"><span class="mc-stat-val">${playoffAvg.stl}</span><span class="mc-stat-lbl">抢断</span></div>
+          <div class="mc-stat"><span class="mc-stat-val">${playoffAvg.blk}</span><span class="mc-stat-lbl">盖帽</span></div>
+          <div class="mc-stat"><span class="mc-stat-val">${playoffAvg.tov}</span><span class="mc-stat-lbl">失误</span></div>
+        </div>
+        <div class="mc-pct-line">投篮 ${playoffAvg.fgm}-${playoffAvg.fga} (${playoffPct}%) · 三分 ${playoffAvg.threeM}-${playoffAvg.threeA} (${playoffThreePct}%) · 罚球 ${playoffAvg.ftm}-${playoffAvg.fta} (${playoffFtPct}%)</div>
+      ` : '<div class="mc-empty">暂无季后赛出场记录</div>'}
+    </div>
+
     <div class="mc-section" aria-label="职业生涯常规赛单场最高纪录">
       <div class="mc-section-title">🏔️ 职业生涯单场最高 · 常规赛</div>
       <div class="mc-stats-grid mc-highs-grid">
@@ -7592,22 +7603,6 @@ function renderMyCard(isFinal, activeTab) {
         <div class="mc-stat"><span class="mc-stat-val">${careerAvg.totalBlk}</span><span class="mc-stat-lbl">总盖帽</span></div>
         <div class="mc-stat"><span class="mc-stat-val">${careerAvg.games}</span><span class="mc-stat-lbl">出场数</span></div>
       </div>
-      <button class="btn btn-secondary btn-sm" style="width:100%;margin-top:10px;" onclick="showCareerStats(3)">🏛️ 查看历史殿堂与传奇纪录</button>
-    </div>
-
-    <div class="mc-section">
-      <div class="mc-section-title">🏀 季后赛场均 · 生涯 ${playoffAvg.games} 场</div>
-      ${playoffAvg.games > 0 ? `
-        <div class="mc-stats-grid">
-          <div class="mc-stat"><span class="mc-stat-val">${playoffAvg.pts}</span><span class="mc-stat-lbl">得分</span></div>
-          <div class="mc-stat"><span class="mc-stat-val">${playoffAvg.reb}</span><span class="mc-stat-lbl">篮板</span></div>
-          <div class="mc-stat"><span class="mc-stat-val">${playoffAvg.ast}</span><span class="mc-stat-lbl">助攻</span></div>
-          <div class="mc-stat"><span class="mc-stat-val">${playoffAvg.stl}</span><span class="mc-stat-lbl">抢断</span></div>
-          <div class="mc-stat"><span class="mc-stat-val">${playoffAvg.blk}</span><span class="mc-stat-lbl">盖帽</span></div>
-          <div class="mc-stat"><span class="mc-stat-val">${playoffAvg.tov}</span><span class="mc-stat-lbl">失误</span></div>
-        </div>
-        <div class="mc-pct-line">投篮 ${playoffAvg.fgm}-${playoffAvg.fga} (${playoffPct}%) · 三分 ${playoffAvg.threeM}-${playoffAvg.threeA} (${playoffThreePct}%) · 罚球 ${playoffAvg.ftm}-${playoffAvg.fta} (${playoffFtPct}%)</div>
-      ` : '<div class="mc-empty">暂无季后赛出场记录</div>'}
     </div>
 
     ${tradeRequestHtml}
@@ -7617,11 +7612,13 @@ function renderMyCard(isFinal, activeTab) {
       <div class="mc-attrs">${attrHtml}</div>
     </div>`;
 
-  const tabContent = activeTab === 'awards'
-    ? renderMyCardAwardsTab(awardItems)
-    : activeTab === 'events'
-      ? renderMyCardEventsTab(eventItems)
-      : dataTabHtml;
+  const tabContent = activeTab === 'legacy'
+    ? (typeof renderCareerLegacyHall === 'function' ? renderCareerLegacyHall() : '<div class="mc-empty" style="padding:36px 14px;">历史殿堂暂不可用</div>')
+    : activeTab === 'awards'
+      ? renderMyCardAwardsTab(awardItems)
+      : activeTab === 'events'
+        ? renderMyCardEventsTab(eventItems)
+        : dataTabHtml;
   
   html('mycard-content').innerHTML = `
     <div class="mycard">
@@ -7638,6 +7635,7 @@ function renderMyCard(isFinal, activeTab) {
         <button class="${activeTab === 'data' ? 'active' : ''}" role="tab" aria-selected="${activeTab === 'data'}" onclick="setMyCardTab('data')">球员数据</button>
         <button class="${activeTab === 'awards' ? 'active' : ''}" role="tab" aria-selected="${activeTab === 'awards'}" onclick="setMyCardTab('awards')">球员奖项</button>
         <button class="${activeTab === 'events' ? 'active' : ''}" role="tab" aria-selected="${activeTab === 'events'}" onclick="setMyCardTab('events')">事件</button>
+        <button class="${activeTab === 'legacy' ? 'active' : ''}" role="tab" aria-selected="${activeTab === 'legacy'}" onclick="setMyCardTab('legacy')">历史殿堂</button>
       </div>
 
       ${tabContent}
@@ -7645,130 +7643,8 @@ function renderMyCard(isFinal, activeTab) {
       ${btnHtml ? `<div style="padding:4px 16px 16px;">${btnHtml}</div>` : ''}
     </div>
   `;
-  if (retired) setGlobalNextAction('🏆 查看退役总结', function() { showCareerStats(1); });
+  if (retired) setGlobalNextAction('🧍 查看我的球员', showMyCard);
   else setSeasonProgressGlobalAction();
-}
-
-// ==================== 生涯数据页面 ====================
-function showCareerStats(tab) {
-  showScreen('screen-career-stats');
-  saveCurrentSeasonToCareer();
-  var c = STATE.career;
-  tab = tab || 0;
-  var subText = tab === 0 ? (getCurrentSeasonLabel() + ' · ' + STATE.finalPosition + ' · OVR ' + STATE.finalOVR) : (tab === 1 ? ('生涯共 ' + c.honors.length + ' 项荣誉') : (tab === 2 ? ('休赛期纪事 ' + ((c.offseasonHistory || []).length) + ' 条') : 'NBA 历史常规赛纪录 · 数据截至 2025-26'));
-  document.getElementById('career-stats-sub').textContent = subText;
-
-  var html = '';
-  // Tabs
-  html += '<div class="modal-tabs" style="margin:0 0 10px;">';
-  html += '<button class="' + (tab === 0 ? 'active' : '') + '" onclick="showCareerStats(0)">📊 生涯数据</button>';
-  html += '<button class="' + (tab === 1 ? 'active' : '') + '" onclick="showCareerStats(1)">🏆 荣誉墙</button>';
-  html += '<button class="' + (tab === 2 ? 'active' : '') + '" onclick="showCareerStats(2)">📖 休赛期</button>';
-  html += '<button class="' + (tab === 3 ? 'active' : '') + '" onclick="showCareerStats(3)">🏛️ 历史殿堂</button>';
-  html += '</div>';
-
-  if (tab === 0) {
-    html += renderCareerStatsTab();
-  } else if (tab === 1) {
-    html += renderCareerHonorsTab();
-  } else if (tab === 2) {
-    html += renderOffseasonHistoryTab();
-  } else {
-    html += typeof renderCareerLegacyHall === 'function' ? renderCareerLegacyHall() : '';
-  }
-
-  if (STATE.career && STATE.career.retired) {
-    html += '<div style="display:flex;flex-direction:column;gap:6px;align-items:center;margin-top:6px;">';
-    html += '<div style="text-align:center;font-size:12px;color:var(--text-dim);padding:4px 0;">🏁 生涯已结束，感谢你带来的每一个赛季</div>';
-    html += '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">';
-    html += '<button class="btn btn-secondary btn-sm" onclick="exitToHomepage()">🚪 回到主页</button>';
-    html += '</div>';
-    html += '</div>';
-  }
-
-  document.getElementById('career-stats-content').innerHTML = html;
-  var careerEnded = !!(STATE.career && STATE.career.retired);
-  var seasonFinished = !!(STATE.season && STATE.season._resultsViewed);
-  if (careerEnded && !(STATE.career.flags && STATE.career.flags.postCareerDone)) {
-    setGlobalNextAction('🏁 继续退役后篇章', startPostCareerFlow);
-  } else if (!careerEnded && seasonFinished) {
-    setGlobalNextAction('🏋️ 进入休赛期', beginOffseason);
-  }
-}
-
-function exitToHomepage() {
-  initGame();
-}
-
-function renderCareerStatsTab() {
-  var c = STATE.career;
-  var ps = c.totalStats;
-  var gp = ps.games || 1;
-  var avg = {
-    pts: Math.round(ps.pts / gp * 10) / 10,
-    reb: Math.round(ps.reb / gp * 10) / 10,
-    ast: Math.round(ps.ast / gp * 10) / 10,
-    stl: Math.round(ps.stl / gp),
-    blk: Math.round(ps.blk / gp),
-    tov: Math.round(ps.tov / gp * 10) / 10,
-    fgm: Math.round(ps.fgm / gp * 10) / 10,
-    fga: Math.round(ps.fga / gp * 10) / 10,
-    ftm: Math.round(ps.ftm / gp * 10) / 10,
-    fta: Math.round(ps.fta / gp * 10) / 10,
-    threeM: Math.round(ps.threeM / gp * 10) / 10,
-    threeA: Math.round(ps.threeA / gp * 10) / 10,
-  };
-  var pct = avg.fga > 0 ? (avg.fgm / avg.fga * 100).toFixed(1) : '—';
-  var threePct = avg.threeA > 0 ? (avg.threeM / avg.threeA * 100).toFixed(1) : '—';
-  var ftPct = avg.fta > 0 ? (avg.ftm / avg.fta * 100).toFixed(1) : '—';
-  var h = '';
-  h += '<div class="sr-section cs-section">';
-  h += '<div class="sr-section-title">📊 生涯累计</div>';
-  h += '<div class="cs-grid">';
-  var cStats = [
-    { val: ps.pts, lbl: '总得分' }, { val: ps.reb, lbl: '总篮板' }, { val: ps.ast, lbl: '总助攻' },
-    { val: Math.round(ps.stl), lbl: '总抢断' }, { val: Math.round(ps.blk), lbl: '总盖帽' }, { val: ps.games, lbl: '出场数' },
-  ];
-  cStats.forEach(function(s) {
-    h += '<div class="cs-stat"><div class="cs-stat-val">' + s.val + '</div><div class="cs-stat-lbl">' + s.lbl + '</div></div>';
-  });
-  h += '</div></div>';
-  h += '<div class="sr-section cs-section">';
-  h += '<div class="sr-section-title">📈 生涯场均</div>';
-  h += '<div class="cs-grid">';
-  var aStats = [
-    { val: avg.pts, lbl: '得分' }, { val: avg.reb, lbl: '篮板' }, { val: avg.ast, lbl: '助攻' },
-    { val: avg.stl, lbl: '抢断' }, { val: avg.blk, lbl: '盖帽' }, { val: avg.tov, lbl: '失误' },
-  ];
-  aStats.forEach(function(s) {
-    h += '<div class="cs-stat"><div class="cs-stat-val">' + s.val + '</div><div class="cs-stat-lbl">' + s.lbl + '</div></div>';
-  });
-  h += '</div>';
-  h += '<div class="sr-pct-line">命中率 ' + avg.fgm + '-' + avg.fga + ' (' + pct + '%) · 三分 ' + avg.threeM + '-' + avg.threeA + ' (' + threePct + '%) · 罚球 ' + avg.ftm + '-' + avg.fta + ' (' + ftPct + '%)</div>';
-  h += '</div>';
-  h += '<div class="sr-section cs-section">';
-  h += '<div class="sr-section-title">📋 每赛季</div>';
-  if (c.seasons.length === 0) {
-    h += '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:13px;">暂无赛季数据</div>';
-  } else {
-    for (var i = c.seasons.length - 1; i >= 0; i--) {
-      var s = c.seasons[i];
-      var sp = s.playerStats || {};
-      var sg = sp.games || 1;
-      var sa = Math.round((sp.pts || 0) / sg * 10) / 10;
-      var tn = getTeamName ? getTeamName(s.team) : s.team;
-      var record = (s.wins || 0) + '-' + (s.losses || 0);
-      h += '<div class="cs-season-row" onclick="showSeasonDetail(' + i + ')">';
-      h += '<span class="cs-season-num">' + getSeasonLabel(s.seasonNum) + '</span>';
-      h += '<span class="cs-season-team">' + tn + '</span>';
-      h += '<span class="cs-season-record">' + record + '</span>';
-      h += '<span class="cs-season-pts">' + sa + '分</span>';
-      h += '<span class="cs-season-arrow">›</span>';
-      h += '</div>';
-    }
-  }
-  h += '</div>';
-  return h;
 }
 
 function isRookieHonorForLaterSeason(h) {
@@ -7781,66 +7657,6 @@ function renderHonorBadge(label, emoji, cls) {
   emoji = emoji || '';
   var prefix = (emoji && label.indexOf(emoji) !== 0) ? emoji + ' ' : '';
   return '<span class="' + (cls || '') + '">' + prefix + label + '</span>';
-}
-
-function renderCareerHonorsTab() {
-  var c = STATE.career;
-  var h = '';
-  if (c.seasons.length === 0) {
-    h += '<div class="ch-empty">🏀 还没有荣誉，快去打比赛吧</div>';
-  } else {
-    for (var i = c.seasons.length - 1; i >= 0; i--) {
-      var s = c.seasons[i];
-      var tn = getTeamName ? getTeamName(s.team) : s.team;
-      var seasHonors = c.honors.filter(function(hh) { return hh.seasonNum === s.seasonNum && !isRookieHonorForLaterSeason(hh); });
-      h += '<div class="ch-season">';
-      h += '<div class="ch-season-header">🏀 ' + getSeasonLabel(s.seasonNum) + ' <span class="ch-team">' + tn + '</span></div>';
-      if (seasHonors.length === 0) {
-        h += '<div style="font-size:12px;color:var(--text-muted);">暂无荣誉</div>';
-      } else {
-        seasHonors.forEach(function(hh) {
-          var cls = 'ch-badge';
-          if (hh.label.indexOf('总冠军') >= 0 || hh.label.indexOf('MVP') >= 0 || hh.label.indexOf('FMVP') >= 0) cls += ' gold';
-          h += renderHonorBadge(hh.label, hh.emoji, cls);
-        });
-      }
-      h += '</div>';
-    }
-  }
-  var counts = {};
-  c.honors.forEach(function(hh) {
-    if (isRookieHonorForLaterSeason(hh)) return;
-    counts[hh.label] = (counts[hh.label] || 0) + 1;
-  });
-  var sumParts = [];
-  for (var k in counts) {
-    sumParts.push(counts[k] + '×' + k);
-  }
-  if (sumParts.length > 0) {
-    h += '<div class="ch-summary">📊 生涯总计：' + sumParts.join(' · ') + '</div>';
-  }
-  return h;
-}
-
-function renderOffseasonHistoryTab() {
-  var c = STATE.career;
-  var list = (c.offseasonHistory || []).slice().reverse();
-  var h = '';
-  if (list.length === 0) {
-    h += '<div class="ch-empty">📖 还没有休赛期故事</div>';
-    return h;
-  }
-  h += '<div class="sr-section cs-section">';
-  h += '<div class="sr-section-title">📖 休赛期纪事</div>';
-  list.forEach(function(item) {
-    h += '<div class="ch-season">';
-    h += '<div class="ch-season-header">' + getSeasonLabel((item.seasonNum || 1) + 1) + ' 夏天 <span class="ch-team">' + (item.event || '') + '</span></div>';
-    h += '<div style="font-size:12px;color:var(--orange);font-weight:700;margin-bottom:5px;">选择：' + (item.choice || '') + '</div>';
-    h += '<div style="font-size:12px;color:var(--text-dim);line-height:1.6;">' + (item.result || '').replace(/<br><br>/g, '<br>') + '</div>';
-    h += '</div>';
-  });
-  h += '</div>';
-  return h;
 }
 
 function saveCurrentSeasonToCareer() {
@@ -7931,50 +7747,6 @@ function saveCurrentSeasonToCareer() {
   if (typeof reconcileCareerLegacyRecords === 'function') reconcileCareerLegacyRecords({ silent: true });
 }
 
-function showSeasonDetail(idx) {
-  var s = STATE.career.seasons[idx];
-  if (!s) return;
-  var sp = s.playerStats || {};
-  var sg = sp.games || 1;
-  var avg = {
-    pts: Math.round((sp.pts || 0) / sg * 10) / 10,
-    reb: Math.round((sp.reb || 0) / sg * 10) / 10,
-    ast: Math.round((sp.ast || 0) / sg * 10) / 10,
-    stl: Math.round((sp.stl || 0) / sg),
-    blk: Math.round((sp.blk || 0) / sg),
-  };
-  var tn = getTeamName ? getTeamName(s.team) : s.team;
-  var record = (s.wins || 0) + '-' + (s.losses || 0);
-  var awardsHtml = '';
-  if (s.awards && s.awards.length) {
-    s.awards.forEach(function(a) {
-      var label = (a && a.label) || a || '';
-      if ((parseInt(s.seasonNum, 10) || 0) !== 1 && label.indexOf('最佳新秀') >= 0) return;
-      awardsHtml += '<span class="ch-badge">' + label + '</span>';
-    });
-  }
-  var ovr = s.ovr || '—';
-
-  var html = '<div class="cs-season-detail-overlay" onclick="closeSeasonDetail(event)">';
-  html += '<div class="cs-season-detail-modal">';
-  html += '<div class="cs-detail-header"><span style="font-family:var(--font-display);font-size:16px;font-weight:700;">' + getSeasonLabel(s.seasonNum) + ' · ' + tn + '</span><button class="cs-detail-close" onclick="closeSeasonDetail()">✕</button></div>';
-  html += '<div class="cs-detail-body">';
-  html += '<div class="sr-info-row"><span>战绩</span><span>' + record + ' · OVR ' + ovr + '</span></div>';
-  html += '<div class="sr-info-row"><span>场均</span><span style="font-weight:600;">' + avg.pts + '分 ' + avg.reb + '板 ' + avg.ast + '助 ' + avg.stl + '断 ' + avg.blk + '帽</span></div>';
-  html += '<div style="margin:8px 0 4px;font-size:12px;color:var(--text-dim);">季后赛：' + (s.playoffResult || '未晋级') + '</div>';
-  if (awardsHtml) {
-    html += '<div style="margin-top:6px;">' + awardsHtml + '</div>';
-  }
-  html += '</div></div></div>';
-  document.body.insertAdjacentHTML('beforeend', html);
-}
-
-function closeSeasonDetail(e) {
-  if (e && e.target !== e.currentTarget) return;
-  var el = document.querySelector('.cs-season-detail-overlay');
-  if (el) el.remove();
-}
-
 // ==================== 荣誉墙 ====================
 function showCareerHonors() {
   showScreen('screen-career-honors');
@@ -8018,8 +7790,7 @@ function showCareerHonors() {
   }
 
   html += '<div style="display:flex;gap:8px;justify-content:center;margin-top:6px;">';
-  html += '<button class="btn btn-primary btn-sm" onclick="showCareerStats()">📊 生涯数据</button>';
-  html += '<button class="btn btn-secondary btn-sm" onclick="showScreen(\'screen-mycard\')">📋 My Card</button>';
+  html += '<button class="btn btn-primary btn-sm" onclick="showMyCard()">🧍 返回我的球员</button>';
   html += '</div>';
 
   document.getElementById('career-honors-content').innerHTML = html;
@@ -8086,7 +7857,7 @@ function applyAnnualAttributeDrift() {
 
 function beginOffseason() {
   if (STATE.career && STATE.career.retired) {
-    showCareerStats(1);
+    showMyCard();
     return;
   }
   saveCurrentSeasonToCareer();
@@ -9835,7 +9606,7 @@ function continueCareerAfterLeagueDraft() {
 
 function finishOffseasonPipeline() {
   if (STATE.career && STATE.career.retired) {
-    showCareerStats(1);
+    showMyCard();
     return;
   }
   resetForNewSeason();
@@ -15027,7 +14798,7 @@ function generateRetirementStoryPoster() {
 function closePoster() {
   document.getElementById('posterOverlay').style.display = 'none';
   if (STATE && STATE.career && STATE.career.retired) {
-    if (STATE.career.flags && STATE.career.flags.postCareerDeferred) showCareerStats(1);
+    if (STATE.career.flags && STATE.career.flags.postCareerDeferred) showMyCard();
     else startPostCareerFlow();
   }
 }
@@ -15079,7 +14850,7 @@ function declinePostCareerForNow() {
   if (modal) modal.remove();
   STATE.career.flags = STATE.career.flags || {};
   STATE.career.flags.postCareerDeferred = true;
-  showCareerStats(1);
+  showMyCard();
 }
 
 function showNextPostCareerEvent() {
@@ -15186,7 +14957,7 @@ function finishPostCareer() {
   STATE.career.flags = STATE.career.flags || {};
   STATE.career.flags.postCareerDone = true;
   clearAutoSaveStorage();
-  showCareerStats(1);
+  showMyCard();
 }
 
 var _countdownLegacyEvent = null;
