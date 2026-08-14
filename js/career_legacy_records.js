@@ -616,9 +616,9 @@
       var previous = rows[rank - 2];
       return '你的生涯常规赛累计为 <strong>' + formatValue(value) + '</strong>，当前第 <strong>' + rank + '</strong> 名，距上一名还差 <strong>' + formatValue(Math.max(0, previous.value - value + 1)) + '</strong>。';
     }
-    var fifth = rows[4];
-    var gap = fifth ? Math.max(0, fifth.value - value + 1) : 0;
-    return '你的生涯常规赛累计为 <strong>' + formatValue(value) + '</strong>，暂未入榜，距历史第五还差 <strong>' + formatValue(gap) + '</strong>。';
+    var tenth = rows[Math.min(RANKING_LIMIT - 1, rows.length - 1)];
+    var gap = tenth ? Math.max(0, tenth.value - value + 1) : 0;
+    return '你的生涯常规赛累计为 <strong>' + formatValue(value) + '</strong>，暂未入榜，距历史第十名还差 <strong>' + formatValue(gap) + '</strong>。';
   }
 
   function renderFourOneOne(records, totals) {
