@@ -1309,7 +1309,7 @@ function updateSeasonBadge(activeId) {
 /** 赛季事件状态统一入口；新增字段均在 ensureSeasonEventState 中兼容旧存档。 */
 function createSeasonEventState(injuryRiskBonus) {
   return {
-    version: 2,
+    version: 3,
     suspensionGamesLeft: 0,
     suspensionReason: '',
     injuryGamesLeft: 0,
@@ -1325,7 +1325,12 @@ function createSeasonEventState(injuryRiskBonus) {
     playThroughPrompted: {},
     regularPlayThroughPromptCount: 0,
     opponentHistory: {},
-    activeEffects: []
+    activeEffects: [],
+    // 赛季导演层：主题、长线矛盾和比赛信号均随存档持久化。
+    seasonTheme: null,
+    storyThreads: [],
+    storySignals: { games: 0, winStreak: 0, lossStreak: 0, standoutStreak: 0, closeGames: 0, lastOpponent: null },
+    directorEvents: []
   };
 }
 
@@ -1343,7 +1348,13 @@ function ensureSeasonEventState() {
   if (!current.eventCounts || typeof current.eventCounts !== 'object') current.eventCounts = {};
   if (!current.opponentHistory || typeof current.opponentHistory !== 'object') current.opponentHistory = {};
   if (!current.playThroughPrompted || typeof current.playThroughPrompted !== 'object') current.playThroughPrompted = {};
-  current.version = 2;
+  if (!current.storySignals || typeof current.storySignals !== 'object' || Array.isArray(current.storySignals)) {
+    current.storySignals = createSeasonEventState(0).storySignals;
+  }
+  if (!Array.isArray(current.storyThreads)) current.storyThreads = [];
+  if (!Array.isArray(current.directorEvents)) current.directorEvents = [];
+  if (current.seasonTheme != null && (typeof current.seasonTheme !== 'object' || Array.isArray(current.seasonTheme))) current.seasonTheme = null;
+  current.version = 3;
   STATE.season.events = current;
   return current;
 }
@@ -3977,6 +3988,8 @@ function startSeason() {
   
   initStandings();
   buildRealSchedule();
+  // 赛程就绪后确定本季主题与 2-4 条长期悬念；不会在读档时重复生成。
+  if (typeof initializeSeasonNarrative === 'function') initializeSeasonNarrative();
   STATE._calendarAutoSimulating = false;
   STATE._calendarMonth = 0;
   STATE.season._simulationStarted = false;
@@ -6294,6 +6307,27 @@ function renderSeasonInsights() {
   var ftPct = ps.fta ? ((ps.ftm || 0) / ps.fta * 100).toFixed(1) : '—';
   var pctText = function(value) { return value === '—' ? value : value + '%'; };
   var displayName = typeof getMyPlayerDisplayName === 'function' ? getMyPlayerDisplayName() : '我的球员';
+  var eventState = typeof ensureSeasonEventState === 'function' ? ensureSeasonEventState() : {};
+  var seasonTheme = eventState.seasonTheme;
+  var activeThreads = (eventState.storyThreads || []).filter(function(thread) {
+    return thread && thread.state !== 'resolved';
+  });
+  var narrativeHtml = '';
+  if (seasonTheme) {
+    var threadText = activeThreads.length
+      ? activeThreads.map(function(thread) {
+          var stateLabel = thread.state === 'committed' ? '等待比赛给出答案' : '尚未展开';
+          return '<span style="display:inline-block;margin:4px 6px 0 0;padding:3px 7px;border:1px solid var(--border);border-radius:999px;font-size:10px;color:var(--text-dim);">' + thread.emoji + ' ' + thread.title + ' · ' + stateLabel + '</span>';
+        }).join('')
+      : '<span style="font-size:11px;color:var(--text-dim);">本季长期悬念已完成阶段结算</span>';
+    narrativeHtml = '<div class="season-panel" aria-label="本赛季故事线">' +
+      '<div class="season-panel-head">' +
+        '<div><div class="season-panel-title">' + seasonTheme.emoji + ' 赛季主题 · ' + seasonTheme.title + '</div><div class="season-panel-sub">' + seasonTheme.summary + '</div></div>' +
+        '<span class="season-panel-meta">' + activeThreads.length + ' 条悬念进行中</span>' +
+      '</div>' +
+      '<div style="line-height:1.5;">' + threadText + '</div>' +
+    '</div>';
+  }
   var statItems = [
     ['得分', avg.pts], ['篮板', avg.reb], ['助攻', avg.ast],
     ['抢断', avg.stl], ['盖帽', avg.blk], ['失误', avg.tov]
@@ -6332,6 +6366,7 @@ function renderSeasonInsights() {
         '<div class="season-stats-grid">' + statHtml + '</div>' +
         '<div class="season-shooting-line">投篮 ' + (ps.fgm || 0) + '-' + (ps.fga || 0) + ' (' + pctText(fgPct) + ') · 三分 ' + (ps.threeM || 0) + '-' + (ps.threeA || 0) + ' (' + pctText(threePct) + ') · 罚球 ' + (ps.ftm || 0) + '-' + (ps.fta || 0) + ' (' + pctText(ftPct) + ')</div>' +
       '</div>' +
+      narrativeHtml +
       bestHtml +
     '</div>'
   );
@@ -10437,6 +10472,429 @@ function resolveEventVars(str, ctx, evData) {
     .replace(/\{n\}/g, (evData && evData._games) || '');
 }
 
+// ━━━ 赛季导演：让比赛结果推动长线剧情，而不是只抽独立弹窗 ━━━
+var SEASON_NARRATIVE_THEMES = {
+  prove: { id: 'prove', emoji: '🌱', title: '证明自己', summary: '轮换、信任与稳定表现会决定你能否站稳脚跟。' },
+  rise: { id: 'rise', emoji: '⭐', title: '崭露头角', summary: '球权、曝光和球队地位都在等你的表现给出答案。' },
+  title: { id: 'title', emoji: '🏆', title: '冲冠窗口', summary: '每一场关键胜负都会放大这支球队是否真的具备争冠资格。' },
+  reset: { id: 'reset', emoji: '🔄', title: '失败后的选择', summary: '上赛季的遗憾尚未过去，球队需要决定继续相信谁。' },
+  legacy: { id: 'legacy', emoji: '👑', title: '传承与转型', summary: '当生涯进入后段，影响力不只来自得分，也来自你留下什么。' }
+};
+
+function getNarrativeSeasonNumber() {
+  return Math.max(1, ((STATE.career && STATE.career.seasonCount) || 0) + 1);
+}
+
+function getNarrativePreviousSeason() {
+  var seasons = STATE.career && STATE.career.seasons;
+  return Array.isArray(seasons) && seasons.length ? seasons[seasons.length - 1] : null;
+}
+
+function getNarrativeSeasonWinPct() {
+  var total = (STATE.season && STATE.season.wins || 0) + (STATE.season && STATE.season.losses || 0);
+  return total > 0 ? (STATE.season.wins || 0) / total : 0.5;
+}
+
+function getNarrativePreviousWinPct() {
+  var previous = getNarrativePreviousSeason();
+  if (!previous) return null;
+  var total = (previous.wins || 0) + (previous.losses || 0);
+  return total > 0 ? (previous.wins || 0) / total : null;
+}
+
+function chooseSeasonNarrativeTheme() {
+  var career = STATE.career || {};
+  var flags = career.flags || {};
+  var previousPct = getNarrativePreviousWinPct();
+  var age = Number(career.currentAge) || 22;
+  var seasonNum = getNarrativeSeasonNumber();
+  var key = 'rise';
+  if (age >= 34) key = 'legacy';
+  else if (seasonNum === 1 || !STATE.season.isUserStarter) key = 'prove';
+  else if ((flags.seasonCommitment && flags.seasonCommitment.outcome === 'fell_short') || (previousPct != null && previousPct < 0.45)) key = 'reset';
+  else if ((Number(STATE.finalOVR) || 0) >= 89 || (previousPct != null && previousPct >= 0.6)) key = 'title';
+  var theme = SEASON_NARRATIVE_THEMES[key] || SEASON_NARRATIVE_THEMES.rise;
+  return {
+    id: theme.id,
+    emoji: theme.emoji,
+    title: theme.title,
+    summary: theme.summary,
+    season: seasonNum
+  };
+}
+
+function findNarrativePlayer(playerId) {
+  if (!playerId || typeof LEAGUE_PLAYER_DATA === 'undefined') return null;
+  var found = null;
+  Object.keys(LEAGUE_PLAYER_DATA).some(function(team) {
+    var player = (LEAGUE_PLAYER_DATA[team] || []).find(function(item) { return item && item.id === playerId; });
+    if (!player) return false;
+    found = { player: player, team: team };
+    return true;
+  });
+  return found;
+}
+
+/** 绑定可跨赛季追踪的队友；若他离队，后续文本仍会记住这个人。 */
+function getSeasonNarrativeTeammate() {
+  if (!STATE.career || !STATE.careerTeam || typeof LEAGUE_PLAYER_DATA === 'undefined') return null;
+  STATE.career.flags = STATE.career.flags || {};
+  var existing = STATE.career.flags.storyTeammate;
+  var current = existing && findNarrativePlayer(existing.id);
+  if (existing && current) {
+    existing.team = current.team;
+    existing.active = true;
+    return existing;
+  }
+  if (existing) {
+    existing.active = false;
+    return existing;
+  }
+  var candidates = (LEAGUE_PLAYER_DATA[STATE.careerTeam] || []).filter(function(player) {
+    return player && !player._isUser;
+  }).sort(function(a, b) {
+    return (Number(b.ovr) || 0) - (Number(a.ovr) || 0);
+  });
+  if (!candidates.length) return null;
+  // 选择轮换中的第二高总评，既能承担戏份，也不抢走球队第一人的身份。
+  var pick = candidates[Math.min(1, candidates.length - 1)];
+  existing = {
+    id: pick.id,
+    cname: pick.cname || pick.name || '那位队友',
+    pos: pick.pos || '',
+    ovr: pick.ovr || 0,
+    team: STATE.careerTeam,
+    active: true,
+    affinity: 0,
+    sinceSeason: getNarrativeSeasonNumber()
+  };
+  STATE.career.flags.storyTeammate = existing;
+  return existing;
+}
+
+function getRoleNarrativeLevel() {
+  var seasonNum = getNarrativeSeasonNumber();
+  var age = Number(STATE.career && STATE.career.currentAge) || 22;
+  if (age >= 34) return 4;
+  if (seasonNum === 1 || !STATE.season.isUserStarter) return 1;
+  if ((Number(STATE.finalOVR) || 0) >= 89) return 3;
+  return 2;
+}
+
+function makeSeasonStoryThread(id, kind, title, emoji, openingGame, resolutionGame, payload) {
+  return {
+    id: id,
+    kind: kind,
+    title: title,
+    emoji: emoji,
+    state: 'queued',
+    openingGame: openingGame,
+    resolutionGame: resolutionGame,
+    openedAt: null,
+    committedAt: null,
+    resolvedAt: null,
+    choice: null,
+    payload: payload || {}
+  };
+}
+
+function buildSeasonStoryThreads(theme) {
+  var career = STATE.career || {};
+  var flags = career.flags || (career.flags = {});
+  var threads = [];
+  var targetRoleLevel = getRoleNarrativeLevel();
+  var roleArc = flags.roleArc || { level: 0 };
+  flags.roleArc = roleArc;
+  if ((Number(roleArc.level) || 0) < targetRoleLevel) {
+    threads.push(makeSeasonStoryThread(
+      'role_progression_s' + getNarrativeSeasonNumber(), 'role', '角色线 Lv' + targetRoleLevel, '📋', 14, 43,
+      { level: targetRoleLevel }
+    ));
+  }
+  var teammate = getSeasonNarrativeTeammate();
+  if (teammate) {
+    threads.push(makeSeasonStoryThread(
+      'teammate_bond_s' + getNarrativeSeasonNumber(), 'teammate', '队友关系：' + teammate.cname, '🤝', 31, 60,
+      { teammateId: teammate.id, teammateName: teammate.cname }
+    ));
+  }
+  threads.push(makeSeasonStoryThread(
+    'team_direction_s' + getNarrativeSeasonNumber(), 'team', theme.title + '：球队方向', theme.emoji, 48, 74,
+    { themeId: theme.id }
+  ));
+  return threads.slice(0, 3);
+}
+
+function initializeSeasonNarrative() {
+  var events = ensureSeasonEventState();
+  if (events.seasonTheme && Array.isArray(events.storyThreads) && events.storyThreads.length) return events;
+  var theme = chooseSeasonNarrativeTheme();
+  events.seasonTheme = theme;
+  events.storyThreads = buildSeasonStoryThreads(theme);
+  events.storySignals = { games: 0, winStreak: 0, lossStreak: 0, standoutStreak: 0, closeGames: 0, lastOpponent: null };
+  events.directorEvents = [];
+  return events;
+}
+
+function hasNarrativeThread(kind) {
+  var events = ensureSeasonEventState();
+  return (events.storyThreads || []).some(function(thread) { return thread && thread.kind === kind && thread.state !== 'resolved'; });
+}
+
+function updateSeasonNarrativeSignals(ctx) {
+  var events = ensureSeasonEventState();
+  var signals = events.storySignals || (events.storySignals = {});
+  var result = (ctx && ctx.result) || {};
+  var stats = (ctx && ctx.stats) || {};
+  signals.games = (Number(signals.games) || 0) + 1;
+  if (result.won) {
+    signals.winStreak = (Number(signals.winStreak) || 0) + 1;
+    signals.lossStreak = 0;
+  } else {
+    signals.lossStreak = (Number(signals.lossStreak) || 0) + 1;
+    signals.winStreak = 0;
+  }
+  if ((Number(stats.pts) || 0) >= 30 || (Number(stats.ast) || 0) >= 12 || (Number(stats.reb) || 0) >= 16) {
+    signals.standoutStreak = (Number(signals.standoutStreak) || 0) + 1;
+  } else {
+    signals.standoutStreak = 0;
+  }
+  if (getEventScoreDiff(ctx) <= 6) signals.closeGames = (Number(signals.closeGames) || 0) + 1;
+  signals.lastOpponent = ctx && ctx.game ? ctx.game.opponent || null : null;
+  return signals;
+}
+
+/** 非角色线会优先等待比赛给出导火索；到保底场次仍会推进，避免长线被赛程完全饿死。 */
+function isNarrativeThreadReadyToOpen(thread, gameNum, signals) {
+  if (!thread || gameNum < (Number(thread.openingGame) || 99)) return false;
+  if (thread.kind === 'role' || thread.kind === 'rivalry') return true;
+  var wins = Number(signals && signals.winStreak) || 0;
+  var losses = Number(signals && signals.lossStreak) || 0;
+  var standout = Number(signals && signals.standoutStreak) || 0;
+  if (thread.kind === 'teammate') {
+    return wins >= 3 || losses >= 2 || gameNum >= (Number(thread.openingGame) || 0) + 8;
+  }
+  return wins >= 4 || losses >= 4 || standout >= 2 || gameNum >= (Number(thread.openingGame) || 0) + 10;
+}
+
+function queueGameDrivenRivalryThread(ctx) {
+  var events = ensureSeasonEventState();
+  if ((events.storyThreads || []).length >= 4 || hasNarrativeThread('rivalry')) return null;
+  var opponent = ctx && ctx.game && ctx.game.opponent;
+  var history = opponent && events.opponentHistory && events.opponentHistory[opponent];
+  if (!opponent || !history || history.games < 3 || history.closeGames < 2 || history.losses < 2) return null;
+  var top = getTeamTopPlayer(opponent);
+  if (!top) return null;
+  STATE.career.flags = STATE.career.flags || {};
+  if (!STATE.career.flags.eventRivalry) {
+    STATE.career.flags.eventRivalry = {
+      team: opponent,
+      playerId: top.id,
+      playerName: top.cname || top.name || '对方核心',
+      tone: 'competitive',
+      heat: 1,
+      sinceGame: getEventGameNumber(),
+      sinceSeason: STATE.career.seasonCount || 0
+    };
+  }
+  var rivalry = STATE.career.flags.eventRivalry;
+  var thread = makeSeasonStoryThread(
+    'rivalry_escalation_s' + getNarrativeSeasonNumber(), 'rivalry', '宿敌线：' + (rivalry.playerName || '对方核心'), '⚔️',
+    getEventGameNumber(), Math.min(78, getEventGameNumber() + 18),
+    { opponent: opponent, rivalName: rivalry.playerName || '对方核心' }
+  );
+  events.storyThreads.push(thread);
+  return thread;
+}
+
+function getDirectorThreadOpening(thread) {
+  var teammate = getSeasonNarrativeTeammate();
+  var theme = ensureSeasonEventState().seasonTheme || chooseSeasonNarrativeTheme();
+  if (thread.kind === 'role') {
+    var roleCopy = {
+      1: '教练希望你先从轮换与防守任务中建立可信度；这不是一次性谈话，而是一段需要比赛证明的过程。',
+      2: '教练组准备把更多回合交给你，但也要确认你能否让队友在你的节奏里变得更好。',
+      3: '管理层开始把你当作球队核心，真正的问题是：这支球队该围绕你怎样赢球？',
+      4: '新一代球员需要空间，教练希望你重新定义核心的含义，而不是只守住过去的球权。'
+    };
+    return {
+      emoji: thread.emoji,
+      title: thread.title,
+      body: roleCopy[thread.payload.level] || roleCopy[2],
+      desc: '角色线进入长期考核阶段',
+      choices: [
+        { label: '先把球队需要的事做好', hint: '用防守、无球和稳定性建立信任', _directorChoice: 'team_first' },
+        { label: '争取承担更大的责任', hint: '把表现和球权都放到台面上', _directorChoice: 'ambition' },
+        { label: '要求明确的考核标准', hint: '让结果而不是承诺决定下一阶段', _directorChoice: 'standards' }
+      ]
+    };
+  }
+  if (thread.kind === 'teammate') {
+    var name = thread.payload.teammateName || (teammate && teammate.cname) || '那位队友';
+    return {
+      emoji: thread.emoji,
+      title: thread.title,
+      body: name + '最近几场的终结选择引发了讨论。更衣室里没有人公开争吵，但每个人都在观察你会不会把他当作同伴，而不只是一个变量。',
+      desc: '与' + name + '的关系留下了后续伏笔',
+      choices: [
+        { label: '主动替他承担压力', hint: '把问题留在球队内部解决', _directorChoice: 'protect' },
+        { label: '私下把话说开', hint: '直接讨论彼此的期待和边界', _directorChoice: 'honest' },
+        { label: '先专注比赛，不表态', hint: '避免扩大矛盾，也暂不作承诺', _directorChoice: 'distance' }
+      ]
+    };
+  }
+  if (thread.kind === 'rivalry') {
+    var rivalName = thread.payload.rivalName || '对方核心';
+    return {
+      emoji: thread.emoji,
+      title: thread.title,
+      body: '你们已经两次在最后回合分出胜负。' + rivalName + '不再只是赛程上的一个名字，这组对决正在被球迷和媒体共同记住。',
+      desc: '与' + rivalName + '的宿敌线开始累积',
+      choices: [
+        { label: '把每次交锋都当作宣言', hint: '提高对抗热度与关注度', _directorChoice: 'fire' },
+        { label: '把竞争留在球场上', hint: '让长期对决沉淀为尊重', _directorChoice: 'respect' }
+      ]
+    };
+  }
+  return {
+    emoji: thread.emoji,
+    title: thread.title,
+    body: '这个赛季的主题是“' + theme.title + '”。' + theme.summary + '管理层和更衣室都在等你给出方向，而今天的选择不会立即结算。',
+    desc: '球队方向被记录为长期承诺',
+    choices: [
+      { label: '把冲刺放在第一位', hint: '接受更高的当季压力与责任', _directorChoice: 'all_in' },
+      { label: '优先建立可持续的体系', hint: '让每个人都知道自己的位置', _directorChoice: 'foundation' },
+      { label: '保留弹性，先观察赛季走向', hint: '不把球队绑定在一个承诺上', _directorChoice: 'wait' }
+    ]
+  };
+}
+
+function commitDirectorThreadChoice(thread, choiceKey) {
+  if (!thread || thread.state !== 'queued') return '这个决定已经被记录。';
+  thread.state = 'committed';
+  thread.choice = choiceKey || 'wait';
+  thread.committedAt = getEventGameNumber();
+  thread.resolutionGame = Math.max(Number(thread.resolutionGame) || 0, thread.committedAt + 12);
+  if (thread.kind === 'team') {
+    STATE.career.flags = STATE.career.flags || {};
+    STATE.career.flags.seasonCommitment = {
+      season: getNarrativeSeasonNumber(),
+      choice: thread.choice,
+      theme: thread.payload.themeId || '',
+      outcome: 'pending'
+    };
+  }
+  return '决定已被写进赛季轨迹。接下来的比赛会决定它带来的是机会，还是代价。';
+}
+
+function resolveDirectorThread(thread) {
+  var avg = typeof getUserAvg === 'function' ? getUserAvg() : { pts: 0, ast: 0, reb: 0 };
+  var winPct = getNarrativeSeasonWinPct();
+  var success = winPct >= 0.5 || (Number(avg.pts) || 0) >= 22 || (Number(avg.ast) || 0) >= 8;
+  var outcome = '';
+  if (thread.kind === 'role') {
+    STATE.career.flags = STATE.career.flags || {};
+    STATE.career.flags.roleArc = STATE.career.flags.roleArc || { level: 0 };
+    STATE.career.flags.roleArc.level = Math.max(Number(STATE.career.flags.roleArc.level) || 0, Number(thread.payload.level) || 1);
+    STATE.career.flags.roleArc.lastSeason = getNarrativeSeasonNumber();
+    if (thread.choice === 'team_first') {
+      addProfileDelta('coachTrust', success ? 2 : 1); addProfileDelta('lockerRoomTrust', 1);
+      addActiveEventEffect('director-role-team', '角色线：赢得信任', 0.5, 3);
+      outcome = success ? '你用稳定表现让教练组兑现了承诺，下一阶段的角色正式打开。' : '球队战绩仍有起伏，但你的执行力让教练继续把你放进长期计划。';
+    } else if (thread.choice === 'ambition') {
+      addProfileDelta('fame', success ? 2 : 1); addProfileDelta('coachTrust', success ? 1 : -1);
+      addActiveEventEffect('director-role-ambition', '角色线：承担责任', success ? 0.7 : -0.25, 3);
+      outcome = success ? '你承担了更多回合，也用比赛证明这不是空话。' : '更大的责任来得比胜利更早，教练组要求你在下一阶段给出回应。';
+    } else {
+      addProfileDelta('coachTrust', 1); addProfileDelta('leadership', success ? 2 : 1);
+      outcome = success ? '那些考核项一项项变成了你的履历，你的角色不再需要反复解释。' : '结果还不完美，但明确的标准让双方保留了继续前进的空间。';
+    }
+  } else if (thread.kind === 'teammate') {
+    var mate = getSeasonNarrativeTeammate();
+    if (mate) mate.affinity = (Number(mate.affinity) || 0) + (thread.choice === 'distance' ? 0 : 2);
+    if (thread.choice === 'protect') {
+      addProfileDelta('lockerRoomTrust', 2); addProfileDelta('leadership', 1);
+      outcome = success ? '队友记住了你在压力最大时没有把他推出去，这段关系成为球队冲刺期的支点。' : '即使球队没有立刻扭转局面，你仍把问题留在内部解决，关系没有破裂。';
+    } else if (thread.choice === 'honest') {
+      addProfileDelta('coachTrust', 1); addProfileDelta('lockerRoomTrust', 1);
+      addActiveEventEffect('director-teammate-honest', '队友线：沟通后的默契', 0.45, 3);
+      outcome = success ? '那次谈话改变了几次关键回合的选择，你们开始真正理解彼此。' : '谈话没有马上带来连胜，却避免了原本会扩大的一次裂痕。';
+    } else {
+      addProfileDelta('mediaTrust', 1);
+      outcome = success ? '你没有制造额外声音，比赛替你们暂时压下了分歧。' : '沉默没有让问题消失，它会作为下一季关系线的背景继续存在。';
+    }
+  } else if (thread.kind === 'rivalry') {
+    var rivalry = STATE.career && STATE.career.flags && STATE.career.flags.eventRivalry;
+    if (rivalry) {
+      rivalry.heat = Math.min(8, (Number(rivalry.heat) || 0) + (thread.choice === 'fire' ? 2 : 1));
+      rivalry.lastDirectorSeason = getNarrativeSeasonNumber();
+    }
+    if (thread.choice === 'fire') {
+      addProfileDelta('fanSupport', 2); addProfileDelta('controversy', 1);
+      outcome = success ? '你们的每次相遇都开始拥有自己的历史，联盟已经把这组对决定义为焦点。' : '战绩没有站在你这边，但下一次交锋已经有了不能输的理由。';
+    } else {
+      addProfileDelta('mediaTrust', 1); addProfileDelta('legacyBonus', 1);
+      outcome = '竞争没有消失，只是被你们留在了球场上；这段关系会在未来再次被比赛唤醒。';
+    }
+  } else {
+    STATE.career.flags = STATE.career.flags || {};
+    var commitment = STATE.career.flags.seasonCommitment;
+    if (commitment && commitment.season === getNarrativeSeasonNumber()) commitment.outcome = success ? 'kept' : 'fell_short';
+    if (thread.choice === 'all_in') {
+      addProfileDelta('leadership', success ? 2 : 1); addProfileDelta('fame', success ? 1 : 0);
+      addActiveEventEffect('director-team-all-in', '赛季承诺：全力冲刺', success ? 0.7 : -0.3, 3);
+      outcome = success ? '球队回应了你的冲刺承诺，赛季目标从口号变成了更衣室共识。' : '你要求的冲刺没有立刻兑现，管理层会在休赛期重新审视这次承诺。';
+    } else if (thread.choice === 'foundation') {
+      addProfileDelta('coachTrust', 1); addProfileDelta('lockerRoomTrust', 2);
+      outcome = success ? '稳定的分工让球队比上赛季更完整，真正的窗口因此被保留下来。' : '短期成绩不够耀眼，但球队没有因为一次低谷失去彼此的信任。';
+    } else {
+      addProfileDelta('mediaTrust', 1);
+      outcome = success ? '你保留了选择空间，球队也用表现争取到了更多可能。' : '观望避免了仓促决定，但赛季结束后，方向问题仍需要被正面回答。';
+    }
+  }
+  thread.state = 'resolved';
+  thread.resolvedAt = getEventGameNumber();
+  return {
+    emoji: thread.emoji,
+    title: thread.title + ' · 阶段结算',
+    body: outcome,
+    desc: '长期悬念根据本赛季表现得到阶段性结果',
+    btnText: '继续赛季'
+  };
+}
+
+function recordDirectorNarrativeEvent(thread, phase, data) {
+  var events = ensureSeasonEventState();
+  var def = { id: 'director_' + thread.id + '_' + phase, lane: 'director' };
+  recordRandomEvent(def, data);
+  events.directorEvents.push({ threadId: thread.id, phase: phase, gameNum: getEventGameNumber() });
+  return data;
+}
+
+function checkSeasonNarrativeDirector(ctx) {
+  var events = initializeSeasonNarrative();
+  updateSeasonNarrativeSignals(ctx);
+  queueGameDrivenRivalryThread(ctx);
+  var gameNum = getEventGameNumber();
+  var threads = events.storyThreads || [];
+  // 已作出选择的矛盾优先结算，避免新剧情永远挤掉旧伏笔。
+  var dueResolution = threads.find(function(thread) {
+    return thread && thread.state === 'committed' && gameNum >= (Number(thread.resolutionGame) || 99);
+  });
+  if (dueResolution) return recordDirectorNarrativeEvent(dueResolution, 'resolution', resolveDirectorThread(dueResolution));
+  var opening = threads.find(function(thread) {
+    return thread && thread.state === 'queued' && isNarrativeThreadReadyToOpen(thread, gameNum, events.storySignals);
+  });
+  if (!opening) return null;
+  var data = getDirectorThreadOpening(opening);
+  (data.choices || []).forEach(function(choice) {
+    var choiceKey = choice._directorChoice;
+    choice.apply = function() { return commitDirectorThreadChoice(opening, choiceKey); };
+  });
+  opening.openedAt = gameNum;
+  return recordDirectorNarrativeEvent(opening, 'opening', data);
+}
+
 function getAgeBasedInjuryRate() {
   var age = (STATE.career && STATE.career.currentAge) ? STATE.career.currentAge : 22;
   if (age <= 25) return 0;
@@ -10507,13 +10965,14 @@ function getEventCountKey(lane) {
 
 function getRandomEventLaneCap(lane) {
   var playoff = !!(STATE.season && STATE.season.isPlayoffs);
-  var regularCaps = { injury: 2, discipline: 1, career: 2, story: 4 };
-  var playoffCaps = { injury: 2, discipline: 1, career: 2, story: 1 };
+  var regularCaps = { injury: 2, discipline: 1, career: 2, story: 4, director: 6 };
+  var playoffCaps = { injury: 2, discipline: 1, career: 2, story: 1, director: 2 };
   return (playoff ? playoffCaps : regularCaps)[lane] || 0;
 }
 
 function getRandomEventLaneCooldown(lane) {
   var playoff = !!(STATE.season && STATE.season.isPlayoffs);
+  if (lane === 'director') return playoff ? 2 : 5;
   if (playoff) return lane === 'story' ? 3 : (lane === 'career' ? 2 : 2);
   if (lane === 'injury') return 10;
   if (lane === 'discipline') return 18;
@@ -10701,6 +11160,8 @@ function checkRandomEvents(game, result, stats) {
   _lastGameCtx = { game: game, result: result, stats: stats || {} };
   var ctx = _lastGameCtx;
   updateEventOpponentHistory(ctx);
+  var directedEvent = checkSeasonNarrativeDirector(ctx);
+  if (directedEvent) return directedEvent;
   var gameNum = getEventGameNumber();
   var lanes = ['injury', 'discipline', 'career', 'story'];
   var picked = null;
@@ -11981,6 +12442,9 @@ EVENT_REGISTRY.push({
   condition: function() {
     if (STATE.season.isPlayoffs || getEventGameNumber() < 15 || getEventGameNumber() > 48) return false;
     var flags = STATE.career && STATE.career.flags ? STATE.career.flags : {};
+    // 赛季导演已安排角色线时，旧版独立会议不再抢占同一段成长。
+    if (typeof hasNarrativeThread === 'function' && hasNarrativeThread('role')) return false;
+    if (flags.roleArc && flags.roleArc.lastSeason === getNarrativeSeasonNumber()) return false;
     // 这是新人或角色尚未稳定时的首次沟通，不应在核心球员的每个赛季重复出现。
     if (flags.coachRoleMeetingDone) return false;
     var seasonNum = STATE.career.seasonCount || 0;

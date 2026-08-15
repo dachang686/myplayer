@@ -32,7 +32,7 @@ if (stateStart < 0 || stateEnd < 0) {
   if (repaired.injuryGamesLeft !== 3 || repaired.storyTimeline.length !== 1) {
     failures.push('旧存档事件数据在兼容修复时被覆盖');
   }
-  for (const key of ['lastTriggerByLane', 'eventCounts', 'opponentHistory', 'activeEffects']) {
+  for (const key of ['lastTriggerByLane', 'eventCounts', 'opponentHistory', 'activeEffects', 'storyThreads', 'storySignals', 'directorEvents']) {
     if (repaired[key] == null) failures.push(`旧存档没有补齐事件字段 ${key}`);
   }
 }
@@ -67,11 +67,14 @@ if (registryStart < 0 || registryEnd < 0) {
     return state.career.profile[key];
   };
   const createEventState = injuryRiskBonus => ({
-    version: 2,
+    version: 3,
     suspensionGamesLeft: 0, suspensionReason: '', injuryGamesLeft: 0, injuryReason: '',
     triggeredIds: [], storyTimeline: [], lastTriggerGameNum: null, lastTriggerByLane: {}, eventCounts: {},
     playoffEventCount: 0, injuryRiskBonus: Number(injuryRiskBonus) || 0, majorInjuryThisSeason: false,
     playThroughPrompted: {}, regularPlayThroughPromptCount: 0, opponentHistory: {}, activeEffects: [],
+    seasonTheme: null, storyThreads: [],
+    storySignals: { games: 0, winStreak: 0, lossStreak: 0, standoutStreak: 0, closeGames: 0, lastOpponent: null },
+    directorEvents: [],
   });
   const ensureEventState = () => {
     const current = state.season.events || {};
@@ -90,8 +93,11 @@ if (registryStart < 0 || registryEnd < 0) {
     'getCareerProfile',
     'getBondedTeammateName',
     'ensureSeasonEventState',
-    `${indexSource.slice(registryStart, registryEnd)}\nreturn { EVENT_REGISTRY, checkRandomEvents, getRandomEventLane };`,
-  )({}, state, { AWAY: [{ id: 'active-rival', cname: '现役宿敌', ovr: 90 }] }, addProfileDelta, profile, () => '测试队友', ensureEventState);
+    `${indexSource.slice(registryStart, registryEnd)}\nreturn { EVENT_REGISTRY, checkRandomEvents, getRandomEventLane, initializeSeasonNarrative };`,
+  )({}, state, {
+    HOME: [{ id: 'home-star', cname: '故事队友', ovr: 87 }, { id: 'home-wing', cname: '轮换队友', ovr: 82 }],
+    AWAY: [{ id: 'active-rival', cname: '现役宿敌', ovr: 90 }],
+  }, addProfileDelta, profile, () => '测试队友', ensureEventState);
 
   const registry = eventModule.EVENT_REGISTRY;
   const ids = registry.map(event => event.id);
@@ -148,6 +154,48 @@ if (registryStart < 0 || registryEnd < 0) {
     if (coachRoleMeeting.condition()) failures.push('已完成的角色会议仍会重复触发');
   }
 
+  // 赛季导演必须在赛季开始时生成主题与 2-4 条长线，并以比赛节点开场、延后结算。
+  state.career.seasonCount = 0;
+  state.career.currentAge = 22;
+  state.career.contract = 3;
+  state.career.flags = {};
+  state.season.isPlayoffs = false;
+  state.season.isUserStarter = false;
+  state.season.wins = 0;
+  state.season.losses = 0;
+  state.season.playerStats = { games: 0, pts: 0, reb: 0, ast: 0 };
+  state.season.events = createEventState(0);
+  state.season.games = [];
+  const narrativeState = eventModule.initializeSeasonNarrative();
+  if (!narrativeState.seasonTheme || !narrativeState.seasonTheme.id) failures.push('赛季导演没有生成赛季主题');
+  if (narrativeState.storyThreads.length < 2 || narrativeState.storyThreads.length > 4) failures.push('赛季导演没有生成 2-4 条长期悬念');
+  const roleThread = narrativeState.storyThreads.find(thread => thread.kind === 'role');
+  if (!roleThread) {
+    failures.push('新秀赛季没有生成角色成长线');
+  } else {
+    state.season.games = Array.from({ length: roleThread.openingGame }, () => ({ game: { opponent: 'AWAY' } }));
+    const opening = eventModule.checkRandomEvents(
+      { opponent: 'AWAY' },
+      { won: true, scoreA: 110, scoreB: 106 },
+      { pts: 24, reb: 5, ast: 6 },
+    );
+    if (!opening || opening._eventLane !== 'director' || !Array.isArray(opening.choices)) {
+      failures.push('比赛节点没有优先推进赛季导演剧情');
+    } else {
+      opening.choices[0].apply();
+      if (roleThread.state !== 'committed') failures.push('赛季导演选择没有留下未解决矛盾');
+      state.season.games = Array.from({ length: roleThread.resolutionGame }, () => ({ game: { opponent: 'AWAY' } }));
+      const resolution = eventModule.checkRandomEvents(
+        { opponent: 'AWAY' },
+        { won: true, scoreA: 112, scoreB: 104 },
+        { pts: 26, reb: 6, ast: 7 },
+      );
+      if (!resolution || resolution._eventLane !== 'director' || roleThread.state !== 'resolved') {
+        failures.push('赛季导演没有在后续比赛结算长期悬念');
+      }
+    }
+  }
+
   registry.splice(0, registry.length, {
     id: 'validation_suspension',
     lane: 'discipline',
@@ -158,6 +206,10 @@ if (registryStart < 0 || registryEnd < 0) {
       _consequence: 'suspension', _games: 2,
     }),
   });
+  // 前面的职业剧情条件测试会把比赛数推进到第 20 场；重置为独立的调度器用例，
+  // 避免赛季导演按真实赛程优先推进角色线而抢占禁赛验证。
+  state.season.games = [{ game: { opponent: 'AWAY' } }];
+  state.season.events = createEventState(0);
   const originalRandom = Math.random;
   try {
     Math.random = () => 0;
@@ -193,5 +245,6 @@ if (failures.length) {
     suspensionFlow: true,
     interactiveChoices: true,
     activeEffects: true,
+    directorNarrative: true,
   }));
 }
