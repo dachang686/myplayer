@@ -927,6 +927,9 @@ function simOnePlayoffGame(round, seriesIdx, teamA, teamB, isMySeries, gameNum, 
         renderPlayoffGameBrief(skipEntry, teamA, teamB, true, roundName, gameNum + 1, 7, round, seriesIdx);
       }
       seriesGames.push(skipEntry);
+      if (isMySeries && typeof consumeActiveEventEffectsForCareerGame === 'function') {
+        consumeActiveEventEffectsForCareerGame({ unavailable: true });
+      }
       setTimeout(function() {
         simOnePlayoffGame(round, seriesIdx, teamA, teamB, isMySeries, gameNum + 1, skipNewWinsA, skipNewWinsB, seriesGames, userGameStats, roundName, onDone);
       }, isMySeries ? 600 : 50);
@@ -960,6 +963,9 @@ function simOnePlayoffGame(round, seriesIdx, teamA, teamB, isMySeries, gameNum, 
         injuryReason: skipEv.injuryReason || '伤病',
       };
       seriesGames.push(hurtEntry);
+      if (isMySeries && typeof consumeActiveEventEffectsForCareerGame === 'function') {
+        consumeActiveEventEffectsForCareerGame();
+      }
       renderPlayoffGameBrief(hurtEntry, teamA, teamB, true, roundName, gameNum + 1, 7, round, seriesIdx);
       maybeWorsenInjuryAfterPlaying(skipEv, severity);
       setTimeout(function() {

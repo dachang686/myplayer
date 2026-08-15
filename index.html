@@ -1309,7 +1309,7 @@ function updateSeasonBadge(activeId) {
 /** 赛季事件状态统一入口；新增字段均在 ensureSeasonEventState 中兼容旧存档。 */
 function createSeasonEventState(injuryRiskBonus) {
   return {
-    version: 5,
+    version: 6,
     suspensionGamesLeft: 0,
     suspensionReason: '',
     injuryGamesLeft: 0,
@@ -1326,6 +1326,9 @@ function createSeasonEventState(injuryRiskBonus) {
     regularPlayThroughPromptCount: 0,
     opponentHistory: {},
     activeEffects: [],
+    lastActiveEffectTickKey: null,
+    careerTeamGamesPlayed: 0,
+    playerUnavailableGames: 0,
     // 赛季导演层：主题、长线矛盾和比赛信号均随存档持久化。
     seasonTheme: null,
     storyThreads: [],
@@ -1356,7 +1359,7 @@ function ensureSeasonEventState() {
   if (!Array.isArray(current.directorEvents)) current.directorEvents = [];
   if (typeof current.narrativeSeasonFinalized !== 'boolean') current.narrativeSeasonFinalized = false;
   if (current.seasonTheme != null && (typeof current.seasonTheme !== 'object' || Array.isArray(current.seasonTheme))) current.seasonTheme = null;
-  current.version = 5;
+  current.version = 6;
   STATE.season.events = current;
   return current;
 }
@@ -4098,6 +4101,7 @@ function quickSimAllGames(targetDay) {
           if (oppS2) { if (skipResult.won) oppS2.losses++; else oppS2.wins++; updateStreak(g.opponent, !skipResult.won); }
           updateStreak(STATE.careerTeam, skipResult.won);
           STATE.season.games.push({ result: skipResult, stats: null, game: g, suspended: true });
+          consumeActiveEventEffectsForCareerGame({ unavailable: true });
           simDayLeagueGames(g.day);
            gi++;
             renderCalendar();
@@ -4135,6 +4139,7 @@ function quickSimAllGames(targetDay) {
             });
           }
           STATE.season.games.push({ result: hurtResult, stats: hurtStats, game: g, playedThroughInjury: true });
+          consumeActiveEventEffectsForCareerGame();
           var worsenText = maybeWorsenInjuryAfterPlaying(ev, severity);
           simDayLeagueGames(g.day);
            gi++;
@@ -10876,9 +10881,15 @@ function chooseNarrativeThemeVariant(key) {
   var variants = SEASON_THEME_VARIANTS[key];
   if (!variants || !variants.length) return null;
   var history = getNarrativeThemeHistory();
-  var previous = history.length ? history[history.length - 1] : null;
-  var index = (getNarrativeSeasonNumber() + history.length - 1) % variants.length;
-  if (previous && previous.id === key && previous.variantId === variants[index].id) index = (index + 1) % variants.length;
+  var sameThemeHistory = history.filter(function(item) { return item && item.id === key; });
+  var flags = STATE.career && STATE.career.flags ? STATE.career.flags : {};
+  var savedCursor = flags.seasonThemeVariantCursor && flags.seasonThemeVariantCursor[key];
+  var cursor = savedCursor == null ? NaN : Number(savedCursor);
+  var index = (Number.isFinite(cursor) ? cursor : sameThemeHistory.length) % variants.length;
+  var previousSameTheme = sameThemeHistory.length ? sameThemeHistory[sameThemeHistory.length - 1] : null;
+  if (previousSameTheme && previousSameTheme.variantId === variants[index].id && variants.length > 1) {
+    index = (index + 1) % variants.length;
+  }
   return variants[index];
 }
 
@@ -11190,6 +11201,9 @@ function migrateNarrativeCarryOverRelationship(item) {
     payload.teammateName = reunited && reunited.cname || payload.teammateName;
     payload.returnedSeason = getNarrativeSeasonNumber();
     payload.relationshipMigrated = true;
+    payload.previousChoice = item.choice || 'wait';
+    item.choice = null;
+    item.reopenAfterRelationshipMigration = true;
   }
   return item;
 }
@@ -11212,10 +11226,12 @@ function takeNarrativeCarryOvers() {
       13,
       Object.assign({}, item.payload || {}, { carryOver: true, carriedFromSeason: item.fromSeason || getNarrativeSeasonNumber() - 1 })
     );
-    thread.state = 'committed';
-    thread.choice = item.choice || 'wait';
-    thread.committedAt = 0;
-    thread.awaitingCarryOverBaseline = true;
+    var shouldReopen = !!item.reopenAfterRelationshipMigration;
+    thread.state = shouldReopen ? 'queued' : 'committed';
+    thread.choice = shouldReopen ? null : (item.choice || 'wait');
+    thread.committedAt = shouldReopen ? null : 0;
+    thread.awaitingCarryOverBaseline = !shouldReopen;
+    thread.reopenedFromCarryOver = shouldReopen;
     thread.carryOver = true;
     return thread;
   }).filter(Boolean);
@@ -11295,15 +11311,19 @@ function selectSeasonNarrativeThreads(carryOvers, generated) {
     if (thread && (thread.kind === 'role' || thread.kind === 'teammate')) return 3;
     return 4;
   };
+  function getIdentity(thread) {
+    var payload = thread && thread.payload || {};
+    if (thread && ['teammate', 'former_teammate', 'reunited_teammate'].indexOf(thread.kind) >= 0 && payload.teammateId) {
+      return 'relationship:' + payload.teammateId;
+    }
+    return thread && thread.kind + ':' + (payload.opponent || '');
+  }
   return combined.map(function(thread, index) { return { thread: thread, index: index }; })
     .sort(function(a, b) { return priority(a.thread) - priority(b.thread) || a.index - b.index; })
     .filter(function(entry, index, entries) {
-      var thread = entry.thread;
-      var payload = thread && thread.payload || {};
-      var identity = thread && thread.kind + ':' + (payload.teammateId || payload.opponent || '');
+      var identity = getIdentity(entry.thread);
       return entries.findIndex(function(other) {
-        var otherPayload = other.thread && other.thread.payload || {};
-        return other.thread && other.thread.kind + ':' + (otherPayload.teammateId || otherPayload.opponent || '') === identity;
+        return getIdentity(other.thread) === identity;
       }) === index;
     }).slice(0, 4).map(function(entry) { return entry.thread; });
 }
@@ -11361,7 +11381,7 @@ function updateSeasonNarrativeSignals(ctx) {
 /** 非角色线会优先等待比赛给出导火索；到保底场次仍会推进，避免长线被赛程完全饿死。 */
 function isNarrativeThreadReadyToOpen(thread, gameNum, signals) {
   if (!thread || gameNum < (Number(thread.openingGame) || 99)) return false;
-  if (thread.kind === 'role' || thread.kind === 'rivalry' || thread.kind === 'rivalry_reckoning' || thread.kind === 'former_teammate' || thread.kind === 'media' || thread.kind === 'locker_room') return true;
+  if (thread.kind === 'role' || thread.kind === 'rivalry' || thread.kind === 'rivalry_reckoning' || thread.kind === 'former_teammate' || thread.kind === 'reunited_teammate' || thread.kind === 'media' || thread.kind === 'locker_room') return true;
   var wins = Number(signals && signals.winStreak) || 0;
   var losses = Number(signals && signals.lossStreak) || 0;
   var standout = Number(signals && signals.standoutStreak) || 0;
@@ -11577,7 +11597,12 @@ function captureNarrativeThreadSnapshot() {
     reb: Number(player.reb) || 0,
     isUserStarter: !!(STATE.season && STATE.season.isUserStarter),
     lossStreak: Number(events.storySignals && events.storySignals.lossStreak) || 0,
-    standoutStreak: Number(events.storySignals && events.storySignals.standoutStreak) || 0
+    standoutStreak: Number(events.storySignals && events.storySignals.standoutStreak) || 0,
+    careerTeamGames: Number(events.careerTeamGamesPlayed) || 0,
+    unavailableGames: Number(events.playerUnavailableGames) || 0,
+    injuryRiskBonus: Number(events.injuryRiskBonus) || 0,
+    injuryGamesLeft: Number(events.injuryGamesLeft) || 0,
+    majorInjuryThisSeason: !!events.majorInjuryThisSeason
   };
 }
 
@@ -11604,6 +11629,13 @@ function getNarrativeThreadOutcome(thread) {
   var playerGames = before ? Math.max(0, now.playerGames - (Number(before.playerGames) || 0)) : 0;
   var postPts = playerGames > 0 ? Math.max(0, now.pts - (Number(before.pts) || 0)) / playerGames : 0;
   var postAst = playerGames > 0 ? Math.max(0, now.ast - (Number(before.ast) || 0)) / playerGames : 0;
+  var postTeamGames = before ? Math.max(0, now.careerTeamGames - (Number(before.careerTeamGames) || 0)) : 0;
+  var unavailableGames = before ? Math.max(0, now.unavailableGames - (Number(before.unavailableGames) || 0)) : 0;
+  var teamWins = before ? Math.max(0, now.wins - (Number(before.wins) || 0)) : 0;
+  var teamLosses = before ? Math.max(0, now.losses - (Number(before.losses) || 0)) : 0;
+  var postTeamWinPct = teamWins + teamLosses > 0 ? teamWins / (teamWins + teamLosses) : postWinPct;
+  var newMajorInjury = !!(before && !before.majorInjuryThisSeason && now.majorInjuryThisSeason);
+  var injuryRiskDelta = before ? now.injuryRiskBonus - (Number(before.injuryRiskBonus) || 0) : 0;
   var success = postGames >= 3 && postWinPct >= 0.5;
   var teammate = getSeasonNarrativeTeammate();
   if (thread && thread.kind === 'locker_room') success = postGames >= 3 && postWinPct >= 0.5 && now.lossStreak < 4;
@@ -11611,7 +11643,40 @@ function getNarrativeThreadOutcome(thread) {
   else if (thread && thread.kind === 'role') success = postGames >= 3 && (now.isUserStarter || postPts >= 14 || postAst >= 6) && postWinPct >= 0.4;
   else if (thread && thread.kind === 'teammate') success = postGames >= 3 && postWinPct >= 0.45 && (Number(teammate && teammate.affinity) || 0) >= 2;
   else if (thread && (thread.kind === 'rivalry' || thread.kind === 'rivalry_reckoning')) success = postGames >= 1 && postWinPct >= 0.5;
-  return { success: success, postGames: postGames, postWinPct: postWinPct, postPts: postPts, postAst: postAst, lossStreak: now.lossStreak };
+  else if (thread && thread.kind === 'team' && thread.payload && thread.payload.effectProfile === 'health') {
+    if (thread.choice === 'foundation') success = postTeamGames >= 3 && unavailableGames === 0 && now.injuryGamesLeft === 0 && !newMajorInjury;
+    else if (thread.choice === 'all_in') success = postTeamGames >= 3 && unavailableGames <= 1 && now.injuryGamesLeft === 0 && !newMajorInjury && postTeamWinPct >= 0.55;
+    else success = postTeamGames >= 3 && unavailableGames <= 1 && now.injuryGamesLeft === 0 && !newMajorInjury && postTeamWinPct >= 0.45;
+  }
+  return { success: success, postGames: postGames, postTeamGames: postTeamGames, unavailableGames: unavailableGames, newMajorInjury: newMajorInjury, injuryRiskDelta: injuryRiskDelta, postWinPct: postWinPct, postTeamWinPct: postTeamWinPct, postPts: postPts, postAst: postAst, lossStreak: now.lossStreak };
+}
+
+function applySeasonThemeVariantCommit(thread) {
+  if (!thread || thread.kind !== 'team' || thread.commitEffectsApplied) return null;
+  var profileId = thread.payload && thread.payload.effectProfile;
+  var profile = getSeasonThemeEffectProfile(profileId);
+  if (!profile) return null;
+  var choice = thread.choice || 'wait';
+  var selected = profile.choices.find(function(item) { return item[0] === choice; }) || profile.choices[2];
+  var edgeByChoice = { all_in: 0.55, foundation: 0.25, wait: 0.1 };
+  var edge = edgeByChoice[choice] == null ? 0.1 : edgeByChoice[choice];
+  var events = ensureSeasonEventState();
+  if (profileId === 'health') {
+    if (choice === 'all_in') {
+      events.injuryRiskBonus = Math.min(12, (Number(events.injuryRiskBonus) || 0) + 0.65);
+      edge = 0.65;
+    } else if (choice === 'foundation') {
+      events.injuryRiskBonus = Math.max(-4, (Number(events.injuryRiskBonus) || 0) - 0.8);
+      edge = -0.1;
+    } else {
+      events.injuryRiskBonus = Math.max(-4, (Number(events.injuryRiskBonus) || 0) - 0.2);
+      edge = 0.05;
+    }
+  }
+  addActiveEventEffect('director-theme-commit-' + thread.id, (thread.payload.themeTitle || thread.title) + '：' + selected[1], edge, 12);
+  thread.commitEffectsApplied = true;
+  thread.commitEffect = { profileId: profileId, choice: choice, teamEdge: edge };
+  return thread.commitEffect;
 }
 
 function commitDirectorThreadChoice(thread, choiceKey) {
@@ -11629,6 +11694,7 @@ function commitDirectorThreadChoice(thread, choiceKey) {
       theme: thread.payload.themeId || '',
       outcome: 'pending'
     };
+    applySeasonThemeVariantCommit(thread);
   }
   if (thread.kind === 'rivalry_reckoning') {
     var rivalry = getNarrativeRivalry();
@@ -11652,26 +11718,24 @@ function applySeasonThemeVariantChoice(profileId, choice, success, themeTitle) {
   if (!profile) return null;
   var selected = profile.choices.find(function(item) { return item[0] === choice; }) || profile.choices[2];
   var label = selected[1];
-  var edge = success ? 0.65 : -0.15;
   if (profileId === 'responsibility') {
-    if (choice === 'all_in') { addProfileDelta('leadership', 2); addProfileDelta('fame', success ? 1 : 0); edge = success ? 0.85 : -0.3; }
+    if (choice === 'all_in') { addProfileDelta('leadership', 2); addProfileDelta('fame', success ? 1 : 0); }
     else if (choice === 'foundation') { addProfileDelta('lockerRoomTrust', 2); addProfileDelta('coachTrust', 1); }
     else addProfileDelta('coachTrust', 1);
   } else if (profileId === 'cohesion') {
     if (choice === 'all_in') { addProfileDelta('lockerRoomTrust', 2); addProfileDelta('leadership', 1); }
-    else if (choice === 'foundation') { addProfileDelta('lockerRoomTrust', 2); addProfileDelta('coachTrust', 1); edge = success ? 0.55 : 0.1; }
+    else if (choice === 'foundation') { addProfileDelta('lockerRoomTrust', 2); addProfileDelta('coachTrust', 1); }
     else addProfileDelta('mediaTrust', 1);
   } else if (profileId === 'structure') {
-    if (choice === 'all_in') { addProfileDelta('coachTrust', success ? 2 : -1); addProfileDelta('leadership', 1); edge = success ? 0.9 : -0.4; }
+    if (choice === 'all_in') { addProfileDelta('coachTrust', success ? 2 : -1); addProfileDelta('leadership', 1); }
     else if (choice === 'foundation') { addProfileDelta('coachTrust', 2); addProfileDelta('lockerRoomTrust', 1); }
     else addProfileDelta('mediaTrust', 1);
   } else if (profileId === 'health') {
-    var events = ensureSeasonEventState();
-    if (choice === 'all_in') { addProfileDelta('fame', 1); events.injuryRiskBonus = Math.min(12, (events.injuryRiskBonus || 0) + 0.65); edge = success ? 0.9 : -0.45; }
-    else if (choice === 'foundation') { addProfileDelta('coachTrust', 1); events.injuryRiskBonus = Math.max(-4, (events.injuryRiskBonus || 0) - 0.8); edge = success ? 0.4 : 0.05; }
-    else { addProfileDelta('leadership', 1); events.injuryRiskBonus = Math.max(-4, (events.injuryRiskBonus || 0) - 0.2); }
+    if (choice === 'all_in') addProfileDelta('fame', success ? 1 : 0);
+    else if (choice === 'foundation') addProfileDelta('coachTrust', 1);
+    else addProfileDelta('leadership', 1);
   } else if (profileId === 'future') {
-    if (choice === 'all_in') { addProfileDelta('leadership', 2); addProfileDelta('loyalty', 1); edge = success ? 0.8 : -0.35; }
+    if (choice === 'all_in') { addProfileDelta('leadership', 2); addProfileDelta('loyalty', 1); }
     else if (choice === 'foundation') { addProfileDelta('coachTrust', 1); addProfileDelta('lockerRoomTrust', 2); }
     else addProfileDelta('businessValue', 1);
   } else {
@@ -11679,7 +11743,6 @@ function applySeasonThemeVariantChoice(profileId, choice, success, themeTitle) {
     else if (choice === 'foundation') { addProfileDelta('lockerRoomTrust', 1); addProfileDelta('mediaTrust', 1); addProfileDelta('leadership', 1); }
     else addProfileDelta('coachTrust', 1);
   }
-  addActiveEventEffect('director-theme-' + profileId + '-' + choice, themeTitle + '：' + label, edge, 3);
   return '你选择“' + label + '”。' + (success
     ? '之后的比赛证明这条路线与“' + themeTitle + '”的真实矛盾相符，球队开始形成新的稳定答案。'
     : '之后的比赛暴露了这条路线的代价，“' + themeTitle + '”仍会作为休赛期必须回答的问题。');
@@ -11817,11 +11880,14 @@ function resolveDirectorThread(thread) {
   }
   thread.state = 'resolved';
   thread.resolvedAt = getEventGameNumber();
+  var observedGames = thread.kind === 'team' && thread.payload && thread.payload.effectProfile === 'health'
+    ? metrics.postTeamGames
+    : metrics.postGames;
   return {
     emoji: thread.emoji,
     title: thread.title + ' · 阶段结算',
     body: outcome,
-    desc: '根据选择后的' + (metrics.postGames || 0) + '场比赛得到阶段性结果',
+    desc: '根据选择后的' + (observedGames || 0) + '场比赛得到阶段性结果',
     btnText: '继续赛季'
   };
 }
@@ -11846,7 +11912,16 @@ function checkSeasonNarrativeDirector(ctx) {
     // 常规赛末段的选择没有凑满观察窗口时，留到下一季，而不是在季后赛首战用错误窗口结算。
     return !(STATE.season && STATE.season.isPlayoffs && thread.commitSnapshot && thread.commitSnapshot.phase === 'regular');
   });
+  var directorCountKey = getEventCountKey('director');
+  var directorLastGame = events.lastTriggerByLane[directorCountKey];
+  var canShowDirectorEvent = (events.eventCounts[directorCountKey] || 0) < getRandomEventLaneCap('director') &&
+    (directorLastGame == null || gameNum - directorLastGame >= getRandomEventLaneCooldown('director'));
   if (dueResolution) {
+    if (!canShowDirectorEvent) {
+      queueGameDrivenPressureThread();
+      queueGameDrivenRivalryThread(ctx);
+      return null;
+    }
     var resolution = resolveDirectorThread(dueResolution);
     // 本场刚释放的容量立刻用于保存已经达成的高光、连败或宿敌信号，避免下一场信号归零后永久错过。
     queueGameDrivenPressureThread();
@@ -11855,6 +11930,7 @@ function checkSeasonNarrativeDirector(ctx) {
   }
   queueGameDrivenPressureThread();
   queueGameDrivenRivalryThread(ctx);
+  if (!canShowDirectorEvent) return null;
   var opening = threads.find(function(thread) {
     return thread && thread.state === 'queued' && isNarrativeThreadReadyToOpen(thread, gameNum, events.storySignals);
   });
@@ -11938,6 +12014,11 @@ function finalizeSeasonNarrativeAtSeasonEnd() {
   var theme = events.seasonTheme;
   if (theme && !history.some(function(item) { return item && item.season === theme.season; })) {
     history.push({ id: theme.id, variantId: theme.variantId || theme.id, season: theme.season });
+  }
+  var variantCursor = STATE.career.flags.seasonThemeVariantCursor || (STATE.career.flags.seasonThemeVariantCursor = {});
+  if (theme) {
+    var themeHistoryCount = history.filter(function(item) { return item && item.id === theme.id; }).length;
+    variantCursor[theme.id] = Math.max(Number(variantCursor[theme.id]) || 0, themeHistoryCount);
   }
   if (history.length > 8) history.splice(0, history.length - 8);
   events.narrativeSeasonFinalized = true;
@@ -12101,6 +12182,23 @@ function tickActiveEventEffects() {
   events.activeEffects = events.activeEffects.filter(function(effect) { return effect && effect.gamesLeft > 0; });
 }
 
+/** 每场生涯球队比赛只消费一次短期效果；伤停、带伤与正常出战共用同一计数。 */
+function consumeActiveEventEffectsForCareerGame(options) {
+  var events = ensureSeasonEventState();
+  var availabilityGame = Number(STATE.season && STATE.season._careerTeamAvailabilityGame) || 0;
+  var phase = STATE.season && STATE.season.isPlayoffs ? 'playoffs' : 'regular';
+  var fallbackGame = STATE.season && STATE.season.isPlayoffs
+    ? ((STATE.season.playoffStats && STATE.season.playoffStats.games) || 0)
+    : ((STATE.season.games || []).length);
+  var tickKey = availabilityGame > 0 ? 'career-team:' + availabilityGame : phase + ':' + fallbackGame;
+  if (events.lastActiveEffectTickKey === tickKey) return false;
+  tickActiveEventEffects();
+  events.lastActiveEffectTickKey = tickKey;
+  events.careerTeamGamesPlayed = (Number(events.careerTeamGamesPlayed) || 0) + 1;
+  if (options && options.unavailable) events.playerUnavailableGames = (Number(events.playerUnavailableGames) || 0) + 1;
+  return true;
+}
+
 function addActiveEventEffect(id, label, teamEdge, games) {
   var events = ensureSeasonEventState();
   events.activeEffects = events.activeEffects.filter(function(effect) { return effect && effect.id !== id; });
@@ -12208,7 +12306,7 @@ function pickWeightedEvent(candidates) {
 
 function checkRandomEvents(game, result, stats) {
   var ev = ensureSeasonEventState();
-  tickActiveEventEffects();
+  consumeActiveEventEffectsForCareerGame();
   _lastGameCtx = { game: game, result: result, stats: stats || {} };
   var ctx = _lastGameCtx;
   updateEventOpponentHistory(ctx);
