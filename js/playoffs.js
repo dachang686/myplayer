@@ -1088,6 +1088,9 @@ function simPlayoffSeries(round, seriesIdx) {
       winsA, winsB, aWon, seriesGames, isMySeries,
     };
     bracket.results.push(result);
+    if (isMySeries && typeof recordNarrativePlayoffSeries === 'function') {
+      recordNarrativePlayoffSeries(result);
+    }
     
     // 更新下一轮对阵（联盟规则：1v8胜者vs4v5胜者，2v7胜者vs3v6胜者）
     if (round < 2) {

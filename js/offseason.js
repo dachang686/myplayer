@@ -961,7 +961,9 @@ function resetForNewSeason() {
     playoffBracket: null, otherBracket: null,
     _viewConf: null, _gamesPlayed: {}, _leagueGameLog: [], rankings: null,
     _simulationStarted: false,
-    events: { suspensionGamesLeft:0, suspensionReason:'', injuryGamesLeft:0, injuryReason:'', triggeredIds:[], storyTimeline:[], lastTriggerGameNum:null, playoffEventCount:0, injuryRiskBonus: getNextSeasonMods().injuryRiskBonus || 0, majorInjuryThisSeason:false, playThroughPrompted:{}, regularPlayThroughPromptCount:0 },
+    events: typeof createSeasonEventState === 'function'
+      ? createSeasonEventState(getNextSeasonMods().injuryRiskBonus || 0)
+      : { suspensionGamesLeft:0, suspensionReason:'', injuryGamesLeft:0, injuryReason:'', triggeredIds:[], storyTimeline:[], lastTriggerGameNum:null, playoffEventCount:0, injuryRiskBonus: getNextSeasonMods().injuryRiskBonus || 0, majorInjuryThisSeason:false, playThroughPrompted:{}, regularPlayThroughPromptCount:0 },
   };
   STATE.careerTeam = oldTeam;
   if (STATE.career && STATE.career.flags) delete STATE.career.flags.startBench;
@@ -969,6 +971,7 @@ function resetForNewSeason() {
   syncUserStarterStatus();
   initStandings();
   buildRealSchedule();
+  if (typeof initializeSeasonNarrative === 'function') initializeSeasonNarrative();
 
   STATE._calendarAutoSimulating = false;
   STATE._calendarMonth = 0;

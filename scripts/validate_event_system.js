@@ -32,7 +32,7 @@ if (stateStart < 0 || stateEnd < 0) {
   if (repaired.injuryGamesLeft !== 3 || repaired.storyTimeline.length !== 1) {
     failures.push('旧存档事件数据在兼容修复时被覆盖');
   }
-  for (const key of ['lastTriggerByLane', 'eventCounts', 'opponentHistory', 'activeEffects', 'storyThreads', 'storySignals', 'directorEvents']) {
+  for (const key of ['lastTriggerByLane', 'eventCounts', 'opponentHistory', 'activeEffects', 'storyThreads', 'storySignals', 'directorEvents', 'narrativeSeasonFinalized']) {
     if (repaired[key] == null) failures.push(`旧存档没有补齐事件字段 ${key}`);
   }
 }
@@ -45,7 +45,7 @@ if (registryStart < 0 || registryEnd < 0) {
   const state = {
     finalOVR: 88,
     careerTeam: 'HOME',
-    career: { seasonCount: 1, currentAge: 28, contract: 2, profile: {}, flags: {} },
+    career: { seasonCount: 1, currentAge: 28, contract: 2, profile: {}, flags: {}, seasons: [] },
     season: {
       games: [{ game: { opponent: 'AWAY' } }],
       wins: 1,
@@ -67,14 +67,14 @@ if (registryStart < 0 || registryEnd < 0) {
     return state.career.profile[key];
   };
   const createEventState = injuryRiskBonus => ({
-    version: 3,
+    version: 5,
     suspensionGamesLeft: 0, suspensionReason: '', injuryGamesLeft: 0, injuryReason: '',
     triggeredIds: [], storyTimeline: [], lastTriggerGameNum: null, lastTriggerByLane: {}, eventCounts: {},
     playoffEventCount: 0, injuryRiskBonus: Number(injuryRiskBonus) || 0, majorInjuryThisSeason: false,
     playThroughPrompted: {}, regularPlayThroughPromptCount: 0, opponentHistory: {}, activeEffects: [],
     seasonTheme: null, storyThreads: [],
-    storySignals: { games: 0, winStreak: 0, lossStreak: 0, standoutStreak: 0, closeGames: 0, lastOpponent: null },
-    directorEvents: [],
+    storySignals: { games: 0, wins: 0, losses: 0, winStreak: 0, lossStreak: 0, standoutStreak: 0, closeGames: 0, lastOpponent: null },
+    directorEvents: [], narrativeSeasonFinalized: false,
   });
   const ensureEventState = () => {
     const current = state.season.events || {};
@@ -85,6 +85,10 @@ if (registryStart < 0 || registryEnd < 0) {
     state.season.events = current;
     return current;
   };
+  const leagueData = {
+    HOME: [{ id: 'home-star', cname: '故事队友', ovr: 87 }, { id: 'home-wing', cname: '轮换队友', ovr: 82 }],
+    AWAY: [{ id: 'active-rival', cname: '现役宿敌', ovr: 90 }],
+  };
   const eventModule = new Function(
     'window',
     'STATE',
@@ -93,11 +97,8 @@ if (registryStart < 0 || registryEnd < 0) {
     'getCareerProfile',
     'getBondedTeammateName',
     'ensureSeasonEventState',
-    `${indexSource.slice(registryStart, registryEnd)}\nreturn { EVENT_REGISTRY, checkRandomEvents, getRandomEventLane, initializeSeasonNarrative };`,
-  )({}, state, {
-    HOME: [{ id: 'home-star', cname: '故事队友', ovr: 87 }, { id: 'home-wing', cname: '轮换队友', ovr: 82 }],
-    AWAY: [{ id: 'active-rival', cname: '现役宿敌', ovr: 90 }],
-  }, addProfileDelta, profile, () => '测试队友', ensureEventState);
+    `${indexSource.slice(registryStart, registryEnd)}\nreturn { EVENT_REGISTRY, checkRandomEvents, getRandomEventLane, initializeSeasonNarrative, canTriggerEventByLifecycle, recordEventLifecycle, meetsCareerEventIdentity, recordNarrativePlayoffSeries, finalizeSeasonNarrativeAtSeasonEnd, commitDirectorThreadChoice, resolveDirectorThread, getNarrativeThreadOutcome, getSeasonThemeEventWeight, chooseSeasonNarrativeTheme, getSeasonThemeStoryline, getSeasonNarrativeTeammate, getNarrativeFormerTeammates, getDirectorThreadOpening, queueGameDrivenPressureThread, getActiveNarrativeThreadCount, selectNarrativeFormerTeammate, checkSeasonNarrativeDirector };`,
+  )({}, state, leagueData, addProfileDelta, profile, () => '测试队友', ensureEventState);
 
   const registry = eventModule.EVENT_REGISTRY;
   const ids = registry.map(event => event.id);
@@ -196,6 +197,400 @@ if (registryStart < 0 || registryEnd < 0) {
     }
   }
 
+  // 生命周期：生涯唯一事件不能跨季重抽；可重复花絮至少间隔一个完整赛季。
+  state.career.flags = {};
+  state.career.seasonCount = 0;
+  const careerOnce = { id: 'record_milestone_ball', lane: 'story' };
+  eventModule.recordEventLifecycle(careerOnce);
+  if (eventModule.canTriggerEventByLifecycle(careerOnce)) failures.push('career_once 事件可在生涯中重复触发');
+  const repeatable = { id: 'team_dinner', lane: 'story' };
+  eventModule.recordEventLifecycle(repeatable);
+  if (eventModule.canTriggerEventByLifecycle(repeatable)) failures.push('repeatable 事件没有阻止相邻赛季重复');
+  state.career.seasonCount = 2;
+  if (!eventModule.canTriggerEventByLifecycle(repeatable)) failures.push('repeatable 事件经过间隔后无法再次触发');
+
+  // 身份过滤：替补新秀不能进入奖项舆论战，核心球员可以。
+  const awardRace = registry.find(item => item.id === 'career_award_race_pressure');
+  if (awardRace) {
+    state.career.seasonCount = 1;
+    state.finalOVR = 78;
+    state.career.profile = {};
+    state.season.isUserStarter = false;
+    if (eventModule.meetsCareerEventIdentity(awardRace)) failures.push('替补新秀错误进入奖项舆论事件');
+    state.finalOVR = 92;
+    state.career.profile = { fame: 16 };
+    state.season.isUserStarter = true;
+    if (!eventModule.meetsCareerEventIdentity(awardRace)) failures.push('核心球员被错误排除在奖项舆论事件外');
+  }
+
+  // 季后赛系列赛必须为宿敌留下跨赛季结果，而非只保留当场弹窗。
+  state.career.flags = { eventRivalry: { team: 'AWAY', playerId: 'active-rival', playerName: '现役宿敌', heat: 1 } };
+  state.career.seasonCount = 2;
+  eventModule.recordNarrativePlayoffSeries({ isMySeries: true, teamA: 'HOME', teamB: 'AWAY', aWon: false });
+  if (state.career.flags.eventRivalry.playoffLosses !== 1 || state.career.flags.eventRivalry.playoffMeetings !== 1) {
+    failures.push('季后赛宿敌结果没有写入跨赛季状态');
+  }
+
+  // 未结剧情必须被写入 career flags，并在下一季重新变成可结算线程。
+  state.career.flags = {};
+  state.career.seasonCount = 2;
+  state.season = {
+    games: Array.from({ length: 80 }, () => ({ game: { opponent: 'AWAY' } })), wins: 42, losses: 38,
+    isPlayoffs: false, isUserStarter: true, playerStats: { games: 80, pts: 1600, ast: 400, reb: 400 }, schedule: [],
+    events: createEventState(0),
+  };
+  state.season.events.seasonTheme = { id: 'title', season: 3 };
+  state.season.events.storyThreads = [{
+    id: 'carry-role', kind: 'role', title: '角色线 Lv2', emoji: '📋', state: 'committed', choice: 'team_first', payload: { level: 2 },
+  }];
+  eventModule.finalizeSeasonNarrativeAtSeasonEnd();
+  if (!state.career.flags.narrativeCarryOvers?.length) failures.push('未结剧情没有写入跨赛季存档');
+  state.career.seasonCount = 3;
+  state.season.events = createEventState(0);
+  const nextSeasonNarrative = eventModule.initializeSeasonNarrative();
+  const carriedThread = nextSeasonNarrative.storyThreads.find(thread => thread.carryOver && thread.kind === 'role');
+  if (!carriedThread || carriedThread.state !== 'committed' || state.career.flags.narrativeCarryOvers.length) {
+    failures.push('跨赛季剧情没有在新赛季恢复为可结算线程');
+  }
+
+  // broad theme 必须符合真实身份；连续争冠通过 variant 变化，而不是退回“崭露头角”。
+  const playoffAdjustment = registry.find(item => item.id === 'career_playoff_adjustment');
+  state.season.events.seasonTheme = { id: 'title' };
+  if (playoffAdjustment && eventModule.getSeasonThemeEventWeight(playoffAdjustment) <= playoffAdjustment.weight) {
+    failures.push('赛季主题没有改变对应职业事件权重');
+  }
+  state.career.flags = { seasonThemeHistory: [{ id: 'title', variantId: 'title_all_in', season: 3 }] };
+  state.career.currentAge = 28;
+  state.career.contract = 3;
+  state.finalOVR = 92;
+  state.season.isUserStarter = true;
+  const repeatedTitleTheme = eventModule.chooseSeasonNarrativeTheme();
+  if (repeatedTitleTheme.id !== 'title' || repeatedTitleTheme.variantId === 'title_all_in') {
+    failures.push('争冠核心为了防重复被错误降级为不符合身份的主题');
+  }
+  state.career.flags = {
+    seasonCommitment: { outcome: 'fell_short' },
+    seasonThemeHistory: [{ id: 'reset', variantId: 'reset_accountability', season: 3 }],
+  };
+  state.finalOVR = 86;
+  const repeatedResetTheme = eventModule.chooseSeasonNarrativeTheme();
+  if (repeatedResetTheme.id !== 'reset' || repeatedResetTheme.variantId === 'reset_accountability') {
+    failures.push('失败后的重整主题为了防重复被错误改写成成长主题');
+  }
+
+  // 长期替补与生涯暮年可以保留大主题，但必须轮换具体矛盾与文案。
+  state.career.seasonCount = 10;
+  state.career.currentAge = 35;
+  state.career.flags = { seasonThemeHistory: [{ id: 'legacy', variantId: 'legacy_farewell', season: 10 }] };
+  const legacyVariant = eventModule.chooseSeasonNarrativeTheme();
+  if (legacyVariant.id !== 'legacy' || legacyVariant.variantId === 'legacy_farewell') {
+    failures.push('生涯暮年主题没有轮换传承、转型与最后冲刺等子主题');
+  }
+  state.career.seasonCount = 3;
+  state.career.currentAge = 24;
+  state.career.contract = 3;
+  state.season.isUserStarter = false;
+  state.career.flags = { seasonThemeHistory: [{ id: 'prove', variantId: 'prove_trust', season: 3 }] };
+  const proveVariant = eventModule.chooseSeasonNarrativeTheme();
+  if (proveVariant.id !== 'prove' || proveVariant.variantId === 'prove_trust') {
+    failures.push('长期替补的证明自己主题没有轮换具体角色矛盾');
+  }
+
+  // Theme variant 必须覆盖自己的选择与后果，而不只是替换标题和正文。
+  const pressureStory = eventModule.getSeasonThemeStoryline({ id: 'title', variantId: 'title_pressure' });
+  if (pressureStory.effectProfile !== 'responsibility' || pressureStory.choices?.[0]?.[1] !== '主动承担最关键的责任') {
+    failures.push('赛季主题 variant 没有提供与具体矛盾匹配的选择');
+  } else {
+    state.career.flags = {};
+    state.career.profile = {};
+    state.season.events = createEventState(0);
+    state.season.events.storySignals = { games: 4, wins: 3, losses: 1 };
+    const themeThread = {
+      id: 'theme-pressure-test', kind: 'team', title: pressureStory.title, emoji: '🏆', state: 'committed', choice: 'all_in',
+      payload: { themeId: 'title', themeTitle: '争冠窗口：核心承压', effectProfile: pressureStory.effectProfile },
+      commitSnapshot: { storyGames: 0, storyWins: 0, storyLosses: 0, playerGames: 0, pts: 0, ast: 0, reb: 0 },
+    };
+    const themeResolution = eventModule.resolveDirectorThread(themeThread);
+    if (!themeResolution.body.includes('主动承担最关键的责任') ||
+        !state.season.events.activeEffects.some(effect => effect.id === 'director-theme-responsibility-all_in')) {
+      failures.push('赛季主题 variant 选择仍然执行 Broad Theme 的固定后果');
+    }
+  }
+
+  // 结算只能读取选择之后的比赛，不能用早先的高场均分掩盖之后的连败。
+  state.season = {
+    games: Array.from({ length: 32 }, () => ({ game: { opponent: 'AWAY' } })), wins: 12, losses: 20,
+    isPlayoffs: false, isUserStarter: true, playerStats: { games: 32, pts: 960, ast: 240, reb: 200 },
+    events: createEventState(0),
+  };
+  state.season.events.storySignals = { games: 12, wins: 4, losses: 8, lossStreak: 5, standoutStreak: 0 };
+  const badLockerOutcome = eventModule.getNarrativeThreadOutcome({
+    kind: 'locker_room', commitSnapshot: { gameNum: 20, storyGames: 0, storyWins: 0, storyLosses: 0, wins: 8, losses: 12, playerGames: 20, pts: 560, ast: 120, reb: 120, lossStreak: 4 },
+  });
+  if (badLockerOutcome.success) failures.push('更衣室剧情错误使用全赛季高分掩盖选择后的连败');
+
+  // 宿敌以球员身份跟随转会；两次失利产生旧债，复仇后旧债必须关闭。
+  state.career.flags = { eventRivalry: { team: 'AWAY', playerId: 'active-rival', playerName: '现役宿敌', heat: 1 } };
+  state.career.seasonCount = 3;
+  state.season = { games: [], wins: 0, losses: 0, isPlayoffs: false, isUserStarter: true, playerStats: {}, schedule: [{ opponent: 'AWAY', gameNum: 8 }], events: createEventState(0) };
+  eventModule.recordNarrativePlayoffSeries({ isMySeries: true, teamA: 'HOME', teamB: 'AWAY', aWon: false });
+  eventModule.recordNarrativePlayoffSeries({ isMySeries: true, teamA: 'HOME', teamB: 'AWAY', aWon: false });
+  if (state.career.flags.eventRivalry.debtState !== 'owed') failures.push('两次季后赛失利没有生成可结算的宿敌旧债');
+  const reckoning = { kind: 'rivalry_reckoning', state: 'queued', choice: null, payload: {} };
+  eventModule.commitDirectorThreadChoice(reckoning, 'respect');
+  eventModule.resolveDirectorThread(reckoning);
+  if (state.career.flags.eventRivalry.debtState !== 'reckoning' || state.career.flags.eventRivalry.reckoningTone !== 'respect') {
+    failures.push('常规赛旧债结算提前替代了真实季后赛复仇结果');
+  }
+  state.career.seasonCount = 4;
+  state.season = {
+    games: [], wins: 0, losses: 0, isPlayoffs: false, isUserStarter: true, playerStats: {},
+    schedule: [{ opponent: 'AWAY', gameNum: 8 }], events: createEventState(0),
+  };
+  if (eventModule.initializeSeasonNarrative().storyThreads.some(thread => thread.kind === 'rivalry_reckoning')) {
+    failures.push('已经表态的季后赛旧债在等待真实复仇时仍会逐季重播');
+  }
+  eventModule.recordNarrativePlayoffSeries({ isMySeries: true, teamA: 'HOME', teamB: 'AWAY', aWon: true });
+  if (state.career.flags.eventRivalry.debtState !== 'avenged') failures.push('季后赛复仇后宿敌旧债没有关闭');
+
+  // 宿敌旧债必须高于 carry-over、球队主题和普通关系线，不能被四条容量截断。
+  const rivalryMemory = state.career.flags.eventRivalry;
+  rivalryMemory.debtState = 'owed';
+  state.career.flags = {
+    eventRivalry: rivalryMemory,
+    roleArc: { level: 0 },
+    narrativeCarryOvers: [{ id: 'carry-media', kind: 'media', title: '上季舆论余波', choice: 'ignore', fromSeason: 3 }],
+  };
+  state.career.seasonCount = 4;
+  state.career.currentAge = 28;
+  state.career.contract = 3;
+  state.finalOVR = 92;
+  state.season = {
+    games: [], wins: 0, losses: 0, isPlayoffs: false, isUserStarter: true, playerStats: {},
+    schedule: [{ opponent: 'AWAY', gameNum: 8 }], events: createEventState(0),
+  };
+  const prioritizedNarrative = eventModule.initializeSeasonNarrative();
+  if (!prioritizedNarrative.storyThreads.some(thread => thread.kind === 'rivalry_reckoning') ||
+      !prioritizedNarrative.storyThreads.some(thread => thread.carryOver) ||
+      !prioritizedNarrative.storyThreads.some(thread => thread.kind === 'team')) {
+    failures.push('四条剧情容量没有优先保留宿敌旧债、跨季未决线与赛季主题');
+  }
+
+  leagueData.MOVED = leagueData.AWAY.splice(0, 1);
+  eventModule.recordNarrativePlayoffSeries({ isMySeries: true, teamA: 'HOME', teamB: 'MOVED', aWon: false });
+  if (state.career.flags.eventRivalry.team !== 'MOVED' || state.career.flags.eventRivalry.playoffMeetings !== 4) {
+    failures.push('宿敌转会后季后赛结果没有按球员身份继续记录');
+  }
+
+  // 已结算线程只保留为历史，不应阻止比赛继续制造新剧情。
+  state.season.events = createEventState(0);
+  state.season.events.storyThreads = Array.from({ length: 4 }, (_, index) => ({ id: `resolved-${index}`, kind: 'role', state: 'resolved' }));
+  state.season.events.storySignals.standoutStreak = 5;
+  const gameDrivenThread = eventModule.queueGameDrivenPressureThread();
+  if (!gameDrivenThread || gameDrivenThread.kind !== 'media' || eventModule.getActiveNarrativeThreadCount() !== 1) {
+    failures.push('已结算线程仍占用四条活跃剧情容量');
+  }
+
+  // 本场先释放到期线程，再保存同场达成的五连高光，不能让信号因旧容量已满而丢失。
+  state.career.flags = {};
+  state.season = {
+    games: Array.from({ length: 20 }, () => ({ game: { opponent: 'OLD' } })),
+    wins: 12, losses: 8, isPlayoffs: false, isUserStarter: true,
+    playerStats: { games: 20, pts: 500, ast: 120, reb: 100 }, schedule: [], events: createEventState(0),
+  };
+  state.season.events.seasonTheme = { id: 'rise', variantId: 'rise_usage', title: '成长赛季', season: 5 };
+  state.season.events.storySignals = { games: 4, wins: 3, losses: 1, winStreak: 1, lossStreak: 0, standoutStreak: 4, closeGames: 0 };
+  const dueThread = {
+    id: 'due-locker', kind: 'locker_room', title: '到期剧情', emoji: '🚪', state: 'committed', choice: 'coach_plan',
+    resolutionGame: 20, payload: {}, commitSnapshot: { storyGames: 0, storyWins: 0, storyLosses: 0, playerGames: 0, pts: 0, ast: 0, reb: 0 },
+  };
+  state.season.events.storyThreads = [dueThread].concat(Array.from({ length: 3 }, (_, index) => ({
+    id: `waiting-${index}`, kind: `waiting-${index}`, state: 'queued', openingGame: 99, payload: {},
+  })));
+  eventModule.checkSeasonNarrativeDirector({
+    game: { opponent: 'OLD' }, result: { won: true, scoreA: 118, scoreB: 108 }, stats: { pts: 34, reb: 6, ast: 8 },
+  });
+  if (dueThread.state !== 'resolved' || !state.season.events.storyThreads.some(thread => thread.kind === 'media')) {
+    failures.push('到期剧情释放槽位后，同场达成的比赛驱动剧情仍被永久错过');
+  }
+
+  // 跨季当前队友在休赛期转会时，未结线程必须迁移为同一个 NPC 的旧友线。
+  const carryNpc = { id: 'carry-mate', cname: '跨季队友', ovr: 86 };
+  const newNpc = { id: 'new-current-mate', cname: '新队友', ovr: 84 };
+  leagueData.HOME.push(carryNpc, newNpc);
+  state.career.flags = {
+    storyTeammate: { id: carryNpc.id, cname: carryNpc.cname, affinity: 5, sinceSeason: 3 },
+    narrativeCarryOvers: [{
+      id: 'carry-teammate', kind: 'teammate', title: '未结队友矛盾', choice: 'protect', fromSeason: 5,
+      payload: { teammateId: carryNpc.id, teammateName: carryNpc.cname, affinity: 5 },
+    }],
+  };
+  leagueData.TRADED = [leagueData.HOME.splice(leagueData.HOME.findIndex(player => player.id === carryNpc.id), 1)[0]];
+  state.career.seasonCount = 6;
+  state.season = {
+    games: [], wins: 0, losses: 0, isPlayoffs: false, isUserStarter: true, playerStats: {},
+    schedule: [{ opponent: 'TRADED', gameNum: 10 }], events: createEventState(0),
+  };
+  const migratedSeason = eventModule.initializeSeasonNarrative();
+  const migratedCarry = migratedSeason.storyThreads.find(thread => thread.carryOver && thread.payload?.teammateId === carryNpc.id);
+  const sameNpcThreads = migratedSeason.storyThreads.filter(thread => thread.payload?.teammateId === carryNpc.id);
+  if (!migratedCarry || migratedCarry.kind !== 'former_teammate' || migratedCarry.choice !== 'welcome' || sameNpcThreads.length !== 1) {
+    failures.push('休赛期转会后，跨季队友线程没有迁移成唯一的旧友线程');
+  } else {
+    const activeMateBefore = Number(state.career.flags.storyTeammate?.affinity) || 0;
+    const formerBefore = Number(eventModule.getNarrativeFormerTeammates().find(mate => mate.id === carryNpc.id)?.affinity) || 0;
+    eventModule.resolveDirectorThread(migratedCarry);
+    const formerAfter = Number(eventModule.getNarrativeFormerTeammates().find(mate => mate.id === carryNpc.id)?.affinity) || 0;
+    if (formerAfter !== formerBefore + 1 || (Number(state.career.flags.storyTeammate?.affinity) || 0) !== activeMateBefore) {
+      failures.push('迁移后的跨季旧友线程结算到了错误的当前队友身上');
+    }
+  }
+  state.career.flags.narrativeCarryOvers = [{
+    id: 'retired-carry', kind: 'teammate', title: '退役前的未结关系', choice: 'honest', fromSeason: 6,
+    payload: { teammateId: 'retired-carry-mate', teammateName: '已退役队友', affinity: 4 },
+  }];
+  state.career.seasonCount = 7;
+  state.season.events = createEventState(0);
+  const retiredCarrySeason = eventModule.initializeSeasonNarrative();
+  if (retiredCarrySeason.storyThreads.some(thread => thread.payload?.teammateId === 'retired-carry-mate') ||
+      !state.career.flags.storyTeammateHistory?.some(mate => mate.id === 'retired-carry-mate')) {
+    failures.push('跨季队友退役后，未结线程没有终止并归档 NPC 关系');
+  }
+
+  // 旧友重新加盟但当前关系槽已有其他人时，未结剧情应转成独立重聚线而不是静默丢失。
+  const returnedNpc = { id: 'returned-mate', cname: '回归旧友', ovr: 83 };
+  const occupiedNpc = { id: 'occupied-mate', cname: '现任搭档', ovr: 85 };
+  leagueData.HOME.push(returnedNpc, occupiedNpc);
+  state.career.flags = {
+    storyTeammate: { id: occupiedNpc.id, cname: occupiedNpc.cname, affinity: 3, sinceSeason: 6 },
+    formerStoryTeammates: [{ id: returnedNpc.id, cname: returnedNpc.cname, team: 'OLD_RETURN', active: true, affinity: 5, reunionCount: 1 }],
+    narrativeCarryOvers: [{
+      id: 'returned-carry', kind: 'former_teammate', title: '未结旧友线', choice: 'welcome', fromSeason: 7,
+      payload: { teammateId: returnedNpc.id, teammateName: returnedNpc.cname, affinity: 5, opponent: 'OLD_RETURN' },
+    }],
+  };
+  state.career.seasonCount = 8;
+  state.season = { games: [], wins: 0, losses: 0, isPlayoffs: false, isUserStarter: true, playerStats: {}, schedule: [], events: createEventState(0) };
+  const returnedSeason = eventModule.initializeSeasonNarrative();
+  const returnedCarry = returnedSeason.storyThreads.find(thread => thread.payload?.teammateId === returnedNpc.id);
+  if (!returnedCarry || returnedCarry.kind !== 'reunited_teammate' || state.career.flags.storyTeammate.id !== occupiedNpc.id) {
+    failures.push('旧友重新加盟时，CarryOver 没有转成独立重聚线或错误抢占当前队友槽');
+  } else {
+    eventModule.resolveDirectorThread(returnedCarry);
+    const reunitedRecord = state.career.flags.reunitedStoryTeammates?.find(mate => mate.id === returnedNpc.id);
+    if (!reunitedRecord?.resolvedSeason || state.career.flags.storyTeammate.id !== occupiedNpc.id) {
+      failures.push('旧友重聚线没有正确结算并保留当前核心队友关系');
+    }
+  }
+
+  // 多名旧友同时存在时，首次重逢优先于已经反复出现的旧友，并执行完整赛季冷却。
+  leagueData.OLD_A = [{ id: 'former-a', cname: '旧友A', ovr: 82 }];
+  leagueData.OLD_B = [{ id: 'former-b', cname: '旧友B', ovr: 81 }];
+  state.career.seasonCount = 9;
+  state.career.flags = {
+    formerStoryTeammates: [
+      { id: 'former-a', cname: '旧友A', team: 'OLD_A', active: true, reunionCount: 3, lastReunionSeason: 9, playoffMeetings: 1, affinity: 6 },
+      { id: 'former-b', cname: '旧友B', team: 'OLD_B', active: true, reunionCount: 0, affinity: 2 },
+    ],
+  };
+  state.season = {
+    games: [], wins: 0, losses: 0, isPlayoffs: false, isUserStarter: true, playerStats: {},
+    schedule: [{ opponent: 'OLD_A', gameNum: 8 }, { opponent: 'OLD_B', gameNum: 12 }], events: createEventState(0),
+  };
+  if (eventModule.selectNarrativeFormerTeammate()?.id !== 'former-b') {
+    failures.push('多个旧队友同时符合条件时，重复旧友仍然霸占首次重逢剧情');
+  }
+
+  // 当前队友与离队旧友使用独立关系槽；后续重逢不能永远沿用“第一次”文案。
+  const movedMate = leagueData.HOME.shift();
+  leagueData.OLD = [movedMate];
+  state.career.flags = { storyTeammate: { id: movedMate.id, cname: movedMate.cname, affinity: 5, sinceSeason: 1 } };
+  state.career.seasonCount = 5;
+  state.season = {
+    games: [], wins: 0, losses: 0, isPlayoffs: false, isUserStarter: true, playerStats: {},
+    schedule: [{ opponent: 'OLD', gameNum: 9 }], events: createEventState(0),
+  };
+  const currentMate = eventModule.getSeasonNarrativeTeammate();
+  const formerMates = eventModule.getNarrativeFormerTeammates();
+  if (!currentMate || currentMate.id === movedMate.id || !formerMates.some(mate => mate.id === movedMate.id)) {
+    failures.push('离队故事队友占住当前队友槽，无法同时发展新旧关系线');
+  }
+  const reunionSeason = eventModule.initializeSeasonNarrative();
+  const firstReunion = reunionSeason.storyThreads.find(thread => thread.kind === 'former_teammate');
+  if (!firstReunion || !firstReunion.payload.isFirstReunion) {
+    failures.push('离队旧友没有生成独立的首次重逢剧情');
+  } else {
+    eventModule.commitDirectorThreadChoice(firstReunion, 'welcome');
+    state.career.seasonCount = 7;
+    state.season.events = createEventState(0);
+    const laterSeason = eventModule.initializeSeasonNarrative();
+    const laterReunion = laterSeason.storyThreads.find(thread => thread.kind === 'former_teammate');
+    if (!laterReunion || laterReunion.payload.isFirstReunion || eventModule.getDirectorThreadOpening(laterReunion).body.includes('第一次')) {
+      failures.push('同一旧友后续重逢仍重复使用第一次交手文案');
+    }
+  }
+
+  // 退役的故事队友应归档，并允许生涯后段重新建立新的长期关系。
+  state.career.flags = { storyTeammate: { id: 'retired-teammate', cname: '退役队友', affinity: 6, sinceSeason: 1 } };
+  const replacementTeammate = eventModule.getSeasonNarrativeTeammate();
+  if (!replacementTeammate || replacementTeammate.id === 'retired-teammate' || !state.career.flags.storyTeammateHistory?.length) {
+    failures.push('退役故事队友没有归档并重新绑定关系线');
+  }
+
+  // 大伤复出按 injury instance 去重，第二次大伤不能遗留永久 pending 标记。
+  const majorComeback = registry.find(item => item.id === 'career_major_injury_comeback');
+  state.career.flags = { majorInjuryInstance: 1, majorInjuryPendingComeback: { id: 1 } };
+  state.season.events = createEventState(0);
+  if (majorComeback) {
+    eventModule.recordEventLifecycle(majorComeback);
+    if (eventModule.canTriggerEventByLifecycle(majorComeback)) failures.push('同一次大伤复出剧情可以重复触发');
+    state.career.flags.majorInjuryInstance = 2;
+    state.career.flags.majorInjuryPendingComeback = { id: 2 };
+    if (!eventModule.canTriggerEventByLifecycle(majorComeback)) failures.push('第二次大伤无法触发新的复出剧情');
+  }
+
+  // 三个高频职业事件必须按生涯出现次数推进不同阶段，而不是跨季重播同一弹窗。
+  for (const eventId of ['career_trade_deadline_rumor', 'career_playoff_adjustment', 'career_award_race_pressure']) {
+    const chainedEvent = registry.find(item => item.id === eventId);
+    if (!chainedEvent) continue;
+    state.career.flags = {};
+    const titles = [];
+    const openingChoices = [];
+    const effectIds = [];
+    for (let stage = 0; stage < 4; stage += 1) {
+      state.career.seasonCount = 8 + stage;
+      state.season.events = createEventState(0);
+      const data = chainedEvent.execute({ result: { won: false }, stats: {} });
+      titles.push(data.title);
+      openingChoices.push(data.choices?.[0]?.label);
+      const resultText = data.choices?.[0]?.apply();
+      effectIds.push(state.season.events.activeEffects.at(-1)?.id);
+      if (!resultText?.includes(data.choices?.[0]?.label)) failures.push(`${eventId} 第 ${stage + 1} 阶段的选择与实际结算文案不一致`);
+      eventModule.recordEventLifecycle(chainedEvent);
+      state.career.seasonCount = 9 + stage;
+      if (stage < 3 && !eventModule.canTriggerEventByLifecycle(chainedEvent)) {
+        failures.push(`${eventId} 的下一阶段在新赛季无法触发`);
+        break;
+      }
+    }
+    if (new Set(titles).size !== 4 || new Set(openingChoices).size !== 4 || new Set(effectIds).size !== 4) {
+      failures.push(`${eventId} 前四阶段仍会重复相同标题、选择或实际效果`);
+    }
+    state.career.seasonCount = 12;
+    if (eventModule.canTriggerEventByLifecycle(chainedEvent)) failures.push(`${eventId} 进入成熟池后没有执行跨季冷却`);
+    state.career.seasonCount = 13;
+    if (!eventModule.canTriggerEventByLifecycle(chainedEvent)) {
+      failures.push(`${eventId} 成熟池冷却结束后无法继续触发`);
+    } else {
+      state.season.events = createEventState(0);
+      const recurrentData = chainedEvent.execute({ result: { won: false }, stats: {} });
+      const recurrentResult = recurrentData.choices?.[0]?.apply();
+      if (recurrentData.title === titles[0] || /第一次|第一课/.test(recurrentData.title) || !recurrentResult?.includes(recurrentData.choices?.[0]?.label)) {
+        failures.push(`${eventId} 第五次触发回绕到第一次，或成熟阶段后果与选择不一致`);
+      }
+    }
+  }
+
   registry.splice(0, registry.length, {
     id: 'validation_suspension',
     lane: 'discipline',
@@ -246,5 +641,23 @@ if (failures.length) {
     interactiveChoices: true,
     activeEffects: true,
     directorNarrative: true,
+    lifecycleAndIdentity: true,
+    playoffNarrativeMemory: true,
+    carryOverAndOutcomeWindows: true,
+    rivalryDebtPlayoffResolution: true,
+    activeThreadCapacity: true,
+    narrativePrioritySelection: true,
+    carryOverRelationshipMigration: true,
+    gameSignalAfterResolution: true,
+    themeDirectorAndNpcArcs: true,
+    themeVariants: true,
+    themeVariantChoicesAndEffects: true,
+    careerEventChains: true,
+    careerEventRecurrentPool: true,
+    careerEventVariantConsequences: true,
+    formerTeammateScheduling: true,
+    currentAndFormerTeammateSlots: true,
+    reunitedTeammateCarryOver: true,
+    injuryInstanceRecovery: true,
   }));
 }

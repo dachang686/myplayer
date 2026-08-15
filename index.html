@@ -1309,7 +1309,7 @@ function updateSeasonBadge(activeId) {
 /** 赛季事件状态统一入口；新增字段均在 ensureSeasonEventState 中兼容旧存档。 */
 function createSeasonEventState(injuryRiskBonus) {
   return {
-    version: 3,
+    version: 5,
     suspensionGamesLeft: 0,
     suspensionReason: '',
     injuryGamesLeft: 0,
@@ -1329,8 +1329,9 @@ function createSeasonEventState(injuryRiskBonus) {
     // 赛季导演层：主题、长线矛盾和比赛信号均随存档持久化。
     seasonTheme: null,
     storyThreads: [],
-    storySignals: { games: 0, winStreak: 0, lossStreak: 0, standoutStreak: 0, closeGames: 0, lastOpponent: null },
-    directorEvents: []
+    storySignals: { games: 0, wins: 0, losses: 0, winStreak: 0, lossStreak: 0, standoutStreak: 0, closeGames: 0, lastOpponent: null },
+    directorEvents: [],
+    narrativeSeasonFinalized: false
   };
 }
 
@@ -1353,8 +1354,9 @@ function ensureSeasonEventState() {
   }
   if (!Array.isArray(current.storyThreads)) current.storyThreads = [];
   if (!Array.isArray(current.directorEvents)) current.directorEvents = [];
+  if (typeof current.narrativeSeasonFinalized !== 'boolean') current.narrativeSeasonFinalized = false;
   if (current.seasonTheme != null && (typeof current.seasonTheme !== 'object' || Array.isArray(current.seasonTheme))) current.seasonTheme = null;
-  current.version = 3;
+  current.version = 5;
   STATE.season.events = current;
   return current;
 }
@@ -7774,6 +7776,7 @@ function saveCurrentSeasonToCareer() {
   if (STATE.season.schedule && STATE.season.schedule.some(function(g) { return !g.simulated; })) return;
   // 季后赛没打完不允许提前存赛季，否则总冠军荣誉会丢失或错位
   if (STATE.season.isPlayoffs && !STATE.season.playoffsDone) return;
+  if (typeof finalizeSeasonNarrativeAtSeasonEnd === 'function') finalizeSeasonNarrativeAtSeasonEnd();
 
   var sp = STATE.season.playerStats || {};
   var awards = STATE.season.awards || [];
@@ -10462,7 +10465,7 @@ function resolveEventVars(str, ctx, evData) {
   var teamName = teamAbbr ? (TEAM_NAMES_EV[teamAbbr] || teamAbbr) : '对手球队';
   var teammateName = typeof getBondedTeammateName === 'function' ? getBondedTeammateName() : '一位队友';
   if (teammateName === '那位队友') teammateName = '一位队友';
-  var rivalry = STATE.career && STATE.career.flags && STATE.career.flags.eventRivalry;
+  var rivalry = typeof getNarrativeRivalry === 'function' ? getNarrativeRivalry() : (STATE.career && STATE.career.flags && STATE.career.flags.eventRivalry);
   var rivalName = rivalry && rivalry.playerName ? rivalry.playerName : playerName;
   return str
     .replace(/\{对手球员\}/g, playerName)
@@ -10472,13 +10475,355 @@ function resolveEventVars(str, ctx, evData) {
     .replace(/\{n\}/g, (evData && evData._games) || '');
 }
 
+// ━━━ 事件生命周期与身份过滤：同一文案不应在每个赛季重新抽到 ━━━
+var EVENT_LIFECYCLE_RULES = {
+  career_rivalry_spark: { type: 'career_once' },
+  career_rivalry_rematch: { type: 'story_stage', stageKey: 'rivalry_rematch' },
+  career_coach_role_meeting: { type: 'career_once' },
+  // 复出线按每次重伤实例去重；第二次重伤必须能拥有自己的康复剧情。
+  career_major_injury_comeback: { type: 'injury_instance' },
+  record_milestone_ball: { type: 'career_once' },
+  movie_cameo: { type: 'career_once' },
+  career_trade_deadline_rumor: { type: 'event_chain', minSeasonGap: 1, recurrentSeasonGap: 2 },
+  career_playoff_adjustment: { type: 'event_chain', minSeasonGap: 1, recurrentSeasonGap: 2 },
+  career_award_race_pressure: { type: 'event_chain', minSeasonGap: 1, recurrentSeasonGap: 2 }
+};
+
+var CAREER_EVENT_VARIANTS = {
+  career_trade_deadline_rumor: [
+    { title: '交易截止日前夜', body: '经纪人来电说，几支球队已经向管理层询价。球队没有承诺会留下你，也没有说一定会交易。距离截止时间只剩一天，记者守在训练馆门口。', desc: '第一次公开询价考验球队承诺', labels: ['公开承诺留队', '让经纪人保持开放', '主动要求交易'], hints: ['强化忠诚与本地球迷关系', '保留选择并提高商业议价能力', '开启强硬的球员自主路线'] },
+    { title: '管理层没有否认流言', body: '这已经不是第一次有球队询价。管理层拒绝公开承诺你的长期位置，经纪人提醒你：沉默本身也可能是一种谈判策略。', desc: '反复流言开始检验管理层诚意', labels: ['要求球队公开表态', '继续保留所有选择', '把主动权握在自己手里'], hints: ['用公开承诺稳定球队关系', '不替管理层结束谈判', '正式推动交易方案'] },
+    { title: '截止日前的阵容选择', body: '这次流言不只围绕你，也围绕球队是否愿意动用未来资产补强。你可以支持现有阵容、保持距离，或迫使管理层明确方向。', desc: '交易流言升级为球队方向抉择', labels: ['公开支持现有阵容', '让经纪人观察市场', '要求管理层选择方向'], hints: ['保护更衣室并强化忠诚', '保留未来谈判空间', '用强硬立场推动改变'] },
+    { title: '老将窗口的主动权', body: '联盟已经熟悉你的价值，流言不再只是试探。争冠队、重建队和现东家都在等待你是否愿意主动定义生涯下一站。', desc: '生涯后段的交易主动权', labels: ['承诺完成当前窗口', '听取所有球队方案', '主动寻找新的竞争环境'], hints: ['把本季目标放在第一位', '最大化个人选择权', '接受改变带来的代价'] }
+  ],
+  career_playoff_adjustment: [
+    { title: '夹击后的第一课', body: '教练组剪出了对手每一次提前夹击。你第一次需要在系列赛中证明：核心价值不仅是得分，也包括在压力到来前做出正确决定。', desc: '第一次面对季后赛针对', labels: ['提前出球，相信队友', '主动寻找错位强攻', '从防守端改变系列赛'], hints: ['用传导惩罚夹击', '承担更集中的进攻风险', '用最困难的对位回应'] },
+    { title: '对手开始反调整', body: '去年的处理方式已经进入对手球探报告。他们故意放出你熟悉的第一选择，再用第二层轮转等待你的习惯动作。', desc: '应对建立在历史录像上的反调整', labels: ['改变第一传的方向', '连续攻击他们的诱饵', '先破坏对方核心节奏'], hints: ['让队友从另一侧发起进攻', '用个人能力击穿预判', '从防守端打乱比赛计划'] },
+    { title: '你的第一选择已被读懂', body: '老对手已经知道你面对换防、护框和底线夹击时最常用的答案。录像室的问题不再是执行，而是你愿不愿意主动放弃最熟悉的比赛方式。', desc: '老对手针对核心习惯制定方案', labels: ['让队友主导下一场', '开发新的强攻落点', '把系列赛拖入防守战'], hints: ['短暂离开第一发起点', '用新位置制造错位', '降低回合波动'] },
+    { title: '一起制定比赛计划', body: '教练没有直接给出答案，而是把战术板推到你面前。多年季后赛经验让你开始参与决定整支球队如何回应对手。', desc: '老将核心参与制定季后赛方案', labels: ['设计全队破解方案', '围绕关键错位布置', '先确定防守对位'], hints: ['用整体判断承担责任', '集中资源攻击弱点', '从限制对方核心开始'] }
+  ],
+  career_award_race_pressure: [
+    { title: '第一次进入奖项选票', body: '赛季进入最后阶段，你的名字第一次稳定出现在主要奖项讨论中。记者直接问你是否认为自己已经属于联盟最好的球员。', desc: '第一次进入赛季奖项核心讨论', labels: ['明确为自己拉票', '把功劳归给球队', '拒绝讨论个人奖项'], hints: ['主动接受更高曝光', '强化更衣室和媒体关系', '把注意力留给比赛'] },
+    { title: '数据与战绩之争', body: '这一次讨论不再是你是否够格，而是个人数据和球队战绩谁更有说服力。每个回答都会被拿去与其他候选人比较。', desc: '奖项竞争进入标准之争', labels: ['强调自己的比赛影响', '强调球队胜利', '拒绝参与比较'], hints: ['为个人价值给出论据', '让战绩成为主要答案', '避免舆论改变比赛方式'] },
+    { title: '领跑者的放大镜', body: '你已经从追赶者变成被审视的人。一次低迷会成为对手拉票的证据，一次高光也会被认为是你理所应当完成的任务。', desc: '作为奖项热门承受持续审视', labels: ['正面承担领跑压力', '把关注分给队友', '切断外界讨论'], hints: ['接受最高标准', '保护更衣室平衡', '减少曝光并专注收官'] },
+    { title: '奖项与历史位置', body: '多年后，新的奖项已经不只是一个赛季的荣誉，而会改变外界如何排列你的生涯。记者问的是奖杯，也是你希望留下怎样的历史。', desc: '奖项竞争开始影响生涯历史位置', labels: ['公开追逐历史位置', '强调共同成就', '让生涯结束后再评价'], hints: ['主动定义个人目标', '把荣誉放进球队历史', '拒绝被即时排名左右'] }
+  ]
+};
+
+// 固定成长阶段结束后进入成熟事件池；可以继续发生，但不会回绕到“第一次”。
+var CAREER_EVENT_RECURRENT_VARIANTS = {
+  career_trade_deadline_rumor: [
+    { title: '截止日前的长期承诺', body: '流言已经成为每个窗口的背景，真正的问题不再是谁打过电话，而是球队愿意为共同目标承诺多少年。', desc: '成熟阶段的球队承诺谈判', labels: ['要求明确长期计划', '只讨论本季目标', '主动评估新的环境'], hints: ['把阵容方向写进承诺', '避免流言干扰比赛', '重新掌握生涯主动权'] },
+    { title: '争冠窗口与个人去向', body: '多支球队都能给出角色，但只有少数球队拥有真正的争冠窗口。你必须在熟悉、主动权和夺冠概率之间重新排序。', desc: '成熟球星评估争冠窗口', labels: ['继续相信现有窗口', '等季后赛后再决定', '推动球队寻找方案'], hints: ['维持球队稳定', '保留判断空间', '要求管理层采取行动'] }
+  ],
+  career_playoff_adjustment: [
+    { title: '系列赛里的第三层答案', body: '双方已经交换过多轮调整。现在没有秘密战术，只有谁能更快识别场上变化，并让五个人同时执行新的答案。', desc: '成熟核心处理系列赛深层调整', labels: ['临场改变发起点', '连续追打最弱环节', '切换防守覆盖方式'], hints: ['让进攻保持不可预测', '集中攻击明确弱点', '用防守变化抢回主动'] },
+    { title: '经验成为比赛计划', body: '录像只确认了双方都知道的事实。教练组更需要你的经验：哪些回合值得坚持，哪些习惯必须在下一场主动放弃。', desc: '老将经验进入临场决策', labels: ['授权队友临场阅读', '保留核心终结权', '用防守控制比赛节奏'], hints: ['扩大全队决策空间', '承担最后回合责任', '减少系列赛波动'] }
+  ],
+  career_award_race_pressure: [
+    { title: '又一个顶级赛季', body: '你早已不需要证明自己属于奖项讨论。新的问题是，如何在持续高水平的同时，不让每年重复的排名吞掉真正重要的球队目标。', desc: '成熟球星处理长期奖项期待', labels: ['为持续统治发声', '把标准留在球队内部', '主动退出拉票叙事'], hints: ['强调长期个人表现', '维护更衣室共同目标', '降低奖项讨论权重'] },
+    { title: '荣誉已经成为生涯背景', body: '投票仍然重要，却已经无法单独定义你的生涯。记者想知道你更在乎新的奖杯，还是这个赛季留下的球队结果。', desc: '生涯后段重新定义个人荣誉', labels: ['继续追逐每个奖杯', '把荣誉让给球队结果', '拒绝即时历史排名'], hints: ['保持最高个人目标', '强化共同成就', '让评价留到生涯结束'] }
+  ]
+};
+
+var CAREER_EVENT_IDENTITY_RULES = {
+  career_rivalry_spark: { stages: ['emerging', 'star'], minRole: 'starter' },
+  career_rivalry_rematch: { stages: ['emerging', 'star', 'veteran'], minRole: 'starter' },
+  career_coach_role_meeting: { stages: ['rookie', 'emerging'], maxRole: 'starter' },
+  career_trade_deadline_rumor: { stages: ['emerging', 'star', 'veteran'], minRole: 'starter' },
+  career_playoff_adjustment: { minRole: 'starter' },
+  career_award_race_pressure: { stages: ['star', 'veteran'], minRole: 'core' }
+};
+
+function getCareerNarrativeIdentity() {
+  var career = STATE.career || {};
+  var age = Number(career.currentAge) || 22;
+  var seasonNum = Math.max(1, (Number(career.seasonCount) || 0) + 1);
+  var ovr = Number(STATE.finalOVR) || 0;
+  var profile = typeof getCareerProfile === 'function' ? getCareerProfile() : (career.profile || {});
+  var avg = typeof getUserAvg === 'function' ? getUserAvg() : { pts: 0, ast: 0, reb: 0 };
+  var starter = !!(STATE.season && STATE.season.isUserStarter);
+  var role = 'bench';
+  if (starter) role = 'starter';
+  if (starter && (ovr >= 86 || (Number(avg.pts) || 0) >= 20 || (Number(avg.ast) || 0) >= 8)) role = 'core';
+  if (starter && (ovr >= 92 || (Number(profile.fame) || 0) >= 15)) role = 'franchise';
+  if (age >= 34) role = role === 'bench' ? 'veteran' : 'veteran_core';
+  var stage = 'emerging';
+  if (age >= 34) stage = 'veteran';
+  else if (seasonNum === 1 && !starter) stage = 'rookie';
+  else if (ovr >= 88 || (Number(profile.fame) || 0) >= 8) stage = 'star';
+  return { stage: stage, role: role, reputation: Number(profile.fame) || 0, seasonNum: seasonNum, age: age };
+}
+
+function getCareerEventYearsWithTeam() {
+  var career = STATE.career || {};
+  var seasons = Array.isArray(career.seasons) ? career.seasons : [];
+  var team = STATE.careerTeam;
+  var years = team ? 1 : 0;
+  for (var i = seasons.length - 1; i >= 0; i--) {
+    if (seasons[i] && seasons[i].team === team) years++;
+    else break;
+  }
+  return years;
+}
+
+function getEventLifecycleDefinition(def) {
+  if (!def || !def.id) return { type: 'season_once' };
+  if (def.lifecycle && typeof def.lifecycle === 'object') return def.lifecycle;
+  if (EVENT_LIFECYCLE_RULES[def.id]) return EVENT_LIFECYCLE_RULES[def.id];
+  if (isInjuryEventDef(def) || isSuspensionEventDef(def) || getRandomEventLane(def) === 'discipline') {
+    return { type: 'repeatable', minSeasonGap: 0 };
+  }
+  // 生活与媒体花絮仍可回归，但不会在相邻赛季重复同一条文案。
+  return { type: 'repeatable', minSeasonGap: 2 };
+}
+
+function getCareerEventLifecycleLedger() {
+  if (!STATE.career) return {};
+  STATE.career.flags = STATE.career.flags || {};
+  STATE.career.flags.eventLifecycle = STATE.career.flags.eventLifecycle || {};
+  return STATE.career.flags.eventLifecycle;
+}
+
+function canTriggerEventByLifecycle(def) {
+  if (!def || !def.id || !STATE.career) return true;
+  var lifecycle = getEventLifecycleDefinition(def);
+  var record = getCareerEventLifecycleLedger()[def.id];
+  if (!record) return true;
+  if (lifecycle.type === 'career_once') return false;
+  if (lifecycle.type === 'story_stage') {
+    var stageKey = lifecycle.stageKey || def.id;
+    return !(record.stages && record.stages[stageKey]);
+  }
+  if (lifecycle.type === 'injury_instance') {
+    var injuryInstanceId = getMajorInjuryInstanceId();
+    return !(record.instances && record.instances[injuryInstanceId]);
+  }
+  if (lifecycle.type === 'repeatable') {
+    var gap = Math.max(0, Number(lifecycle.minSeasonGap) || 0);
+    return getNarrativeSeasonNumber() - (Number(record.lastSeason) || 0) >= gap;
+  }
+  if (lifecycle.type === 'event_chain') {
+    var fixedStages = (CAREER_EVENT_VARIANTS[def.id] || []).length;
+    var chainGap = record.count >= fixedStages
+      ? Math.max(2, Number(lifecycle.recurrentSeasonGap) || 2)
+      : Math.max(1, Number(lifecycle.minSeasonGap) || 1);
+    return getNarrativeSeasonNumber() - (Number(record.lastSeason) || 0) >= chainGap;
+  }
+  return true;
+}
+
+function recordEventLifecycle(def) {
+  if (!def || !def.id || !STATE.career || getRandomEventLane(def) === 'director') return;
+  var lifecycle = getEventLifecycleDefinition(def);
+  var ledger = getCareerEventLifecycleLedger();
+  var record = ledger[def.id] || { count: 0, firstSeason: getNarrativeSeasonNumber(), lastSeason: 0, stages: {}, instances: {} };
+  record.count = (Number(record.count) || 0) + 1;
+  record.lastSeason = getNarrativeSeasonNumber();
+  if (lifecycle.type === 'story_stage') record.stages[lifecycle.stageKey || def.id] = true;
+  if (lifecycle.type === 'injury_instance') {
+    record.instances = record.instances || {};
+    record.instances[getMajorInjuryInstanceId()] = true;
+  }
+  ledger[def.id] = record;
+}
+
+function getCareerEventVariant(eventId) {
+  var variants = CAREER_EVENT_VARIANTS[eventId] || [];
+  if (!variants.length) return null;
+  var record = getCareerEventLifecycleLedger()[eventId];
+  var occurrence = Number(record && record.count) || 0;
+  if (occurrence < variants.length) return Object.assign({}, variants[occurrence], { phase: occurrence, recurrent: false });
+  var recurrent = CAREER_EVENT_RECURRENT_VARIANTS[eventId] || [];
+  if (!recurrent.length) return Object.assign({}, variants[variants.length - 1], { phase: variants.length - 1, recurrent: true });
+  var recurrentIndex = (occurrence - variants.length) % recurrent.length;
+  return Object.assign({}, recurrent[recurrentIndex], { phase: variants.length + recurrentIndex, recurrent: true });
+}
+
+function applyCareerEventVariantChoice(eventId, variant, choiceIndex) {
+  var phase = Math.max(0, Number(variant && variant.phase) || 0);
+  var label = variant && variant.labels && variant.labels[choiceIndex] || '既定方案';
+  var suffix = eventId.replace(/^career_/, '') + '-' + phase + '-' + choiceIndex;
+  if (eventId === 'career_trade_deadline_rumor') {
+    if (choiceIndex === 0) {
+      if (phase <= 1) { addProfileDelta('loyalty', 2); addProfileDelta('fanSupport', 2); }
+      else if (phase === 2) { addProfileDelta('lockerRoomTrust', 2); addProfileDelta('leadership', 1); }
+      else { addProfileDelta('legacyBonus', 1); addProfileDelta('leadership', 1); }
+      addActiveEventEffect(suffix, label, phase >= 3 ? 0.5 : 0.8, 4);
+      return '你选择“' + label + '”。球队得到明确方向，相关承诺会继续影响之后的阵容判断。';
+    }
+    if (choiceIndex === 1) {
+      addProfileDelta('businessValue', phase >= 3 ? 1 : 2);
+      addProfileDelta(phase >= 2 ? 'leadership' : 'mediaTrust', phase >= 2 ? 1 : -1);
+      return '你选择“' + label + '”。你保留了主动权，但球队仍需要用之后的行动证明计划。';
+    }
+    STATE.career.flags = STATE.career.flags || {};
+    if (phase === 2) {
+      STATE.career.flags.deadlineDirectionPressure = { season: getNarrativeSeasonNumber(), source: variant.title };
+      addProfileDelta('leadership', 1); addProfileDelta('controversy', 1);
+      addActiveEventEffect(suffix, label, -0.25, 3);
+      return '你选择“' + label + '”。管理层被迫公开评估阵容方向，但关系也因此变得紧张。';
+    }
+    var submitted = typeof createPlayerTradeRequest === 'function' ? createPlayerTradeRequest('', 'deadline_event', { applyEffects: false }) : null;
+    addProfileDelta('loyalty', -3); addProfileDelta('controversy', 2); addProfileDelta('businessValue', 1);
+    addActiveEventEffect(suffix, label, -0.8, 4);
+    return '你选择“' + label + '”。' + (submitted && submitted.request && submitted.request.status === 'approved' ? '管理层同意寻找交易方案。' : '管理层必须正面回应你的去向要求。');
+  }
+  if (eventId === 'career_playoff_adjustment') {
+    if (choiceIndex === 0) {
+      addProfileDelta('leadership', phase >= 3 ? 2 : 1); addProfileDelta('lockerRoomTrust', 1);
+      addActiveEventEffect(suffix, label, phase >= 3 ? 1.35 : 1.15, 2);
+      return '你选择“' + label + '”。新的发起方式被写进下一场计划，队友将获得更明确的阅读空间。';
+    }
+    if (choiceIndex === 1) {
+      addProfileDelta('fame', 1); addProfileDelta('coachTrust', phase >= 3 ? 2 : 1);
+      addActiveEventEffect(suffix, label, phase >= 2 ? 1.15 : 0.85, 2);
+      ensureSeasonEventState().injuryRiskBonus = Math.min(12, (ensureSeasonEventState().injuryRiskBonus || 0) + (phase >= 3 ? 0.15 : 0.35));
+      return '你选择“' + label + '”。球队把资源集中到明确弱点，你也承担最后回合的执行压力。';
+    }
+    addProfileDelta('leadership', 2); addProfileDelta(phase >= 2 ? 'coachTrust' : 'fame', phase >= 2 ? 1 : -1);
+    addActiveEventEffect(suffix, label, phase >= 2 ? 1.55 : 1.35, 2);
+    return '你选择“' + label + '”。系列赛的回应从防守端开始，对方核心将面对新的覆盖方式。';
+  }
+  if (choiceIndex === 0) {
+    addProfileDelta('fame', phase >= 3 ? 1 : 2); addProfileDelta(phase >= 3 ? 'legacyBonus' : 'controversy', 1);
+    addActiveEventEffect(suffix, label, 0.5, 3);
+    return '你选择“' + label + '”。这次表态提高了个人标准，也让之后每场表现受到更严格审视。';
+  }
+  if (choiceIndex === 1) {
+    addProfileDelta('lockerRoomTrust', 2); addProfileDelta('leadership', phase >= 2 ? 2 : 1); addProfileDelta('mediaTrust', 1);
+    return '你选择“' + label + '”。奖项讨论被重新放回球队结果中，更衣室认可了你的立场。';
+  }
+  addProfileDelta('coachTrust', 1); addProfileDelta(phase >= 3 ? 'legacyBonus' : 'fame', phase >= 3 ? 1 : -1);
+  addActiveEventEffect(suffix, label, phase >= 2 ? 0.8 : 0.65, 4);
+  return '你选择“' + label + '”。外界讨论不会消失，但球队明确知道你的注意力仍在比赛。';
+}
+
+/** 旧存档的布尔 pending 标记也能安全映射成一个可结算的重伤实例。 */
+function getMajorInjuryInstanceId() {
+  var flags = STATE.career && STATE.career.flags ? STATE.career.flags : {};
+  var pending = flags.majorInjuryPendingComeback;
+  if (pending && typeof pending === 'object' && pending.id != null) return String(pending.id);
+  if (Number(flags.majorInjuryInstance) > 0) return String(flags.majorInjuryInstance);
+  return 'legacy-s' + (Number(flags.lastMajorInjurySeason) || getNarrativeSeasonNumber());
+}
+
+function meetsCareerEventIdentity(def) {
+  if (!def || !def.id) return false;
+  var rule = CAREER_EVENT_IDENTITY_RULES[def.id];
+  if (!rule) return true;
+  var identity = getCareerNarrativeIdentity();
+  var ranks = { bench: 0, veteran: 0, starter: 1, veteran_core: 2, core: 2, franchise: 3 };
+  if (rule.stages && rule.stages.indexOf(identity.stage) < 0) return false;
+  if (rule.minRole && (ranks[identity.role] || 0) < (ranks[rule.minRole] || 0)) return false;
+  if (rule.maxRole && (ranks[identity.role] || 0) > (ranks[rule.maxRole] || 0)) return false;
+  if (rule.minYearsWithTeam && getCareerEventYearsWithTeam() < rule.minYearsWithTeam) return false;
+  return true;
+}
+
 // ━━━ 赛季导演：让比赛结果推动长线剧情，而不是只抽独立弹窗 ━━━
 var SEASON_NARRATIVE_THEMES = {
   prove: { id: 'prove', emoji: '🌱', title: '证明自己', summary: '轮换、信任与稳定表现会决定你能否站稳脚跟。' },
   rise: { id: 'rise', emoji: '⭐', title: '崭露头角', summary: '球权、曝光和球队地位都在等你的表现给出答案。' },
   title: { id: 'title', emoji: '🏆', title: '冲冠窗口', summary: '每一场关键胜负都会放大这支球队是否真的具备争冠资格。' },
+  dynasty: { id: 'dynasty', emoji: '👑', title: '王朝压力', summary: '卫冕不再只是再赢一次；每个人都在检验这支球队能否持续留在顶峰。' },
+  contract: { id: 'contract', emoji: '✍️', title: '合同年', summary: '你的未来、球队的承诺和更衣室的耐心，都将在这个赛季接受检验。' },
+  new_city: { id: 'new_city', emoji: '🏙️', title: '新城市，新责任', summary: '换队带来了新的期待；你必须先赢得更衣室，再谈改变球队。' },
   reset: { id: 'reset', emoji: '🔄', title: '失败后的选择', summary: '上赛季的遗憾尚未过去，球队需要决定继续相信谁。' },
   legacy: { id: 'legacy', emoji: '👑', title: '传承与转型', summary: '当生涯进入后段，影响力不只来自得分，也来自你留下什么。' }
+};
+
+// 主题不仅负责标题：它决定球队方向线的提问方式，并改变职业事件的抽取倾向。
+var SEASON_THEME_STORYLINES = {
+  prove: { title: '证明自己：赢得位置', body: '球队暂时不会承诺任何东西。你需要先让教练、队友和轮换表都相信：你的表现值得更大的位置。', choices: [['team_first', '先完成球队交代的任务', '用稳定与执行力换取下一阶段机会'], ['all_in', '要求把关键回合交给我', '把竞争摆到台面上'], ['wait', '用一段时间证明自己', '不争口头承诺，只看连续表现']] },
+  rise: { title: '崭露头角：谁来定义你的上限', body: '你的名字开始出现在更多讨论里。球队想知道这是一次短暂高光，还是一名核心正在成形。', choices: [['all_in', '主动接下更多责任', '把曝光转化为球队影响力'], ['foundation', '先让队友在体系里变好', '把成长建立在更完整的比赛上'], ['wait', '让比赛自然回答', '保留弹性，不急着给自己贴标签']] },
+  title: { title: '冲冠窗口：现在还是未来', body: '阵容已经有了冲击更高目标的资格。管理层需要知道，你希望用当下的筹码冲刺，还是保护未来的持续竞争力。', choices: [['all_in', '支持立刻冲刺', '接受更高的当季压力'], ['foundation', '保护长期竞争力', '让阵容在窗口期保持弹性'], ['wait', '等到截止日前再决定', '先让战绩证明球队缺什么']] },
+  dynasty: { title: '王朝压力：卫冕的代价', body: '连续成功让每个人都被放大检视。对手会为击败你们准备整个赛季，队内也开始担心牺牲与续约是否还能平衡。', choices: [['all_in', '把卫冕放在第一位', '继续承担最高强度的期待'], ['foundation', '优先照顾体系与新人', '为更长的王朝留下空间'], ['wait', '不提前许下承诺', '让更衣室用比赛决定节奏']] },
+  contract: { title: '合同年：承诺的价格', body: '你和球队都知道，这份合同会改变未来几年的阵容。每一次选择都在回答：你追求的是稳定、空间，还是最大的个人主动权。', choices: [['all_in', '用表现争取最高承诺', '把风险与回报都压在本季'], ['foundation', '优先球队的长期空间', '让管理层看到共同建设的意愿'], ['wait', '把谈判留到赛季结束', '不让合同问题吞没比赛']] },
+  new_city: { title: '新城市：先成为自己人', body: '新队友和新球迷都在观察你。来到这里不代表已经属于这里，真正的信任要靠你如何处理第一段艰难时期。', choices: [['all_in', '主动承担领袖责任', '尽快建立新的球队身份'], ['foundation', '先融入现有体系', '尊重更衣室原有的秩序'], ['wait', '先听、先看、再行动', '避免过早定义这支球队']] },
+  reset: { title: '失败后的选择：重新定义方向', body: '上赛季的遗憾没有自动消失。球队可以急着证明自己，也可以承认问题并重建更稳固的赢球方式。', choices: [['all_in', '立刻把失败翻篇', '用冲刺回应外界质疑'], ['foundation', '优先修补球队基础', '接受短期阵痛，避免重演旧问题'], ['wait', '先观察球队真实状态', '不把第二次选择建立在情绪上']] },
+  legacy: { title: '传承与转型：留下什么', body: '你的影响力不再只由数据定义。球队希望知道，你会如何把经验、标准与机会交给下一代。', choices: [['all_in', '继续承担最大责任', '用最后的巅峰争取更高历史位置'], ['foundation', '主动扶持下一代', '把球队未来写进自己的生涯'], ['wait', '让身体与比赛决定节奏', '不为了叙事强行改变角色']] }
+};
+
+// 长期处于同一生涯阶段时保留主题的数值权重，但轮换具体矛盾，避免每季重播同一段文案。
+var SEASON_THEME_VARIANTS = {
+  prove: [
+    { id: 'prove_rotation', title: '轮换席位之争', summary: '稳定性、执行力和有限时间里的表现，决定你能否真正进入轮换。', storylineTitle: '证明自己：争取轮换', storylineBody: '教练组给出的机会仍然有限。你需要决定，是先把每一项小任务做到可靠，还是尽快争取更大的比赛责任。' },
+    { id: 'prove_trust', title: '教练信任考验', summary: '位置不只取决于数据；防守选择、团队纪律和关键回合同样会被记录。', storylineTitle: '证明自己：赢得信任', storylineBody: '你的数据已经引起注意，但教练仍在观察你能否成为一名可以被长期信任的球员。' },
+    { id: 'prove_breakthrough', title: '突破角色上限', summary: '你已经不满足于偶尔闪光，本季要回答的是能否把高光变成稳定身份。', storylineTitle: '证明自己：打破上限', storylineBody: '轮换身份逐渐稳定，下一道门槛是让球队相信：更大的责任不会破坏现有体系。' }
+  ],
+  rise: [
+    { id: 'rise_usage', title: '成长赛季：球权升级', summary: '更多球权意味着更多责任，球队要确认你的高光能否稳定转化为胜利。', storylineTitle: '崭露头角：接住更多球权', storylineBody: '教练组准备扩大你的进攻权限，同时要求你证明更多持球不会让队友失去节奏。' },
+    { id: 'rise_visibility', title: '成长赛季：聚光灯降临', summary: '联盟开始认识你的名字，曝光、期待和针对性防守也随之而来。', storylineTitle: '崭露头角：应对聚光灯', storylineBody: '媒体和对手都开始重新评估你。球队想知道你会主动拥抱关注，还是先把新身份建立在稳定比赛上。' },
+    { id: 'rise_core', title: '成长赛季：核心门槛', summary: '偶尔主导比赛已经不够，本季要回答的是你能否成为体系长期依赖的人。', storylineTitle: '崭露头角：跨过核心门槛', storylineBody: '你已经证明自己能赢下某些夜晚，下一步是让球队相信整个赛季都可以围绕你的判断运行。' }
+  ],
+  title: [
+    { id: 'title_all_in', title: '争冠窗口：最后补强', summary: '球队已经接近顶峰，截止日前是否押上未来会决定这次窗口的上限。', storylineTitle: '冲冠窗口：是否押上筹码', storylineBody: '管理层准备动用未来资产换取即时补强。你需要决定，这支球队是否已经值得承担全力冲刺的代价。' },
+    { id: 'title_pressure', title: '争冠窗口：核心承压', summary: '阵容已经足够好，所有问题最终都会落到核心能否在关键时刻兑现。', storylineTitle: '冲冠窗口：承担最后责任', storylineBody: '球队不再缺少常规赛答案，真正的问题是关键系列赛陷入僵局时，谁来承担改变比赛的责任。' },
+    { id: 'title_depth', title: '争冠窗口：阵容深度', summary: '明星天赋带来了上限，轮换稳定性却可能决定球队能走多远。', storylineTitle: '冲冠窗口：明星还是深度', storylineBody: '管理层可以继续强化最强阵容，也可以为漫长季后赛补足轮换。你必须给出这支球队最缺什么的判断。' },
+    { id: 'title_health', title: '争冠窗口：健康与负荷', summary: '争冠不仅是赢下更多比赛，也是在最重要的时刻让核心阵容保持完整。', storylineTitle: '冲冠窗口：如何抵达季后赛', storylineBody: '球队可以追逐更高排名，也可以控制核心负荷。选择会改变常规赛节奏，也会改变季后赛前的风险。' }
+  ],
+  dynasty: [
+    { id: 'dynasty_repeat', title: '王朝压力：再次证明', summary: '所有对手都把击败你们当作赛季目标，过去的成功不会替本季赢球。', storylineTitle: '王朝压力：再赢一次', storylineBody: '冠军身份让每场比赛都像焦点战。球队必须决定，是继续维持最高强度，还是为真正重要的阶段保留余量。' },
+    { id: 'dynasty_sacrifice', title: '王朝压力：牺牲失衡', summary: '冠军需要牺牲，但角色、合同和荣誉分配正在考验更衣室耐心。', storylineTitle: '王朝压力：谁继续牺牲', storylineBody: '连续成功掩盖了一些角色不满。管理层需要你帮助决定，球队应优先维持秩序还是重新分配机会。' },
+    { id: 'dynasty_refresh', title: '王朝压力：新旧交替', summary: '维持王朝不能只依赖旧答案，新人和老核心必须找到共同节奏。', storylineTitle: '王朝压力：更新冠军阵容', storylineBody: '年轻球员需要真实机会，冠军核心仍要求稳定分工。球队必须在延续与更新之间找到平衡。' }
+  ],
+  contract: [
+    { id: 'contract_value', title: '合同年：证明价值', summary: '每一段表现都在改变下一份合同的价格，也在改变球队愿意承担的风险。', storylineTitle: '合同年：价值与承诺', storylineBody: '球队希望用长期承诺换取确定性，而你必须决定用怎样的赛季证明自己的真正价值。' },
+    { id: 'contract_control', title: '合同年：掌握未来', summary: '薪资只是答案的一部分，角色、去向和球队方向同样决定你的选择。', storylineTitle: '合同年：谁决定未来', storylineBody: '谈判的核心已经不只是数字。你需要在稳定、球队空间与个人主动权之间给出优先级。' },
+    { id: 'contract_team', title: '合同年：球队的诚意', summary: '管理层的补强与角色安排，会证明他们的承诺究竟是计划还是话术。', storylineTitle: '合同年：检验球队诚意', storylineBody: '球队希望你先承诺未来，而你也在等待他们用阵容和角色证明共同建设的决心。' }
+  ],
+  new_city: [
+    { id: 'new_city_belonging', title: '新城市：赢得归属', summary: '新球衣不会自动带来信任，你需要先成为更衣室和球迷眼中的自己人。', storylineTitle: '新城市：先成为自己人', storylineBody: '新队友仍在观察你的习惯与边界。真正的融入取决于你如何处理第一段压力。' },
+    { id: 'new_city_role', title: '新城市：重新定位', summary: '过去的身份不会原封不动地带来这里，你必须在新体系中重新定义自己的作用。', storylineTitle: '新城市：新的角色答案', storylineBody: '球队签下的是你的能力，却仍需要和你一起决定这份能力应当怎样进入现有体系。' },
+    { id: 'new_city_leadership', title: '新城市：建立标准', summary: '当期待迅速升高，你要决定先适应旧秩序，还是主动建立新的球队标准。', storylineTitle: '新城市：领袖从哪里开始', storylineBody: '球迷期待你立刻改变球队，更衣室却需要你先理解这里。你必须决定领导力从哪一步开始。' }
+  ],
+  reset: [
+    { id: 'reset_accountability', title: '失败之后：谁来负责', summary: '上季的失败留下了具体问题，球队必须先承认责任才能真正继续前进。', storylineTitle: '失败后的选择：先面对问题', storylineBody: '管理层、教练和核心球员都能为上季找到理由。你需要决定球队先公开承担责任，还是尽快把注意力转向下一场。' },
+    { id: 'reset_system', title: '失败之后：重建赢法', summary: '旧体系已经暴露上限，本季的重点不是证明它没错，而是建立新的赢球方式。', storylineTitle: '失败后的选择：改变体系', storylineBody: '继续沿用熟悉打法可以更快恢复战绩，彻底调整则可能带来阵痛。球队需要一个明确方向。' },
+    { id: 'reset_roster', title: '失败之后：阵容抉择', summary: '连续失利让阵容兼容性受到质疑，信任现有人选还是主动改变成为核心矛盾。', storylineTitle: '失败后的选择：相信谁', storylineBody: '休赛期没有自动修复上季的问题。球队必须判断这是一次偶然低谷，还是阵容本身需要改变。' }
+  ],
+  legacy: [
+    { id: 'legacy_transition', title: '生涯暮年：角色转型', summary: '身体与轮换正在改变，你需要重新定义怎样的比赛仍然属于自己。', storylineTitle: '传承与转型：接受变化', storylineBody: '球队开始减少你最熟悉的负担，也希望你把经验转化为新的比赛方式。角色变化不是告别，却需要一次明确选择。' },
+    { id: 'legacy_mentor', title: '传承赛季：扶持新核', summary: '年轻核心正在成长，你留下的标准可能比本季数据更长久。', storylineTitle: '传承与转型：交出火炬', storylineBody: '一名年轻核心需要空间，也需要有人告诉他怎样承担球队。你可以守住中心，也可以主动成为他的支点。' },
+    { id: 'legacy_last_run', title: '最后窗口：再冲一次', summary: '争冠机会正在收窄，这可能是你以核心身份完成最后冲刺的赛季。', storylineTitle: '传承与转型：最后冲刺', storylineBody: '阵容仍有竞争力，但时间已经成为最稀缺的筹码。球队需要知道你是否愿意为最后一次冲刺承担风险。' },
+    { id: 'legacy_farewell', title: '城市传奇：告别之前', summary: '纪录、球迷与共同记忆开始被重新讲述，你必须决定如何书写最后阶段。', storylineTitle: '传承与转型：留下些什么', storylineBody: '每个客场都开始回顾你的生涯。球队希望知道，告别之前你最想留下的是胜利、标准，还是下一代的机会。' }
+  ]
+};
+
+var SEASON_THEME_VARIANT_PROFILES = {
+  prove_rotation: 'structure', prove_trust: 'cohesion', prove_breakthrough: 'responsibility',
+  rise_usage: 'responsibility', rise_visibility: 'identity', rise_core: 'responsibility',
+  title_all_in: 'future', title_pressure: 'responsibility', title_depth: 'structure', title_health: 'health',
+  dynasty_repeat: 'responsibility', dynasty_sacrifice: 'cohesion', dynasty_refresh: 'structure',
+  contract_value: 'identity', contract_control: 'future', contract_team: 'cohesion',
+  new_city_belonging: 'cohesion', new_city_role: 'identity', new_city_leadership: 'responsibility',
+  reset_accountability: 'cohesion', reset_system: 'structure', reset_roster: 'future',
+  legacy_transition: 'health', legacy_mentor: 'cohesion', legacy_last_run: 'responsibility', legacy_farewell: 'identity'
+};
+
+var SEASON_THEME_EFFECT_PROFILES = {
+  responsibility: { choices: [['all_in', '主动承担最关键的责任', '提高个人压力与核心影响力'], ['foundation', '让责任分散进球队体系', '强化队友参与和长期稳定'], ['wait', '保持既定分工', '避免仓促改变成熟体系']] },
+  cohesion: { choices: [['all_in', '公开站在关系核心一边', '用明确态度建立共同信任'], ['foundation', '先修复内部沟通', '让分歧在球队内部得到处理'], ['wait', '让相处自然给出答案', '避免把关系变成公开承诺']] },
+  structure: { choices: [['all_in', '立即调整主要轮换与打法', '用清晰变化解决当前问题'], ['foundation', '从训练和分工逐步重建', '接受较慢但更稳定的改变'], ['wait', '先收集更多比赛证据', '保留现有结构与调整空间']] },
+  health: { choices: [['all_in', '继续维持最高比赛负荷', '争取当下结果但承担身体风险'], ['foundation', '主动控制负荷与恢复', '为关键阶段保留健康'], ['wait', '逐场评估身体状态', '在排名和健康之间保持弹性']] },
+  future: { choices: [['all_in', '把当前窗口放在第一位', '接受未来资产和选择空间的代价'], ['foundation', '保护长期竞争力', '让球队保留持续调整能力'], ['wait', '等到信息更完整再决定', '避免过早锁定未来路线']] },
+  identity: { choices: [['all_in', '主动定义自己的新身份', '接受更高曝光和评价标准'], ['foundation', '让身份建立在球队结果上', '用稳定表现获得长期认可'], ['wait', '拒绝让外界提前下定义', '保持专注与个人弹性']] }
+};
+
+function getSeasonThemeEffectProfile(profileId) {
+  return profileId && SEASON_THEME_EFFECT_PROFILES[profileId] || null;
+}
+
+var SEASON_THEME_EVENT_WEIGHTS = {
+  prove: { career_coach_role_meeting: 2.6, career_rivalry_spark: 1.35, team_dinner: 1.25 },
+  rise: { career_rivalry_spark: 1.6, career_award_race_pressure: 1.35, stephen_a: 1.25 },
+  title: { career_playoff_adjustment: 2.1, career_award_race_pressure: 1.35, veteran_dinner: 1.25 },
+  dynasty: { career_playoff_adjustment: 2.35, career_award_race_pressure: 1.5, veteran_dinner: 1.4 },
+  contract: { career_trade_deadline_rumor: 2.5, career_award_race_pressure: 1.35, sponsor_car: 1.25 },
+  new_city: { team_dinner: 1.9, veteran_dinner: 1.45, career_coach_role_meeting: 1.25 },
+  reset: { career_trade_deadline_rumor: 1.9, career_playoff_adjustment: 1.45, coach_suit: 1.25 },
+  legacy: { charity: 2, record_milestone_ball: 1.65, veteran_dinner: 1.65 }
 };
 
 function getNarrativeSeasonNumber() {
@@ -10502,6 +10847,64 @@ function getNarrativePreviousWinPct() {
   return total > 0 ? (previous.wins || 0) / total : null;
 }
 
+function getConsecutiveCareerChampionships() {
+  var seasons = (STATE.career && STATE.career.seasons) || [];
+  var streak = 0;
+  for (var i = seasons.length - 1; i >= 0; i--) {
+    if (String(seasons[i] && seasons[i].playoffResult || '').indexOf('总冠军') < 0) break;
+    streak++;
+  }
+  return streak;
+}
+
+function hasNarrativeTeamChanged() {
+  var previous = getNarrativePreviousSeason();
+  return !!(previous && previous.team && STATE.careerTeam && previous.team !== STATE.careerTeam);
+}
+
+function getNarrativeThemeHistory() {
+  var flags = STATE.career && STATE.career.flags ? STATE.career.flags : {};
+  return Array.isArray(flags.seasonThemeHistory) ? flags.seasonThemeHistory : [];
+}
+
+function avoidRepeatedNarrativeTheme(key) {
+  // broad theme 是对球员身份与球队事实的判断，防重复只轮换 variant，不能把超巨改写成“崭露头角”。
+  return key;
+}
+
+function chooseNarrativeThemeVariant(key) {
+  var variants = SEASON_THEME_VARIANTS[key];
+  if (!variants || !variants.length) return null;
+  var history = getNarrativeThemeHistory();
+  var previous = history.length ? history[history.length - 1] : null;
+  var index = (getNarrativeSeasonNumber() + history.length - 1) % variants.length;
+  if (previous && previous.id === key && previous.variantId === variants[index].id) index = (index + 1) % variants.length;
+  return variants[index];
+}
+
+function getSeasonThemeStoryline(theme) {
+  var id = theme && theme.id;
+  var base = SEASON_THEME_STORYLINES[id] || SEASON_THEME_STORYLINES.rise;
+  var variant = theme && theme.variantId && (SEASON_THEME_VARIANTS[id] || []).find(function(item) { return item.id === theme.variantId; });
+  if (!variant) return base;
+  var effectProfile = SEASON_THEME_VARIANT_PROFILES[variant.id] || null;
+  var gameplay = getSeasonThemeEffectProfile(effectProfile);
+  return Object.assign({}, base, {
+    title: variant.storylineTitle || base.title,
+    body: variant.storylineBody || base.body,
+    choices: gameplay && gameplay.choices || base.choices,
+    effectProfile: effectProfile
+  });
+}
+
+function getSeasonThemeEventWeight(def) {
+  var events = STATE.season && STATE.season.events;
+  var theme = events && events.seasonTheme;
+  var overrides = theme && SEASON_THEME_EVENT_WEIGHTS[theme.id];
+  if (!def || !overrides) return Number(def && def.weight) || 1;
+  return (Number(def.weight) || 1) * (Number(overrides[def.id]) || 1);
+}
+
 function chooseSeasonNarrativeTheme() {
   var career = STATE.career || {};
   var flags = career.flags || {};
@@ -10510,15 +10913,21 @@ function chooseSeasonNarrativeTheme() {
   var seasonNum = getNarrativeSeasonNumber();
   var key = 'rise';
   if (age >= 34) key = 'legacy';
+  else if (hasNarrativeTeamChanged()) key = 'new_city';
+  else if ((Number(career.contract) || 0) <= 1) key = 'contract';
+  else if (getConsecutiveCareerChampionships() >= 2) key = 'dynasty';
   else if (seasonNum === 1 || !STATE.season.isUserStarter) key = 'prove';
   else if ((flags.seasonCommitment && flags.seasonCommitment.outcome === 'fell_short') || (previousPct != null && previousPct < 0.45)) key = 'reset';
   else if ((Number(STATE.finalOVR) || 0) >= 89 || (previousPct != null && previousPct >= 0.6)) key = 'title';
+  key = avoidRepeatedNarrativeTheme(key);
   var theme = SEASON_NARRATIVE_THEMES[key] || SEASON_NARRATIVE_THEMES.rise;
+  var variant = chooseNarrativeThemeVariant(theme.id);
   return {
     id: theme.id,
     emoji: theme.emoji,
-    title: theme.title,
-    summary: theme.summary,
+    variantId: variant && variant.id || theme.id,
+    title: variant && variant.title || theme.title,
+    summary: variant && variant.summary || theme.summary,
     season: seasonNum
   };
 }
@@ -10535,20 +10944,108 @@ function findNarrativePlayer(playerId) {
   return found;
 }
 
-/** 绑定可跨赛季追踪的队友；若他离队，后续文本仍会记住这个人。 */
+function archiveNarrativeTeammate(teammate) {
+  if (!teammate || !STATE.career) return;
+  STATE.career.flags = STATE.career.flags || {};
+  var history = STATE.career.flags.storyTeammateHistory || (STATE.career.flags.storyTeammateHistory = []);
+  if (!history.some(function(item) { return item && item.id === teammate.id; })) {
+    history.push({ id: teammate.id, cname: teammate.cname, affinity: Number(teammate.affinity) || 0, sinceSeason: teammate.sinceSeason || 0, endedSeason: getNarrativeSeasonNumber() });
+  }
+  if (history.length > 6) history.splice(0, history.length - 6);
+}
+
+function rememberFormerNarrativeTeammate(teammate, current) {
+  if (!teammate || !STATE.career) return null;
+  STATE.career.flags = STATE.career.flags || {};
+  var former = STATE.career.flags.formerStoryTeammates || (STATE.career.flags.formerStoryTeammates = []);
+  var record = former.find(function(item) { return item && item.id === teammate.id; });
+  if (!record) {
+    record = Object.assign({}, teammate, { reunionCount: Number(teammate.reunionCount) || 0 });
+    former.push(record);
+  }
+  if (current) {
+    record.team = current.team;
+    record.active = true;
+    record.cname = current.player.cname || current.player.name || record.cname;
+    record.pos = current.player.pos || record.pos || '';
+    record.ovr = current.player.ovr || record.ovr || 0;
+  }
+  if (former.length > 6) former.splice(0, former.length - 6);
+  return record;
+}
+
+function getNarrativeFormerTeammates() {
+  if (!STATE.career || typeof LEAGUE_PLAYER_DATA === 'undefined') return [];
+  STATE.career.flags = STATE.career.flags || {};
+  var former = STATE.career.flags.formerStoryTeammates || (STATE.career.flags.formerStoryTeammates = []);
+  STATE.career.flags.formerStoryTeammates = former.filter(function(teammate) {
+    if (!teammate || !teammate.id) return false;
+    var current = findNarrativePlayer(teammate.id);
+    if (!current) {
+      teammate.active = false;
+      archiveNarrativeTeammate(teammate);
+      return false;
+    }
+    teammate.team = current.team;
+    teammate.active = true;
+    teammate.cname = current.player.cname || current.player.name || teammate.cname;
+    // 回到玩家球队后不再生成“旧友对决”；当前关系槽仍由现有队友线独立管理。
+    return current.team !== STATE.careerTeam;
+  });
+  return STATE.career.flags.formerStoryTeammates;
+}
+
+function getNarrativeFormerTeammate(playerId) {
+  return getNarrativeFormerTeammates().find(function(teammate) { return teammate && teammate.id === playerId; }) || null;
+}
+
+function rememberNarrativeReunitedTeammate(teammateId, payload, current) {
+  if (!STATE.career || !teammateId) return null;
+  STATE.career.flags = STATE.career.flags || {};
+  var reunited = STATE.career.flags.reunitedStoryTeammates || (STATE.career.flags.reunitedStoryTeammates = []);
+  var record = reunited.find(function(item) { return item && item.id === teammateId; });
+  if (!record) {
+    record = { id: teammateId, returnedSeason: getNarrativeSeasonNumber(), affinity: Number(payload && payload.affinity) || 0 };
+    reunited.push(record);
+  }
+  record.team = current && current.team || STATE.careerTeam;
+  record.cname = current && (current.player.cname || current.player.name) || payload && payload.teammateName || record.cname || '那位旧队友';
+  record.active = true;
+  return record;
+}
+
+function getNarrativeReunitedTeammate(playerId) {
+  var reunited = STATE.career && STATE.career.flags && STATE.career.flags.reunitedStoryTeammates;
+  return Array.isArray(reunited) ? reunited.find(function(item) { return item && item.id === playerId; }) || null : null;
+}
+
+function getNarrativeTeammateAffinityStage(teammate) {
+  var affinity = Number(teammate && teammate.affinity) || 0;
+  if (affinity >= 6) return { id: 'brothers', title: '黄金搭档', affinity: affinity };
+  if (affinity >= 4) return { id: 'partners', title: '核心搭档', affinity: affinity };
+  if (affinity >= 2) return { id: 'trust', title: '建立信任', affinity: affinity };
+  return { id: 'new', title: '普通队友', affinity: affinity };
+}
+
+/** 绑定可跨赛季追踪的队友；退役后归档并为生涯后段重新寻找新的关系线。 */
 function getSeasonNarrativeTeammate() {
   if (!STATE.career || !STATE.careerTeam || typeof LEAGUE_PLAYER_DATA === 'undefined') return null;
   STATE.career.flags = STATE.career.flags || {};
   var existing = STATE.career.flags.storyTeammate;
   var current = existing && findNarrativePlayer(existing.id);
-  if (existing && current) {
+  if (existing && current && current.team === STATE.careerTeam) {
     existing.team = current.team;
     existing.active = true;
+    existing.cname = current.player.cname || current.player.name || existing.cname;
     return existing;
   }
   if (existing) {
-    existing.active = false;
-    return existing;
+    if (current) rememberFormerNarrativeTeammate(existing, current);
+    else {
+      existing.active = false;
+      archiveNarrativeTeammate(existing);
+    }
+    delete STATE.career.flags.storyTeammate;
   }
   var candidates = (LEAGUE_PLAYER_DATA[STATE.careerTeam] || []).filter(function(player) {
     return player && !player._isUser;
@@ -10570,6 +11067,62 @@ function getSeasonNarrativeTeammate() {
   };
   STATE.career.flags.storyTeammate = existing;
   return existing;
+}
+
+/** 宿敌以球员 ID 为主体；球队只是他当前所在的动态属性。 */
+function getNarrativeRivalry() {
+  if (!STATE.career || !STATE.career.flags || !STATE.career.flags.eventRivalry) return null;
+  var rivalry = STATE.career.flags.eventRivalry;
+  // 旧版本曾在常规赛阶段把旧债写成 respect/escalated；迁移回“等待季后赛结果”的状态。
+  if (rivalry.debtState === 'respect' || rivalry.debtState === 'escalated') {
+    rivalry.reckoningTone = rivalry.debtState === 'respect' ? 'respect' : 'fire';
+    rivalry.debtState = 'reckoning';
+    delete rivalry.debtResolvedSeason;
+  }
+  if (!rivalry.debtState) rivalry.debtState = (Number(rivalry.playoffLosses) || 0) >= 2 ? 'owed' : 'none';
+  if (rivalry.lastDebtLossCount == null) rivalry.lastDebtLossCount = rivalry.debtState === 'none' ? (Number(rivalry.playoffLosses) || 0) : 0;
+  var current = rivalry.playerId && findNarrativePlayer(rivalry.playerId);
+  if (current) {
+    rivalry.team = current.team;
+    rivalry.playerName = current.player.cname || current.player.name || rivalry.playerName;
+    rivalry.active = true;
+  } else if (rivalry.playerId) {
+    rivalry.active = false;
+  }
+  return rivalry;
+}
+
+function bindNarrativeRival(player, team, tone, heat) {
+  if (!STATE.career) return null;
+  STATE.career.flags = STATE.career.flags || {};
+  var previous = STATE.career.flags.eventRivalry;
+  STATE.career.flags.eventRivalry = {
+    team: team,
+    playerId: player && player.id,
+    playerName: player && (player.cname || player.name) || '对方核心',
+    tone: tone || 'competitive',
+    heat: Number(heat) || 1,
+    active: true,
+    debtState: 'none',
+    playoffLosses: 0,
+    playoffWins: 0,
+    playoffMeetings: 0,
+    lastDebtLossCount: 0,
+    sinceGame: getEventGameNumber(),
+    sinceSeason: STATE.career.seasonCount || 0,
+    previousRivalId: previous && previous.playerId || null
+  };
+  return STATE.career.flags.eventRivalry;
+}
+
+function getNarrativeMatchupGame(team, minimumGame) {
+  var schedule = STATE.season && STATE.season.schedule;
+  if (!team || !Array.isArray(schedule)) return null;
+  var min = Math.max(1, Number(minimumGame) || 1);
+  var matchup = schedule.find(function(game) {
+    return game && game.opponent === team && (Number(game.gameNum) || 0) >= min;
+  });
+  return matchup ? Number(matchup.gameNum) || null : null;
 }
 
 function getRoleNarrativeLevel() {
@@ -10598,6 +11151,93 @@ function makeSeasonStoryThread(id, kind, title, emoji, openingGame, resolutionGa
   };
 }
 
+function migrateNarrativeCarryOverRelationship(item) {
+  if (!item || (item.kind !== 'teammate' && item.kind !== 'former_teammate')) return item;
+  var payload = item.payload || (item.payload = {});
+  var teammateId = payload.teammateId;
+  if (!teammateId) return item;
+  var current = findNarrativePlayer(teammateId);
+  if (!current) {
+    archiveNarrativeTeammate({
+      id: teammateId,
+      cname: payload.teammateName || '那位队友',
+      affinity: Number(payload.affinity) || 0,
+      sinceSeason: item.fromSeason || 0
+    });
+    return null;
+  }
+  if (item.kind === 'teammate' && current.team !== STATE.careerTeam) {
+    var former = getNarrativeFormerTeammate(teammateId) || rememberFormerNarrativeTeammate({
+      id: teammateId,
+      cname: payload.teammateName || current.player.cname || current.player.name,
+      affinity: Number(payload.affinity) || 0,
+      sinceSeason: item.fromSeason || 0
+    }, current);
+    item.kind = 'former_teammate';
+    item.title = '未竟的旧友线：' + (former && former.cname || payload.teammateName || '那位队友');
+    item.emoji = '🔁';
+    payload.opponent = current.team;
+    payload.teammateName = former && former.cname || payload.teammateName;
+    payload.isFirstReunion = (Number(former && former.reunionCount) || 0) === 0;
+    payload.relationshipMigrated = true;
+    item.choice = ({ protect: 'welcome', honest: 'compete', distance: 'move_on' })[item.choice] || item.choice;
+  } else if (item.kind === 'former_teammate' && current.team === STATE.careerTeam) {
+    var reunited = rememberNarrativeReunitedTeammate(teammateId, payload, current);
+    item.kind = 'reunited_teammate';
+    item.title = '又穿上同一件球衣：' + (reunited && reunited.cname || payload.teammateName || '那位队友');
+    item.emoji = '🤝';
+    delete payload.opponent;
+    payload.teammateName = reunited && reunited.cname || payload.teammateName;
+    payload.returnedSeason = getNarrativeSeasonNumber();
+    payload.relationshipMigrated = true;
+  }
+  return item;
+}
+
+function takeNarrativeCarryOvers() {
+  if (!STATE.career) return [];
+  STATE.career.flags = STATE.career.flags || {};
+  var saved = Array.isArray(STATE.career.flags.narrativeCarryOvers) ? STATE.career.flags.narrativeCarryOvers : [];
+  STATE.career.flags.narrativeCarryOvers = [];
+  return saved.map(function(item, index) {
+    if (!item || !item.kind) return null;
+    item = migrateNarrativeCarryOverRelationship(Object.assign({}, item, { payload: Object.assign({}, item.payload || {}) }));
+    if (!item) return null;
+    var thread = makeSeasonStoryThread(
+      String(item.id || item.kind) + '_carry_s' + getNarrativeSeasonNumber() + '_' + index,
+      item.kind,
+      item.title || '上一季未竟的选择',
+      item.emoji || '🧭',
+      1,
+      13,
+      Object.assign({}, item.payload || {}, { carryOver: true, carriedFromSeason: item.fromSeason || getNarrativeSeasonNumber() - 1 })
+    );
+    thread.state = 'committed';
+    thread.choice = item.choice || 'wait';
+    thread.committedAt = 0;
+    thread.awaitingCarryOverBaseline = true;
+    thread.carryOver = true;
+    return thread;
+  }).filter(Boolean);
+}
+
+function selectNarrativeFormerTeammate() {
+  var season = getNarrativeSeasonNumber();
+  return getNarrativeFormerTeammates().filter(function(item) {
+    if (!item || !item.active || !item.team || !getNarrativeMatchupGame(item.team, 8)) return false;
+    var last = Number(item.lastReunionSeason) || 0;
+    return (Number(item.reunionCount) || 0) === 0 || !last || season - last >= 2;
+  }).sort(function(a, b) {
+    function score(item) {
+      var reunionCount = Number(item.reunionCount) || 0;
+      var last = Number(item.lastReunionSeason) || 0;
+      var seasonsApart = last ? Math.max(0, season - last) : season;
+      return (reunionCount === 0 ? 1000 : 0) + (Number(item.playoffMeetings) || 0) * 80 + seasonsApart * 10 + (Number(item.affinity) || 0) * 2;
+    }
+    return score(b) - score(a) || String(a.id).localeCompare(String(b.id));
+  })[0] || null;
+}
+
 function buildSeasonStoryThreads(theme) {
   var career = STATE.career || {};
   var flags = career.flags || (career.flags = {});
@@ -10612,17 +11252,60 @@ function buildSeasonStoryThreads(theme) {
     ));
   }
   var teammate = getSeasonNarrativeTeammate();
-  if (teammate) {
+  if (teammate && teammate.active && teammate.team === STATE.careerTeam) {
+    var affinityStage = getNarrativeTeammateAffinityStage(teammate);
     threads.push(makeSeasonStoryThread(
-      'teammate_bond_s' + getNarrativeSeasonNumber(), 'teammate', '队友关系：' + teammate.cname, '🤝', 31, 60,
-      { teammateId: teammate.id, teammateName: teammate.cname }
+      'teammate_bond_s' + getNarrativeSeasonNumber(), 'teammate', affinityStage.title + '：' + teammate.cname, '🤝', 31, 60,
+      { teammateId: teammate.id, teammateName: teammate.cname, affinityStage: affinityStage.id, affinity: affinityStage.affinity }
     ));
   }
+  var former = selectNarrativeFormerTeammate();
+  if (former) {
+    var reunionGame = getNarrativeMatchupGame(former.team, 8);
+    threads.push(makeSeasonStoryThread(
+      'former_teammate_' + former.id + '_s' + getNarrativeSeasonNumber(), 'former_teammate', '旧友重逢：' + former.cname, '🔁', reunionGame, Math.min(78, reunionGame + 18),
+      { teammateId: former.id, teammateName: former.cname, opponent: former.team, isFirstReunion: (Number(former.reunionCount) || 0) === 0 }
+    ));
+  }
+  var themeStory = getSeasonThemeStoryline(theme);
   threads.push(makeSeasonStoryThread(
-    'team_direction_s' + getNarrativeSeasonNumber(), 'team', theme.title + '：球队方向', theme.emoji, 48, 74,
-    { themeId: theme.id }
+    'team_direction_s' + getNarrativeSeasonNumber(), 'team', themeStory.title, theme.emoji, 48, 74,
+    { themeId: theme.id, themeStoryId: theme.variantId || theme.id, themeTitle: theme.title, effectProfile: themeStory.effectProfile || null }
   ));
-  return threads.slice(0, 3);
+  var rivalry = getNarrativeRivalry();
+  // owed 只负责开启一次常规赛对峙；进入 reckoning 后等待真实季后赛结果，不再逐季重播。
+  if (rivalry && rivalry.active !== false && rivalry.debtState === 'owed' && rivalry.team) {
+    var reckoningGame = getNarrativeMatchupGame(rivalry.team, 8);
+    if (reckoningGame) {
+      threads.push(makeSeasonStoryThread(
+        'rivalry_reckoning_s' + getNarrativeSeasonNumber(), 'rivalry_reckoning', '宿敌线：季后赛旧债', '🔥', reckoningGame, Math.min(78, reckoningGame + 16),
+        { opponent: rivalry.team, rivalName: rivalry.playerName || '对方核心', playoffLosses: rivalry.playoffLosses, debtState: rivalry.debtState }
+      ));
+    }
+  }
+  return threads;
+}
+
+function selectSeasonNarrativeThreads(carryOvers, generated) {
+  var combined = (carryOvers || []).concat(generated || []);
+  var priority = function(thread) {
+    if (thread && thread.kind === 'rivalry_reckoning') return 0;
+    if (thread && thread.carryOver) return 1;
+    if (thread && thread.kind === 'team') return 2;
+    if (thread && (thread.kind === 'role' || thread.kind === 'teammate')) return 3;
+    return 4;
+  };
+  return combined.map(function(thread, index) { return { thread: thread, index: index }; })
+    .sort(function(a, b) { return priority(a.thread) - priority(b.thread) || a.index - b.index; })
+    .filter(function(entry, index, entries) {
+      var thread = entry.thread;
+      var payload = thread && thread.payload || {};
+      var identity = thread && thread.kind + ':' + (payload.teammateId || payload.opponent || '');
+      return entries.findIndex(function(other) {
+        var otherPayload = other.thread && other.thread.payload || {};
+        return other.thread && other.thread.kind + ':' + (otherPayload.teammateId || otherPayload.opponent || '') === identity;
+      }) === index;
+    }).slice(0, 4).map(function(entry) { return entry.thread; });
 }
 
 function initializeSeasonNarrative() {
@@ -10630,8 +11313,12 @@ function initializeSeasonNarrative() {
   if (events.seasonTheme && Array.isArray(events.storyThreads) && events.storyThreads.length) return events;
   var theme = chooseSeasonNarrativeTheme();
   events.seasonTheme = theme;
-  events.storyThreads = buildSeasonStoryThreads(theme);
-  events.storySignals = { games: 0, winStreak: 0, lossStreak: 0, standoutStreak: 0, closeGames: 0, lastOpponent: null };
+  // 休赛期交易必须先更新关系身份，再恢复未结线程，避免同一 NPC 同时成为当前队友与旧友。
+  getSeasonNarrativeTeammate();
+  getNarrativeFormerTeammates();
+  var carryOvers = takeNarrativeCarryOvers();
+  events.storyThreads = selectSeasonNarrativeThreads(carryOvers, buildSeasonStoryThreads(theme));
+  events.storySignals = { games: 0, wins: 0, losses: 0, winStreak: 0, lossStreak: 0, standoutStreak: 0, closeGames: 0, lastOpponent: null };
   events.directorEvents = [];
   return events;
 }
@@ -10641,6 +11328,11 @@ function hasNarrativeThread(kind) {
   return (events.storyThreads || []).some(function(thread) { return thread && thread.kind === kind && thread.state !== 'resolved'; });
 }
 
+function getActiveNarrativeThreadCount() {
+  var events = ensureSeasonEventState();
+  return (events.storyThreads || []).filter(function(thread) { return thread && thread.state !== 'resolved'; }).length;
+}
+
 function updateSeasonNarrativeSignals(ctx) {
   var events = ensureSeasonEventState();
   var signals = events.storySignals || (events.storySignals = {});
@@ -10648,9 +11340,11 @@ function updateSeasonNarrativeSignals(ctx) {
   var stats = (ctx && ctx.stats) || {};
   signals.games = (Number(signals.games) || 0) + 1;
   if (result.won) {
+    signals.wins = (Number(signals.wins) || 0) + 1;
     signals.winStreak = (Number(signals.winStreak) || 0) + 1;
     signals.lossStreak = 0;
   } else {
+    signals.losses = (Number(signals.losses) || 0) + 1;
     signals.lossStreak = (Number(signals.lossStreak) || 0) + 1;
     signals.winStreak = 0;
   }
@@ -10667,7 +11361,7 @@ function updateSeasonNarrativeSignals(ctx) {
 /** 非角色线会优先等待比赛给出导火索；到保底场次仍会推进，避免长线被赛程完全饿死。 */
 function isNarrativeThreadReadyToOpen(thread, gameNum, signals) {
   if (!thread || gameNum < (Number(thread.openingGame) || 99)) return false;
-  if (thread.kind === 'role' || thread.kind === 'rivalry') return true;
+  if (thread.kind === 'role' || thread.kind === 'rivalry' || thread.kind === 'rivalry_reckoning' || thread.kind === 'former_teammate' || thread.kind === 'media' || thread.kind === 'locker_room') return true;
   var wins = Number(signals && signals.winStreak) || 0;
   var losses = Number(signals && signals.lossStreak) || 0;
   var standout = Number(signals && signals.standoutStreak) || 0;
@@ -10677,27 +11371,42 @@ function isNarrativeThreadReadyToOpen(thread, gameNum, signals) {
   return wins >= 4 || losses >= 4 || standout >= 2 || gameNum >= (Number(thread.openingGame) || 0) + 10;
 }
 
+function queueGameDrivenPressureThread() {
+  var events = ensureSeasonEventState();
+  var signals = events.storySignals || {};
+  if (getActiveNarrativeThreadCount() >= 4) return null;
+  if ((Number(signals.standoutStreak) || 0) >= 5 && !hasNarrativeThread('media')) {
+    var mediaThread = makeSeasonStoryThread(
+      'media_breakout_s' + getNarrativeSeasonNumber(), 'media', '连续爆发后的舆论漩涡', '📰', getEventGameNumber(), Math.min(78, getEventGameNumber() + 12),
+      { standoutStreak: signals.standoutStreak }
+    );
+    events.storyThreads.push(mediaThread);
+    return mediaThread;
+  }
+  if ((Number(signals.lossStreak) || 0) >= 4 && !hasNarrativeThread('locker_room')) {
+    var lockerThread = makeSeasonStoryThread(
+      'locker_room_s' + getNarrativeSeasonNumber(), 'locker_room', '连败后的更衣室', '🚪', getEventGameNumber(), Math.min(78, getEventGameNumber() + 12),
+      { lossStreak: signals.lossStreak }
+    );
+    events.storyThreads.push(lockerThread);
+    return lockerThread;
+  }
+  return null;
+}
+
 function queueGameDrivenRivalryThread(ctx) {
   var events = ensureSeasonEventState();
-  if ((events.storyThreads || []).length >= 4 || hasNarrativeThread('rivalry')) return null;
+  if (getActiveNarrativeThreadCount() >= 4 || hasNarrativeThread('rivalry') || hasNarrativeThread('rivalry_reckoning')) return null;
   var opponent = ctx && ctx.game && ctx.game.opponent;
   var history = opponent && events.opponentHistory && events.opponentHistory[opponent];
   if (!opponent || !history || history.games < 3 || history.closeGames < 2 || history.losses < 2) return null;
   var top = getTeamTopPlayer(opponent);
   if (!top) return null;
   STATE.career.flags = STATE.career.flags || {};
-  if (!STATE.career.flags.eventRivalry) {
-    STATE.career.flags.eventRivalry = {
-      team: opponent,
-      playerId: top.id,
-      playerName: top.cname || top.name || '对方核心',
-      tone: 'competitive',
-      heat: 1,
-      sinceGame: getEventGameNumber(),
-      sinceSeason: STATE.career.seasonCount || 0
-    };
-  }
-  var rivalry = STATE.career.flags.eventRivalry;
+  var rivalry = getNarrativeRivalry();
+  // 已有宿敌时只在他本人所在球队推进剧情，避免“B 队比赛却写成 A 的宿敌” 。
+  if (rivalry && rivalry.active !== false && rivalry.team !== opponent) return null;
+  if (!rivalry || rivalry.active === false) rivalry = bindNarrativeRival(top, opponent, 'competitive', 1);
   var thread = makeSeasonStoryThread(
     'rivalry_escalation_s' + getNarrativeSeasonNumber(), 'rivalry', '宿敌线：' + (rivalry.playerName || '对方核心'), '⚔️',
     getEventGameNumber(), Math.min(78, getEventGameNumber() + 18),
@@ -10731,11 +11440,18 @@ function getDirectorThreadOpening(thread) {
   }
   if (thread.kind === 'teammate') {
     var name = thread.payload.teammateName || (teammate && teammate.cname) || '那位队友';
+    var relationship = getNarrativeTeammateAffinityStage(teammate || { affinity: thread.payload.affinity || 0 });
+    var teammateCopy = {
+      new: '最近几场的终结选择引发了讨论。更衣室里没有人公开争吵，但每个人都在观察你会不会把他当作同伴，而不只是一个变量。',
+      trust: '你们已经在几次关键回合彼此兜底。现在的问题不再是会不会合作，而是愿不愿意在压力最大的时候公开站在对方身边。',
+      partners: '教练组开始为你和' + name + '设计更多双人回合。更高的期待也带来一个问题：这套组合是短期战术，还是球队真正的核心承诺？',
+      brothers: '你和' + name + '的默契已经成了球队身份的一部分。流言、合同和比赛压力都可能考验这段关系，但也让它拥有独有的分量。'
+    };
     return {
       emoji: thread.emoji,
       title: thread.title,
-      body: name + '最近几场的终结选择引发了讨论。更衣室里没有人公开争吵，但每个人都在观察你会不会把他当作同伴，而不只是一个变量。',
-      desc: '与' + name + '的关系留下了后续伏笔',
+      body: teammateCopy[relationship.id] || teammateCopy.new,
+      desc: '与' + name + '的关系处于“' + relationship.title + '”阶段',
       choices: [
         { label: '主动替他承担压力', hint: '把问题留在球队内部解决', _directorChoice: 'protect' },
         { label: '私下把话说开', hint: '直接讨论彼此的期待和边界', _directorChoice: 'honest' },
@@ -10743,17 +11459,91 @@ function getDirectorThreadOpening(thread) {
       ]
     };
   }
-  if (thread.kind === 'rivalry') {
-    var rivalName = thread.payload.rivalName || '对方核心';
+  if (thread.kind === 'reunited_teammate') {
+    var reunited = getNarrativeReunitedTeammate(thread.payload && thread.payload.teammateId);
+    var reunitedName = thread.payload.teammateName || reunited && reunited.cname || '那位旧队友';
     return {
       emoji: thread.emoji,
       title: thread.title,
-      body: '你们已经两次在最后回合分出胜负。' + rivalName + '不再只是赛程上的一个名字，这组对决正在被球迷和媒体共同记住。',
+      body: reunitedName + '在离队多年后重新加入球队。你们不需要假装一切从未改变，但上一段未完成的关系终于有机会在同一间更衣室得到新的答案。',
+      desc: '旧友回归产生独立重聚线，不占用当前核心队友关系槽',
+      choices: [
+        { label: '主动重新建立默契', hint: '承认变化，也延续过去的信任', _directorChoice: 'welcome' },
+        { label: '让他重新竞争球队位置', hint: '尊重现在的更衣室秩序', _directorChoice: 'compete' },
+        { label: '先划清新的角色边界', hint: '避免旧关系影响当前分工', _directorChoice: 'move_on' }
+      ]
+    };
+  }
+  if (thread.kind === 'former_teammate') {
+    var formerTeammate = getNarrativeFormerTeammate(thread.payload && thread.payload.teammateId);
+    var formerName = thread.payload.teammateName || (formerTeammate && formerTeammate.cname) || '那位旧队友';
+    var reunionBody = thread.payload && thread.payload.isFirstReunion
+      ? formerName + '离队后第一次站在了你的对面。赛前他主动走来打招呼，但这场比赛会让你们过去共同经历的那些时刻拥有新的含义。'
+      : '你和' + formerName + '再次作为对手相遇。最初重逢时的情绪已经沉淀，如今真正被检验的是这段关系会走向长期尊重，还是越来越尖锐的竞争。';
+    return {
+      emoji: thread.emoji,
+      title: thread.title,
+      body: reunionBody,
+      desc: '与' + formerName + '的关系进入新的球队阶段',
+      choices: [
+        { label: '公开欢迎他回来', hint: '保留情谊，也让球迷看见彼此的尊重', _directorChoice: 'welcome' },
+        { label: '让比赛替你们说话', hint: '把旧日默契变成新的竞争', _directorChoice: 'compete' },
+        { label: '不让情绪影响球队', hint: '把注意力放在现在的队友身上', _directorChoice: 'move_on' }
+      ]
+    };
+  }
+  if (thread.kind === 'media') {
+    return {
+      emoji: thread.emoji,
+      title: thread.title,
+      body: '你已经连续' + (thread.payload.standoutStreak || 5) + '场打出高光表现。节目开始把你的名字放进奖项讨论，记者的问题也从“你最近状态不错”变成“你是否已经改变了联盟格局”。',
+      desc: '连续爆发引发了长期媒体关注',
+      choices: [
+        { label: '正面接受更高期待', hint: '让聚光灯成为动力', _directorChoice: 'embrace' },
+        { label: '把讨论交给球队战绩', hint: '避免个人叙事盖过更衣室', _directorChoice: 'team_credit' },
+        { label: '拒绝参与舆论竞赛', hint: '把注意力留给下一场比赛', _directorChoice: 'ignore' }
+      ]
+    };
+  }
+  if (thread.kind === 'locker_room') {
+    return {
+      emoji: thread.emoji,
+      title: thread.title,
+      body: '四连败让训练馆里的沉默比平时更久。没有人把责任直接推给谁，但每个人都知道，再继续这样下去，赛季主题会从“机会”变成“追责”。',
+      desc: '连败把更衣室矛盾推到台前',
+      choices: [
+        { label: '主动召开球员会议', hint: '承担领导责任，也要面对所有人的情绪', _directorChoice: 'lead_meeting' },
+        { label: '请教练组先调整方案', hint: '先解决比赛问题，再处理情绪', _directorChoice: 'coach_plan' },
+        { label: '保持安静，用下一场回应', hint: '不扩大问题，但没有额外缓冲空间', _directorChoice: 'silent_response' }
+      ]
+    };
+  }
+  if (thread.kind === 'rivalry' || thread.kind === 'rivalry_reckoning') {
+    var rivalName = thread.payload.rivalName || '对方核心';
+    var rivalryBody = thread.kind === 'rivalry_reckoning'
+      ? '你已经两次在季后赛被' + rivalName + '所在的球队挡在门外。新赛季第一次相遇，旧债不会因为休赛期而消失。'
+      : '你们已经两次在最后回合分出胜负。' + rivalName + '不再只是赛程上的一个名字，这组对决正在被球迷和媒体共同记住。';
+    return {
+      emoji: thread.emoji,
+      title: thread.title,
+      body: rivalryBody,
       desc: '与' + rivalName + '的宿敌线开始累积',
       choices: [
         { label: '把每次交锋都当作宣言', hint: '提高对抗热度与关注度', _directorChoice: 'fire' },
         { label: '把竞争留在球场上', hint: '让长期对决沉淀为尊重', _directorChoice: 'respect' }
       ]
+    };
+  }
+  if (thread.kind === 'team') {
+    var themeStory = getSeasonThemeStoryline(theme);
+    return {
+      emoji: thread.emoji,
+      title: thread.title,
+      body: themeStory.body,
+      desc: '本季主题会改变职业事件的出现倾向与球队方向',
+      choices: themeStory.choices.map(function(choice) {
+        return { label: choice[1], hint: choice[2], _directorChoice: choice[0] };
+      })
     };
   }
   return {
@@ -10769,11 +11559,67 @@ function getDirectorThreadOpening(thread) {
   };
 }
 
+function captureNarrativeThreadSnapshot() {
+  var player = STATE.season && (STATE.season.isPlayoffs ? STATE.season.playoffStats : STATE.season.playerStats) || {};
+  var events = ensureSeasonEventState();
+  var signals = events.storySignals || {};
+  return {
+    gameNum: getEventGameNumber(),
+    phase: STATE.season && STATE.season.isPlayoffs ? 'playoffs' : 'regular',
+    storyGames: Number(signals.games) || 0,
+    storyWins: Number(signals.wins) || 0,
+    storyLosses: Number(signals.losses) || 0,
+    wins: Number(STATE.season && STATE.season.wins) || 0,
+    losses: Number(STATE.season && STATE.season.losses) || 0,
+    playerGames: Number(player.games) || 0,
+    pts: Number(player.pts) || 0,
+    ast: Number(player.ast) || 0,
+    reb: Number(player.reb) || 0,
+    isUserStarter: !!(STATE.season && STATE.season.isUserStarter),
+    lossStreak: Number(events.storySignals && events.storySignals.lossStreak) || 0,
+    standoutStreak: Number(events.storySignals && events.storySignals.standoutStreak) || 0
+  };
+}
+
+function prepareCarriedOverThreadBaselines() {
+  var events = ensureSeasonEventState();
+  var gameNum = getEventGameNumber();
+  (events.storyThreads || []).forEach(function(thread) {
+    if (thread && thread.state === 'committed' && thread.awaitingCarryOverBaseline && gameNum > 0) {
+      thread.commitSnapshot = captureNarrativeThreadSnapshot();
+      thread.awaitingCarryOverBaseline = false;
+      thread.resolutionGame = Math.max(Number(thread.resolutionGame) || 0, gameNum + 12);
+    }
+  });
+}
+
+function getNarrativeThreadOutcome(thread) {
+  var before = thread && thread.commitSnapshot;
+  var now = captureNarrativeThreadSnapshot();
+  var postGames = before ? Math.max(0, now.storyGames - (Number(before.storyGames) || 0)) : 0;
+  var wins = before ? Math.max(0, now.storyWins - (Number(before.storyWins) || 0)) : 0;
+  var losses = before ? Math.max(0, now.storyLosses - (Number(before.storyLosses) || 0)) : 0;
+  var decidedGames = wins + losses;
+  var postWinPct = decidedGames > 0 ? wins / decidedGames : 0;
+  var playerGames = before ? Math.max(0, now.playerGames - (Number(before.playerGames) || 0)) : 0;
+  var postPts = playerGames > 0 ? Math.max(0, now.pts - (Number(before.pts) || 0)) / playerGames : 0;
+  var postAst = playerGames > 0 ? Math.max(0, now.ast - (Number(before.ast) || 0)) / playerGames : 0;
+  var success = postGames >= 3 && postWinPct >= 0.5;
+  var teammate = getSeasonNarrativeTeammate();
+  if (thread && thread.kind === 'locker_room') success = postGames >= 3 && postWinPct >= 0.5 && now.lossStreak < 4;
+  else if (thread && thread.kind === 'media') success = postGames >= 3 && postWinPct >= 0.45 && (postPts >= 24 || postAst >= 8 || now.standoutStreak >= 2);
+  else if (thread && thread.kind === 'role') success = postGames >= 3 && (now.isUserStarter || postPts >= 14 || postAst >= 6) && postWinPct >= 0.4;
+  else if (thread && thread.kind === 'teammate') success = postGames >= 3 && postWinPct >= 0.45 && (Number(teammate && teammate.affinity) || 0) >= 2;
+  else if (thread && (thread.kind === 'rivalry' || thread.kind === 'rivalry_reckoning')) success = postGames >= 1 && postWinPct >= 0.5;
+  return { success: success, postGames: postGames, postWinPct: postWinPct, postPts: postPts, postAst: postAst, lossStreak: now.lossStreak };
+}
+
 function commitDirectorThreadChoice(thread, choiceKey) {
   if (!thread || thread.state !== 'queued') return '这个决定已经被记录。';
   thread.state = 'committed';
   thread.choice = choiceKey || 'wait';
   thread.committedAt = getEventGameNumber();
+  thread.commitSnapshot = captureNarrativeThreadSnapshot();
   thread.resolutionGame = Math.max(Number(thread.resolutionGame) || 0, thread.committedAt + 12);
   if (thread.kind === 'team') {
     STATE.career.flags = STATE.career.flags || {};
@@ -10784,13 +11630,64 @@ function commitDirectorThreadChoice(thread, choiceKey) {
       outcome: 'pending'
     };
   }
+  if (thread.kind === 'rivalry_reckoning') {
+    var rivalry = getNarrativeRivalry();
+    if (rivalry) {
+      rivalry.debtState = 'reckoning';
+      rivalry.reckoningSeason = getNarrativeSeasonNumber();
+    }
+  }
+  if (thread.kind === 'former_teammate') {
+    var former = getNarrativeFormerTeammate(thread.payload && thread.payload.teammateId);
+    if (former && former.lastReunionSeason !== getNarrativeSeasonNumber()) {
+      former.reunionCount = (Number(former.reunionCount) || 0) + 1;
+      former.lastReunionSeason = getNarrativeSeasonNumber();
+    }
+  }
   return '决定已被写进赛季轨迹。接下来的比赛会决定它带来的是机会，还是代价。';
 }
 
+function applySeasonThemeVariantChoice(profileId, choice, success, themeTitle) {
+  var profile = getSeasonThemeEffectProfile(profileId);
+  if (!profile) return null;
+  var selected = profile.choices.find(function(item) { return item[0] === choice; }) || profile.choices[2];
+  var label = selected[1];
+  var edge = success ? 0.65 : -0.15;
+  if (profileId === 'responsibility') {
+    if (choice === 'all_in') { addProfileDelta('leadership', 2); addProfileDelta('fame', success ? 1 : 0); edge = success ? 0.85 : -0.3; }
+    else if (choice === 'foundation') { addProfileDelta('lockerRoomTrust', 2); addProfileDelta('coachTrust', 1); }
+    else addProfileDelta('coachTrust', 1);
+  } else if (profileId === 'cohesion') {
+    if (choice === 'all_in') { addProfileDelta('lockerRoomTrust', 2); addProfileDelta('leadership', 1); }
+    else if (choice === 'foundation') { addProfileDelta('lockerRoomTrust', 2); addProfileDelta('coachTrust', 1); edge = success ? 0.55 : 0.1; }
+    else addProfileDelta('mediaTrust', 1);
+  } else if (profileId === 'structure') {
+    if (choice === 'all_in') { addProfileDelta('coachTrust', success ? 2 : -1); addProfileDelta('leadership', 1); edge = success ? 0.9 : -0.4; }
+    else if (choice === 'foundation') { addProfileDelta('coachTrust', 2); addProfileDelta('lockerRoomTrust', 1); }
+    else addProfileDelta('mediaTrust', 1);
+  } else if (profileId === 'health') {
+    var events = ensureSeasonEventState();
+    if (choice === 'all_in') { addProfileDelta('fame', 1); events.injuryRiskBonus = Math.min(12, (events.injuryRiskBonus || 0) + 0.65); edge = success ? 0.9 : -0.45; }
+    else if (choice === 'foundation') { addProfileDelta('coachTrust', 1); events.injuryRiskBonus = Math.max(-4, (events.injuryRiskBonus || 0) - 0.8); edge = success ? 0.4 : 0.05; }
+    else { addProfileDelta('leadership', 1); events.injuryRiskBonus = Math.max(-4, (events.injuryRiskBonus || 0) - 0.2); }
+  } else if (profileId === 'future') {
+    if (choice === 'all_in') { addProfileDelta('leadership', 2); addProfileDelta('loyalty', 1); edge = success ? 0.8 : -0.35; }
+    else if (choice === 'foundation') { addProfileDelta('coachTrust', 1); addProfileDelta('lockerRoomTrust', 2); }
+    else addProfileDelta('businessValue', 1);
+  } else {
+    if (choice === 'all_in') { addProfileDelta('fame', 2); addProfileDelta('controversy', success ? 0 : 1); }
+    else if (choice === 'foundation') { addProfileDelta('lockerRoomTrust', 1); addProfileDelta('mediaTrust', 1); addProfileDelta('leadership', 1); }
+    else addProfileDelta('coachTrust', 1);
+  }
+  addActiveEventEffect('director-theme-' + profileId + '-' + choice, themeTitle + '：' + label, edge, 3);
+  return '你选择“' + label + '”。' + (success
+    ? '之后的比赛证明这条路线与“' + themeTitle + '”的真实矛盾相符，球队开始形成新的稳定答案。'
+    : '之后的比赛暴露了这条路线的代价，“' + themeTitle + '”仍会作为休赛期必须回答的问题。');
+}
+
 function resolveDirectorThread(thread) {
-  var avg = typeof getUserAvg === 'function' ? getUserAvg() : { pts: 0, ast: 0, reb: 0 };
-  var winPct = getNarrativeSeasonWinPct();
-  var success = winPct >= 0.5 || (Number(avg.pts) || 0) >= 22 || (Number(avg.ast) || 0) >= 8;
+  var metrics = getNarrativeThreadOutcome(thread);
+  var success = metrics.success;
   var outcome = '';
   if (thread.kind === 'role') {
     STATE.career.flags = STATE.career.flags || {};
@@ -10811,7 +11708,9 @@ function resolveDirectorThread(thread) {
     }
   } else if (thread.kind === 'teammate') {
     var mate = getSeasonNarrativeTeammate();
+    if (mate && thread.payload && thread.payload.teammateId && mate.id !== thread.payload.teammateId) mate = null;
     if (mate) mate.affinity = (Number(mate.affinity) || 0) + (thread.choice === 'distance' ? 0 : 2);
+    success = metrics.postGames >= 3 && metrics.postWinPct >= 0.45 && (Number(mate && mate.affinity) || 0) >= 2;
     if (thread.choice === 'protect') {
       addProfileDelta('lockerRoomTrust', 2); addProfileDelta('leadership', 1);
       outcome = success ? '队友记住了你在压力最大时没有把他推出去，这段关系成为球队冲刺期的支点。' : '即使球队没有立刻扭转局面，你仍把问题留在内部解决，关系没有破裂。';
@@ -10823,11 +11722,71 @@ function resolveDirectorThread(thread) {
       addProfileDelta('mediaTrust', 1);
       outcome = success ? '你没有制造额外声音，比赛替你们暂时压下了分歧。' : '沉默没有让问题消失，它会作为下一季关系线的背景继续存在。';
     }
-  } else if (thread.kind === 'rivalry') {
-    var rivalry = STATE.career && STATE.career.flags && STATE.career.flags.eventRivalry;
+  } else if (thread.kind === 'former_teammate') {
+    var former = getNarrativeFormerTeammate(thread.payload && thread.payload.teammateId);
+    if (former) former.affinity = (Number(former.affinity) || 0) + (thread.choice === 'move_on' ? 0 : 1);
+    if (thread.choice === 'welcome') {
+      addProfileDelta('fanSupport', 1); addProfileDelta('legacyBonus', 1);
+      outcome = success ? '赛后你们拥抱了一下。球迷记住的不只是胜负，也记住了这段关系没有被交易切断。' : '你保留了尊重，但新的球队身份已经让你们必须各自向前。';
+    } else if (thread.choice === 'compete') {
+      addProfileDelta('fame', 1); addActiveEventEffect('director-former-teammate', '旧友重逢后的专注', 0.45, 3);
+      outcome = success ? '旧日默契在场上变成了彼此最熟悉的挑战，你用胜利完成了这次重逢。' : '你们都很清楚彼此的习惯，这一次他先赢下了新的篇章。';
+    } else {
+      addProfileDelta('coachTrust', 1);
+      outcome = '你把注意力留给现在的更衣室。过去没有被否定，只是不再替你决定下一步。';
+    }
+  } else if (thread.kind === 'reunited_teammate') {
+    var reunited = getNarrativeReunitedTeammate(thread.payload && thread.payload.teammateId);
+    if (reunited) {
+      reunited.lastChoice = thread.choice;
+      reunited.resolvedSeason = getNarrativeSeasonNumber();
+      reunited.affinity = (Number(reunited.affinity) || 0) + (thread.choice === 'welcome' ? 2 : thread.choice === 'compete' ? 1 : 0);
+    }
+    if (thread.choice === 'welcome') {
+      addProfileDelta('lockerRoomTrust', 2); addProfileDelta('legacyBonus', 1);
+      addActiveEventEffect('director-reunited-welcome', '旧友回归后的默契', success ? 0.55 : 0.15, 3);
+      outcome = success ? '你们没有复刻过去，而是在新的角色里重新建立了默契。' : '重新合作仍需要时间，但这段关系不再以一次离队作为结尾。';
+    } else if (thread.choice === 'compete') {
+      addProfileDelta('coachTrust', 2); addProfileDelta('leadership', 1);
+      outcome = success ? '公开竞争让新旧队友都看见了同一套标准，回归没有破坏更衣室秩序。' : '竞争带来了短期摩擦，但角色问题至少被放在了明面上。';
+    } else {
+      addProfileDelta('leadership', 1); addProfileDelta('lockerRoomTrust', 1);
+      outcome = '你承认过去的情谊，也明确现在的球队需要新的边界。未完成的旧友线得到了一次正式结算。';
+    }
+  } else if (thread.kind === 'media') {
+    if (thread.choice === 'embrace') {
+      addProfileDelta('fame', success ? 2 : 1); addProfileDelta('controversy', success ? 0 : 1);
+      addActiveEventEffect('director-media-embrace', '舆论期待转化为动力', success ? 0.55 : -0.2, 3);
+      outcome = success ? '你没有回避期待，接下来的表现让“MVP讨论”不再只是节目标题。' : '聚光灯没有立刻带来胜利，舆论也开始要求你给出更多答案。';
+    } else if (thread.choice === 'team_credit') {
+      addProfileDelta('lockerRoomTrust', 2); addProfileDelta('mediaTrust', 1);
+      outcome = success ? '你把话题重新交给球队，队友也用更主动的方式回应了这种信任。' : '球队暂时没能把高光变成连胜，但更衣室没有把压力变成隔阂。';
+    } else {
+      addProfileDelta('coachTrust', 1);
+      outcome = '你拒绝把每场比赛变成舆论战。媒体仍在讨论，但球队知道你的注意力在哪里。';
+    }
+  } else if (thread.kind === 'locker_room') {
+    if (thread.choice === 'lead_meeting') {
+      addProfileDelta('leadership', 2); addProfileDelta('lockerRoomTrust', success ? 2 : 1);
+      addActiveEventEffect('director-locker-lead', '连败后的球员会议', success ? 0.65 : 0.2, 3);
+      outcome = success ? '那次会议没有神奇战术，却让每个人重新愿意为彼此补位，连败在这里止住。' : '你承担了发言的责任，即使结果尚未扭转，队友也不再怀疑谁在逃避。';
+    } else if (thread.choice === 'coach_plan') {
+      addProfileDelta('coachTrust', 2); addProfileDelta('leadership', 1);
+      outcome = success ? '教练组的调整终于让球队找到更舒服的比赛方式，关系也随之缓和。' : '战术调整需要时间，但至少更衣室不再把每一次失误都理解为个人问题。';
+    } else {
+      addProfileDelta('mediaTrust', -1);
+      outcome = success ? '下一场的回应暂时压下了质疑，不过所有人都知道，这种方式没有太多容错。' : '沉默没有止住连败，媒体开始把“更衣室是否失控”变成新的问题。';
+    }
+  } else if (thread.kind === 'rivalry' || thread.kind === 'rivalry_reckoning') {
+    var rivalry = getNarrativeRivalry();
     if (rivalry) {
       rivalry.heat = Math.min(8, (Number(rivalry.heat) || 0) + (thread.choice === 'fire' ? 2 : 1));
       rivalry.lastDirectorSeason = getNarrativeSeasonNumber();
+      if (thread.kind === 'rivalry_reckoning') {
+        // 常规赛只能决定面对旧债的态度；是否复仇必须由真实季后赛系列赛决定。
+        rivalry.reckoningTone = thread.choice === 'respect' ? 'respect' : 'fire';
+        rivalry.debtState = 'reckoning';
+      }
     }
     if (thread.choice === 'fire') {
       addProfileDelta('fanSupport', 2); addProfileDelta('controversy', 1);
@@ -10840,16 +11799,20 @@ function resolveDirectorThread(thread) {
     STATE.career.flags = STATE.career.flags || {};
     var commitment = STATE.career.flags.seasonCommitment;
     if (commitment && commitment.season === getNarrativeSeasonNumber()) commitment.outcome = success ? 'kept' : 'fell_short';
-    if (thread.choice === 'all_in') {
+    var themeTitle = thread.payload && thread.payload.themeTitle || (SEASON_NARRATIVE_THEMES[thread.payload && thread.payload.themeId] || {}).title || '球队方向';
+    var variantOutcome = applySeasonThemeVariantChoice(thread.payload && thread.payload.effectProfile, thread.choice, success, themeTitle);
+    if (variantOutcome) {
+      outcome = variantOutcome;
+    } else if (thread.choice === 'all_in') {
       addProfileDelta('leadership', success ? 2 : 1); addProfileDelta('fame', success ? 1 : 0);
       addActiveEventEffect('director-team-all-in', '赛季承诺：全力冲刺', success ? 0.7 : -0.3, 3);
-      outcome = success ? '球队回应了你的冲刺承诺，赛季目标从口号变成了更衣室共识。' : '你要求的冲刺没有立刻兑现，管理层会在休赛期重新审视这次承诺。';
+      outcome = success ? '“' + themeTitle + '”不再只是标签，球队用之后的比赛回应了你的主动承诺。' : '“' + themeTitle + '”没有因一次表态就得到答案，管理层会在休赛期重新审视这次承诺。';
     } else if (thread.choice === 'foundation') {
       addProfileDelta('coachTrust', 1); addProfileDelta('lockerRoomTrust', 2);
-      outcome = success ? '稳定的分工让球队比上赛季更完整，真正的窗口因此被保留下来。' : '短期成绩不够耀眼，但球队没有因为一次低谷失去彼此的信任。';
+      outcome = success ? '你把“' + themeTitle + '”落在了具体分工上，球队之后的表现让这条路线变得可信。' : '短期成绩不够耀眼，但“' + themeTitle + '”没有让球队因一次低谷失去彼此的信任。';
     } else {
       addProfileDelta('mediaTrust', 1);
-      outcome = success ? '你保留了选择空间，球队也用表现争取到了更多可能。' : '观望避免了仓促决定，但赛季结束后，方向问题仍需要被正面回答。';
+      outcome = success ? '你保留了“' + themeTitle + '”的选择空间，球队也用之后的表现争取到了更多可能。' : '观望避免了仓促决定，但“' + themeTitle + '”在赛季结束后仍需要被正面回答。';
     }
   }
   thread.state = 'resolved';
@@ -10858,7 +11821,7 @@ function resolveDirectorThread(thread) {
     emoji: thread.emoji,
     title: thread.title + ' · 阶段结算',
     body: outcome,
-    desc: '长期悬念根据本赛季表现得到阶段性结果',
+    desc: '根据选择后的' + (metrics.postGames || 0) + '场比赛得到阶段性结果',
     btnText: '继续赛季'
   };
 }
@@ -10874,14 +11837,24 @@ function recordDirectorNarrativeEvent(thread, phase, data) {
 function checkSeasonNarrativeDirector(ctx) {
   var events = initializeSeasonNarrative();
   updateSeasonNarrativeSignals(ctx);
-  queueGameDrivenRivalryThread(ctx);
+  prepareCarriedOverThreadBaselines();
   var gameNum = getEventGameNumber();
   var threads = events.storyThreads || [];
   // 已作出选择的矛盾优先结算，避免新剧情永远挤掉旧伏笔。
   var dueResolution = threads.find(function(thread) {
-    return thread && thread.state === 'committed' && gameNum >= (Number(thread.resolutionGame) || 99);
+    if (!thread || thread.state !== 'committed' || gameNum < (Number(thread.resolutionGame) || 99)) return false;
+    // 常规赛末段的选择没有凑满观察窗口时，留到下一季，而不是在季后赛首战用错误窗口结算。
+    return !(STATE.season && STATE.season.isPlayoffs && thread.commitSnapshot && thread.commitSnapshot.phase === 'regular');
   });
-  if (dueResolution) return recordDirectorNarrativeEvent(dueResolution, 'resolution', resolveDirectorThread(dueResolution));
+  if (dueResolution) {
+    var resolution = resolveDirectorThread(dueResolution);
+    // 本场刚释放的容量立刻用于保存已经达成的高光、连败或宿敌信号，避免下一场信号归零后永久错过。
+    queueGameDrivenPressureThread();
+    queueGameDrivenRivalryThread(ctx);
+    return recordDirectorNarrativeEvent(dueResolution, 'resolution', resolution);
+  }
+  queueGameDrivenPressureThread();
+  queueGameDrivenRivalryThread(ctx);
   var opening = threads.find(function(thread) {
     return thread && thread.state === 'queued' && isNarrativeThreadReadyToOpen(thread, gameNum, events.storySignals);
   });
@@ -10893,6 +11866,82 @@ function checkSeasonNarrativeDirector(ctx) {
   });
   opening.openedAt = gameNum;
   return recordDirectorNarrativeEvent(opening, 'opening', data);
+}
+
+/** 季后赛系列赛是宿敌与旧队友关系升级的唯一可靠证据，不能靠随机事件猜测。 */
+function recordNarrativePlayoffSeries(series) {
+  if (!series || !series.isMySeries || !STATE.career || !STATE.careerTeam) return;
+  var opponent = series.teamA === STATE.careerTeam ? series.teamB : series.teamA;
+  var userWon = series.teamA === STATE.careerTeam ? !!series.aWon : !series.aWon;
+  STATE.career.flags = STATE.career.flags || {};
+  var rivalry = getNarrativeRivalry();
+  if (rivalry && rivalry.active !== false && rivalry.team === opponent) {
+    rivalry.playoffMeetings = (Number(rivalry.playoffMeetings) || 0) + 1;
+    rivalry.lastPlayoffOpponent = opponent;
+    rivalry.lastPlayoffSeason = getNarrativeSeasonNumber();
+    if (userWon) {
+      rivalry.playoffWins = (Number(rivalry.playoffWins) || 0) + 1;
+      if (rivalry.debtState === 'owed' || rivalry.debtState === 'reckoning') {
+        rivalry.debtState = 'avenged';
+        rivalry.debtResolvedSeason = getNarrativeSeasonNumber();
+        rivalry.lastDebtLossCount = Number(rivalry.playoffLosses) || 0;
+      }
+    } else {
+      rivalry.playoffLosses = (Number(rivalry.playoffLosses) || 0) + 1;
+      rivalry.heat = Math.min(8, (Number(rivalry.heat) || 0) + 2);
+      // 两次新的季后赛失利才会生成下一轮“旧债”，已结算的历史不会永远重播。
+      if (rivalry.debtState !== 'owed' && rivalry.debtState !== 'reckoning' &&
+          (Number(rivalry.playoffLosses) || 0) - (Number(rivalry.lastDebtLossCount) || 0) >= 2) {
+        rivalry.debtState = 'owed';
+        rivalry.debtOpenedSeason = getNarrativeSeasonNumber();
+      }
+    }
+  }
+  var formerTeammate = getNarrativeFormerTeammates().find(function(teammate) {
+    return teammate && teammate.active && teammate.team === opponent;
+  });
+  if (formerTeammate) {
+    formerTeammate.playoffMeetings = (Number(formerTeammate.playoffMeetings) || 0) + 1;
+    formerTeammate.lastPlayoffSeason = getNarrativeSeasonNumber();
+    formerTeammate.lastPlayoffResult = userWon ? 'won' : 'lost';
+  }
+}
+
+function finalizeSeasonNarrativeAtSeasonEnd() {
+  if (!STATE.season || !STATE.career) return false;
+  var events = ensureSeasonEventState();
+  if (events.narrativeSeasonFinalized) return false;
+  STATE.career.flags = STATE.career.flags || {};
+  var commitment = STATE.career.flags.seasonCommitment;
+  if (commitment && commitment.season === getNarrativeSeasonNumber() && commitment.outcome === 'pending') {
+    commitment.outcome = STATE.season.isChampion || getNarrativeSeasonWinPct() >= 0.5 ? 'kept' : 'fell_short';
+  }
+  // 只保留两条最高优先级的未决剧情，避免下一季一开场被旧线完全占满。
+  var carryPriority = { rivalry_reckoning: 0, rivalry: 1, role: 1, teammate: 2, former_teammate: 2, reunited_teammate: 2, media: 3, locker_room: 3 };
+  STATE.career.flags.narrativeCarryOvers = (events.storyThreads || []).filter(function(thread) {
+    return thread && thread.state === 'committed' && thread.kind !== 'team';
+  }).sort(function(a, b) {
+    return (carryPriority[a.kind] == null ? 9 : carryPriority[a.kind]) - (carryPriority[b.kind] == null ? 9 : carryPriority[b.kind]);
+  }).slice(0, 2).map(function(thread) {
+    thread.carryOver = true;
+    return {
+      id: thread.id,
+      kind: thread.kind,
+      title: thread.title,
+      emoji: thread.emoji,
+      choice: thread.choice,
+      payload: thread.payload || {},
+      fromSeason: getNarrativeSeasonNumber()
+    };
+  });
+  var history = STATE.career.flags.seasonThemeHistory || (STATE.career.flags.seasonThemeHistory = []);
+  var theme = events.seasonTheme;
+  if (theme && !history.some(function(item) { return item && item.season === theme.season; })) {
+    history.push({ id: theme.id, variantId: theme.variantId || theme.id, season: theme.season });
+  }
+  if (history.length > 8) history.splice(0, history.length - 8);
+  events.narrativeSeasonFinalized = true;
+  return true;
 }
 
 function getAgeBasedInjuryRate() {
@@ -11007,6 +12056,8 @@ function isOffCourtEventId(id) {
 /** 为旧事件补上与比赛、地位和生涯阶段相关的触发条件。 */
 function meetsRandomEventContext(def, ctx) {
   if (!def || !def.id) return false;
+  if (!canTriggerEventByLifecycle(def)) return false;
+  if (!meetsCareerEventIdentity(def)) return false;
   var id = def.id;
   var stats = (ctx && ctx.stats) || {};
   var result = (ctx && ctx.result) || {};
@@ -11125,6 +12176,7 @@ function recordRandomEvent(def, data) {
     emoji: data.emoji || '📌'
   };
   events.storyTimeline.push(timelineItem);
+  recordEventLifecycle(def);
   data._timelineIndex = events.storyTimeline.length - 1;
   data._eventId = def.id;
   data._eventLane = lane;
@@ -11143,12 +12195,12 @@ function pickWeightedEvent(candidates) {
   if (!candidates || candidates.length === 0) return null;
   var totalWeight = 0;
   for (var ci = 0; ci < candidates.length; ci++) {
-    totalWeight += candidates[ci].weight || 1;
+    totalWeight += getSeasonThemeEventWeight(candidates[ci]);
   }
   var roll = Math.random() * totalWeight;
   var cum = 0;
   for (var cj = 0; cj < candidates.length; cj++) {
-    cum += candidates[cj].weight || 1;
+    cum += getSeasonThemeEventWeight(candidates[cj]);
     if (roll < cum) return candidates[cj];
   }
   return candidates[candidates.length - 1];
@@ -11208,7 +12260,9 @@ function checkRandomEvents(game, result, stats) {
       ev.majorInjuryThisSeason = true;
       if (STATE.career) {
         STATE.career.flags = STATE.career.flags || {};
-        STATE.career.flags.majorInjuryPendingComeback = true;
+        var injuryInstance = (Number(STATE.career.flags.majorInjuryInstance) || 0) + 1;
+        STATE.career.flags.majorInjuryInstance = injuryInstance;
+        STATE.career.flags.majorInjuryPendingComeback = { id: injuryInstance, eventId: picked.id, season: getNarrativeSeasonNumber() };
         STATE.career.flags.lastMajorInjurySeason = STATE.career.seasonCount || 0;
       }
     }
@@ -12342,7 +13396,8 @@ EVENT_REGISTRY.push({
   eventRate: 48,
   condition: function(ctx) {
     if (STATE.season.isPlayoffs || getEventGameNumber() < 8 || getEventGameNumber() > 72) return false;
-    if (STATE.career && STATE.career.flags && STATE.career.flags.eventRivalry) return false;
+    var existing = getNarrativeRivalry();
+    if (existing && existing.active !== false) return false;
     var stats = ctx.stats || {};
     return getEventScoreDiff(ctx) <= 6 && ((stats.pts || 0) >= 25 || (stats.ast || 0) >= 10 || (stats.reb || 0) >= 15);
   },
@@ -12350,18 +13405,7 @@ EVENT_REGISTRY.push({
     var opponent = ctx.game && ctx.game.opponent;
     var top = getTeamTopPlayer(opponent);
     var rivalName = top && top.cname ? top.cname : '对方核心';
-    function bindRival(tone, heat) {
-      STATE.career.flags = STATE.career.flags || {};
-      STATE.career.flags.eventRivalry = {
-        team: opponent,
-        playerId: top && top.id,
-        playerName: rivalName,
-        tone: tone,
-        heat: heat,
-        sinceGame: getEventGameNumber(),
-        sinceSeason: STATE.career.seasonCount || 0
-      };
-    }
+    function bindRival(tone, heat) { bindNarrativeRival(top, opponent, tone, heat); }
     return {
       emoji: '⚔️',
       title: '针锋相对的一夜',
@@ -12394,18 +13438,14 @@ EVENT_REGISTRY.push({
   weight: 34,
   eventRate: 68,
   condition: function(ctx) {
-    var rivalry = STATE.career && STATE.career.flags && STATE.career.flags.eventRivalry;
-    if (!rivalry || !rivalry.playerId || !ctx.game) return false;
-    var opponentRoster = typeof LEAGUE_PLAYER_DATA !== 'undefined' && LEAGUE_PLAYER_DATA[ctx.game.opponent];
-    var rivalIsActiveOpponent = (opponentRoster || []).some(function(player) {
-      return player && player.id === rivalry.playerId;
-    });
-    if (!rivalIsActiveOpponent) return false;
+    var rivalry = getNarrativeRivalry();
+    if (!rivalry || rivalry.active === false || !rivalry.playerId || !ctx.game) return false;
+    if (rivalry.team !== ctx.game.opponent) return false;
     if (getEventGameNumber() - (rivalry.sinceGame || 0) < 8) return false;
     return rivalry.lastRematchSeason !== (STATE.career.seasonCount || 0);
   },
   execute: function() {
-    var rivalry = STATE.career.flags.eventRivalry;
+    var rivalry = getNarrativeRivalry();
     return {
       emoji: '🔥',
       title: '宿敌再会',
@@ -12506,30 +13546,21 @@ EVENT_REGISTRY.push({
     return winPct < 0.48 || (getCareerProfile().fame || 0) >= 7;
   },
   execute: function() {
+    var variant = getCareerEventVariant('career_trade_deadline_rumor') || {};
     function mark() { STATE.career.flags = STATE.career.flags || {}; STATE.career.flags.tradeRumorSeason = STATE.career.seasonCount || 0; }
     return {
-      emoji: '📞', title: '交易截止日前夜',
-      body: '经纪人来电说，几支球队已经向管理层询价。球队没有承诺会留下你，也没有说一定会交易。距离截止时间只剩一天，记者守在训练馆门口。',
-      desc: '交易流言进入公开阶段',
+      emoji: '📞', title: variant.title || '交易截止日前夜',
+      body: variant.body || '交易截止日前，球队与经纪人都在等待你给出方向。',
+      desc: variant.desc || '交易流言进入公开阶段',
       choices: [
-        { label: '公开承诺留队', hint: '强化忠诚与本地球迷关系', apply: function() {
-          mark(); addProfileDelta('loyalty', 2); addProfileDelta('fanSupport', 2); addProfileDelta('businessValue', -1);
-          addActiveEventEffect('deadline-stay', '稳定军心', 0.8, 4);
-          return '你表示希望和现有队友完成这个赛季。影响：忠诚与球迷支持明显提升，谈判空间略降；未来四场球队气势提升。';
+        { label: variant.labels && variant.labels[0] || '公开承诺留队', hint: variant.hints && variant.hints[0] || '强化忠诚与本地球迷关系', apply: function() {
+          mark(); return applyCareerEventVariantChoice('career_trade_deadline_rumor', variant, 0);
         }},
-        { label: '让经纪人保持开放', hint: '保留选择并提高商业议价能力', apply: function() {
-          mark(); addProfileDelta('businessValue', 2); addProfileDelta('mediaTrust', -1);
-          return '你的团队没有否认任何可能。影响：商业价值提升，但媒体信任略降。';
+        { label: variant.labels && variant.labels[1] || '让经纪人保持开放', hint: variant.hints && variant.hints[1] || '保留选择并提高商业议价能力', apply: function() {
+          mark(); return applyCareerEventVariantChoice('career_trade_deadline_rumor', variant, 1);
         }},
-        { label: '主动要求交易', hint: '开启强硬的球员自主路线', apply: function() {
-          mark();
-          var submitted = createPlayerTradeRequest('', 'deadline_event', { applyEffects: false });
-          addProfileDelta('loyalty', -3); addProfileDelta('controversy', 2); addProfileDelta('businessValue', 1);
-          addActiveEventEffect('deadline-demand', '交易风波', -0.8, 4);
-          var outcome = submitted && submitted.request.status === 'approved'
-            ? '管理层同意在休赛期寻找交易。'
-            : '管理层拒绝了申请，你本赛季不能再次提交。';
-          return '交易申请很快泄露，更衣室不得不面对持续追问。' + outcome + '影响：忠诚明显下降、争议上升；未来四场球队气势受损。';
+        { label: variant.labels && variant.labels[2] || '主动要求交易', hint: variant.hints && variant.hints[2] || '开启强硬的球员自主路线', apply: function() {
+          mark(); return applyCareerEventVariantChoice('career_trade_deadline_rumor', variant, 2);
         }}
       ]
     };
@@ -12548,27 +13579,21 @@ EVENT_REGISTRY.push({
     return !events.playoffAdjustmentDone && ((STATE.season.playoffStats && STATE.season.playoffStats.games) || 0) >= 1;
   },
   execute: function() {
+    var variant = getCareerEventVariant('career_playoff_adjustment') || {};
     function mark() { ensureSeasonEventState().playoffAdjustmentDone = true; }
     return {
-      emoji: '🎞️', title: '输球后的录像室',
-      body: '教练组把上一场每次失误和错位防守剪成了十几分钟。对手正在改变防守方式：夹击更早、换防更坚决，也在逼你做最不舒服的选择。下一场必须给出回应。',
-      desc: '针对季后赛对手调整策略',
+      emoji: '🎞️', title: variant.title || '输球后的录像室',
+      body: variant.body || '对手正在改变防守方式，教练组要求球队在下一场给出新的答案。',
+      desc: variant.desc || '针对季后赛对手调整策略',
       choices: [
-        { label: '提前出球，相信队友', hint: '提升整体进攻稳定性', apply: function() {
-          mark(); addProfileDelta('leadership', 1); addProfileDelta('lockerRoomTrust', 1);
-          addActiveEventEffect('playoff-pass', '季后赛提前出球', 1.2, 2);
-          return '你决定用更快的传导惩罚夹击。影响：领导力与更衣室信任提升；未来两场球队预期分差提升。';
+        { label: variant.labels && variant.labels[0] || '提前出球，相信队友', hint: variant.hints && variant.hints[0] || '提升整体进攻稳定性', apply: function() {
+          mark(); return applyCareerEventVariantChoice('career_playoff_adjustment', variant, 0);
         }},
-        { label: '主动寻找错位强攻', hint: '承担核心责任，风险也更集中', apply: function() {
-          mark(); addProfileDelta('fame', 1); addProfileDelta('coachTrust', 1);
-          addActiveEventEffect('playoff-attack', '季后赛错位强攻', 0.8, 2);
-          ensureSeasonEventState().injuryRiskBonus = Math.min(12, (ensureSeasonEventState().injuryRiskBonus || 0) + 0.35);
-          return '你要求球队主动制造换防。影响：名气与教练信任提升；未来两场气势提升，但身体负荷略增。';
+        { label: variant.labels && variant.labels[1] || '主动寻找错位强攻', hint: variant.hints && variant.hints[1] || '承担核心责任，风险也更集中', apply: function() {
+          mark(); return applyCareerEventVariantChoice('career_playoff_adjustment', variant, 1);
         }},
-        { label: '从防守端改变系列赛', hint: '降低个人曝光，强化赢球方式', apply: function() {
-          mark(); addProfileDelta('leadership', 2); addProfileDelta('fame', -1);
-          addActiveEventEffect('playoff-defense', '季后赛防守调整', 1.4, 2);
-          return '你主动接下最困难的外线对位。影响：领导力明显提升；未来两场球队预期分差明显提升。';
+        { label: variant.labels && variant.labels[2] || '从防守端改变系列赛', hint: variant.hints && variant.hints[2] || '降低个人曝光，强化赢球方式', apply: function() {
+          mark(); return applyCareerEventVariantChoice('career_playoff_adjustment', variant, 2);
         }}
       ]
     };
@@ -12586,7 +13611,12 @@ EVENT_REGISTRY.push({
     return !!flags.majorInjuryPendingComeback && ensureSeasonEventState().injuryGamesLeft <= 0;
   },
   execute: function() {
-    function clearPending() { STATE.career.flags.majorInjuryPendingComeback = false; STATE.career.flags.comebackSeason = STATE.career.seasonCount || 0; }
+    function clearPending() {
+      var pending = STATE.career.flags.majorInjuryPendingComeback;
+      STATE.career.flags.majorInjuryPendingComeback = false;
+      STATE.career.flags.comebackSeason = STATE.career.seasonCount || 0;
+      STATE.career.flags.lastResolvedMajorInjuryInstance = pending && typeof pending === 'object' ? pending.id : getMajorInjuryInstanceId();
+    }
     return {
       emoji: '🩺', title: '回归后的负荷计划',
       body: '医疗团队确认你已经可以比赛，但“可以上场”不等于“恢复到过去”。教练、训练师和经纪人围着同一张负荷表，等待你决定接下来几周的方式。',
@@ -12625,25 +13655,21 @@ EVENT_REGISTRY.push({
     return avg.pts >= 22 || avg.reb >= 11 || avg.ast >= 9 || (STATE.finalOVR || 0) >= 90;
   },
   execute: function() {
+    var variant = getCareerEventVariant('career_award_race_pressure') || {};
     function mark() { STATE.career.flags = STATE.career.flags || {}; STATE.career.flags.awardPressureSeason = STATE.career.seasonCount || 0; }
     return {
-      emoji: '🏅', title: '奖项选票上的名字',
-      body: '赛季进入最后阶段，节目每天都在比较候选人的数据、战绩和高光回合。记者直接问你是否认为自己应该获奖，这个回答会被所有投票者听见。',
-      desc: '进入赛季奖项舆论讨论',
+      emoji: '🏅', title: variant.title || '奖项选票上的名字',
+      body: variant.body || '赛季进入最后阶段，记者直接询问你如何看待自己的奖项竞争位置。',
+      desc: variant.desc || '进入赛季奖项舆论讨论',
       choices: [
-        { label: '明确为自己拉票', hint: '提高曝光，也可能被认为过于自我', apply: function() {
-          mark(); addProfileDelta('fame', 2); addProfileDelta('controversy', 1);
-          addActiveEventEffect('award-campaign', '奖项冲刺', 0.5, 3);
-          return '你列出了自己的表现，并说竞争者就该相信自己。影响：名气明显提升、争议略升；未来三场气势略升。';
+        { label: variant.labels && variant.labels[0] || '明确为自己拉票', hint: variant.hints && variant.hints[0] || '提高曝光，也可能被认为过于自我', apply: function() {
+          mark(); return applyCareerEventVariantChoice('career_award_race_pressure', variant, 0);
         }},
-        { label: '把功劳归给球队', hint: '强化更衣室和媒体关系', apply: function() {
-          mark(); addProfileDelta('lockerRoomTrust', 2); addProfileDelta('mediaTrust', 1); addProfileDelta('leadership', 1);
-          return '你反复提到队友、教练和球队战绩。影响：更衣室信任明显提升，媒体信任与领导力提升。';
+        { label: variant.labels && variant.labels[1] || '把功劳归给球队', hint: variant.hints && variant.hints[1] || '强化更衣室和媒体关系', apply: function() {
+          mark(); return applyCareerEventVariantChoice('career_award_race_pressure', variant, 1);
         }},
-        { label: '拒绝讨论个人奖项', hint: '保持专注但减少曝光', apply: function() {
-          mark(); addProfileDelta('coachTrust', 1); addProfileDelta('fame', -1);
-          addActiveEventEffect('award-silence', '专注收官', 0.7, 4);
-          return '你说所有讨论留到赛季结束。影响：教练信任提升、名气略降；未来四场气势提升。';
+        { label: variant.labels && variant.labels[2] || '拒绝讨论个人奖项', hint: variant.hints && variant.hints[2] || '保持专注但减少曝光', apply: function() {
+          mark(); return applyCareerEventVariantChoice('career_award_race_pressure', variant, 2);
         }}
       ]
     };
