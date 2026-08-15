@@ -98,6 +98,78 @@ function validateHistoricCelebrationUi(source) {
 
 validateHistoricCelebrationUi(indexSource);
 
+function assertInvariant(condition, message) {
+  if (!condition) throw new Error(message);
+}
+
+function validateLineupFallbackAndStatRecording(source) {
+  const lineupStart = source.indexOf('function getPlayerPositions');
+  const lineupEnd = source.indexOf('/** 计算球队首发五人和主要轮换', lineupStart);
+  const statStart = source.indexOf('function normalizeLeaguePlayerSeasonStats');
+  const statEnd = source.indexOf('/** 模拟到目前为止所有未处理的比赛日', statStart);
+  if (lineupStart < 0 || lineupEnd < 0 || statStart < 0 || statEnd < 0) {
+    throw new Error('无法定位首发补位或联盟统计累计逻辑');
+  }
+
+  const lineupState = { careerTeam: null, position: null, finalOVR: 0, season: { isPlayoffs: false } };
+  const lineupData = {
+    TEST: [
+      { id: 'pg', cname: '控卫', pos: 'PG', ovr: 80 },
+      { id: 'sg', cname: '分卫', pos: 'SG', ovr: 79 },
+      { id: 'pf1', cname: '大前锋一号', pos: 'PF', ovr: 78 },
+      { id: 'c', cname: '中锋', pos: 'C', ovr: 77 },
+      { id: 'pf2', cname: '大前锋二号', pos: 'PF', ovr: 76 },
+    ],
+  };
+  const calcLineup = new Function(
+    'STATE', 'LEAGUE_PLAYER_DATA', 'getMyPlayerDisplayName',
+    `${source.slice(lineupStart, lineupEnd)}\nreturn calcTeamLineup;`,
+  )(lineupState, lineupData, () => '验证球员');
+  const fallbackLineup = calcLineup('TEST');
+  const starterIds = Object.values(fallbackLineup.starters).map(player => player.id);
+  assertInvariant(starterIds.length === 5, '缺少位置时没有补足五名首发');
+  assertInvariant(new Set(starterIds).size === 5, '补位首发重复使用了同一名球员');
+  assertInvariant(fallbackLineup.starters.SF && fallbackLineup.starters.SF.id === 'pf2', '缺位没有由剩余最高总评球员补上');
+
+  const statState = {
+    career: { seasonCount: 1 },
+    season: { leaguePlayerSeasonStats: {}, _recordedLeagueGameIds: {} },
+  };
+  const statData = { TEST: lineupData.TEST };
+  const statRecorder = new Function(
+    'STATE', 'LEAGUE_PLAYER_DATA',
+    `${source.slice(statStart, statEnd)}\nreturn { normalizeLeaguePlayerSeasonStats, recordLeagueBoxScore };`,
+  )(statState, statData);
+  const boxScore = {
+    TEST: starterIds.map((playerId, index) => ({
+      playerId, name: statData.TEST.find(player => player.id === playerId).cname,
+      mins: 30, pts: 10 + index, reb: 4, ast: 3, stl: 1, blk: 1, tov: 2,
+      fgm: 4, fga: 9, threeM: 1, threeA: 3, ftm: 1, fta: 2,
+    })),
+  };
+  statRecorder.recordLeagueBoxScore(boxScore, 'regular:1');
+  statRecorder.recordLeagueBoxScore(boxScore, 'regular:1');
+  starterIds.forEach(playerId => {
+    const row = statState.season.leaguePlayerSeasonStats[`TEST:${playerId}`];
+    assertInvariant(row && row.gp === 1 && row.pts > 0, `首发 ${playerId} 没有正确累计单场 NPC 数据`);
+  });
+
+  for (let game = 2; game <= 90; game++) statRecorder.recordLeagueBoxScore(boxScore, `regular:${game}`);
+  starterIds.forEach(playerId => {
+    const row = statState.season.leaguePlayerSeasonStats[`TEST:${playerId}`];
+    assertInvariant(row.gp === 82, `首发 ${playerId} 的常规赛出场数没有限制在 82 场`);
+  });
+
+  const corrupted = statState.season.leaguePlayerSeasonStats['TEST:pg'];
+  corrupted.gp = 101;
+  corrupted.pts = 2020;
+  corrupted.min = 3030;
+  statRecorder.normalizeLeaguePlayerSeasonStats();
+  assertInvariant(corrupted.gp === 82 && corrupted.pts === 1640 && corrupted.min === 2460, '旧存档的重复 NPC 统计没有按场均修复');
+}
+
+validateLineupFallbackAndStatRecording(indexSource);
+
 const dataSource = fs.readFileSync(path.join(root, 'js/data/league_players.js'), 'utf8');
 const leagueData = new Function(`${dataSource}\nreturn { LEAGUE_PLAYER_DATA, LEAGUE_TEAM_IDS };`)();
 const blockStart = indexSource.indexOf('function leagueStatClamp');

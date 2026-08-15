@@ -4445,10 +4445,45 @@ function closeHistoricStatCelebration() {
 }
 
 /** 将一场联盟比赛的 Box Score 累计到球员赛季统计。 */
+function normalizeLeaguePlayerSeasonStats() {
+  if (!STATE.season) return;
+  var stats = STATE.season.leaguePlayerSeasonStats;
+  if (!stats || typeof stats !== 'object' || Array.isArray(stats)) {
+    STATE.season.leaguePlayerSeasonStats = {};
+    return;
+  }
+
+  // 此处只记录常规赛；单个球员的出场数绝不能超过 82。旧存档若曾重复累计，
+  // 按原场均比例缩回上限，避免继续显示 100+ 场或把错误累计带入后续赛季。
+  var maxGames = 82;
+  var totalFields = ['min', 'pts', 'reb', 'ast', 'stl', 'blk', 'tov', 'fgm', 'fga', 'tpm', 'tpa', 'ftm', 'fta'];
+  Object.keys(stats).forEach(function(key) {
+    var stat = stats[key];
+    if (!stat || typeof stat !== 'object' || Array.isArray(stat)) {
+      delete stats[key];
+      return;
+    }
+    var gp = Math.max(0, Math.floor(Number(stat.gp) || 0));
+    if (gp <= maxGames) {
+      stat.gp = gp;
+      return;
+    }
+    var ratio = maxGames / gp;
+    totalFields.forEach(function(field) {
+      stat[field] = Math.max(0, Math.round((Number(stat[field]) || 0) * ratio));
+    });
+    stat.gp = maxGames;
+  });
+}
+
 function recordLeagueBoxScore(boxScore, gameId) {
   if (!STATE.season || !boxScore) return;
-  var recorded = STATE.season._recordedLeagueGameIds || (STATE.season._recordedLeagueGameIds = {});
-  if (gameId && recorded[gameId]) return;
+  normalizeLeaguePlayerSeasonStats();
+  var recorded = STATE.season._recordedLeagueGameIds;
+  if (!recorded || typeof recorded !== 'object' || Array.isArray(recorded)) {
+    recorded = STATE.season._recordedLeagueGameIds = {};
+  }
+  if (gameId && Object.prototype.hasOwnProperty.call(recorded, gameId)) return;
 
   var seasonStats = STATE.season.leaguePlayerSeasonStats || (STATE.season.leaguePlayerSeasonStats = {});
 
@@ -4486,7 +4521,10 @@ function recordLeagueBoxScore(boxScore, gameId) {
         ftm: Number(row.ftm) || 0,
         fta: Number(row.fta) || 0
       };
-      stat.gp += 1;
+      var gamesPlayed = Math.max(0, Math.floor(Number(stat.gp) || 0));
+      // 本函数不会用于季后赛；即使异常状态漏掉了比赛 ID，也不能产生 100+ 场常规赛记录。
+      if (gamesPlayed >= 82) return;
+      stat.gp = gamesPlayed + 1;
       Object.keys(totals).forEach(function(field) {
         stat[field] = (stat[field] || 0) + totals[field];
       });
@@ -4637,6 +4675,19 @@ function calcTeamLineup(team) {
       starters[pos] = best.starters[pos];
       if (idx >= 0) assigned.add(idx);
     }
+  });
+
+  // 交易或伤病后的名单可能没有某个标准位置。仍需从剩余球员中补足五人，
+  // 以免 UI 和轮换引擎出现四人（或更少）首发。
+  POS_ORDER.forEach(pos => {
+    if (starters[pos]) return;
+    var fallback = allPlayers
+      .map(function(player, index) { return { player: player, index: index, ovr: parseInt(player.ovr) || 0 }; })
+      .filter(function(candidate) { return !assigned.has(candidate.index); })
+      .sort(function(a, b) { return b.ovr - a.ovr; })[0];
+    if (!fallback) return;
+    starters[pos] = fallback.player;
+    assigned.add(fallback.index);
   });
   
   // 替补：剩余球员按OVR排序
@@ -6752,6 +6803,7 @@ function createSeasonPlayerStatRow(raw, meta) {
 
 function getSeasonPlayerStatRows() {
   if (!STATE.season) return [];
+  normalizeLeaguePlayerSeasonStats();
   var rows = [];
   var stats = STATE.season.leaguePlayerSeasonStats || {};
   Object.keys(stats).forEach(function(key) {
