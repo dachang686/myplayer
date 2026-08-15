@@ -5097,12 +5097,11 @@ function allocateLeagueCountingTotal(total, weights, caps) {
 }
 
 /**
- * NBA 自 1973-74 开始完整记录抢断/盖帽后，约每 13,509 场比赛出现一次四双。
- * generateBoxScore 每场会为两队各调用一次，因此四双概率按 team-game 折半；五双无正式先例，
- * 仅保留约每 500 万场比赛一次的彩蛋级通道。
+ * 四双在真实联盟已经极其罕见；为了避免生涯模式中频繁出现，进一步压低至约每 10 万个
+ * team-game 一次。五双无正式先例，仅保留彩蛋级通道。
  */
 const LEAGUE_VERSATILITY_BURST_RATES = Object.freeze({
-  quadruple: 1 / 27018,
+  quadruple: 1 / 100000,
   quintuple: 1 / 10000000,
 });
 
@@ -5164,19 +5163,21 @@ function applyLeagueVersatilityBurst(burst, stats) {
 
 const LEAGUE_SCORING_BURST_RATES = Object.freeze({
   hot: 0.045,
-  seventyPlus: 0.0012,
-  eightyPlus: 0.00025,
+  sixtyPlus: 0.0008,
+  seventyPlus: 0.00006,
+  eightyPlus: 0.000005,
 });
 
 /**
- * 单场得分爆发分层。70+ 与 80+ 只对顶级得分手开放，概率同时受总评与进攻能力压低。
- * 这里返回的是允许冲击对应分数段的比赛状态，最终得分仍由球队总分和全队球权共同分配。
+ * 单场得分爆发分层。60+ 只会由独立的历史级通道触发，普通火热状态上限低于 60 分；
+ * 全部高分通道同时受总评与进攻能力压低，最终得分仍由球队总分和全队球权共同分配。
  */
 function getLeagueScoringBurst(star, scoringSkill) {
   var eligibility = Math.pow(leagueStatClamp(star * scoringSkill, 0, 1), 2.2);
   var roll = Math.random();
   var eightyChance = LEAGUE_SCORING_BURST_RATES.eightyPlus * eligibility;
   var seventyChance = LEAGUE_SCORING_BURST_RATES.seventyPlus * eligibility;
+  var sixtyChance = LEAGUE_SCORING_BURST_RATES.sixtyPlus * eligibility;
 
   if (roll < eightyChance) {
     return { tier: 'eightyPlus', gameForm: 5.8 + Math.random() * 1.2, shareCap: 0.86, hardCap: 94 };
@@ -5184,12 +5185,15 @@ function getLeagueScoringBurst(star, scoringSkill) {
   if (roll < eightyChance + seventyChance) {
     return { tier: 'seventyPlus', gameForm: 4.0 + Math.random() * 0.9, shareCap: 0.72, hardCap: 79 };
   }
-  if (roll < eightyChance + seventyChance + LEAGUE_SCORING_BURST_RATES.hot) {
+  if (roll < eightyChance + seventyChance + sixtyChance) {
+    return { tier: 'sixtyPlus', gameForm: 2.8 + Math.random() * 0.55, shareCap: 0.61, hardCap: 69 };
+  }
+  if (roll < eightyChance + seventyChance + sixtyChance + LEAGUE_SCORING_BURST_RATES.hot) {
     return {
       tier: 'hot',
       gameForm: 1.65 + Math.random() * 0.65 + eligibility * 0.40,
       shareCap: 0.46 + eligibility * 0.15,
-      hardCap: 58 + Math.round(eligibility * 14),
+      hardCap: 59,
     };
   }
   if (Math.random() < 0.08) {

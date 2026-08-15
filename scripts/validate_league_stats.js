@@ -480,11 +480,11 @@ if (averageFiftyPlus < 10 || averageFiftyPlus > 35) {
   console.error(`联盟 50+ 单场频率偏离现代 NBA：每季 ${averageFiftyPlus.toFixed(1)} 场`);
   process.exitCode = 1;
 }
-if (averageSixtyPlus < 0.5 || averageSixtyPlus > 8) {
+if (averageSixtyPlus > 2) {
   console.error(`联盟 60+ 单场频率异常：每季 ${averageSixtyPlus.toFixed(1)} 场`);
   process.exitCode = 1;
 }
-if (totalSeventyPlus < 1 || totalSeventyPlus > seasons.length) {
+if (totalSeventyPlus > 1) {
   console.error(`联盟 70+ 单场频率异常：${seasons.length} 季共 ${totalSeventyPlus} 场`);
   process.exitCode = 1;
 }
@@ -496,15 +496,31 @@ try {
   Math.random = () => eightyCalls < eightyRolls.length ? eightyRolls[eightyCalls++] : 0.5;
   const eightyBurst = simulation.getLeagueScoringBurst(1, 1);
   let calls = 0;
-  const seventyRolls = [0.0003, 0.5];
+  const seventyRolls = [0.00004, 0.5];
   Math.random = () => calls < seventyRolls.length ? seventyRolls[calls++] : 0.5;
   const seventyBurst = simulation.getLeagueScoringBurst(1, 1);
+  let sixtyCalls = 0;
+  const sixtyRolls = [0.0002, 0.5];
+  Math.random = () => sixtyCalls < sixtyRolls.length ? sixtyRolls[sixtyCalls++] : 0.5;
+  const sixtyBurst = simulation.getLeagueScoringBurst(1, 1);
+  let hotCalls = 0;
+  const hotRolls = [0.001, 0.5];
+  Math.random = () => hotCalls < hotRolls.length ? hotRolls[hotCalls++] : 0.5;
+  const hotBurst = simulation.getLeagueScoringBurst(1, 1);
   if (eightyBurst.tier !== 'eightyPlus' || eightyBurst.hardCap < 80 || eightyBurst.shareCap < 0.8) {
     console.error(`80+ 历史级爆发通道无效：${JSON.stringify(eightyBurst)}`);
     process.exitCode = 1;
   }
   if (seventyBurst.tier !== 'seventyPlus' || seventyBurst.hardCap < 70 || seventyBurst.hardCap >= 80) {
     console.error(`70+ 爆发通道无效：${JSON.stringify(seventyBurst)}`);
+    process.exitCode = 1;
+  }
+  if (sixtyBurst.tier !== 'sixtyPlus' || sixtyBurst.hardCap < 60 || sixtyBurst.hardCap >= 70) {
+    console.error(`60+ 历史级爆发通道无效：${JSON.stringify(sixtyBurst)}`);
+    process.exitCode = 1;
+  }
+  if (hotBurst.tier !== 'hot' || hotBurst.hardCap >= 60) {
+    console.error(`普通火热状态不应产生 60+：${JSON.stringify(hotBurst)}`);
     process.exitCode = 1;
   }
 
@@ -534,7 +550,7 @@ try {
 
   const expectedQuadruplesPerSeason = 1230 * 2 * simulation.LEAGUE_VERSATILITY_BURST_RATES.quadruple;
   const expectedQuintuplesPerSeason = 1230 * 2 * simulation.LEAGUE_VERSATILITY_BURST_RATES.quintuple;
-  if (expectedQuadruplesPerSeason < 0.08 || expectedQuadruplesPerSeason > 0.10) {
+  if (expectedQuadruplesPerSeason < 0.02 || expectedQuadruplesPerSeason > 0.03) {
     console.error(`四双赛季期望频率异常：${expectedQuadruplesPerSeason}`);
     process.exitCode = 1;
   }
