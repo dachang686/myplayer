@@ -103,10 +103,15 @@ if (registryStart < 0 || registryEnd < 0) {
     'getCareerProfile',
     'getBondedTeammateName',
     'ensureSeasonEventState',
-    `${indexSource.slice(registryStart, registryEnd)}\nreturn { EVENT_REGISTRY, checkRandomEvents, getRandomEventLane, initializeSeasonNarrative, canTriggerEventByLifecycle, recordEventLifecycle, meetsCareerEventIdentity, recordNarrativePlayoffSeries, finalizeSeasonNarrativeAtSeasonEnd, commitDirectorThreadChoice, resolveDirectorThread, getNarrativeThreadOutcome, getSeasonThemeEventWeight, chooseSeasonNarrativeTheme, chooseNarrativeThemeVariant, getSeasonThemeStoryline, getSeasonNarrativeTeammate, getNarrativeFormerTeammates, getDirectorThreadOpening, queueGameDrivenPressureThread, getActiveNarrativeThreadCount, selectNarrativeFormerTeammate, checkSeasonNarrativeDirector, consumeActiveEventEffectsForCareerGame, afterCareerTeamGame };`,
+    `${indexSource.slice(registryStart, registryEnd)}\nreturn { EVENT_REGISTRY, checkRandomEvents, getRandomEventLane, initializeSeasonNarrative, canTriggerEventByLifecycle, recordEventLifecycle, meetsCareerEventIdentity, recordNarrativePlayoffSeries, finalizeSeasonNarrativeAtSeasonEnd, commitDirectorThreadChoice, resolveDirectorThread, getNarrativeThreadOutcome, getSeasonThemeEventWeight, chooseSeasonNarrativeTheme, chooseNarrativeThemeVariant, getSeasonThemeStoryline, getSeasonNarrativeTeammate, getNarrativeFormerTeammates, getDirectorThreadOpening, queueGameDrivenPressureThread, getActiveNarrativeThreadCount, selectNarrativeFormerTeammate, checkSeasonNarrativeDirector, consumeActiveEventEffectsForCareerGame, afterCareerTeamGame, findNarrativePlayer };`,
   )({}, state, leagueData, addProfileDelta, profile, () => '测试队友', ensureEventState);
 
   const registry = eventModule.EVENT_REGISTRY;
+  leagueData._draftClass2026Applied = true;
+  const narrativePlayerWithMetadata = eventModule.findNarrativePlayer('active-rival');
+  if (!narrativePlayerWithMetadata || narrativePlayerWithMetadata.team !== 'AWAY') {
+    failures.push('叙事球员查找无法跳过联盟名单元数据字段');
+  }
   const ids = registry.map(event => event.id);
   if (registry.length < 98) failures.push(`事件数量不足：${registry.length}`);
   if (new Set(ids).size !== ids.length) failures.push('事件 ID 存在重复');

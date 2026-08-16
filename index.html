@@ -10960,7 +10960,9 @@ function findNarrativePlayer(playerId) {
   if (!playerId || typeof LEAGUE_PLAYER_DATA === 'undefined') return null;
   var found = null;
   Object.keys(LEAGUE_PLAYER_DATA).some(function(team) {
-    var player = (LEAGUE_PLAYER_DATA[team] || []).find(function(item) { return item && item.id === playerId; });
+    var roster = LEAGUE_PLAYER_DATA[team];
+    if (!Array.isArray(roster)) return false;
+    var player = roster.find(function(item) { return item && item.id === playerId; });
     if (!player) return false;
     found = { player: player, team: team };
     return true;
