@@ -1786,7 +1786,7 @@ function initGame() {
 // ==================== 玩法说明弹窗 ====================
 var _helpPage = 0;
 var _helpPages = [
-  { title: '建球员', content: '选择我的位置后，系统会随机发放 300 到 360 点能力点。十四项属性均从 50 起步，创建阶段单项和总评最高 90；进入生涯后仍可继续成长。点数用完后揭晓模板风格和相似球员；位置会影响总评计算与赛场角色。' },
+  { title: '建球员', content: '选择我的位置后，系统会随机发放 300 到 360 点能力点。十四项属性均从 50 起步，创建阶段单项最高 90；进入生涯后仍可继续成长。点数用完后按真实属性揭晓总评、模板风格和相似球员；位置会影响总评计算与赛场角色。' },
   { title: '赛季', content: '抽签决定我的生涯球队后进入赛季。系统根据我与队内同位置球员的总评比较判定首发或替补。每场比赛可点单场推进，也可点击日历日期批量模拟到当天。比赛数据根据属性和位置动态生成，方差较大，有爆发也有低迷。赛季中可随时点我的数据查看场均表现。' },
   { title: '生涯事件', content: '赛季事件分为伤病、纪律、职业剧情和生活花絮，各自拥有独立概率、冷却和赛季名额。部分事件会根据单场表现、球队战绩、合同阶段和季后赛形势触发，并提供会影响信任、声望、伤病风险或未来数场球队气势的选择。同一随机事件不会在一个赛季内重复，所有结果可在“我的数据—事件”中回看。' },
   { title: '季后赛', content: '常规赛结束后根据排名决定季后赛或附加赛资格。附加赛在七到十名之间进行，逐场淘汰。季后赛每轮七场四胜，我的系列赛会一场一场模拟，每场生成简报。点击简报可展开查看详细比分、我的数据和全队数据。一路赢下去直到总冠军。' },
@@ -2035,7 +2035,7 @@ function isPointBuildActive() {
 }
 
 function getPointBuildOvr() {
-  return STATE.position ? Math.min(SIM_CONFIG.BUILD.STARTING_OVR_MAX, calcOVR(STATE.attrs, STATE.position)) : 0;
+  return STATE.position ? calcOVR(STATE.attrs, STATE.position) : 0;
 }
 
 /** Render left attribute sidebar */
@@ -2078,7 +2078,7 @@ function renderLeftAttrs() {
           const value = STATE.attrs[k];
           previewAttrs[k] = value !== null && value !== undefined ? Number(value) : fillValue;
         });
-        ovr = Math.min(SIM_CONFIG.BUILD.STARTING_OVR_MAX, calcOVR(previewAttrs, STATE.position));
+        ovr = calcOVR(previewAttrs, STATE.position);
       }
     }
     ovrEl.textContent = ovr > 0 ? ovr : '--';
@@ -2852,7 +2852,7 @@ function getArchCategoryCN(category) {
 
 // ==================== 4. 揭幕 ====================
 function revealPlayer() {
-  STATE.finalOVR = Math.min(SIM_CONFIG.BUILD.STARTING_OVR_MAX, calcOVR(STATE.attrs, STATE.position));
+  STATE.finalOVR = calcOVR(STATE.attrs, STATE.position);
   STATE.finalPosition = STATE.position;
   
   showScreen('screen-reveal');

@@ -20,8 +20,8 @@ if (build.POINT_BUILD_MIN_POINTS !== 300 || build.POINT_BUILD_MAX_POINTS !== 360
 if (build.POINT_BUILD_BASE_ATTR < build.ATTR_MIN || build.POINT_BUILD_BASE_ATTR > build.ATTR_MAX) {
   throw new Error('自由建人属性起点超出合法范围');
 }
-if (build.STARTING_ATTR_MAX !== 90 || build.STARTING_OVR_MAX !== 90) {
-  throw new Error(`新秀上限应为单项90、总评90，实际为 ${build.STARTING_ATTR_MAX}/${build.STARTING_OVR_MAX}`);
+if (build.STARTING_ATTR_MAX !== 90) {
+  throw new Error(`新秀单项上限应为90，实际为 ${build.STARTING_ATTR_MAX}`);
 }
 if (build.POINT_BUILD_MAX_POINTS > build.TOTAL_ATTRS * (build.STARTING_ATTR_MAX - build.POINT_BUILD_BASE_ATTR)) {
   throw new Error('自由建人的最高随机点数无法在新秀单项上限内用完');
@@ -38,7 +38,7 @@ const requiredFragments = [
   'window.scrollTo({ top: pageScrollTop',
   'changePointBuildAttr(key, 10)',
   'setInterval(function()',
-  'Math.min(SIM_CONFIG.BUILD.STARTING_OVR_MAX, calcOVR',
+  'STATE.finalOVR = calcOVR(STATE.attrs, STATE.position)',
   'Math.min(SIM_CONFIG.BUILD.STARTING_ATTR_MAX, penalizedVal)',
 ];
 requiredFragments.forEach((fragment) => {
@@ -50,6 +50,6 @@ console.log(JSON.stringify({
   attributes: build.TOTAL_ATTRS,
   baseAttribute: build.POINT_BUILD_BASE_ATTR,
   pointRange: [build.POINT_BUILD_MIN_POINTS, build.POINT_BUILD_MAX_POINTS],
-  startingCaps: { attribute: build.STARTING_ATTR_MAX, ovr: build.STARTING_OVR_MAX },
+  startingAttributeCap: build.STARTING_ATTR_MAX,
   totalAttributeRange: [totalMinimum + build.POINT_BUILD_MIN_POINTS, totalMinimum + build.POINT_BUILD_MAX_POINTS],
 }, null, 2));
