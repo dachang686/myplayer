@@ -836,11 +836,13 @@ if (realRosterSmoke.syntheticLineup.playoffStarMinutes - realRosterSmoke.synthet
   failures.push(`季后赛核心预计分钟没有显著提升：${JSON.stringify(realRosterSmoke.syntheticLineup)}`);
 }
 if (!realRosterSmoke.syntheticLineup.marginComponents
-  || realRosterSmoke.syntheticLineup.marginComponents.starEdge <= 0.5) {
+  || realRosterSmoke.syntheticLineup.marginComponents.starEdge <= 0.5
+  || !Number.isFinite(realRosterSmoke.syntheticLineup.marginComponents.rawStarEdge)) {
   failures.push(`核心集中度没有进入预期分差：${JSON.stringify(realRosterSmoke.syntheticLineup)}`);
 }
 if (!realRosterSmoke.structureMarginComponents
   || realRosterSmoke.structureMarginComponents.matchupEdge <= 0.5
+  || !Number.isFinite(realRosterSmoke.structureMarginComponents.rawMatchupEdge)
   || Math.abs(realRosterSmoke.structureMarginComponents.rosterEdge) > 0.15) {
   failures.push(`攻防结构残差没有独立进入预期分差：${JSON.stringify(realRosterSmoke.structureMarginComponents)}`);
 }

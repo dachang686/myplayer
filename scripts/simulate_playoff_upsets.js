@@ -306,11 +306,39 @@ function rankConference(conf, standings, games) {
   return ranked;
 }
 
+const edgeSamples = {
+  matchup: [],
+  star: [],
+  displayAppliedGap: [],
+  matchupCapHits: 0,
+  starCapHits: 0,
+  games: 0,
+};
+
+function recordEdgeSaturation(result) {
+  const components = result && result.marginComponents;
+  if (!components) return;
+  const rawMatchup = Number(components.rawMatchupEdge);
+  const rawStar = Number(components.rawStarEdge);
+  if (!Number.isFinite(rawMatchup) || !Number.isFinite(rawStar)) return;
+  const appliedMatchup = Number(components.matchupEdge) || 0;
+  const appliedStar = Number(components.starEdge) || 0;
+  edgeSamples.matchup.push(Math.abs(rawMatchup));
+  edgeSamples.star.push(Math.abs(rawStar));
+  edgeSamples.displayAppliedGap.push(Math.abs(
+    (rawMatchup + rawStar) - (appliedMatchup + appliedStar)
+  ));
+  if (Math.abs(rawMatchup) > 8 + 0.0000001) edgeSamples.matchupCapHits++;
+  if (Math.abs(rawStar) > 8 + 0.0000001) edgeSamples.starCapHits++;
+  edgeSamples.games++;
+}
+
 function playInGame(teamA, teamB) {
   const result = engine.simulateGameNew(teamA, teamB, 0, null, {
     isHomeA: true,
     isB2B: false,
   });
+  recordEdgeSaturation(result);
   return result.won
     ? { winner: teamA, loser: teamB }
     : { winner: teamB, loser: teamA };
@@ -330,6 +358,7 @@ function simulateSeries(high, low, seedGap) {
     const result = engine.simulateGameNew(high, low, 0.4 * seedGap, null, {
       isHomeA: homePattern[game], isB2B: false,
     });
+    recordEdgeSaturation(result);
     if (result.won) highWins++; else lowWins++;
   }
   return { lowWon: lowWins === 4, highWins, lowWins };
@@ -352,6 +381,7 @@ for (let trial = 0; trial < trials; trial++) {
   STATE.season = { schedule: [], isPlayoffs: false, standings, _npcSeasonProfiles: {} };
   schedule.forEach(game => {
     const result = engine.simulateGameNew(game.home, game.away, 0, null, { isHomeA: true, isB2B: false });
+    recordEdgeSaturation(result);
     if (result.won) { standings[game.home].wins++; standings[game.away].losses++; }
     else { standings[game.away].wins++; standings[game.home].losses++; }
     games.push({ home: game.home, away: game.away, scoreHome: result.scoreA, scoreAway: result.scoreB, homeWon: result.won });
@@ -387,6 +417,17 @@ for (let trial = 0; trial < trials; trial++) {
 }
 
 const pct = (value, total) => total ? Number((100 * value / total).toFixed(2)) : 0;
+function summarizeAbsoluteEdges(values, capHits, cap) {
+  const sorted = values.slice().sort((a, b) => a - b);
+  return {
+    samples: sorted.length,
+    p95: Number(percentile(sorted, 0.95).toFixed(3)),
+    p99: Number(percentile(sorted, 0.99).toFixed(3)),
+    max: Number((sorted[sorted.length - 1] || 0).toFixed(3)),
+    cap,
+    capHitPct: pct(capHits, sorted.length),
+  };
+}
 console.log(JSON.stringify({
   benchmarkMode,
   rosterPlayers: teams.reduce((sum, team) => sum + league.LEAGUE_PLAYER_DATA[team].length, 0),
@@ -408,6 +449,11 @@ console.log(JSON.stringify({
   },
   regularSeasonGamesSimulated: trials * schedule.length,
   firstRoundSeriesSimulated: allSeries,
+  edgeSaturation: {
+    matchupEdge: summarizeAbsoluteEdges(edgeSamples.matchup, edgeSamples.matchupCapHits, 8),
+    starEdge: summarizeAbsoluteEdges(edgeSamples.star, edgeSamples.starCapHits, 8),
+    displayVsAppliedGap: summarizeAbsoluteEdges(edgeSamples.displayAppliedGap, 0, null),
+  },
   recordPowerCorrelation: {
     meanPearson: Number((recordPowerPearsonTotal / trials).toFixed(4)),
     meanSpearman: Number((recordPowerSpearmanTotal / trials).toFixed(4)),

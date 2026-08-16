@@ -4967,8 +4967,12 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
   const rosterEdge = overallA - overallB;
   const competitiveA = getTeamCompetitiveRating(powerA);
   const competitiveB = getTeamCompetitiveRating(powerB);
-  const matchupEdge = clamp(competitiveA.structure - competitiveB.structure, -4, 4);
-  const starEdge = clamp(competitiveA.star - competitiveB.star, -4, 4);
+  const rawMatchupEdge = competitiveA.structure - competitiveB.structure;
+  const rawStarEdge = competitiveA.star - competitiveB.star;
+  // 当前名单和 2K 移植基准的结构差实测最大值均低于 8；使用 ±8 只拦截病态阵容，
+  // 避免正常强弱对阵的 UI 战力差被比赛层再次截短。
+  const matchupEdge = clamp(rawMatchupEdge, -8, 8);
+  const starEdge = clamp(rawStarEdge, -8, 8);
   const standings = STATE.season?.standings || {};
   const recordA = standings[teamA];
   const recordB = standings[teamB];
@@ -5094,7 +5098,9 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
     expectedMargin,
     marginComponents: {
       rosterEdge,
+      rawMatchupEdge,
       matchupEdge,
+      rawStarEdge,
       starEdge,
       seasonFormEdge,
       homeCourtEdge,
