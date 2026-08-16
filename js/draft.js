@@ -953,8 +953,18 @@
     } catch (error) {
       console.error('[Draft] 进入自由市场失败:', error);
       if (button) {
+        var stageLabels = {
+          free_agents: '自由球员分配',
+          trades: '联盟交易',
+          roster_fill: '补齐球队名单',
+          player_mobility: '玩家流动',
+          new_season: '新赛季初始化'
+        };
+        var stage = stageLabels[window._offseasonPipelineStage] || '休赛期流程';
+        var reason = error && error.message ? String(error.message) : String(error || '未知错误');
         button.disabled = false;
-        button.textContent = '进入失败，点击重试';
+        button.textContent = stage + '失败：' + reason;
+        button.title = error && error.stack ? error.stack : reason;
       }
     } finally {
       draftPipelineRunning = false;

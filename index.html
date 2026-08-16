@@ -9721,13 +9721,18 @@ function continueCareerAfterTraining() {
 }
 
 function continueCareerAfterLeagueDraft() {
+  window._offseasonPipelineStage = 'free_agents';
   assignFreeAgents();
+  window._offseasonPipelineStage = 'trades';
   processTrades();
+  window._offseasonPipelineStage = 'roster_fill';
   if (typeof fillLeagueRostersAfterDraft === 'function') fillLeagueRostersAfterDraft();
+  window._offseasonPipelineStage = 'player_mobility';
   maybeMoveUserInOffseason(finishOffseasonPipeline);
 }
 
 function finishOffseasonPipeline() {
+  window._offseasonPipelineStage = 'new_season';
   if (STATE.career && STATE.career.retired) {
     showMyCard();
     return;
@@ -9743,6 +9748,7 @@ function finishOffseasonPipeline() {
   } else {
     showOffSeasonModals();
   }
+  window._offseasonPipelineStage = '';
 }
 
 function shouldOfferPlayerRetirement() {
