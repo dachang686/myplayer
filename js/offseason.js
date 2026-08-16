@@ -506,10 +506,6 @@ function showContractOffers() {
     showMyCard();
     return;
   }
-  var existingContractModal = document.getElementById('contract-modal');
-  if (existingContractModal) existingContractModal.remove();
-  var existingRosterPreview = document.getElementById('team-roster-preview-overlay');
-  if (existingRosterPreview) existingRosterPreview.remove();
   if (typeof showMyCard === 'function') showMyCard();
   var c = STATE.career;
   var myOvr = STATE.finalOVR;
@@ -695,19 +691,12 @@ function showFreeAgencyTeamChangeModal(oldTeam, newTeam, done) {
   html += '<div class="sr-pct-line">场均 ' + avgPts + '分 ' + avgReb + '板 ' + avgAst + '助</div></div>';
   html += '<div class="sr-section" style="text-align:left;margin-bottom:8px;"><div class="sr-section-title">🏅 在队荣誉</div><div class="sr-awards">' + honorHtml + '</div></div>';
   html += '<div class="sr-section" style="text-align:left;margin-bottom:8px;"><div class="sr-section-title">📅 各赛季战绩</div>' + seasonsHtml + '</div>';
-  html += '<button type="button" class="btn btn-primary btn-sm" data-action="continue-free-agency" style="width:100%;">继续</button>';
+  html += '<button class="btn btn-primary btn-sm" id="faTeamChangeContinue" style="width:100%;">继续</button>';
   html += '</div></div></div>';
-  var shell = document.createElement('div');
-  shell.innerHTML = html;
-  var freeAgencyModal = shell.firstElementChild;
-  document.body.appendChild(freeAgencyModal);
-  var continueButton = freeAgencyModal.querySelector('[data-action="continue-free-agency"]');
-  var continued = false;
-  continueButton.onclick = function() {
-    if (continued) return;
-    continued = true;
-    continueButton.disabled = true;
-    freeAgencyModal.remove();
+  document.body.insertAdjacentHTML('beforeend', html);
+  document.getElementById('faTeamChangeContinue').onclick = function() {
+    var modal = document.getElementById('fa-team-change-modal');
+    if (modal) modal.remove();
     if (typeof done === 'function') done();
   };
 }
@@ -801,8 +790,6 @@ function showRetirementModal(callback) {
 }
 
 function showFAModal(callback) {
-  var old = document.getElementById('fa-modal');
-  if (old) old.remove();
   var changes = STATE._leagueChanges || {};
   var allSignings = changes.freeSignings || [];
   var signings = allSignings.filter(function(s) { return s.ovr >= 86; });
@@ -832,19 +819,13 @@ function showFAModal(callback) {
   }
   html += '</div>';
   html += '<div style="padding:10px 12px 14px;text-align:center;border-top:1px solid var(--border-light);">';
-  html += '<button type="button" class="btn btn-primary btn-sm" data-action="continue-free-agency-summary" style="max-width:180px;">下一步</button>';
+  html += '<button class="btn btn-primary btn-sm" style="max-width:180px;">下一步</button>';
   html += '</div></div></div>';
   var el = document.createElement('div');
   el.innerHTML = html;
-  var freeAgencySummary = el.firstElementChild;
-  document.body.appendChild(freeAgencySummary);
-  var nextButton = freeAgencySummary.querySelector('[data-action="continue-free-agency-summary"]');
-  var advanced = false;
-  nextButton.onclick = function() {
-    if (advanced) return;
-    advanced = true;
-    nextButton.disabled = true;
-    freeAgencySummary.remove();
+  document.body.appendChild(el.firstElementChild);
+  document.getElementById('fa-modal').querySelector('.btn-primary').onclick = function() {
+    document.getElementById('fa-modal').remove();
     if (callback) callback();
   };
 }

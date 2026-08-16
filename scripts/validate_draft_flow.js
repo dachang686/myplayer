@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const vm = require('vm');
 
 const root = path.resolve(__dirname, '..');
 const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
@@ -39,6 +40,32 @@ assert(draftSource.includes("draft.picks.length"), '选秀进度未持久化');
 assert(draftSource.includes('while (roster.length > DRAFT_ROSTER_LIMIT)'), '超额名单未收敛到上限');
 assert(draftSource.includes('while (roster.length < DRAFT_ROSTER_LIMIT)'), '休赛期结束未补满名单');
 assert(draftSource.includes('STATE.career.draftHistory'), '生涯选秀历史未保存');
+assert(!draftSource.includes('draft.pipelineStarted = true'), '进入自由市场仍把瞬时点击锁写入存档');
+
+const draftContext = {
+  console: { error() {} },
+  STATE: {
+    career: { seasonCount: 1 },
+    offseasonDraft: {
+      version: 2,
+      seasonNum: 1,
+      phase: 'complete',
+      pipelineStarted: true,
+      historySaved: true,
+      pickTrades: { transactions: [] },
+      draftOrder: [],
+      picks: []
+    }
+  },
+  continueCalls: 0,
+  continueCareerAfterLeagueDraft() { draftContext.continueCalls += 1; }
+};
+draftContext.window = draftContext;
+vm.runInNewContext(draftSource, draftContext, { filename: 'js/draft.js' });
+const advanceButton = { disabled: false, textContent: '进入自由市场' };
+draftContext.advanceAfterOffseasonDraft(advanceButton);
+assert(draftContext.continueCalls === 1, '旧存档中的 pipelineStarted 仍会锁死进入自由市场按钮');
+assert(!Object.prototype.hasOwnProperty.call(draftContext.STATE.offseasonDraft, 'pipelineStarted'), '旧存档点击锁没有迁移清理');
 
 assert(!/while \(newRoster\.length < 18\)/.test(offseasonSource), 'evolveLeague 仍在选秀前补满新秀');
 assert(draftCss.includes('@media (prefers-reduced-motion: reduce)'), '选秀页面缺少减少动态效果支持');

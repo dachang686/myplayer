@@ -3622,18 +3622,13 @@ function previewTeamRosterModal(team, onConfirmSign, offerYears) {
       rosterHtml +
       '<div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;">' +
         '<button onclick="document.getElementById(\'team-roster-preview-overlay\').remove()" style="padding:8px 14px;border:1px solid var(--border);border-radius:8px;background:var(--bg-card);color:var(--text-dim);font-size:12px;cursor:pointer;">返回</button>' +
-        '<button type="button" data-action="confirm-sign" style="padding:8px 16px;border:none;border-radius:8px;background:linear-gradient(135deg,#ff6b35,#ff8a5c);color:#fff;font-family:var(--font-display);font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 2px 0 #c94d1e;">' + signBtnText + '</button>' +
+        '<button id="confirmSignBtn" style="padding:8px 16px;border:none;border-radius:8px;background:linear-gradient(135deg,#ff6b35,#ff8a5c);color:#fff;font-family:var(--font-display);font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 2px 0 #c94d1e;">' + signBtnText + '</button>' +
       '</div>' +
     '</div>';
 
   document.body.appendChild(overlay);
 
-  var confirmButton = overlay.querySelector('[data-action="confirm-sign"]');
-  var signing = false;
-  confirmButton.onclick = function() {
-    if (signing) return;
-    signing = true;
-    confirmButton.disabled = true;
+  document.getElementById('confirmSignBtn').onclick = function() {
     overlay.remove();
     if (typeof onConfirmSign === 'function') onConfirmSign();
   };

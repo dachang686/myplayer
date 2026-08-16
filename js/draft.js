@@ -2,6 +2,7 @@
 (function() {
   var LOTTERY_WEIGHTS = [14, 14, 14, 12.5, 10.5, 9, 7.5, 6, 4.5, 3, 2, 1.5, 1, 0.5];
   var DRAFT_ROSTER_LIMIT = 18;
+  var draftPipelineRunning = false;
 
   function hashText(value) {
     var text = String(value || 'draft');
@@ -185,6 +186,8 @@
       STATE.offseasonDraft = createOffseasonDraftState();
     }
     var draft = STATE.offseasonDraft;
+    // pipelineStarted 曾作为点击锁写进存档；中断后会让按钮永久静默失效。
+    if (draft.pipelineStarted != null) delete draft.pipelineStarted;
     draft.version = Math.max(2, Number(draft.version) || 1);
     draft.pickTrades = draft.pickTrades || {
       strategy: 'hold',
@@ -899,7 +902,7 @@
         (myPick ? '第 ' + myPick.pick + ' 顺位 · ' + myPick.pos + ' · OVR ' + myPick.ovr : '本届没有选择') + '</small></div></div>' +
         (adviceText ? '<p>' + adviceText + '</p>' : '') + '</section>' +
       '<section class="draft-results-list"><h2>首轮结果</h2>' + draft.picks.map(draftPickRow).join('') + '</section>' +
-      '<div class="draft-actions"><button type="button" class="draft-action-primary" onclick="advanceAfterOffseasonDraft()">进入自由市场</button></div>' +
+      '<div class="draft-actions"><button type="button" class="draft-action-primary" onclick="advanceAfterOffseasonDraft(this)">进入自由市场</button></div>' +
       '</main>';
   }
 
@@ -936,12 +939,26 @@
       '</main>';
   };
 
-  window.advanceAfterOffseasonDraft = function() {
+  window.advanceAfterOffseasonDraft = function(button) {
     var draft = ensureOffseasonDraftState();
-    if (draft.phase !== 'complete' || draft.pipelineStarted) return;
-    draft.pipelineStarted = true;
-    saveDraftHistory(draft);
-    continueCareerAfterLeagueDraft();
+    if (draft.phase !== 'complete' || draftPipelineRunning) return;
+    draftPipelineRunning = true;
+    if (button) {
+      button.disabled = true;
+      button.textContent = '正在进入自由市场…';
+    }
+    try {
+      saveDraftHistory(draft);
+      continueCareerAfterLeagueDraft();
+    } catch (error) {
+      console.error('[Draft] 进入自由市场失败:', error);
+      if (button) {
+        button.disabled = false;
+        button.textContent = '进入失败，点击重试';
+      }
+    } finally {
+      draftPipelineRunning = false;
+    }
   };
 
   window.fillLeagueRostersAfterDraft = function() {
