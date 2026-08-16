@@ -4788,7 +4788,7 @@ function calcTeamPowerWithPlayer(team, gameOptions) {
   const minutes = prepared && prepared.minutes || [];
 
   if (roster.length === 0) {
-    return { offense: 50, defense: 50, athletic: 50, clutch: 50, overall: 50, depth: 50 };
+    return { offense: 50, defense: 50, athletic: 50, clutch: 50, overall: 50, depth: 50, starConcentration: 0 };
   }
 
   const impacts = roster.map(getPlayerGameImpact);
@@ -4800,22 +4800,51 @@ function calcTeamPowerWithPlayer(team, gameOptions) {
   }
 
   const overall = minuteWeighted('overall');
+  const topImpacts = impacts
+    .map(function(impact) { return Number(impact.overall) || 50; })
+    .sort(function(a, b) { return b - a; })
+    .slice(0, 3);
+  const starConcentration = Math.max(0,
+    ((topImpacts[0] || overall) - overall) * 0.45
+    + ((topImpacts[1] || overall) - overall) * 0.30
+    + ((topImpacts[2] || overall) - overall) * 0.15
+  );
   return {
     offense: minuteWeighted('offense'),
     defense: minuteWeighted('defense'),
     athletic: minuteWeighted('athletic'),
     clutch: minuteWeighted('clutch'),
     overall: overall,
+    starConcentration: starConcentration,
     // 保留 depth 字段供旧存档/UI/验证脚本读取；其含义改为分钟加权阵容总评。
     depth: overall,
     rotationMinutes: minutes.slice(),
   };
 }
 
+/**
+ * 将阵容结构保留为 overall 之外的连续残差：
+ * overall 表示平均实力，攻防残差表示能力结构，核心集中度表示顶级球员的超额价值。
+ */
+function getTeamCompetitiveRating(power) {
+  const overall = Number.isFinite(power && power.overall) ? power.overall : 50;
+  const structureRating = (
+    ((Number(power && power.offense) || overall) - overall)
+    + ((Number(power && power.defense) || overall) - overall)
+  ) * 0.85;
+  const starRating = (Number(power && power.starConcentration) || 0) * 0.85;
+  return {
+    overall: overall,
+    structure: structureRating,
+    star: starRating,
+    total: overall + structureRating + starRating,
+  };
+}
+
 /** 比赛引擎使用的中立场阵容战力；主场、战绩、伤病和疲劳在单场模拟时另行计算。 */
 function getTeamBattlePower(team) {
   const power = calcTeamPowerWithPlayer(team);
-  const rating = Number.isFinite(power.overall) ? power.overall : power.depth;
+  const rating = getTeamCompetitiveRating(power).total;
   return Math.round(rating * 10) / 10;
 }
 
@@ -4936,6 +4965,10 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
     ? powerB.overall
     : powerB.offense * 0.45 + powerB.defense * 0.45 + powerB.depth * 0.10;
   const rosterEdge = overallA - overallB;
+  const competitiveA = getTeamCompetitiveRating(powerA);
+  const competitiveB = getTeamCompetitiveRating(powerB);
+  const matchupEdge = clamp(competitiveA.structure - competitiveB.structure, -4, 4);
+  const starEdge = clamp(competitiveA.star - competitiveB.star, -4, 4);
   const standings = STATE.season?.standings || {};
   const recordA = standings[teamA];
   const recordB = standings[teamB];
@@ -4955,7 +4988,8 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
   const fatigueEdge = isB2B ? -1.0 : 0;
   const eventTeamEdge = getActiveEventTeamEdge(teamA, teamB);
   const expectedMargin = clamp(
-    rosterEdge + seasonFormEdge + homeCourtEdge + availabilityEdge + fatigueEdge + eventTeamEdge,
+    rosterEdge + matchupEdge + starEdge + seasonFormEdge + homeCourtEdge
+      + availabilityEdge + fatigueEdge + eventTeamEdge,
     -18,
     18
   );
@@ -5058,6 +5092,16 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
     possPerQ,
     isHomeA,
     expectedMargin,
+    marginComponents: {
+      rosterEdge,
+      matchupEdge,
+      starEdge,
+      seasonFormEdge,
+      homeCourtEdge,
+      availabilityEdge,
+      fatigueEdge,
+      eventTeamEdge,
+    },
     eventTeamEdge,
     estimatedWinProb,
     boxScore: boxScore,

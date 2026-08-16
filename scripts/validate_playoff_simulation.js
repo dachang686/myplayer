@@ -7,7 +7,7 @@ const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const playoffsSource = fs.readFileSync(path.join(root, 'js/playoffs.js'), 'utf8');
 
 function extractSimulation(source, label) {
-  const start = source.indexOf('function simulateGameNew');
+  const start = source.indexOf('function getTeamCompetitiveRating');
   const end = source.indexOf('function leagueStatClamp', start);
   if (start < 0 || end < 0) throw new Error(`无法定位 ${label} 的比赛模拟函数`);
   return source.slice(start, end).trim();
@@ -245,12 +245,12 @@ for (const [source, label] of [[indexSimulation, 'index.html 比赛模拟'], [pl
 }
 
 const powers = {
-  EQUAL_A: { offense: 78, defense: 68, athletic: 76, clutch: 75, depth: 84 },
-  EQUAL_B: { offense: 78, defense: 68, athletic: 76, clutch: 75, depth: 84 },
-  STRONG: { offense: 84, defense: 74, athletic: 84, clutch: 86, depth: 90 },
-  WEAK: { offense: 76, defense: 64, athletic: 72, clutch: 66, depth: 80 },
-  PLAYOFF_FAVORITE: { offense: 87.95, defense: 87.95, athletic: 87.95, clutch: 87.95, depth: 87.95 },
-  PLAYOFF_UNDERDOG: { offense: 82.4, defense: 82.4, athletic: 82.4, clutch: 82.4, depth: 82.4 },
+  EQUAL_A: { offense: 78, defense: 68, athletic: 76, clutch: 75, overall: 84, depth: 84, starConcentration: 0 },
+  EQUAL_B: { offense: 78, defense: 68, athletic: 76, clutch: 75, overall: 84, depth: 84, starConcentration: 0 },
+  STRONG: { offense: 84, defense: 74, athletic: 84, clutch: 86, overall: 90, depth: 90, starConcentration: 0 },
+  WEAK: { offense: 76, defense: 64, athletic: 72, clutch: 66, overall: 80, depth: 80, starConcentration: 0 },
+  PLAYOFF_FAVORITE: { offense: 87.95, defense: 87.95, athletic: 87.95, clutch: 87.95, overall: 87.95, depth: 87.95, starConcentration: 0 },
+  PLAYOFF_UNDERDOG: { offense: 82.4, defense: 82.4, athletic: 82.4, clutch: 82.4, overall: 82.4, depth: 82.4, starConcentration: 0 },
 };
 
 const state = { season: { schedule: [] } };
@@ -583,6 +583,14 @@ function runRealRosterSmoke() {
   leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_WEAK = syntheticTeam('WEAK', [94, 88, 86, 84, 82], [82, 80, 78, 76, 74]);
   leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_BASE_STAR = syntheticTeam('BASE', [85, 85, 85, 85, 85], [80, 78, 76, 74, 72]);
   leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_UPGRADED_STAR = syntheticTeam('UPGRADED', [99, 85, 85, 85, 85], [80, 78, 76, 74, 72]);
+  leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_STRUCTURE_STRONG = syntheticTeam('STRUCTURE-STRONG', [85, 85, 85, 85, 85], [80, 78, 76, 74, 72]);
+  leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_STRUCTURE_WEAK = syntheticTeam('STRUCTURE-WEAK', [85, 85, 85, 85, 85], [80, 78, 76, 74, 72]);
+  leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_STRUCTURE_STRONG.forEach(player => {
+    attributeKeys.forEach(key => { player[key] = 95; });
+  });
+  leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_STRUCTURE_WEAK.forEach(player => {
+    attributeKeys.forEach(key => { player[key] = 70; });
+  });
   const engineStart = indexSource.indexOf('function getPlayerPositions');
   const engineEnd = indexSource.indexOf('/** 属性→效率系数：递减曲线', engineStart);
   if (engineStart < 0 || engineEnd < 0) throw new Error('无法定位真实名单比赛引擎代码');
@@ -662,6 +670,13 @@ function runRealRosterSmoke() {
       score: `${seededReplayA.scoreA}-${seededReplayA.scoreB}`,
     };
     realState.careerTeam = previousCareerTeam;
+    const structureReplay = realSimulate('SYNTHETIC_STRUCTURE_STRONG', 'SYNTHETIC_STRUCTURE_WEAK', 0, null, {
+      randomSeed: 'structure-edge-regression',
+      commitSimulationState: false,
+      isHomeA: null,
+      isB2B: false,
+      ignoreNpcAvailability: true,
+    });
     let wins = 0;
     let total = 0;
     let invariantErrors = 0;
@@ -740,7 +755,9 @@ function runRealRosterSmoke() {
         sweepLossRate: sweepLosses / benchmarkSeries,
         regularSeasonStarMinutes: (strongPower.rotationMinutes[2] + strongPower.rotationMinutes[3]) / 2,
         playoffStarMinutes: (strongPlayoffPower.rotationMinutes[2] + strongPlayoffPower.rotationMinutes[3]) / 2,
+        marginComponents: seededReplayA.marginComponents,
       },
+      structureMarginComponents: structureReplay.marginComponents,
       superstarMarginal: upgradedStarPower.overall - baseStarPower.overall,
     };
   });
@@ -817,6 +834,15 @@ if (realRosterSmoke.syntheticLineup.powerGap < 5 || realRosterSmoke.superstarMar
 }
 if (realRosterSmoke.syntheticLineup.playoffStarMinutes - realRosterSmoke.syntheticLineup.regularSeasonStarMinutes < 3) {
   failures.push(`季后赛核心预计分钟没有显著提升：${JSON.stringify(realRosterSmoke.syntheticLineup)}`);
+}
+if (!realRosterSmoke.syntheticLineup.marginComponents
+  || realRosterSmoke.syntheticLineup.marginComponents.starEdge <= 0.5) {
+  failures.push(`核心集中度没有进入预期分差：${JSON.stringify(realRosterSmoke.syntheticLineup)}`);
+}
+if (!realRosterSmoke.structureMarginComponents
+  || realRosterSmoke.structureMarginComponents.matchupEdge <= 0.5
+  || Math.abs(realRosterSmoke.structureMarginComponents.rosterEdge) > 0.15) {
+  failures.push(`攻防结构残差没有独立进入预期分差：${JSON.stringify(realRosterSmoke.structureMarginComponents)}`);
 }
 if (inferredRegularSeasonContext.isHomeA !== false || inferredRegularSeasonContext.fatigueMarginDelta !== -1) {
   failures.push(`常规赛主客场/背靠背推断错误：${JSON.stringify(inferredRegularSeasonContext)}`);
