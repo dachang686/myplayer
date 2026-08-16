@@ -103,7 +103,7 @@ if (registryStart < 0 || registryEnd < 0) {
     'getCareerProfile',
     'getBondedTeammateName',
     'ensureSeasonEventState',
-    `${indexSource.slice(registryStart, registryEnd)}\nreturn { EVENT_REGISTRY, checkRandomEvents, getRandomEventLane, initializeSeasonNarrative, canTriggerEventByLifecycle, recordEventLifecycle, meetsCareerEventIdentity, recordNarrativePlayoffSeries, finalizeSeasonNarrativeAtSeasonEnd, commitDirectorThreadChoice, resolveDirectorThread, getNarrativeThreadOutcome, getSeasonThemeEventWeight, chooseSeasonNarrativeTheme, chooseNarrativeThemeVariant, getSeasonThemeStoryline, getSeasonNarrativeTeammate, getNarrativeFormerTeammates, getDirectorThreadOpening, queueGameDrivenPressureThread, getActiveNarrativeThreadCount, selectNarrativeFormerTeammate, checkSeasonNarrativeDirector, consumeActiveEventEffectsForCareerGame, afterCareerTeamGame, findNarrativePlayer };`,
+    `${indexSource.slice(registryStart, registryEnd)}\nreturn { EVENT_REGISTRY, checkRandomEvents, getRandomEventLane, initializeSeasonNarrative, canTriggerEventByLifecycle, recordEventLifecycle, meetsCareerEventIdentity, recordNarrativePlayoffSeries, finalizeSeasonNarrativeAtSeasonEnd, commitDirectorThreadChoice, resolveDirectorThread, getNarrativeThreadOutcome, getSeasonThemeEventWeight, chooseSeasonNarrativeTheme, chooseNarrativeThemeVariant, getSeasonThemeStoryline, getSeasonNarrativeTeammate, getNarrativeFormerTeammates, getDirectorThreadOpening, queueGameDrivenPressureThread, getActiveNarrativeThreadCount, selectNarrativeFormerTeammate, checkSeasonNarrativeDirector, consumeActiveEventEffectsForCareerGame, afterCareerTeamGame, findNarrativePlayer, syncNarrativeReunitedTeammates };`,
   )({}, state, leagueData, addProfileDelta, profile, () => '测试队友', ensureEventState);
 
   const registry = eventModule.EVENT_REGISTRY;
@@ -593,6 +593,25 @@ if (registryStart < 0 || registryEnd < 0) {
     failures.push('未结重聚线中的球员再次离队后，剧情身份没有迁回旧友并重新开放选择');
   }
 
+  // 已结算重聚线没有 CarryOver，也必须继续根据名单同步；再次离队后应重新进入旧友池。
+  const resolvedReunionNpc = { id: 'resolved-reunion-left', cname: '再度离队旧友', ovr: 86 };
+  leagueData.SECOND_EXIT = [resolvedReunionNpc];
+  state.career.flags = {
+    storyTeammate: { id: occupiedNpc.id, cname: occupiedNpc.cname, affinity: 3, sinceSeason: 6 },
+    reunitedStoryTeammates: [{ id: resolvedReunionNpc.id, cname: resolvedReunionNpc.cname, team: 'HOME', active: true, pendingReunion: false, resolvedSeason: 10, affinity: 5 }],
+  };
+  state.career.seasonCount = 12;
+  state.season = {
+    games: [], wins: 0, losses: 0, isPlayoffs: false, isUserStarter: true, playerStats: {},
+    schedule: [{ opponent: 'SECOND_EXIT', gameNum: 12 }], events: createEventState(0),
+  };
+  eventModule.initializeSeasonNarrative();
+  const resolvedFormer = state.career.flags.formerStoryTeammates?.find(mate => mate.id === resolvedReunionNpc.id);
+  const resolvedReunionRecord = state.career.flags.reunitedStoryTeammates?.find(mate => mate.id === resolvedReunionNpc.id);
+  if (!resolvedFormer || resolvedFormer.team !== 'SECOND_EXIT' || resolvedReunionRecord?.active !== false) {
+    failures.push('已结算重聚关系再次离队后没有同步回旧友池');
+  }
+
   // 同一季后赛对手拥有多名旧友时，每个人都要记录这次系列赛。
   leagueData.MULTI_OLD = [
     { id: 'multi-former-a', cname: '同队旧友A', ovr: 83 },
@@ -795,16 +814,25 @@ if (registryStart < 0 || registryEnd < 0) {
     failures.push('赛季导演冷却结束后无法继续推进排队剧情');
   }
 
-  registry.splice(0, registry.length, {
-    id: 'validation_suspension',
-    lane: 'discipline',
-    weight: 1,
-    condition: () => true,
-    execute: () => ({
-      emoji: '🧪', title: '测试禁赛', body: '验证调度', desc: '测试原因',
-      _consequence: 'suspension', _games: 2,
-    }),
-  });
+  registry.splice(0, registry.length,
+    {
+      id: 'validation_suspension',
+      lane: 'discipline',
+      weight: 1,
+      condition: () => true,
+      execute: () => ({
+        emoji: '🧪', title: '测试禁赛', body: '验证调度', desc: '测试原因',
+        _consequence: 'suspension', _games: 2,
+      }),
+    },
+    {
+      id: 'validation_duplicate_story',
+      lane: 'story',
+      weight: 1,
+      condition: () => true,
+      execute: () => ({ emoji: '🧪', title: '重复赛后事件', body: '同场不应触发', desc: '幂等验证' }),
+    },
+  );
   // 前面的职业剧情条件测试会把比赛数推进到第 20 场；重置为独立的调度器用例，
   // 避免赛季导演按真实赛程优先推进角色线而抢占禁赛验证。
   state.season.games = [{ game: { opponent: 'AWAY' } }];
@@ -821,6 +849,14 @@ if (registryStart < 0 || registryEnd < 0) {
     if (state.season.events.suspensionGamesLeft !== 2) failures.push('禁赛事件没有正确累计缺席场次');
     if (!state.season.events.triggeredIds.includes('validation_suspension')) failures.push('事件去重记录未写入');
     if (state.season.events.storyTimeline.length !== 1) failures.push('事件生涯时间线未写入');
+    const duplicateResult = eventModule.checkRandomEvents(
+      { opponent: 'AWAY' },
+      { won: true, scoreA: 110, scoreB: 105 },
+      { pts: 20, reb: 5, ast: 5 },
+    );
+    if (duplicateResult || state.season.events.triggeredIds.includes('validation_duplicate_story') || state.season.events.storyTimeline.length !== 1) {
+      failures.push('同一场比赛重复进入赛后流程时仍会再次抽取随机事件');
+    }
   } finally {
     Math.random = originalRandom;
   }
@@ -853,9 +889,61 @@ if (playInMatchStart < 0 || playInMatchEnd < 0) {
   );
   const careerPlayInResult = playInFns.simulatePlayInMatch('HOME', 'AWAY', 'A');
   if (careerPlayInResult.aWins || careerPlayInResult.absenceType !== 'injury' || playInState.season.events.injuryGamesLeft !== 1 ||
-      simulatedOptions?.availabilityEdge !== -4 || afterPlayIn?.absenceType !== 'injury' || afterPlayIn?.gameKey !== 'play-in:4:A' || afterPlayIn?.allowPopup !== false) {
+      simulatedOptions?.userAvailable !== false || Object.prototype.hasOwnProperty.call(simulatedOptions || {}, 'availabilityEdge') ||
+      afterPlayIn?.absenceType !== 'injury' || afterPlayIn?.gameKey !== 'play-in:4:A' || afterPlayIn?.allowPopup !== false) {
     failures.push('玩家附加赛没有接入正式比赛引擎、伤停扣减或统一球队比赛时钟');
   }
+}
+
+// 伤停必须从阵容源头移除用户，而不是在仍计入用户战力与 BoxScore 后再叠加固定分差惩罚。
+const lineupStart = indexSource.indexOf('function calcTeamLineup');
+const lineupEnd = indexSource.indexOf('/** 比赛引擎使用的中立场阵容战力', lineupStart);
+const rotationStart = indexSource.indexOf('function buildLeagueGameRotation');
+const rotationEnd = indexSource.indexOf('/** 生成两队全队数据', rotationStart);
+if (lineupStart < 0 || lineupEnd < 0 || rotationStart < 0 || rotationEnd < 0) {
+  failures.push('无法定位伤停阵容与轮换逻辑');
+} else {
+  const lineupState = {
+    careerTeam: 'HOME', finalOVR: 99, position: 'PG', attrs: {}, season: { isPlayoffs: false }, _lineupCache: {},
+  };
+  const lineupLeagueData = {
+    HOME: Array.from({ length: 9 }, (_, index) => ({ id: `npc-${index}`, cname: `队友${index}`, pos: 'PG', ovr: 70 })),
+  };
+  const powerConfig = { TEAM_POWER: { offense: { ovr: 1 }, defense: { ovr: 1 }, athletic: { ovr: 1 }, clutch: { ovr: 1 } } };
+  const lineupFns = new Function(
+    'STATE', 'LEAGUE_PLAYER_DATA', 'SIM_CONFIG', 'canPlayPosition', 'getMyPlayerDisplayName',
+    `${indexSource.slice(lineupStart, lineupEnd)}\nreturn { calcTeamLineup, calcTeamPowerWithPlayer };`,
+  )(lineupState, lineupLeagueData, powerConfig, () => true, () => '测试用户');
+  const availableLineup = lineupFns.calcTeamLineup('HOME');
+  const unavailableLineup = lineupFns.calcTeamLineup('HOME', { userAvailable: false });
+  const availablePower = lineupFns.calcTeamPowerWithPlayer('HOME');
+  const unavailablePower = lineupFns.calcTeamPowerWithPlayer('HOME', { userAvailable: false });
+  const unavailablePlayers = Object.values(unavailableLineup.starters).concat(unavailableLineup.bench || []);
+  if (!availableLineup.allPlayers.some(player => player._isUser) || unavailablePlayers.some(player => player._isUser) ||
+      !(availablePower.depth > unavailablePower.depth)) {
+    failures.push('伤停用户仍进入球队阵容或球队战力');
+  }
+
+  const rotationState = { careerTeam: 'HOME', season: { schedule: [] } };
+  const forcedUser = { _isUser: true, cname: '测试用户' };
+  const rotationPlayers = [forcedUser].concat(Array.from({ length: 10 }, (_, index) => ({ id: `rotation-${index}` })));
+  const rotationFns = new Function(
+    'STATE', 'calcTeamLineup', 'shouldNpcPlayLeagueGame',
+    `${indexSource.slice(rotationStart, rotationEnd)}\nreturn { buildLeagueGameRotation };`,
+  )(
+    rotationState,
+    () => ({ starters: { PG: forcedUser, SG: rotationPlayers[1], SF: rotationPlayers[2], PF: rotationPlayers[3], C: rotationPlayers[4] }, bench: rotationPlayers.slice(5) }),
+    () => true,
+  );
+  if (rotationFns.buildLeagueGameRotation('HOME', { userAvailable: false }).players.some(player => player._isUser)) {
+    failures.push('伤停用户仍被强制塞回比赛轮换与 BoxScore');
+  }
+}
+
+if (!/generateBoxScore\(teamA, teamB, scoreA, scoreB, options\)/.test(indexSource) ||
+    !/simulateGameNew\(STATE\.careerTeam, g\.opponent, 0, null, \{ userAvailable: false \}\)/.test(indexSource) ||
+    !/userAvailable: false/.test(playoffsSource)) {
+  failures.push('伤停可用性没有贯通常规赛、季后赛与 BoxScore');
 }
 
 if (!/const eventTeamEdge = getActiveEventTeamEdge\(teamA, teamB\)/.test(indexSource)) {
@@ -901,11 +989,14 @@ if (failures.length) {
     reunitedTeammateChoiceReachability: true,
     rosterDrivenReunion: true,
     reunitedRelationshipTransition: true,
+    resolvedReunionRosterSync: true,
     relationshipIdentityDeduplication: true,
     activeEffectCareerGameClock: true,
     unavailableGameNarrativeMemory: true,
     absenceReasonCounters: true,
     playInCareerGameClock: true,
+    unavailableUserLineup: true,
+    duplicatePostGameEventGuard: true,
     allFormerTeammatePlayoffMemory: true,
     healthThemeAvailabilityOutcome: true,
     themeVariantCursor: true,

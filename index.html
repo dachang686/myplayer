@@ -4097,7 +4097,7 @@ function quickSimAllGames(targetDay) {
         var runSkippedRegularGame = function() {
           if (skipReason === 'suspension') ev.suspensionGamesLeft--;
           else ev.injuryGamesLeft--;
-          var skipResult = simulateGameNew(STATE.careerTeam, g.opponent, 0, null, { availabilityEdge: -4 });
+          var skipResult = simulateGameNew(STATE.careerTeam, g.opponent, 0, null, { userAvailable: false });
           recordLeagueBoxScore(skipResult.boxScore, 'career:' + (g.gameNum || g.day || gi) + ':' + g.opponent);
           g.simulated = true;
           g.result = skipResult;
@@ -4623,7 +4623,8 @@ function getPositionDisplay(posStr) {
 }
 
 /** 按位置计算球队首发+轮换（用户参与规划；未首发则第六人） */
-function calcTeamLineup(team) {
+function calcTeamLineup(team, gameOptions) {
+  const options = gameOptions || {};
   const allPlayers = (LEAGUE_PLAYER_DATA[team] || []).slice();
   let userPlayer = null;
   var rosterSig = allPlayers.map(function(p) {
@@ -4635,13 +4636,14 @@ function calcTeamLineup(team) {
     STATE.careerTeam || '',
     STATE.position || '',
     STATE.finalOVR || '',
-    STATE.season?.isPlayoffs ? 'po' : 'rs'
+    STATE.season?.isPlayoffs ? 'po' : 'rs',
+    options.userAvailable === false ? 'user-out' : 'user-in'
   ].join('||');
   STATE._lineupCache = STATE._lineupCache || {};
   if (STATE._lineupCache[lineupCacheKey]) return STATE._lineupCache[lineupCacheKey];
   
   // 如果是你的球队，把你加入阵容
-  if (team === STATE.careerTeam && STATE.finalOVR) {
+  if (team === STATE.careerTeam && STATE.finalOVR && options.userAvailable !== false) {
     const playoffDebuff = 0;
     var _displayName = getMyPlayerDisplayName();
     userPlayer = {
@@ -4773,8 +4775,8 @@ function syncUserStarterStatus() {
 }
 
 /** 按位置计算球队实力（首发5人 + 2重要轮换） */
-function calcTeamPowerWithPlayer(team) {
-  const lineup = calcTeamLineup(team);
+function calcTeamPowerWithPlayer(team, gameOptions) {
+  const lineup = calcTeamLineup(team, gameOptions);
   const cfg = SIM_CONFIG.TEAM_POWER;
   
   const starters = Object.values(lineup.starters);
@@ -4839,10 +4841,10 @@ function getActiveEventTeamEdge(teamA, teamB) {
 
 /** 比赛模拟 — 逐节生成真实比分，最终比分直接决定胜负。 */
 function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
-  const powerA = calcTeamPowerWithPlayer(teamA);
-  const powerB = calcTeamPowerWithPlayer(teamB);
-  const config = SIM_CONFIG;
   const options = gameOptions || {};
+  const powerA = calcTeamPowerWithPlayer(teamA, options);
+  const powerB = calcTeamPowerWithPlayer(teamB, options);
+  const config = SIM_CONFIG;
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
@@ -4973,7 +4975,7 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
     keyEvents.push('⚡ 关键回合决胜');
   }
 
-  var boxScore = generateBoxScore(teamA, teamB, scoreA, scoreB);
+  var boxScore = generateBoxScore(teamA, teamB, scoreA, scoreB, options);
   var celebrationSequence = STATE.season
     ? (STATE.season._historicCelebrationSequence = (STATE.season._historicCelebrationSequence || 0) + 1)
     : Date.now();
@@ -5319,8 +5321,9 @@ function allocateLeagueRotationMinutes(players, roleRanks) {
 }
 
 /** 动态选择 9-11 人轮换。首发伤停时会由完整名单中的后备球员递补。 */
-function buildLeagueGameRotation(team) {
-  var lineup = calcTeamLineup(team);
+function buildLeagueGameRotation(team, gameOptions) {
+  var options = gameOptions || {};
+  var lineup = calcTeamLineup(team, options);
   var ordered = Object.values(lineup.starters).concat(lineup.bench || []);
   var unique = [];
   ordered.forEach(function(player) { if (player && unique.indexOf(player) < 0) unique.push(player); });
@@ -5334,11 +5337,11 @@ function buildLeagueGameRotation(team) {
   }
   var available = [];
   unique.forEach(function(player, roleRank) {
-    if (player._isUser || shouldNpcPlayLeagueGame(team, player, roleRank, careerTeamGameNumber)) available.push(player);
+    if ((player._isUser && options.userAvailable !== false) || (!player._isUser && shouldNpcPlayLeagueGame(team, player, roleRank, careerTeamGameNumber))) available.push(player);
   });
   var targetSize = 9 + (Math.random() < 0.68 ? 1 : (Math.random() < 0.70 ? 2 : 0));
   var selected = available.slice(0, targetSize);
-  if (user && selected.indexOf(user) < 0) {
+  if (user && options.userAvailable !== false && selected.indexOf(user) < 0) {
     if (selected.length >= targetSize) selected[selected.length - 1] = user;
     else selected.push(user);
   }
@@ -5349,9 +5352,9 @@ function buildLeagueGameRotation(team) {
 }
 
 /** 生成两队全队数据：伤病/轮休影响 GP，五项数据受球队总量约束。 */
-function generateBoxScore(teamA, teamB, totalA, totalB) {
+function generateBoxScore(teamA, teamB, totalA, totalB, gameOptions) {
   function getLineupStats(team, totalPts) {
-    var rotation = buildLeagueGameRotation(team);
+    var rotation = buildLeagueGameRotation(team, gameOptions);
     var players = rotation.players;
     var roleRanks = rotation.roleRanks;
     if (!players.length) return [];
@@ -11056,6 +11059,33 @@ function getNarrativeReunitedTeammate(playerId) {
   return Array.isArray(reunited) ? reunited.find(function(item) { return item && item.id === playerId; }) || null : null;
 }
 
+/** 已结算的重聚关系仍随名单变化迁移，避免再次离队后从旧友系统中消失。 */
+function syncNarrativeReunitedTeammates() {
+  if (!STATE.career || !STATE.career.flags) return [];
+  var reunited = STATE.career.flags.reunitedStoryTeammates;
+  if (!Array.isArray(reunited)) return [];
+  reunited.forEach(function(record) {
+    if (!record || !record.id) return;
+    var current = findNarrativePlayer(record.id);
+    if (!current) {
+      record.active = false;
+      record.pendingReunion = false;
+      archiveNarrativeTeammate(record);
+      return;
+    }
+    record.team = current.team;
+    record.cname = current.player.cname || current.player.name || record.cname;
+    if (current.team === STATE.careerTeam) {
+      record.active = true;
+      return;
+    }
+    record.active = false;
+    record.pendingReunion = false;
+    rememberFormerNarrativeTeammate(record, current);
+  });
+  return reunited;
+}
+
 function getPendingNarrativeReunion() {
   var reunited = STATE.career && STATE.career.flags && STATE.career.flags.reunitedStoryTeammates;
   if (!Array.isArray(reunited)) return null;
@@ -11389,6 +11419,7 @@ function initializeSeasonNarrative() {
   events.seasonTheme = theme;
   // 休赛期交易必须先更新关系身份，再恢复未结线程，避免同一 NPC 同时成为当前队友与旧友。
   getSeasonNarrativeTeammate();
+  syncNarrativeReunitedTeammates();
   getNarrativeFormerTeammates();
   var carryOvers = takeNarrativeCarryOvers();
   events.storyThreads = selectSeasonNarrativeThreads(carryOvers, buildSeasonStoryThreads(theme));
@@ -12393,6 +12424,7 @@ function pickWeightedEvent(candidates) {
 function checkRandomEvents(game, result, stats) {
   var ev = ensureSeasonEventState();
   var afterGame = afterCareerTeamGame({ game: game, result: result, stats: stats || {}, allowPopup: true });
+  if (!afterGame.isNewGame) return null;
   _lastGameCtx = afterGame.ctx;
   var ctx = _lastGameCtx;
   var directedEvent = checkSeasonNarrativeDirector(ctx);

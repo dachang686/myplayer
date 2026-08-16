@@ -218,11 +218,10 @@ function simulatePlayInMatch(teamA, teamB, gameId) {
   if (absenceType === 'injury') events.injuryGamesLeft--;
 
   const careerIsA = teamA === myTeam;
-  const availabilityEdge = absenceType ? (careerIsA ? -4 : 4) : 0;
   const simulated = simulateGameNew(teamA, teamB, 0, null, {
     isHomeA: true,
     isB2B: false,
-    availabilityEdge,
+    userAvailable: !absenceType,
   });
   const careerWon = careerIsA ? !!simulated.won : !simulated.won;
   if (typeof afterCareerTeamGame === 'function') {
@@ -948,7 +947,7 @@ function simOnePlayoffGame(round, seriesIdx, teamA, teamB, isMySeries, gameNum, 
     var runSkippedPlayoffGame = function() {
       if (skipReason === 'suspension') skipEv.suspensionGamesLeft--;
       else skipEv.injuryGamesLeft--;
-      var skipResult = simulateGameNew(teamA, teamB, seedBonus, userDebuff, { isHomeA: isHomeA, isB2B: false, availabilityEdge: -4 });
+      var skipResult = simulateGameNew(teamA, teamB, seedBonus, userDebuff, { isHomeA: isHomeA, isB2B: false, userAvailable: false });
       skipEv.lastMissedCareerTeamGame = Number(STATE.season && STATE.season._careerTeamAvailabilityGame) || 0;
       skipEv.lastPlayoffAbsenceType = skipReason;
       const skipWon = skipResult.won;
