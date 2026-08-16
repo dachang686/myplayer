@@ -1309,7 +1309,7 @@ function updateSeasonBadge(activeId) {
 /** 赛季事件状态统一入口；新增字段均在 ensureSeasonEventState 中兼容旧存档。 */
 function createSeasonEventState(injuryRiskBonus) {
   return {
-    version: 7,
+    version: 8,
     suspensionGamesLeft: 0,
     suspensionReason: '',
     injuryGamesLeft: 0,
@@ -1332,6 +1332,7 @@ function createSeasonEventState(injuryRiskBonus) {
     playerInjuryMissedGames: 0,
     playerSuspensionMissedGames: 0,
     // 赛季导演层：主题、长线矛盾和比赛信号均随存档持久化。
+    narrativeTeam: null,
     seasonTheme: null,
     storyThreads: [],
     storySignals: { games: 0, wins: 0, losses: 0, winStreak: 0, lossStreak: 0, standoutStreak: 0, closeGames: 0, lastOpponent: null },
@@ -1366,7 +1367,7 @@ function ensureSeasonEventState() {
   if (current.seasonTheme != null && (typeof current.seasonTheme !== 'object' || Array.isArray(current.seasonTheme))) current.seasonTheme = null;
   // v6 及更早存档只有总缺席数；迁移时按更保守的伤病缺席处理，避免进行中的健康线被误判成功。
   if (previousVersion < 7 && !hadInjuryMissedCounter) current.playerInjuryMissedGames = legacyUnavailableGames;
-  current.version = 7;
+  current.version = 8;
   STATE.season.events = current;
   return current;
 }
@@ -11111,7 +11112,7 @@ function archiveNarrativeTeammate(teammate) {
   if (history.length > 6) history.splice(0, history.length - 6);
 }
 
-function rememberFormerNarrativeTeammate(teammate, current) {
+function rememberFormerNarrativeTeammate(teammate, current, separationCause) {
   if (!teammate || !STATE.career) return null;
   STATE.career.flags = STATE.career.flags || {};
   var former = STATE.career.flags.formerStoryTeammates || (STATE.career.flags.formerStoryTeammates = []);
@@ -11127,6 +11128,7 @@ function rememberFormerNarrativeTeammate(teammate, current) {
     record.pos = current.player.pos || record.pos || '';
     record.ovr = current.player.ovr || record.ovr || 0;
   }
+  if (separationCause) record.separationCause = separationCause;
   if (former.length > 6) former.splice(0, former.length - 6);
   return record;
 }
@@ -11188,7 +11190,7 @@ function getNarrativeReunitedTeammate(playerId) {
 }
 
 /** 已结算的重聚关系仍随名单变化迁移，避免再次离队后从旧友系统中消失。 */
-function syncNarrativeReunitedTeammates() {
+function syncNarrativeReunitedTeammates(separationCause) {
   if (!STATE.career || !STATE.career.flags) return [];
   var reunited = STATE.career.flags.reunitedStoryTeammates;
   if (!Array.isArray(reunited)) return [];
@@ -11209,7 +11211,7 @@ function syncNarrativeReunitedTeammates() {
     }
     record.active = false;
     record.pendingReunion = false;
-    rememberFormerNarrativeTeammate(record, current);
+    rememberFormerNarrativeTeammate(record, current, separationCause || 'teammate_left');
   });
   return reunited;
 }
@@ -11247,7 +11249,13 @@ function getSeasonNarrativeTeammate() {
     return existing;
   }
   if (existing) {
-    if (current) rememberFormerNarrativeTeammate(existing, current);
+    if (current) {
+      var previousSeason = getNarrativePreviousSeason();
+      var cause = previousSeason && previousSeason.team === current.team && previousSeason.team !== STATE.careerTeam
+        ? 'player_left'
+        : 'teammate_left';
+      rememberFormerNarrativeTeammate(existing, current, cause);
+    }
     else {
       existing.active = false;
       archiveNarrativeTeammate(existing);
@@ -11375,18 +11383,21 @@ function migrateNarrativeCarryOverRelationship(item) {
   }
   if ((item.kind === 'teammate' || item.kind === 'reunited_teammate') && current.team !== STATE.careerTeam) {
     var previousRelationshipKind = item.kind;
+    var separationCause = payload.teamAtBinding && payload.teamAtBinding !== STATE.careerTeam ? 'player_left' : 'teammate_left';
     var former = getNarrativeFormerTeammate(teammateId) || rememberFormerNarrativeTeammate({
       id: teammateId,
       cname: payload.teammateName || current.player.cname || current.player.name,
       affinity: Number(payload.affinity) || 0,
       sinceSeason: item.fromSeason || 0
-    }, current);
+    }, current, separationCause);
+    if (former) former.separationCause = separationCause;
     item.kind = 'former_teammate';
     item.title = '未竟的旧友线：' + (former && former.cname || payload.teammateName || '那位队友');
     item.emoji = '🔁';
     payload.opponent = current.team;
     payload.teammateName = former && former.cname || payload.teammateName;
     payload.isFirstReunion = (Number(former && former.reunionCount) || 0) === 0;
+    payload.separationCause = separationCause;
     payload.relationshipMigrated = true;
     var migratedChoice = ({ protect: 'welcome', honest: 'compete', distance: 'move_on' })[item.choice] || item.choice;
     if (previousRelationshipKind === 'reunited_teammate') {
@@ -11468,7 +11479,7 @@ function buildSeasonStoryThreads(theme) {
   if ((Number(roleArc.level) || 0) < targetRoleLevel) {
     threads.push(makeSeasonStoryThread(
       'role_progression_s' + getNarrativeSeasonNumber(), 'role', '角色线 Lv' + targetRoleLevel, '📋', 14, 43,
-      { level: targetRoleLevel }
+      { level: targetRoleLevel, teamAtBinding: STATE.careerTeam }
     ));
   }
   var teammate = getSeasonNarrativeTeammate();
@@ -11476,14 +11487,14 @@ function buildSeasonStoryThreads(theme) {
     var affinityStage = getNarrativeTeammateAffinityStage(teammate);
     threads.push(makeSeasonStoryThread(
       'teammate_bond_s' + getNarrativeSeasonNumber(), 'teammate', affinityStage.title + '：' + teammate.cname, '🤝', 31, 60,
-      { teammateId: teammate.id, teammateName: teammate.cname, affinityStage: affinityStage.id, affinity: affinityStage.affinity }
+      { teammateId: teammate.id, teammateName: teammate.cname, affinityStage: affinityStage.id, affinity: affinityStage.affinity, teamAtBinding: STATE.careerTeam }
     ));
   }
   var pendingReunion = getPendingNarrativeReunion();
   if (pendingReunion) {
     threads.push(makeSeasonStoryThread(
       'reunited_teammate_' + pendingReunion.id + '_s' + getNarrativeSeasonNumber(), 'reunited_teammate', '又穿上同一件球衣：' + pendingReunion.cname, '🤝', 6, 24,
-      { teammateId: pendingReunion.id, teammateName: pendingReunion.cname, affinity: Number(pendingReunion.affinity) || 0, returnedSeason: pendingReunion.returnedSeason, rosterDriven: true }
+      { teammateId: pendingReunion.id, teammateName: pendingReunion.cname, affinity: Number(pendingReunion.affinity) || 0, returnedSeason: pendingReunion.returnedSeason, rosterDriven: true, teamAtBinding: STATE.careerTeam }
     ));
   }
   var former = selectNarrativeFormerTeammate();
@@ -11491,13 +11502,13 @@ function buildSeasonStoryThreads(theme) {
     var reunionGame = getNarrativeMatchupGame(former.team, 8);
     threads.push(makeSeasonStoryThread(
       'former_teammate_' + former.id + '_s' + getNarrativeSeasonNumber(), 'former_teammate', '旧友重逢：' + former.cname, '🔁', reunionGame, Math.min(78, reunionGame + 18),
-      { teammateId: former.id, teammateName: former.cname, opponent: former.team, isFirstReunion: (Number(former.reunionCount) || 0) === 0 }
+      { teammateId: former.id, teammateName: former.cname, opponent: former.team, isFirstReunion: (Number(former.reunionCount) || 0) === 0, separationCause: former.separationCause || 'teammate_left' }
     ));
   }
   var themeStory = getSeasonThemeStoryline(theme);
   threads.push(makeSeasonStoryThread(
     'team_direction_s' + getNarrativeSeasonNumber(), 'team', themeStory.title, theme.emoji, 48, 74,
-    { themeId: theme.id, themeStoryId: theme.variantId || theme.id, themeTitle: theme.title, effectProfile: themeStory.effectProfile || null }
+    { themeId: theme.id, themeStoryId: theme.variantId || theme.id, themeTitle: theme.title, effectProfile: themeStory.effectProfile || null, teamAtBinding: STATE.careerTeam }
   ));
   var rivalry = getNarrativeRivalry();
   // owed 只负责开启一次常规赛对峙；进入 reckoning 后等待真实季后赛结果，不再逐季重播。
@@ -11540,8 +11551,152 @@ function selectSeasonNarrativeThreads(carryOvers, generated) {
     }).slice(0, 4).map(function(entry) { return entry.thread; });
 }
 
+function inferSeasonNarrativeTeam(events) {
+  if (events && events.narrativeTeam) return events.narrativeTeam;
+  var threads = events && Array.isArray(events.storyThreads) ? events.storyThreads : [];
+  var bound = threads.find(function(thread) {
+    return thread && thread.payload && thread.payload.teamAtBinding;
+  });
+  if (bound) return bound.payload.teamAtBinding;
+  var relationship = threads.find(function(thread) {
+    return thread && ['teammate', 'reunited_teammate'].indexOf(thread.kind) >= 0 && thread.payload && thread.payload.teammateId;
+  });
+  var currentRelationship = relationship && findNarrativePlayer(relationship.payload.teammateId);
+  if (currentRelationship) return currentRelationship.team;
+  var previous = getNarrativePreviousSeason();
+  if (threads.length && previous && previous.team) return previous.team;
+  return STATE.careerTeam || null;
+}
+
+function isNarrativeThreadInCurrentTeamContext(thread) {
+  if (!thread || !STATE.careerTeam) return true;
+  var payload = thread.payload || {};
+  var teamBoundKinds = ['role', 'team', 'locker_room', 'teammate', 'reunited_teammate'];
+  if (teamBoundKinds.indexOf(thread.kind) >= 0 && payload.teamAtBinding && payload.teamAtBinding !== STATE.careerTeam) return false;
+  if (thread.kind === 'teammate' || thread.kind === 'reunited_teammate') {
+    var current = payload.teammateId && findNarrativePlayer(payload.teammateId);
+    return !!(current && current.team === STATE.careerTeam);
+  }
+  return true;
+}
+
+function cancelNarrativeThreadForTeamChange(thread, oldTeam, newTeam) {
+  if (!thread || thread.state === 'resolved') return;
+  thread.state = 'resolved';
+  thread.resolvedAt = getEventGameNumber();
+  thread.cancelledByTeamChange = true;
+  thread.cancelledFromTeam = oldTeam || null;
+  thread.cancelledToTeam = newTeam || null;
+}
+
+/** 玩家自己换队时迁移整套叙事上下文，避免原队关系、教练与更衣室剧情继续推进。 */
+function syncNarrativeAfterPlayerTeamChange(events, previousTeamHint) {
+  events = events || ensureSeasonEventState();
+  var currentTeam = STATE.careerTeam || null;
+  var previousTeam = events.narrativeTeam || previousTeamHint || inferSeasonNarrativeTeam(events);
+  if (!currentTeam) return false;
+  if (!previousTeam) {
+    events.narrativeTeam = currentTeam;
+    return false;
+  }
+  if (previousTeam === currentTeam) {
+    events.narrativeTeam = currentTeam;
+    return false;
+  }
+
+  var threads = Array.isArray(events.storyThreads) ? events.storyThreads : (events.storyThreads = []);
+  var hadRoleThread = threads.some(function(thread) { return thread && thread.kind === 'role' && thread.state !== 'resolved'; });
+  threads.forEach(function(thread) {
+    if (!thread || thread.state === 'resolved') return;
+    var payload = thread.payload || (thread.payload = {});
+    if (thread.kind === 'teammate' || thread.kind === 'reunited_teammate') {
+      var current = payload.teammateId && findNarrativePlayer(payload.teammateId);
+      if (!current) {
+        archiveNarrativeTeammate({ id: payload.teammateId, cname: payload.teammateName, affinity: Number(payload.affinity) || 0 });
+        cancelNarrativeThreadForTeamChange(thread, previousTeam, currentTeam);
+        return;
+      }
+      if (current.team === currentTeam) {
+        payload.teamAtBinding = currentTeam;
+        return;
+      }
+      var former = rememberFormerNarrativeTeammate({
+        id: payload.teammateId,
+        cname: payload.teammateName || current.player.cname || current.player.name,
+        affinity: Number(payload.affinity) || 0,
+        sinceSeason: getNarrativeSeasonNumber()
+      }, current, 'player_left');
+      var previousChoice = thread.choice;
+      var reunionGame = getNarrativeMatchupGame(current.team, Math.max(1, getEventGameNumber()));
+      if (!reunionGame) {
+        cancelNarrativeThreadForTeamChange(thread, previousTeam, currentTeam);
+        return;
+      }
+      thread.kind = 'former_teammate';
+      thread.title = '换上新球衣后：' + (former && former.cname || payload.teammateName || '那位旧队友');
+      thread.emoji = '🔁';
+      thread.state = 'queued';
+      thread.choice = null;
+      thread.openedAt = null;
+      thread.committedAt = null;
+      thread.commitSnapshot = null;
+      thread.openingGame = reunionGame;
+      thread.resolutionGame = Math.min(78, reunionGame + 18);
+      payload.opponent = current.team;
+      payload.teammateName = former && former.cname || payload.teammateName;
+      payload.isFirstReunion = (Number(former && former.reunionCount) || 0) === 0;
+      payload.separationCause = 'player_left';
+      payload.previousChoice = previousChoice || null;
+      payload.teamAtBinding = currentTeam;
+      thread.migratedAfterPlayerTeamChange = true;
+      return;
+    }
+    if (['role', 'team', 'locker_room'].indexOf(thread.kind) >= 0) {
+      cancelNarrativeThreadForTeamChange(thread, previousTeam, currentTeam);
+    }
+  });
+
+  STATE.career.flags = STATE.career.flags || {};
+  var oldMate = STATE.career.flags.storyTeammate;
+  var oldMateCurrent = oldMate && findNarrativePlayer(oldMate.id);
+  if (oldMate && (!oldMateCurrent || oldMateCurrent.team !== currentTeam)) {
+    if (oldMateCurrent) rememberFormerNarrativeTeammate(oldMate, oldMateCurrent, 'player_left');
+    else archiveNarrativeTeammate(oldMate);
+    delete STATE.career.flags.storyTeammate;
+  }
+  var commitment = STATE.career.flags.seasonCommitment;
+  if (commitment && commitment.season === getNarrativeSeasonNumber() && commitment.outcome === 'pending') {
+    commitment.outcome = 'superseded_by_team_change';
+  }
+
+  events.narrativeTeam = currentTeam;
+  events.storySignals = { games: 0, wins: 0, losses: 0, winStreak: 0, lossStreak: 0, standoutStreak: 0, closeGames: 0, lastOpponent: null };
+  events.opponentHistory = {};
+  events.activeEffects = [];
+  getSeasonNarrativeTeammate();
+  syncNarrativeReunitedTeammates('player_left');
+  getNarrativeFormerTeammates();
+  var theme = chooseSeasonNarrativeTheme();
+  events.seasonTheme = theme;
+  var generated = buildSeasonStoryThreads(theme);
+  if (hadRoleThread && !generated.some(function(thread) { return thread && thread.kind === 'role'; })) {
+    var roleLevel = getRoleNarrativeLevel();
+    generated.push(makeSeasonStoryThread(
+      'role_after_team_change_s' + getNarrativeSeasonNumber(), 'role', '新球队角色线 Lv' + roleLevel, '📋',
+      Math.max(6, getEventGameNumber()), Math.max(30, getEventGameNumber() + 24),
+      { level: roleLevel, teamAtBinding: currentTeam, afterPlayerTeamChange: true }
+    ));
+  }
+  var resolved = threads.filter(function(thread) { return thread && thread.state === 'resolved'; });
+  var active = threads.filter(function(thread) { return thread && thread.state !== 'resolved'; });
+  events.storyThreads = resolved.concat(selectSeasonNarrativeThreads(active, generated));
+  return true;
+}
+
 function initializeSeasonNarrative() {
   var events = ensureSeasonEventState();
+  if (!events.narrativeTeam) events.narrativeTeam = inferSeasonNarrativeTeam(events);
+  syncNarrativeAfterPlayerTeamChange(events);
   if (events.seasonTheme && Array.isArray(events.storyThreads) && events.storyThreads.length) return events;
   var theme = chooseSeasonNarrativeTheme();
   events.seasonTheme = theme;
@@ -11553,6 +11708,7 @@ function initializeSeasonNarrative() {
   events.storyThreads = selectSeasonNarrativeThreads(carryOvers, buildSeasonStoryThreads(theme));
   events.storySignals = { games: 0, wins: 0, losses: 0, winStreak: 0, lossStreak: 0, standoutStreak: 0, closeGames: 0, lastOpponent: null };
   events.directorEvents = [];
+  events.narrativeTeam = STATE.careerTeam || events.narrativeTeam;
   return events;
 }
 
@@ -11619,7 +11775,7 @@ function queueGameDrivenPressureThread() {
   if ((Number(signals.lossStreak) || 0) >= 4 && !hasNarrativeThread('locker_room')) {
     var lockerThread = makeSeasonStoryThread(
       'locker_room_s' + getNarrativeSeasonNumber(), 'locker_room', '连败后的更衣室', '🚪', getEventGameNumber(), Math.min(78, getEventGameNumber() + 12),
-      { lossStreak: signals.lossStreak }
+      { lossStreak: signals.lossStreak, teamAtBinding: STATE.careerTeam }
     );
     events.storyThreads.push(lockerThread);
     return lockerThread;
@@ -11650,6 +11806,8 @@ function queueGameDrivenRivalryThread(ctx) {
 }
 
 function getDirectorThreadOpening(thread) {
+  syncNarrativeAfterPlayerTeamChange();
+  if (!isNarrativeThreadInCurrentTeamContext(thread)) return null;
   var teammate = getSeasonNarrativeTeammate();
   var theme = ensureSeasonEventState().seasonTheme || chooseSeasonNarrativeTheme();
   if (thread.kind === 'role') {
@@ -11710,8 +11868,11 @@ function getDirectorThreadOpening(thread) {
   if (thread.kind === 'former_teammate') {
     var formerTeammate = getNarrativeFormerTeammate(thread.payload && thread.payload.teammateId);
     var formerName = thread.payload.teammateName || (formerTeammate && formerTeammate.cname) || '那位旧队友';
+    var playerLeft = thread.payload && thread.payload.separationCause === 'player_left';
     var reunionBody = thread.payload && thread.payload.isFirstReunion
-      ? formerName + '离队后第一次站在了你的对面。赛前他主动走来打招呼，但这场比赛会让你们过去共同经历的那些时刻拥有新的含义。'
+      ? (playerLeft
+        ? '你换上新球衣后，第一次在场上遇到' + formerName + '。赛前他主动走来打招呼，但这场比赛会让你们过去共同经历的那些时刻拥有新的含义。'
+        : formerName + '离队后第一次站在了你的对面。赛前他主动走来打招呼，但这场比赛会让你们过去共同经历的那些时刻拥有新的含义。')
       : '你和' + formerName + '再次作为对手相遇。最初重逢时的情绪已经沉淀，如今真正被检验的是这段关系会走向长期尊重，还是越来越尖锐的竞争。';
     return {
       emoji: thread.emoji,
@@ -11898,6 +12059,8 @@ function applySeasonThemeVariantCommit(thread) {
 
 function commitDirectorThreadChoice(thread, choiceKey) {
   if (!thread || thread.state !== 'queued') return '这个决定已经被记录。';
+  syncNarrativeAfterPlayerTeamChange();
+  if (!isNarrativeThreadInCurrentTeamContext(thread)) return '球队环境已经改变，这条旧剧情不再继续推进。';
   thread.state = 'committed';
   thread.choice = choiceKey || 'wait';
   thread.committedAt = getEventGameNumber();
@@ -11966,6 +12129,27 @@ function applySeasonThemeVariantChoice(profileId, choice, success, themeTitle) {
 }
 
 function resolveDirectorThread(thread) {
+  var stateBeforeContextSync = thread && thread.state;
+  syncNarrativeAfterPlayerTeamChange();
+  if (stateBeforeContextSync === 'committed' && thread && thread.state !== 'committed') {
+    return {
+      emoji: thread.emoji || '🧭',
+      title: (thread.title || '旧球队剧情') + ' · 环境已改变',
+      body: '转会让原来的选择失去继续结算的球队环境；这段关系会在新的身份下重新开始。',
+      desc: '原球队选择不会影响新球队',
+      btnText: '继续赛季'
+    };
+  }
+  if (!isNarrativeThreadInCurrentTeamContext(thread)) {
+    cancelNarrativeThreadForTeamChange(thread, thread && thread.payload && thread.payload.teamAtBinding, STATE.careerTeam);
+    return {
+      emoji: thread && thread.emoji || '🧭',
+      title: (thread && thread.title || '旧球队剧情') + ' · 已结束',
+      body: '球队环境已经改变，这条属于原球队的剧情不再影响当前生涯。',
+      desc: '玩家转会后终止原球队叙事',
+      btnText: '继续赛季'
+    };
+  }
   var metrics = getNarrativeThreadOutcome(thread);
   var success = metrics.success;
   var outcome = '';
@@ -12126,7 +12310,7 @@ function checkSeasonNarrativeDirector(ctx) {
   var threads = events.storyThreads || [];
   // 已作出选择的矛盾优先结算，避免新剧情永远挤掉旧伏笔。
   var dueResolution = threads.find(function(thread) {
-    if (!thread || thread.state !== 'committed' || gameNum < (Number(thread.resolutionGame) || 99)) return false;
+    if (!thread || thread.state !== 'committed' || !isNarrativeThreadInCurrentTeamContext(thread) || gameNum < (Number(thread.resolutionGame) || 99)) return false;
     // 常规赛末段的选择没有凑满观察窗口时，留到下一季，而不是在季后赛首战用错误窗口结算。
     return !(STATE.season && STATE.season.isPlayoffs && thread.commitSnapshot && thread.commitSnapshot.phase === 'regular');
   });
@@ -12150,10 +12334,11 @@ function checkSeasonNarrativeDirector(ctx) {
   queueGameDrivenRivalryThread(ctx);
   if (!canShowDirectorEvent) return null;
   var opening = threads.find(function(thread) {
-    return thread && thread.state === 'queued' && isNarrativeThreadReadyToOpen(thread, gameNum, events.storySignals);
+    return thread && thread.state === 'queued' && isNarrativeThreadInCurrentTeamContext(thread) && isNarrativeThreadReadyToOpen(thread, gameNum, events.storySignals);
   });
   if (!opening) return null;
   var data = getDirectorThreadOpening(opening);
+  if (!data) return null;
   (data.choices || []).forEach(function(choice) {
     var choiceKey = choice._directorChoice;
     choice.apply = function() { return commitDirectorThreadChoice(opening, choiceKey); };

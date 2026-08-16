@@ -5,6 +5,7 @@ const parser = require('@babel/parser');
 const root = path.resolve(__dirname, '..');
 const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const playoffsSource = fs.readFileSync(path.join(root, 'js', 'playoffs.js'), 'utf8');
+const offseasonSource = fs.readFileSync(path.join(root, 'js', 'offseason.js'), 'utf8');
 
 const failures = [];
 const inlineScripts = [...indexSource.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
@@ -36,7 +37,7 @@ if (stateStart < 0 || stateEnd < 0) {
   if (repaired.playerInjuryMissedGames !== 2 || repaired.playerSuspensionMissedGames !== 0) {
     failures.push('旧存档总缺席数没有保守迁移到新的伤病/禁赛计数结构');
   }
-  for (const key of ['lastTriggerByLane', 'eventCounts', 'opponentHistory', 'activeEffects', 'lastActiveEffectTickKey', 'careerTeamGamesPlayed', 'playerUnavailableGames', 'playerInjuryMissedGames', 'playerSuspensionMissedGames', 'storyThreads', 'storySignals', 'directorEvents', 'narrativeSeasonFinalized']) {
+  for (const key of ['lastTriggerByLane', 'eventCounts', 'opponentHistory', 'activeEffects', 'lastActiveEffectTickKey', 'careerTeamGamesPlayed', 'playerUnavailableGames', 'playerInjuryMissedGames', 'playerSuspensionMissedGames', 'narrativeTeam', 'storyThreads', 'storySignals', 'directorEvents', 'narrativeSeasonFinalized']) {
     if (!Object.prototype.hasOwnProperty.call(repaired, key)) failures.push(`旧存档没有补齐事件字段 ${key}`);
   }
 }
@@ -71,14 +72,14 @@ if (registryStart < 0 || registryEnd < 0) {
     return state.career.profile[key];
   };
   const createEventState = injuryRiskBonus => ({
-    version: 7,
+    version: 8,
     suspensionGamesLeft: 0, suspensionReason: '', injuryGamesLeft: 0, injuryReason: '',
     triggeredIds: [], storyTimeline: [], lastTriggerGameNum: null, lastTriggerByLane: {}, eventCounts: {},
     playoffEventCount: 0, injuryRiskBonus: Number(injuryRiskBonus) || 0, majorInjuryThisSeason: false,
     playThroughPrompted: {}, regularPlayThroughPromptCount: 0, opponentHistory: {}, activeEffects: [],
     lastActiveEffectTickKey: null, careerTeamGamesPlayed: 0, playerUnavailableGames: 0,
     playerInjuryMissedGames: 0, playerSuspensionMissedGames: 0,
-    seasonTheme: null, storyThreads: [],
+    narrativeTeam: null, seasonTheme: null, storyThreads: [],
     storySignals: { games: 0, wins: 0, losses: 0, winStreak: 0, lossStreak: 0, standoutStreak: 0, closeGames: 0, lastOpponent: null },
     directorEvents: [], narrativeSeasonFinalized: false,
   });
@@ -103,7 +104,7 @@ if (registryStart < 0 || registryEnd < 0) {
     'getCareerProfile',
     'getBondedTeammateName',
     'ensureSeasonEventState',
-    `${indexSource.slice(registryStart, registryEnd)}\nreturn { EVENT_REGISTRY, checkRandomEvents, getRandomEventLane, initializeSeasonNarrative, canTriggerEventByLifecycle, recordEventLifecycle, meetsCareerEventIdentity, recordNarrativePlayoffSeries, finalizeSeasonNarrativeAtSeasonEnd, commitDirectorThreadChoice, resolveDirectorThread, getNarrativeThreadOutcome, getSeasonThemeEventWeight, chooseSeasonNarrativeTheme, chooseNarrativeThemeVariant, getSeasonThemeStoryline, getSeasonNarrativeTeammate, getNarrativeFormerTeammates, getDirectorThreadOpening, queueGameDrivenPressureThread, getActiveNarrativeThreadCount, selectNarrativeFormerTeammate, checkSeasonNarrativeDirector, consumeActiveEventEffectsForCareerGame, afterCareerTeamGame, findNarrativePlayer, syncNarrativeReunitedTeammates };`,
+    `${indexSource.slice(registryStart, registryEnd)}\nreturn { EVENT_REGISTRY, checkRandomEvents, getRandomEventLane, initializeSeasonNarrative, canTriggerEventByLifecycle, recordEventLifecycle, meetsCareerEventIdentity, recordNarrativePlayoffSeries, finalizeSeasonNarrativeAtSeasonEnd, commitDirectorThreadChoice, resolveDirectorThread, getNarrativeThreadOutcome, getSeasonThemeEventWeight, chooseSeasonNarrativeTheme, chooseNarrativeThemeVariant, getSeasonThemeStoryline, getSeasonNarrativeTeammate, getNarrativeFormerTeammates, getDirectorThreadOpening, queueGameDrivenPressureThread, getActiveNarrativeThreadCount, selectNarrativeFormerTeammate, checkSeasonNarrativeDirector, consumeActiveEventEffectsForCareerGame, afterCareerTeamGame, findNarrativePlayer, syncNarrativeReunitedTeammates, syncNarrativeAfterPlayerTeamChange, isNarrativeThreadInCurrentTeamContext };`,
   )({}, state, leagueData, addProfileDelta, profile, () => '测试队友', ensureEventState);
 
   const registry = eventModule.EVENT_REGISTRY;
@@ -612,6 +613,80 @@ if (registryStart < 0 || registryEnd < 0) {
     failures.push('已结算重聚关系再次离队后没有同步回旧友池');
   }
 
+  // 玩家自己换队时，旧队友线程必须改成“我离开”的旧友语境，旧球队/教练/更衣室线程必须终止并重建。
+  const playerLeftMate = { id: 'player-left-mate', cname: '留守前队友', ovr: 89 };
+  const newTeamMates = [{ id: 'new-team-star', cname: '新队核心', ovr: 91 }, { id: 'new-team-mate', cname: '新队搭档', ovr: 86 }];
+  leagueData.PLAYER_OLD = [playerLeftMate, { id: 'old-depth', cname: '原队轮换', ovr: 80 }];
+  leagueData.PLAYER_NEW = newTeamMates;
+  state.careerTeam = 'PLAYER_OLD';
+  state.career.contract = 3;
+  state.career.currentAge = 28;
+  state.career.seasons = [{ team: 'PLAYER_OLD', wins: 45, losses: 37 }];
+  state.career.flags = {
+    storyTeammate: { id: playerLeftMate.id, cname: playerLeftMate.cname, team: 'PLAYER_OLD', active: true, affinity: 4, sinceSeason: 5 },
+  };
+  state.season = {
+    games: [], wins: 0, losses: 0, isPlayoffs: false, isUserStarter: true, playerStats: {},
+    schedule: [{ opponent: 'PLAYER_OLD', gameNum: 8 }], events: createEventState(0),
+  };
+  state.season.events.narrativeTeam = 'PLAYER_OLD';
+  const staleQueuedMate = {
+    id: 'stale-player-left-mate', kind: 'teammate', title: '核心搭档：留守前队友', emoji: '🤝', state: 'queued',
+    openingGame: 4, resolutionGame: 20, payload: { teammateId: playerLeftMate.id, teammateName: playerLeftMate.cname, affinity: 4, teamAtBinding: 'PLAYER_OLD' },
+  };
+  const staleTeamThreads = [
+    { id: 'stale-role', kind: 'role', title: '原队角色', emoji: '📋', state: 'queued', openingGame: 4, resolutionGame: 20, payload: { level: 3, teamAtBinding: 'PLAYER_OLD' } },
+    { id: 'stale-team', kind: 'team', title: '原队方向', emoji: '🧭', state: 'committed', choice: 'all_in', openingGame: 4, resolutionGame: 20, payload: { themeId: 'title', teamAtBinding: 'PLAYER_OLD' } },
+    { id: 'stale-locker', kind: 'locker_room', title: '原队更衣室', emoji: '🚪', state: 'queued', openingGame: 4, resolutionGame: 20, payload: { teamAtBinding: 'PLAYER_OLD' } },
+  ];
+  state.season.events.storyThreads = [staleQueuedMate].concat(staleTeamThreads);
+  state.season.events.seasonTheme = { id: 'title', variantId: 'title_pressure', title: '原队争冠', season: 8 };
+  state.careerTeam = 'PLAYER_NEW';
+  eventModule.initializeSeasonNarrative();
+  const migratedPlayerLeft = state.season.events.storyThreads.find(thread => thread.payload?.teammateId === playerLeftMate.id && thread.state !== 'resolved');
+  const migratedPlayerLeftOpening = migratedPlayerLeft && eventModule.getDirectorThreadOpening(migratedPlayerLeft);
+  const staleTeamContextActive = staleTeamThreads.some(thread => thread.state !== 'resolved' || !thread.cancelledByTeamChange);
+  const currentTeamThreads = state.season.events.storyThreads.filter(thread => thread.state !== 'resolved' && ['role', 'team', 'locker_room', 'teammate', 'reunited_teammate'].includes(thread.kind));
+  if (!migratedPlayerLeft || migratedPlayerLeft.kind !== 'former_teammate' || migratedPlayerLeft.payload?.separationCause !== 'player_left' ||
+      !migratedPlayerLeftOpening?.body.includes('你换上新球衣后') || migratedPlayerLeftOpening?.choices?.some(choice => choice.label === '主动替他承担压力')) {
+    failures.push('玩家主动转会后，原队友线程仍使用当前队友或“队友离队”语境');
+  }
+  if (staleTeamContextActive || !currentTeamThreads.length || currentTeamThreads.some(thread => thread.payload?.teamAtBinding !== 'PLAYER_NEW') ||
+      state.season.events.narrativeTeam !== 'PLAYER_NEW' || state.season.events.seasonTheme?.id !== 'new_city') {
+    failures.push('玩家主动转会后，旧球队的角色、方向或更衣室线程没有终止并重建新球队上下文');
+  }
+
+  // 已选择“替队友承担压力”后再转会，该选择不得继续按当前队友关系结算或增加旧队友亲密度。
+  state.careerTeam = 'PLAYER_OLD';
+  state.career.flags = {
+    storyTeammate: { id: playerLeftMate.id, cname: playerLeftMate.cname, team: 'PLAYER_OLD', active: true, affinity: 4, sinceSeason: 5 },
+  };
+  state.season = {
+    games: Array.from({ length: 20 }, () => ({ game: { opponent: 'AWAY' } })), wins: 12, losses: 8,
+    isPlayoffs: false, isUserStarter: true, playerStats: { games: 20, pts: 500, ast: 120, reb: 100 },
+    schedule: [{ opponent: 'PLAYER_OLD', gameNum: 24 }], events: createEventState(0),
+  };
+  state.season.events.narrativeTeam = 'PLAYER_OLD';
+  const staleCommittedMate = {
+    id: 'stale-committed-player-left', kind: 'teammate', title: '旧队友承诺', emoji: '🤝', state: 'committed', choice: 'protect',
+    openingGame: 4, resolutionGame: 20, payload: { teammateId: playerLeftMate.id, teammateName: playerLeftMate.cname, affinity: 4, teamAtBinding: 'PLAYER_OLD' },
+    commitSnapshot: { gameNum: 8, storyGames: 8, storyWins: 5, storyLosses: 3, playerGames: 8, pts: 200, ast: 40, reb: 40 },
+  };
+  state.season.events.storyThreads = [staleCommittedMate];
+  state.season.events.seasonTheme = { id: 'title', variantId: 'title_pressure', title: '原队争冠', season: 8 };
+  const profileBeforePlayerMoveResolution = JSON.stringify(state.career.profile);
+  state.careerTeam = 'PLAYER_NEW';
+  const movedCommitResolution = eventModule.resolveDirectorThread(staleCommittedMate);
+  const formerAfterCommittedMove = state.career.flags.formerStoryTeammates?.find(mate => mate.id === playerLeftMate.id);
+  if (staleCommittedMate.kind !== 'former_teammate' || staleCommittedMate.state !== 'queued' || staleCommittedMate.payload?.previousChoice !== 'protect' ||
+      !movedCommitResolution?.desc?.includes('原球队选择不会影响新球队') || JSON.stringify(state.career.profile) !== profileBeforePlayerMoveResolution ||
+      Number(formerAfterCommittedMove?.affinity) !== 4) {
+    failures.push('玩家转会后，已提交的当前队友选择仍按原球队关系结算');
+  }
+
+  state.careerTeam = 'HOME';
+  state.career.seasons = [];
+
   // 同一季后赛对手拥有多名旧友时，每个人都要记录这次系列赛。
   leagueData.MULTI_OLD = [
     { id: 'multi-former-a', cname: '同队旧友A', ovr: 83 },
@@ -956,6 +1031,11 @@ if (!/generateBoxScore\(teamA, teamB, scoreA, scoreB, options\)/.test(indexSourc
   failures.push('伤停可用性没有贯通常规赛、季后赛与 BoxScore');
 }
 
+const playerTeamChangeSyncCalls = offseasonSource.match(/syncNarrativeAfterPlayerTeamChange\(null, (?:old|oldTeam)\)/g) || [];
+if (playerTeamChangeSyncCalls.length < 3) {
+  failures.push('自由签约、球队交易或主动申请交易没有接入玩家换队叙事迁移');
+}
+
 if (!/const eventTeamEdge = getActiveEventTeamEdge\(teamA, teamB\)/.test(indexSource)) {
   failures.push('事件短期效果没有接入比赛预期分差');
 }
@@ -1000,6 +1080,10 @@ if (failures.length) {
     rosterDrivenReunion: true,
     reunitedRelationshipTransition: true,
     resolvedReunionRosterSync: true,
+    playerTeamContextMigration: true,
+    playerLeftFormerTeammateCopy: true,
+    committedTeammateTransferGuard: true,
+    playerTeamChangeWiring: true,
     relationshipIdentityDeduplication: true,
     activeEffectCareerGameClock: true,
     unavailableGameNarrativeMemory: true,

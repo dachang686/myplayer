@@ -187,6 +187,7 @@ function doTradeUser(destTeam, done) {
     return;
   }
   STATE.careerTeam = destTeam;
+  if (typeof syncNarrativeAfterPlayerTeamChange === 'function') syncNarrativeAfterPlayerTeamChange(null, old);
   m.teamInitiatedTrades = (m.teamInitiatedTrades || 0) + 1;
   m.trades = m.teamInitiatedTrades + (m.playerRequestedTrades || 0);
   m.lastMove = 'trade';
@@ -251,6 +252,7 @@ function completePlayerRequestedTrade(destTeam, request, done) {
   var m = getMobility();
   var displayName = getMyPlayerDisplayName();
   STATE.careerTeam = destTeam;
+  if (typeof syncNarrativeAfterPlayerTeamChange === 'function') syncNarrativeAfterPlayerTeamChange(null, old);
   m.playerRequestedTrades = (m.playerRequestedTrades || 0) + 1;
   m.trades = (m.teamInitiatedTrades || 0) + m.playerRequestedTrades;
   m.lastMove = 'requested_trade';
@@ -732,6 +734,7 @@ function selectContractOption(team, years) {
     syncUserStarterStatus();
     initStandings();
     buildRealSchedule();
+    if (typeof syncNarrativeAfterPlayerTeamChange === 'function') syncNarrativeAfterPlayerTeamChange(null, oldTeam);
   }
   refreshSeasonTeamHeader();
   var continueAfterContract = function() {
