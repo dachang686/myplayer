@@ -909,11 +909,21 @@ if (lineupStart < 0 || lineupEnd < 0 || rotationStart < 0 || rotationEnd < 0) {
   const lineupLeagueData = {
     HOME: Array.from({ length: 9 }, (_, index) => ({ id: `npc-${index}`, cname: `队友${index}`, pos: 'PG', ovr: 70 })),
   };
-  const powerConfig = { TEAM_POWER: { offense: { ovr: 1 }, defense: { ovr: 1 }, athletic: { ovr: 1 }, clutch: { ovr: 1 } } };
   const lineupFns = new Function(
     'STATE', 'LEAGUE_PLAYER_DATA', 'SIM_CONFIG', 'canPlayPosition', 'getMyPlayerDisplayName',
-    `${indexSource.slice(lineupStart, lineupEnd)}\nreturn { calcTeamLineup, calcTeamPowerWithPlayer };`,
-  )(lineupState, lineupLeagueData, powerConfig, () => true, () => '测试用户');
+    `${indexSource.slice(lineupStart, lineupEnd)}
+function getPlayerGameImpact(player) {
+  var overall = Number(player && player.ovr) || 50;
+  return { overall, offense: overall, defense: overall, athletic: overall, clutch: overall };
+}
+function buildExpectedLeagueGameRotation(team, options) {
+  var lineup = calcTeamLineup(team, options);
+  var players = Object.values(lineup.starters).concat(lineup.bench || []).slice(0, 10);
+  var minutes = players.map(function() { return 240 / players.length; });
+  return { players, minutes };
+}
+return { calcTeamLineup, calcTeamPowerWithPlayer };`,
+  )(lineupState, lineupLeagueData, {}, () => true, () => '测试用户');
   const availableLineup = lineupFns.calcTeamLineup('HOME');
   const unavailableLineup = lineupFns.calcTeamLineup('HOME', { userAvailable: false });
   const availablePower = lineupFns.calcTeamPowerWithPlayer('HOME');

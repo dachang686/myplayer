@@ -4746,7 +4746,7 @@ function calcTeamLineup(team, gameOptions) {
   return result;
 }
 
-/** 计算球队首发五人和主要轮换的平均 OVR，轮换取模拟实际使用的前两人 */
+/** 计算球队首发五人和头两名主要轮换的平均 OVR，供阵容摘要展示。 */
 function getTeamLineupOvr(team) {
   const lineup = calcTeamLineup(team);
   const averageOvr = function(players) {
@@ -4774,55 +4774,47 @@ function syncUserStarterStatus() {
   return starter;
 }
 
-/** 按位置计算球队实力（首发5人 + 2重要轮换） */
+/**
+ * 球队比赛实力只聚合统一球员比赛能力，并按赛前预计分钟加权。
+ * 实战由 simulateGameNew 传入已经确定的轮换；阵容页使用无伤停、无随机波动的预计轮换。
+ */
 function calcTeamPowerWithPlayer(team, gameOptions) {
-  const lineup = calcTeamLineup(team, gameOptions);
-  const cfg = SIM_CONFIG.TEAM_POWER;
-  
-  const starters = Object.values(lineup.starters);
-  const bench = lineup.bench.slice(0, 2);  // 只取前2名轮换
-  const roster = starters.concat(bench);
-  
-  if (roster.length === 0) return { offense: 50, defense: 50, athletic: 50, clutch: 50, depth: 50 };
-  
-  // 首发5人总权重85%，按OVR比例分配（球星影响力更大）
-  const totalStarterOVR = starters.reduce((s, p) => s + (parseInt(p.ovr) || 50), 0);
-  const benchWeight = 0.15 / bench.length;
-  
-  const weightedRoster = roster.map((p, i) => ({
-    player: p,
-    weight: i < starters.length
-      ? 0.85 * ((parseInt(p.ovr) || 50) / totalStarterOVR)
-      : benchWeight,
-  }));
-  
-  function calcDim(weights) {
-    let sum = 0, totalW = 0;
-    Object.entries(weights).forEach(([attr, w]) => {
-      const weightedAvg = weightedRoster.reduce((s, { player, weight }) => 
-        s + (parseInt(player[attr]) || 50) * weight, 0);
-      sum += weightedAvg * w;
-      totalW += w;
-    });
-    return totalW > 0 ? sum / totalW : 50;
+  const options = gameOptions || {};
+  const prepared = options.preparedRotation
+    || (options._preparedRotations && options._preparedRotations[team])
+    || buildExpectedLeagueGameRotation(team, options);
+  const roster = prepared && prepared.players || [];
+  const minutes = prepared && prepared.minutes || [];
+
+  if (roster.length === 0) {
+    return { offense: 50, defense: 50, athletic: 50, clutch: 50, overall: 50, depth: 50 };
   }
-  
-  const overall = weightedRoster.reduce((s, { player, weight }) => 
-    s + (parseInt(player.ovr) || 50) * weight, 0);
-  
+
+  const impacts = roster.map(getPlayerGameImpact);
+  const totalMinutes = minutes.reduce((sum, value) => sum + (Number(value) || 0), 0) || 240;
+  function minuteWeighted(field) {
+    return impacts.reduce(function(sum, impact, index) {
+      return sum + (Number(impact[field]) || 50) * ((Number(minutes[index]) || 0) / totalMinutes);
+    }, 0);
+  }
+
+  const overall = minuteWeighted('overall');
   return {
-    offense: calcDim(cfg.offense),
-    defense: calcDim(cfg.defense),
-    athletic: calcDim(cfg.athletic),
-    clutch: calcDim(cfg.clutch),
+    offense: minuteWeighted('offense'),
+    defense: minuteWeighted('defense'),
+    athletic: minuteWeighted('athletic'),
+    clutch: minuteWeighted('clutch'),
+    overall: overall,
+    // 保留 depth 字段供旧存档/UI/验证脚本读取；其含义改为分钟加权阵容总评。
     depth: overall,
+    rotationMinutes: minutes.slice(),
   };
 }
 
 /** 比赛引擎使用的中立场阵容战力；主场、战绩、伤病和疲劳在单场模拟时另行计算。 */
 function getTeamBattlePower(team) {
   const power = calcTeamPowerWithPlayer(team);
-  const rating = power.offense * 0.45 + power.defense * 0.45 + power.depth * 0.10;
+  const rating = Number.isFinite(power.overall) ? power.overall : power.depth;
   return Math.round(rating * 10) / 10;
 }
 
@@ -4841,7 +4833,12 @@ function getActiveEventTeamEdge(teamA, teamB) {
 
 /** 比赛模拟 — 逐节生成真实比分，最终比分直接决定胜负。 */
 function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
-  const options = gameOptions || {};
+  const options = Object.assign({}, gameOptions || {});
+  if (typeof prepareLeagueGameRotation === 'function') {
+    options._preparedRotations = Object.assign({}, options._preparedRotations || {});
+    if (!options._preparedRotations[teamA]) options._preparedRotations[teamA] = prepareLeagueGameRotation(teamA, options);
+    if (!options._preparedRotations[teamB]) options._preparedRotations[teamB] = prepareLeagueGameRotation(teamB, options);
+  }
   const powerA = calcTeamPowerWithPlayer(teamA, options);
   const powerB = calcTeamPowerWithPlayer(teamB, options);
   const config = SIM_CONFIG;
@@ -4869,10 +4866,14 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
     : !!(currentScheduleGame && previousScheduleGame
       && Number(currentScheduleGame.day) - Number(previousScheduleGame.day) === 1);
 
-  // 实力差决定预期分差；季后赛同时计入常规赛表现与首轮种子差，避免种子修正被战绩覆盖。
-  const rosterEdge = (powerA.offense - powerB.offense) * 0.45
-                   + (powerA.defense - powerB.defense) * 0.45
-                   + (powerA.depth - powerB.depth) * 0.10;
+  // 球员总评已经按位置能力与预计分钟聚合；攻防维度只决定比赛风格，不再二次重估阵容强弱。
+  const overallA = Number.isFinite(powerA.overall)
+    ? powerA.overall
+    : powerA.offense * 0.45 + powerA.defense * 0.45 + powerA.depth * 0.10;
+  const overallB = Number.isFinite(powerB.overall)
+    ? powerB.overall
+    : powerB.offense * 0.45 + powerB.defense * 0.45 + powerB.depth * 0.10;
+  const rosterEdge = overallA - overallB;
   const standings = STATE.season?.standings || {};
   const recordA = standings[teamA];
   const recordB = standings[teamB];
@@ -4880,9 +4881,9 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
   const gamesB = (recordB?.wins || 0) + (recordB?.losses || 0);
   const hasPlayoffRecords = !!STATE.season?.isPlayoffs && gamesA > 0 && gamesB > 0;
   const recordFormEdge = hasPlayoffRecords
-    ? clamp((((recordA.wins || 0) / gamesA) - ((recordB.wins || 0) / gamesB)) * 16, -3, 3)
+    ? clamp((((recordA.wins || 0) / gamesA) - ((recordB.wins || 0) / gamesB)) * 7, -1.2, 1.2)
     : 0;
-  const seedFormEdge = clamp(seedBonus || 0, -2.8, 2.8);
+  const seedFormEdge = clamp((seedBonus || 0) * 0.5, -1.4, 1.4);
   const seasonFormEdge = recordFormEdge + seedFormEdge;
   const homeCourtEdge = isHomeA === true ? 2.2 : (isHomeA === false ? -2.2 : 0);
   // 兼容现有带伤接口：把概率乘数转换成预期分差惩罚，不再直接篡改胜率。
@@ -5274,32 +5275,59 @@ function getLeagueDefenseImpact(player) {
   return options[0] * 0.55 + options[1] * 0.30 + options[2] * 0.15;
 }
 
-function getLeaguePlayerImpactRatings(player) {
+/**
+ * 唯一的球员比赛能力出口。
+ * overall 直接继承分位置 OVR；攻防、运动和关键球只描述能力结构，并以 overall 为锚点，
+ * 避免同一名球员在阵容页与比赛引擎中被两套独立权重重新定价。
+ */
+function getPlayerGameImpact(player) {
   function toRating(value) {
     var normalized = leagueStatClamp(Number(value) || 0, 0, 1);
-    return leagueStatClamp(Math.round(25 + 74 * Math.pow(normalized, 1 / 1.275)), 25, 99);
+    return leagueStatClamp(25 + 74 * Math.pow(normalized, 1 / 1.275), 25, 99);
   }
+  var overall = leagueStatClamp(Number(player && player.ovr) || 50, 40, 99);
+  var rawOffense = toRating(getLeagueOffenseProfile(player).impact);
+  var rawDefense = toRating(getLeagueDefenseImpact(player));
+  var athletic = leagueStatClamp(Number(player && player.ATH) || overall, 25, 99);
+  var clutch = leagueStatClamp(Number(player && player.CLU) || overall, 25, 99);
+  var anchorWeight = 0.72;
   return {
-    offense: toRating(getLeagueOffenseProfile(player).impact),
-    defense: toRating(getLeagueDefenseImpact(player)),
+    overall: overall,
+    offense: overall * anchorWeight + rawOffense * (1 - anchorWeight),
+    defense: overall * anchorWeight + rawDefense * (1 - anchorWeight),
+    athletic: overall * 0.78 + athletic * 0.22,
+    clutch: overall * 0.78 + clutch * 0.22,
   };
 }
 
-function allocateLeagueRotationMinutes(players, roleRanks) {
-  var benchBase = [24, 20, 17, 14, 11, 8, 6];
-  var isPlayoffs = !!(STATE.season && STATE.season.isPlayoffs);
+function getLeaguePlayerImpactRatings(player) {
+  var impact = getPlayerGameImpact(player);
+  return {
+    offense: Math.round(impact.offense),
+    defense: Math.round(impact.defense),
+  };
+}
+
+function allocateLeagueRotationMinutes(players, roleRanks, rotationOptions) {
+  var options = rotationOptions || {};
+  var isPlayoffs = typeof options.isPlayoffs === 'boolean'
+    ? options.isPlayoffs
+    : !!(STATE.season && STATE.season.isPlayoffs);
+  var benchBase = isPlayoffs ? [22, 17, 12, 8, 5, 4, 4] : [24.5, 20.5, 16, 12, 9, 6, 4];
+  var noiseDeviation = options.randomize === false ? 0 : 0.7;
   var raw = players.map(function(player, index) {
     var rank = roleRanks[index];
-    var ovr = parseInt(player.ovr) || 70;
+    var ovr = getPlayerGameImpact(player).overall;
     var base;
     if (rank < 5) {
-      var offense = getLeagueOffenseProfile(player);
-      var twoWayImpact = offense.impact * 0.55 + getLeagueDefenseImpact(player) * 0.45;
-      base = 30.5 + (ovr - 75) * 0.16 + twoWayImpact * 2.2 + (isPlayoffs ? 2 : 0);
+      base = isPlayoffs
+        ? 33 + (ovr - 75) * 0.30
+        : 29.5 + (ovr - 75) * 0.24;
     } else {
-      base = (benchBase[rank - 5] || 6) + (ovr - 75) * 0.07 - (isPlayoffs ? 1 : 0);
+      var playoffReduction = rank <= 6 ? 3 : (rank <= 8 ? 2 : 1);
+      base = (benchBase[rank - 5] || 4) + (ovr - 75) * 0.08 - (isPlayoffs ? playoffReduction : 0);
     }
-    return Math.max(5, base + leagueStatNormal(0, 1.6));
+    return Math.max(4, base + (noiseDeviation ? leagueStatNormal(0, noiseDeviation) : 0));
   });
   var rawTotal = raw.reduce(function(sum, value) { return sum + value; }, 0) || 1;
   var minutes = raw.map(function(value) { return Math.max(4, Math.round(value * 240 / rawTotal)); });
@@ -5337,7 +5365,9 @@ function buildLeagueGameRotation(team, gameOptions) {
   }
   var available = [];
   unique.forEach(function(player, roleRank) {
-    if ((player._isUser && options.userAvailable !== false) || (!player._isUser && shouldNpcPlayLeagueGame(team, player, roleRank, careerTeamGameNumber))) available.push(player);
+    if ((player._isUser && options.userAvailable !== false)
+      || (!player._isUser && (options.ignoreNpcAvailability
+        || shouldNpcPlayLeagueGame(team, player, roleRank, careerTeamGameNumber)))) available.push(player);
   });
   var targetSize = 9 + (Math.random() < 0.68 ? 1 : (Math.random() < 0.70 ? 2 : 0));
   var selected = available.slice(0, targetSize);
@@ -5351,14 +5381,50 @@ function buildLeagueGameRotation(team, gameOptions) {
   };
 }
 
+/** 阵容页/排名页使用的稳定预计轮换，不触发伤病、轮休或赛季状态推进。 */
+function buildExpectedLeagueGameRotation(team, gameOptions) {
+  var options = gameOptions || {};
+  var lineup = calcTeamLineup(team, options);
+  var ordered = Object.values(lineup.starters).concat(lineup.bench || []);
+  var players = [];
+  ordered.forEach(function(player) {
+    if (player && players.indexOf(player) < 0 && players.length < 10) players.push(player);
+  });
+  var roleRanks = players.map(function(player) { return ordered.indexOf(player); });
+  return {
+    players: players,
+    roleRanks: roleRanks,
+    minutes: allocateLeagueRotationMinutes(players, roleRanks, {
+      isPlayoffs: typeof options.isPlayoffs === 'boolean'
+        ? options.isPlayoffs
+        : !!(STATE.season && STATE.season.isPlayoffs),
+      randomize: false,
+    }),
+  };
+}
+
+/** 每场只生成一次实际出场名单和分钟，胜负计算与技术统计共用。 */
+function prepareLeagueGameRotation(team, gameOptions) {
+  var options = gameOptions || {};
+  var rotation = buildLeagueGameRotation(team, options);
+  rotation.minutes = allocateLeagueRotationMinutes(rotation.players, rotation.roleRanks, {
+    isPlayoffs: !!(STATE.season && STATE.season.isPlayoffs),
+    randomize: true,
+  });
+  return rotation;
+}
+
 /** 生成两队全队数据：伤病/轮休影响 GP，五项数据受球队总量约束。 */
 function generateBoxScore(teamA, teamB, totalA, totalB, gameOptions) {
   function getLineupStats(team, totalPts) {
-    var rotation = buildLeagueGameRotation(team, gameOptions);
+    var prepared = gameOptions && gameOptions._preparedRotations && gameOptions._preparedRotations[team];
+    var rotation = prepared || buildLeagueGameRotation(team, gameOptions);
     var players = rotation.players;
     var roleRanks = rotation.roleRanks;
     if (!players.length) return [];
-    var minutes = allocateLeagueRotationMinutes(players, roleRanks);
+    var minutes = rotation.minutes
+      ? rotation.minutes.slice()
+      : allocateLeagueRotationMinutes(players, roleRanks);
     var profiles = players.map(function(player) {
       if (!player._isUser) return getNpcSeasonProfile(team, player);
       var userSeasonForm = typeof getSeasonUsageBias === 'function' ? Math.sqrt(getSeasonUsageBias()) : 1;

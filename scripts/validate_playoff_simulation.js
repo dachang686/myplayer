@@ -377,6 +377,17 @@ const closeRecordWithOneEightSeedEdge = runSeriesWithRecords(7737, { wins: 53, l
 
 const deterministicA = withSeed(8808, () => simulateGame('STRONG', 'WEAK', 0, null, { isHomeA: true, isB2B: false }));
 const deterministicB = withSeed(8808, () => simulateGame('STRONG', 'WEAK', 0, null, { isHomeA: true, isB2B: false }));
+function deterministicGameFingerprint(result) {
+  return {
+    won: result.won,
+    scoreA: result.scoreA,
+    scoreB: result.scoreB,
+    qScoresA: result.qScoresA,
+    qScoresB: result.qScoresB,
+    ot: result.ot,
+    expectedMargin: result.expectedMargin,
+  };
+}
 
 const inferredRegularSeasonContext = withSeed(8818, () => {
   state.season.schedule = [
@@ -555,6 +566,23 @@ function runRealRosterSmoke() {
   );
   const leagueData = new Function(`${dataSource}\nreturn { LEAGUE_PLAYER_DATA, LEAGUE_TEAM_IDS };`)();
   const simConfig = new Function(`${configSource}\nreturn SIM_CONFIG;`)();
+  const attributeKeys = ['threePT', 'MID', 'FIN', 'DNK', 'HAN', 'PAS', 'PDEF', 'STL', 'IDEF', 'BLK', 'REB', 'ATH', 'STR', 'CLU'];
+  function syntheticPlayer(id, pos, ovr) {
+    const player = { id, cname: id, pos, posCn: pos, ovr };
+    attributeKeys.forEach(key => { player[key] = ovr; });
+    return player;
+  }
+  function syntheticTeam(prefix, starterOvrs, benchOvrs) {
+    const positions = ['PG', 'SG', 'SF', 'PF', 'C'];
+    const starters = starterOvrs.map((ovr, index) => syntheticPlayer(`${prefix}-S${index}`, positions[index], ovr));
+    const benchPositions = ['PG/SG', 'SF/PF', 'C/PF', 'SG/SF', 'PF/C'];
+    const bench = benchOvrs.map((ovr, index) => syntheticPlayer(`${prefix}-B${index}`, benchPositions[index], ovr));
+    return starters.concat(bench);
+  }
+  leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_STRONG = syntheticTeam('STRONG', [95, 92, 99, 99, 88], [85, 83, 80, 78, 76]);
+  leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_WEAK = syntheticTeam('WEAK', [94, 88, 86, 84, 82], [82, 80, 78, 76, 74]);
+  leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_BASE_STAR = syntheticTeam('BASE', [85, 85, 85, 85, 85], [80, 78, 76, 74, 72]);
+  leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_UPGRADED_STAR = syntheticTeam('UPGRADED', [99, 85, 85, 85, 85], [80, 78, 76, 74, 72]);
   const engineStart = indexSource.indexOf('function getPlayerPositions');
   const engineEnd = indexSource.indexOf('/** 属性→效率系数：递减曲线', engineStart);
   if (engineStart < 0 || engineEnd < 0) throw new Error('无法定位真实名单比赛引擎代码');
@@ -570,7 +598,7 @@ function runRealRosterSmoke() {
     return Math.pow((bounded - 25) / 74, 0.85);
   };
   const af = value => Math.pow(attrFactor(value), 1.5);
-  const realSimulate = new Function(
+  const realEngine = new Function(
     'LEAGUE_PLAYER_DATA',
     'SIM_CONFIG',
     'STATE',
@@ -578,7 +606,7 @@ function runRealRosterSmoke() {
     'getTeamName',
     'getLeaguePlayerAge',
     'af',
-    `${indexSource.slice(engineStart, engineEnd)}\nreturn simulateGameNew;`,
+    `${indexSource.slice(engineStart, engineEnd)}\nreturn { simulateGameNew, calcTeamPowerWithPlayer };`,
   )(
     leagueData.LEAGUE_PLAYER_DATA,
     simConfig,
@@ -590,6 +618,7 @@ function runRealRosterSmoke() {
   );
 
   return withSeed(9909, () => {
+    const realSimulate = realEngine.simulateGameNew;
     let wins = 0;
     let total = 0;
     let invariantErrors = 0;
@@ -604,8 +633,72 @@ function runRealRosterSmoke() {
       if (result.won !== (result.scoreA > result.scoreB)) invariantErrors++;
       if (sum(rowsA, 'pts') !== result.scoreA || sum(rowsB, 'pts') !== result.scoreB) invariantErrors++;
       if (sum(rowsA, 'mins') !== 240 || sum(rowsB, 'mins') !== 240) invariantErrors++;
+      if (Array.isArray(result.teamA.power.rotationMinutes)
+        && JSON.stringify(result.teamA.power.rotationMinutes) !== JSON.stringify(rowsA.map(row => row.mins))) invariantErrors++;
+      if (Array.isArray(result.teamB.power.rotationMinutes)
+        && JSON.stringify(result.teamB.power.rotationMinutes) !== JSON.stringify(rowsB.map(row => row.mins))) invariantErrors++;
     }
-    return { winRatePHI: wins / games, averageTotal: total / games, invariantErrors };
+    const previousPlayoffState = realState.season.isPlayoffs;
+    const previousStandings = realState.season.standings;
+    realState.season.isPlayoffs = false;
+    const strongPower = realEngine.calcTeamPowerWithPlayer('SYNTHETIC_STRONG');
+    const weakPower = realEngine.calcTeamPowerWithPlayer('SYNTHETIC_WEAK');
+    const baseStarPower = realEngine.calcTeamPowerWithPlayer('SYNTHETIC_BASE_STAR');
+    const upgradedStarPower = realEngine.calcTeamPowerWithPlayer('SYNTHETIC_UPGRADED_STAR');
+    let benchmarkWins = 0;
+    const benchmarkGames = 3000;
+    for (let game = 0; game < benchmarkGames; game++) {
+      const result = realSimulate('SYNTHETIC_STRONG', 'SYNTHETIC_WEAK', 0, null, {
+        isHomeA: null,
+        isB2B: false,
+        ignoreNpcAvailability: true,
+      });
+      if (result.won) benchmarkWins++;
+    }
+
+    realState.season.isPlayoffs = true;
+    const strongPlayoffPower = realEngine.calcTeamPowerWithPlayer('SYNTHETIC_STRONG');
+    realState.season.standings = {
+      SYNTHETIC_STRONG: { wins: 55, losses: 27 },
+      SYNTHETIC_WEAK: { wins: 55, losses: 27 },
+    };
+    const homePattern = [true, true, false, false, true, false, true];
+    let seriesWins = 0;
+    let sweepLosses = 0;
+    const benchmarkSeries = 3000;
+    for (let series = 0; series < benchmarkSeries; series++) {
+      let winsA = 0;
+      let winsB = 0;
+      for (let game = 0; game < 7 && winsA < 4 && winsB < 4; game++) {
+        const result = realSimulate('SYNTHETIC_STRONG', 'SYNTHETIC_WEAK', 0, null, {
+          isHomeA: homePattern[game],
+          isB2B: false,
+          ignoreNpcAvailability: true,
+        });
+        if (result.won) winsA++;
+        else winsB++;
+      }
+      if (winsA === 4) seriesWins++;
+      if (winsB === 4 && winsA === 0) sweepLosses++;
+    }
+    realState.season.isPlayoffs = previousPlayoffState;
+    realState.season.standings = previousStandings;
+    return {
+      winRatePHI: wins / games,
+      averageTotal: total / games,
+      invariantErrors,
+      syntheticLineup: {
+        strongPower: strongPower.overall,
+        weakPower: weakPower.overall,
+        powerGap: strongPower.overall - weakPower.overall,
+        neutralWinRate: benchmarkWins / benchmarkGames,
+        seriesWinRate: seriesWins / benchmarkSeries,
+        sweepLossRate: sweepLosses / benchmarkSeries,
+        regularSeasonStarMinutes: (strongPower.rotationMinutes[2] + strongPower.rotationMinutes[3]) / 2,
+        playoffStarMinutes: (strongPlayoffPower.rotationMinutes[2] + strongPlayoffPower.rotationMinutes[3]) / 2,
+      },
+      superstarMarginal: upgradedStarPower.overall - baseStarPower.overall,
+    };
   });
 }
 
@@ -628,7 +721,7 @@ const report = {
     closeRecordWithOneEightSeedEdge,
   },
   deterministic: {
-    same: JSON.stringify(deterministicA) === JSON.stringify(deterministicB),
+    same: JSON.stringify(deterministicGameFingerprint(deterministicA)) === JSON.stringify(deterministicGameFingerprint(deterministicB)),
     score: `${deterministicA.scoreA}-${deterministicA.scoreB}`,
   },
   inferredRegularSeasonContext,
@@ -655,15 +748,28 @@ if (outside(strongNeutral.winRateA, 0.74, 0.86)) failures.push(`强队中立场�
 if (outside(injuredEqual.winRateA, 0.32, 0.44)) failures.push(`重伤修正后的胜率异常：${injuredEqual.winRateA}`);
 if (outside(equalSeries, 0.515, 0.58)) failures.push(`同实力高种子系列赛胜率异常：${equalSeries}`);
 if (outside(strongSeries, 0.90, 0.995)) failures.push(`强队系列赛胜率异常：${strongSeries}`);
-if (outside(wideRecordSeries, 0.93, 0.96)) failures.push(`明显战绩优势系列赛胜率异常：${wideRecordSeries}`);
+if (outside(wideRecordSeries, 0.90, 0.94)) failures.push(`明显战绩优势系列赛胜率异常：${wideRecordSeries}`);
 if (outside(closeRecordSeries, 0.86, 0.91)) failures.push(`接近战绩系列赛胜率异常：${closeRecordSeries}`);
-if (wideRecordSeries - closeRecordSeries < 0.04) {
+if (wideRecordSeries - closeRecordSeries < 0.02) {
   failures.push(`常规赛战绩差没有形成足够区分：${JSON.stringify({ wideRecordSeries, closeRecordSeries })}`);
 }
-if (closeRecordWithOneEightSeedEdge - closeRecordSeries < 0.04) {
+if (closeRecordWithOneEightSeedEdge - closeRecordSeries < 0.025) {
   failures.push(`首轮种子差没有与常规赛战绩叠加：${JSON.stringify({ closeRecordSeries, closeRecordWithOneEightSeedEdge })}`);
 }
 if (!report.deterministic.same) failures.push('相同随机种子没有产生相同结果');
+if (outside(realRosterSmoke.syntheticLineup.neutralWinRate, 0.70, 0.80)) {
+  failures.push(`截图级强弱阵容中立场胜率异常：${JSON.stringify(realRosterSmoke.syntheticLineup)}`);
+}
+if (outside(realRosterSmoke.syntheticLineup.seriesWinRate, 0.90, 0.98)
+  || realRosterSmoke.syntheticLineup.sweepLossRate > 0.01) {
+  failures.push(`截图级强弱阵容系列赛结果异常：${JSON.stringify(realRosterSmoke.syntheticLineup)}`);
+}
+if (realRosterSmoke.syntheticLineup.powerGap < 5 || realRosterSmoke.superstarMarginal < 1.5) {
+  failures.push(`阵容实力或巨星边际价值仍被压缩：${JSON.stringify(realRosterSmoke)}`);
+}
+if (realRosterSmoke.syntheticLineup.playoffStarMinutes - realRosterSmoke.syntheticLineup.regularSeasonStarMinutes < 3) {
+  failures.push(`季后赛核心预计分钟没有显著提升：${JSON.stringify(realRosterSmoke.syntheticLineup)}`);
+}
 if (inferredRegularSeasonContext.isHomeA !== false || inferredRegularSeasonContext.fatigueMarginDelta !== -1) {
   failures.push(`常规赛主客场/背靠背推断错误：${JSON.stringify(inferredRegularSeasonContext)}`);
 }

@@ -104,7 +104,7 @@ function assertInvariant(condition, message) {
 
 function validateLineupFallbackAndStatRecording(source) {
   const lineupStart = source.indexOf('function getPlayerPositions');
-  const lineupEnd = source.indexOf('/** 计算球队首发五人和主要轮换', lineupStart);
+  const lineupEnd = source.indexOf('function getTeamLineupOvr', lineupStart);
   const statStart = source.indexOf('function normalizeLeaguePlayerSeasonStats');
   const statEnd = source.indexOf('/** 模拟到目前为止所有未处理的比赛日', statStart);
   if (lineupStart < 0 || lineupEnd < 0 || statStart < 0 || statEnd < 0) {

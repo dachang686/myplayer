@@ -360,41 +360,6 @@ const SIM_CONFIG = {
     /** 季后赛晋级条件（胜场数） */
     PLAYOFF_WIN_REQUIRED: 4
   },
-  /** 球队实力维度权重 */
-  TEAM_POWER: {
-    offense: {
-      threePT: 0.2,
-      MID: 0.15,
-      FIN: 0.2,
-      PAS: 0.15,
-      HAN: 0.1,
-      DNK: 0.1,
-      ATH: 0.1
-    },
-    defense: {
-      PDEF: 0.2,
-      STL: 0.1,
-      IDEF: 0.2,
-      BLK: 0.15,
-      REB: 0.15,
-      ATH: 0.1,
-      STR: 0.1
-    },
-    athletic: {
-      ATH: 0.3,
-      DNK: 0.2,
-      STR: 0.2,
-      FIN: 0.15,
-      threePT: 0.15
-    },
-    clutch: {
-      CLU: 0.4,
-      threePT: 0.2,
-      MID: 0.2,
-      PAS: 0.2
-    },
-    depth: {} // 板凳平均 OVR，特殊处理
-  },
   /** 单节分数计算基础值 */
   QUARTER_BASE_PTS: 24,
   /** 各维度对得分的影响系数 */
