@@ -26,6 +26,102 @@ if (/indexOf\(['"]R['"]\)/.test(candidateSource)) failures.push('程序生成新
 const rookieProtectionCount = (offseasonRosterText.match(/(?:rookie|rk|player)\._justSigned\s*=\s*true/g) || []).length;
 if (rookieProtectionCount < 2) failures.push('选秀新秀和补位新秀没有完整设置当届保护');
 
+const contractOffersStart = offseasonText.indexOf('function showContractOffers');
+const contractOffersEnd = offseasonText.indexOf('function showContractRetirementChoice', contractOffersStart);
+const contractOffersSource = offseasonText.slice(contractOffersStart, contractOffersEnd);
+const freeAgencyChangeStart = offseasonText.indexOf('function showFreeAgencyTeamChangeModal');
+const freeAgencyChangeEnd = offseasonText.indexOf('function selectContractOption', freeAgencyChangeStart);
+const freeAgencyChangeSource = offseasonText.slice(freeAgencyChangeStart, freeAgencyChangeEnd);
+
+function createModalDocument() {
+  const nodes = [];
+  function createNode(id, markup) {
+    const button = { disabled: false, onclick: null };
+    return {
+      id,
+      markup,
+      removed: false,
+      button,
+      querySelector(selector) {
+        if (selector.indexOf('data-action') >= 0 || selector === '.btn-primary') return button;
+        return null;
+      },
+      remove() { this.removed = true; },
+    };
+  }
+  function appendMarkup(markup) {
+    const match = markup.match(/id=["']([^"']+)["']/);
+    const node = createNode(match ? match[1] : '', markup);
+    nodes.push(node);
+    return node;
+  }
+  return {
+    nodes,
+    getElementById(id) { return nodes.find(node => !node.removed && node.id === id) || null; },
+    createElement() {
+      return {
+        firstElementChild: null,
+        set innerHTML(markup) { this.firstElementChild = appendMarkup(markup); },
+      };
+    },
+    body: {
+      appendChild(node) { return node; },
+      insertAdjacentHTML(position, markup) { return appendMarkup(markup); },
+    },
+  };
+}
+
+if (contractOffersStart < 0 || contractOffersEnd < 0 || freeAgencyChangeStart < 0 || freeAgencyChangeEnd < 0) {
+  failures.push('无法提取自由球员市场弹窗回归测试所需函数');
+} else {
+  const contractDocument = createModalDocument();
+  const contractContext = {
+    STATE: {
+      career: { retired: false, currentAge: 27, flags: { nonRenewed: true } },
+      finalOVR: 84,
+      finalPosition: 'PG',
+      careerTeam: 'A',
+    },
+    document: contractDocument,
+    showMyCard() {},
+    generateContractOffers() { return []; },
+    getTeamName(team) { return team; },
+    getTeamRenewalWillingness() { return false; },
+  };
+  vm.createContext(contractContext);
+  vm.runInContext(contractOffersSource, contractContext, { filename: 'contract-offers-ui.js' });
+  vm.runInContext('showContractOffers(); showContractOffers();', contractContext);
+  const activeContractModals = contractDocument.nodes.filter(node => !node.removed && node.id === 'contract-modal');
+  if (activeContractModals.length !== 1) {
+    failures.push(`自由球员市场重复进入后残留 ${activeContractModals.length} 个合同弹窗`);
+  }
+
+  const changeDocument = createModalDocument();
+  const changeContext = {
+    document: changeDocument,
+    getTeamName(team) { return team; },
+    buildTeamCareerReviewData() {
+      return { seasons: [], totals: { pts: 0, reb: 0, ast: 0, games: 0 }, honors: [] };
+    },
+    getTeamLogo() { return ''; },
+    getSeasonLabel(seasonNum) { return String(seasonNum); },
+    renderHonorBadge(label) { return label; },
+  };
+  vm.createContext(changeContext);
+  vm.runInContext(freeAgencyChangeSource, changeContext, { filename: 'free-agency-change-ui.js' });
+  let continueCount = 0;
+  changeContext.onContinue = () => { continueCount += 1; };
+  vm.runInContext("showFreeAgencyTeamChangeModal('A', 'B', onContinue); showFreeAgencyTeamChangeModal('A', 'B', onContinue);", changeContext);
+  const activeChangeModals = changeDocument.nodes.filter(node => !node.removed && node.id === 'fa-team-change-modal');
+  if (activeChangeModals.length !== 1) failures.push(`换队确认弹窗重入后残留 ${activeChangeModals.length} 个节点`);
+  if (activeChangeModals.length === 1) {
+    activeChangeModals[0].button.onclick();
+    activeChangeModals[0].button.onclick();
+    if (continueCount !== 1) failures.push(`自由球员市场继续回调执行了 ${continueCount} 次`);
+    if (!activeChangeModals[0].removed) failures.push('自由球员市场继续后没有移除当前弹窗');
+  }
+}
+
 const context = {
   console: { log() {} },
   Set,
