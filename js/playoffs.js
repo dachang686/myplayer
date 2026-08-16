@@ -191,6 +191,54 @@ function autoSimNonUserPlayInGames() {
   }
 }
 
+function simulatePlayInMatch(teamA, teamB, gameId) {
+  const myTeam = STATE.careerTeam;
+  const involvesCareerTeam = teamA === myTeam || teamB === myTeam;
+  if (!involvesCareerTeam) {
+    const powerA = calcTeamPowerWithPlayer(teamA);
+    const powerB = calcTeamPowerWithPlayer(teamB);
+    const avgA = (powerA.offense + powerA.defense + powerA.depth) / 3;
+    const avgB = (powerB.offense + powerB.defense + powerB.depth) / 3;
+    const winProb = avgA / (avgA + avgB + 0.01);
+    const adjustedProb = winProb * 0.6 + 0.2 + Math.random() * 0.2;
+    const aWins = Math.random() < adjustedProb;
+    return {
+      aWins,
+      scoreA: Math.round(avgA * (0.8 + Math.random() * 0.4)),
+      scoreB: Math.round(avgB * (0.8 + Math.random() * 0.4)),
+      absenceType: null,
+    };
+  }
+
+  const events = typeof ensureSeasonEventState === 'function' ? ensureSeasonEventState() : (STATE.season.events || {});
+  let absenceType = null;
+  if ((Number(events.suspensionGamesLeft) || 0) > 0) absenceType = 'suspension';
+  else if ((Number(events.injuryGamesLeft) || 0) > 0) absenceType = 'injury';
+  if (absenceType === 'suspension') events.suspensionGamesLeft--;
+  if (absenceType === 'injury') events.injuryGamesLeft--;
+
+  const careerIsA = teamA === myTeam;
+  const availabilityEdge = absenceType ? (careerIsA ? -4 : 4) : 0;
+  const simulated = simulateGameNew(teamA, teamB, 0, null, {
+    isHomeA: true,
+    isB2B: false,
+    availabilityEdge,
+  });
+  const careerWon = careerIsA ? !!simulated.won : !simulated.won;
+  if (typeof afterCareerTeamGame === 'function') {
+    afterCareerTeamGame({
+      game: { opponent: careerIsA ? teamB : teamA, isPlayIn: true, simulated: true },
+      result: { won: careerWon, scoreA: simulated.scoreA, scoreB: simulated.scoreB },
+      stats: null,
+      unavailable: !!absenceType,
+      absenceType,
+      gameKey: 'play-in:' + ((STATE.career && STATE.career.seasonCount) || 0) + ':' + gameId,
+      allowPopup: false,
+    });
+  }
+  return { aWins: !!simulated.won, scoreA: simulated.scoreA, scoreB: simulated.scoreB, absenceType };
+}
+
 function simPlayInGame(gameId) {
   trackEvent({act:"click",blk:"BMC098",pos:"TC11",label:"模拟附加赛"});
   const pi = STATE.season.playInState;
@@ -215,26 +263,18 @@ function simPlayInGame(gameId) {
     label = '败者组决赛';
   }
   
-  // 模拟单场
-  const powerA = calcTeamPowerWithPlayer(teamA);
-  const powerB = calcTeamPowerWithPlayer(teamB);
-  const avgA = (powerA.offense + powerA.defense + powerA.depth) / 3;
-  const avgB = (powerB.offense + powerB.defense + powerB.depth) / 3;
-  
-  // 增加随机性，让附加赛更刺激
-  const rand = Math.random();
-  const winProb = avgA / (avgA + avgB + 0.01);
-  const adjustedProb = winProb * 0.6 + 0.2 + rand * 0.2; // 40-80%范围，增加变数
-  const aWins = Math.random() < adjustedProb;
+  const playInResult = simulatePlayInMatch(teamA, teamB, gameId);
+  const aWins = playInResult.aWins;
   
   const winner = aWins ? teamA : teamB;
   const loser = aWins ? teamB : teamA;
   
   const result = {
     winner, loser,
-    teamAScore: Math.round(avgA * (0.8 + Math.random() * 0.4)),
-    teamBScore: Math.round(avgB * (0.8 + Math.random() * 0.4)),
+    teamAScore: playInResult.scoreA,
+    teamBScore: playInResult.scoreB,
     label,
+    absenceType: playInResult.absenceType || null,
   };
   
   pi[resultKey] = result;
@@ -927,8 +967,15 @@ function simOnePlayoffGame(round, seriesIdx, teamA, teamB, isMySeries, gameNum, 
         renderPlayoffGameBrief(skipEntry, teamA, teamB, true, roundName, gameNum + 1, 7, round, seriesIdx);
       }
       seriesGames.push(skipEntry);
-      if (isMySeries && typeof consumeActiveEventEffectsForCareerGame === 'function') {
-        consumeActiveEventEffectsForCareerGame({ unavailable: true });
+      if (isMySeries && typeof afterCareerTeamGame === 'function') {
+        afterCareerTeamGame({
+          game: { opponent: teamB, isPlayoffs: true, simulated: true },
+          result: { won: skipWon, scoreA: skipResult.scoreA, scoreB: skipResult.scoreB },
+          stats: null,
+          unavailable: true,
+          absenceType: skipReason,
+          allowPopup: false
+        });
       }
       setTimeout(function() {
         simOnePlayoffGame(round, seriesIdx, teamA, teamB, isMySeries, gameNum + 1, skipNewWinsA, skipNewWinsB, seriesGames, userGameStats, roundName, onDone);
@@ -963,8 +1010,13 @@ function simOnePlayoffGame(round, seriesIdx, teamA, teamB, isMySeries, gameNum, 
         injuryReason: skipEv.injuryReason || '伤病',
       };
       seriesGames.push(hurtEntry);
-      if (isMySeries && typeof consumeActiveEventEffectsForCareerGame === 'function') {
-        consumeActiveEventEffectsForCareerGame();
+      if (isMySeries && typeof afterCareerTeamGame === 'function') {
+        afterCareerTeamGame({
+          game: { opponent: teamB, isPlayoffs: true, simulated: true },
+          result: { won: hurtWon, scoreA: hurtResult.scoreA, scoreB: hurtResult.scoreB },
+          stats: hurtStats,
+          allowPopup: false
+        });
       }
       renderPlayoffGameBrief(hurtEntry, teamA, teamB, true, roundName, gameNum + 1, 7, round, seriesIdx);
       maybeWorsenInjuryAfterPlaying(skipEv, severity);

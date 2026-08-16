@@ -1309,7 +1309,7 @@ function updateSeasonBadge(activeId) {
 /** 赛季事件状态统一入口；新增字段均在 ensureSeasonEventState 中兼容旧存档。 */
 function createSeasonEventState(injuryRiskBonus) {
   return {
-    version: 6,
+    version: 7,
     suspensionGamesLeft: 0,
     suspensionReason: '',
     injuryGamesLeft: 0,
@@ -1329,6 +1329,8 @@ function createSeasonEventState(injuryRiskBonus) {
     lastActiveEffectTickKey: null,
     careerTeamGamesPlayed: 0,
     playerUnavailableGames: 0,
+    playerInjuryMissedGames: 0,
+    playerSuspensionMissedGames: 0,
     // 赛季导演层：主题、长线矛盾和比赛信号均随存档持久化。
     seasonTheme: null,
     storyThreads: [],
@@ -1341,6 +1343,9 @@ function createSeasonEventState(injuryRiskBonus) {
 function ensureSeasonEventState() {
   if (!STATE.season) STATE.season = {};
   var current = STATE.season.events || {};
+  var previousVersion = Number(current.version) || 0;
+  var hadInjuryMissedCounter = current.playerInjuryMissedGames != null;
+  var legacyUnavailableGames = Number(current.playerUnavailableGames) || 0;
   var defaults = createSeasonEventState(current.injuryRiskBonus || 0);
   Object.keys(defaults).forEach(function(key) {
     if (current[key] == null) current[key] = defaults[key];
@@ -1359,7 +1364,9 @@ function ensureSeasonEventState() {
   if (!Array.isArray(current.directorEvents)) current.directorEvents = [];
   if (typeof current.narrativeSeasonFinalized !== 'boolean') current.narrativeSeasonFinalized = false;
   if (current.seasonTheme != null && (typeof current.seasonTheme !== 'object' || Array.isArray(current.seasonTheme))) current.seasonTheme = null;
-  current.version = 6;
+  // v6 及更早存档只有总缺席数；迁移时按更保守的伤病缺席处理，避免进行中的健康线被误判成功。
+  if (previousVersion < 7 && !hadInjuryMissedCounter) current.playerInjuryMissedGames = legacyUnavailableGames;
+  current.version = 7;
   STATE.season.events = current;
   return current;
 }
@@ -4101,7 +4108,7 @@ function quickSimAllGames(targetDay) {
           if (oppS2) { if (skipResult.won) oppS2.losses++; else oppS2.wins++; updateStreak(g.opponent, !skipResult.won); }
           updateStreak(STATE.careerTeam, skipResult.won);
           STATE.season.games.push({ result: skipResult, stats: null, game: g, suspended: true });
-          consumeActiveEventEffectsForCareerGame({ unavailable: true });
+          afterCareerTeamGame({ game: g, result: skipResult, stats: null, unavailable: true, absenceType: skipReason, allowPopup: false });
           simDayLeagueGames(g.day);
            gi++;
             renderCalendar();
@@ -4139,7 +4146,7 @@ function quickSimAllGames(targetDay) {
             });
           }
           STATE.season.games.push({ result: hurtResult, stats: hurtStats, game: g, playedThroughInjury: true });
-          consumeActiveEventEffectsForCareerGame();
+          afterCareerTeamGame({ game: g, result: hurtResult, stats: hurtStats, allowPopup: false });
           var worsenText = maybeWorsenInjuryAfterPlaying(ev, severity);
           simDayLeagueGames(g.day);
            gi++;
@@ -11000,8 +11007,12 @@ function getNarrativeFormerTeammates() {
     teammate.team = current.team;
     teammate.active = true;
     teammate.cname = current.player.cname || current.player.name || teammate.cname;
-    // 回到玩家球队后不再生成“旧友对决”；当前关系槽仍由现有队友线独立管理。
-    return current.team !== STATE.careerTeam;
+    if (current.team === STATE.careerTeam) {
+      // 名单变化本身就是重聚证据，不要求上一季恰好遗留一条未结剧情。
+      rememberNarrativeReunitedTeammate(teammate.id, Object.assign({}, teammate, { rosterDriven: true }), current);
+      return false;
+    }
+    return true;
   });
   return STATE.career.flags.formerStoryTeammates;
 }
@@ -11019,6 +11030,13 @@ function rememberNarrativeReunitedTeammate(teammateId, payload, current) {
     record = { id: teammateId, returnedSeason: getNarrativeSeasonNumber(), affinity: Number(payload && payload.affinity) || 0 };
     reunited.push(record);
   }
+  if (payload && payload.rosterDriven && Number(record.returnedSeason) !== getNarrativeSeasonNumber()) {
+    record.returnedSeason = getNarrativeSeasonNumber();
+    record.pendingReunion = true;
+    record.resolvedSeason = 0;
+  } else if (payload && payload.rosterDriven && !record.resolvedSeason) {
+    record.pendingReunion = true;
+  }
   record.team = current && current.team || STATE.careerTeam;
   record.cname = current && (current.player.cname || current.player.name) || payload && payload.teammateName || record.cname || '那位旧队友';
   record.active = true;
@@ -11028,6 +11046,18 @@ function rememberNarrativeReunitedTeammate(teammateId, payload, current) {
 function getNarrativeReunitedTeammate(playerId) {
   var reunited = STATE.career && STATE.career.flags && STATE.career.flags.reunitedStoryTeammates;
   return Array.isArray(reunited) ? reunited.find(function(item) { return item && item.id === playerId; }) || null : null;
+}
+
+function getPendingNarrativeReunion() {
+  var reunited = STATE.career && STATE.career.flags && STATE.career.flags.reunitedStoryTeammates;
+  if (!Array.isArray(reunited)) return null;
+  return reunited.filter(function(item) {
+    if (!item || !item.id || !item.pendingReunion || item.resolvedSeason) return false;
+    var current = findNarrativePlayer(item.id);
+    return !!(current && current.team === STATE.careerTeam);
+  }).sort(function(a, b) {
+    return (Number(b.returnedSeason) || 0) - (Number(a.returnedSeason) || 0);
+  })[0] || null;
 }
 
 function getNarrativeTeammateAffinityStage(teammate) {
@@ -11163,7 +11193,7 @@ function makeSeasonStoryThread(id, kind, title, emoji, openingGame, resolutionGa
 }
 
 function migrateNarrativeCarryOverRelationship(item) {
-  if (!item || (item.kind !== 'teammate' && item.kind !== 'former_teammate')) return item;
+  if (!item || ['teammate', 'former_teammate', 'reunited_teammate'].indexOf(item.kind) < 0) return item;
   var payload = item.payload || (item.payload = {});
   var teammateId = payload.teammateId;
   if (!teammateId) return item;
@@ -11177,7 +11207,8 @@ function migrateNarrativeCarryOverRelationship(item) {
     });
     return null;
   }
-  if (item.kind === 'teammate' && current.team !== STATE.careerTeam) {
+  if ((item.kind === 'teammate' || item.kind === 'reunited_teammate') && current.team !== STATE.careerTeam) {
+    var previousRelationshipKind = item.kind;
     var former = getNarrativeFormerTeammate(teammateId) || rememberFormerNarrativeTeammate({
       id: teammateId,
       cname: payload.teammateName || current.player.cname || current.player.name,
@@ -11191,7 +11222,14 @@ function migrateNarrativeCarryOverRelationship(item) {
     payload.teammateName = former && former.cname || payload.teammateName;
     payload.isFirstReunion = (Number(former && former.reunionCount) || 0) === 0;
     payload.relationshipMigrated = true;
-    item.choice = ({ protect: 'welcome', honest: 'compete', distance: 'move_on' })[item.choice] || item.choice;
+    var migratedChoice = ({ protect: 'welcome', honest: 'compete', distance: 'move_on' })[item.choice] || item.choice;
+    if (previousRelationshipKind === 'reunited_teammate') {
+      payload.previousChoice = migratedChoice || 'wait';
+      item.choice = null;
+      item.reopenAfterRelationshipMigration = true;
+    } else {
+      item.choice = migratedChoice;
+    }
   } else if (item.kind === 'former_teammate' && current.team === STATE.careerTeam) {
     var reunited = rememberNarrativeReunitedTeammate(teammateId, payload, current);
     item.kind = 'reunited_teammate';
@@ -11275,6 +11313,13 @@ function buildSeasonStoryThreads(theme) {
       { teammateId: teammate.id, teammateName: teammate.cname, affinityStage: affinityStage.id, affinity: affinityStage.affinity }
     ));
   }
+  var pendingReunion = getPendingNarrativeReunion();
+  if (pendingReunion) {
+    threads.push(makeSeasonStoryThread(
+      'reunited_teammate_' + pendingReunion.id + '_s' + getNarrativeSeasonNumber(), 'reunited_teammate', '又穿上同一件球衣：' + pendingReunion.cname, '🤝', 6, 24,
+      { teammateId: pendingReunion.id, teammateName: pendingReunion.cname, affinity: Number(pendingReunion.affinity) || 0, returnedSeason: pendingReunion.returnedSeason, rosterDriven: true }
+    ));
+  }
   var former = selectNarrativeFormerTeammate();
   if (former) {
     var reunionGame = getNarrativeMatchupGame(former.team, 8);
@@ -11307,6 +11352,7 @@ function selectSeasonNarrativeThreads(carryOvers, generated) {
   var priority = function(thread) {
     if (thread && thread.kind === 'rivalry_reckoning') return 0;
     if (thread && thread.carryOver) return 1;
+    if (thread && thread.kind === 'reunited_teammate') return 1;
     if (thread && thread.kind === 'team') return 2;
     if (thread && (thread.kind === 'role' || thread.kind === 'teammate')) return 3;
     return 4;
@@ -11600,6 +11646,8 @@ function captureNarrativeThreadSnapshot() {
     standoutStreak: Number(events.storySignals && events.storySignals.standoutStreak) || 0,
     careerTeamGames: Number(events.careerTeamGamesPlayed) || 0,
     unavailableGames: Number(events.playerUnavailableGames) || 0,
+    injuryMissedGames: Number(events.playerInjuryMissedGames) || 0,
+    suspensionMissedGames: Number(events.playerSuspensionMissedGames) || 0,
     injuryRiskBonus: Number(events.injuryRiskBonus) || 0,
     injuryGamesLeft: Number(events.injuryGamesLeft) || 0,
     majorInjuryThisSeason: !!events.majorInjuryThisSeason
@@ -11631,6 +11679,8 @@ function getNarrativeThreadOutcome(thread) {
   var postAst = playerGames > 0 ? Math.max(0, now.ast - (Number(before.ast) || 0)) / playerGames : 0;
   var postTeamGames = before ? Math.max(0, now.careerTeamGames - (Number(before.careerTeamGames) || 0)) : 0;
   var unavailableGames = before ? Math.max(0, now.unavailableGames - (Number(before.unavailableGames) || 0)) : 0;
+  var injuryMissedGames = before ? Math.max(0, now.injuryMissedGames - (Number(before.injuryMissedGames) || 0)) : 0;
+  var suspensionMissedGames = before ? Math.max(0, now.suspensionMissedGames - (Number(before.suspensionMissedGames) || 0)) : 0;
   var teamWins = before ? Math.max(0, now.wins - (Number(before.wins) || 0)) : 0;
   var teamLosses = before ? Math.max(0, now.losses - (Number(before.losses) || 0)) : 0;
   var postTeamWinPct = teamWins + teamLosses > 0 ? teamWins / (teamWins + teamLosses) : postWinPct;
@@ -11644,11 +11694,11 @@ function getNarrativeThreadOutcome(thread) {
   else if (thread && thread.kind === 'teammate') success = postGames >= 3 && postWinPct >= 0.45 && (Number(teammate && teammate.affinity) || 0) >= 2;
   else if (thread && (thread.kind === 'rivalry' || thread.kind === 'rivalry_reckoning')) success = postGames >= 1 && postWinPct >= 0.5;
   else if (thread && thread.kind === 'team' && thread.payload && thread.payload.effectProfile === 'health') {
-    if (thread.choice === 'foundation') success = postTeamGames >= 3 && unavailableGames === 0 && now.injuryGamesLeft === 0 && !newMajorInjury;
-    else if (thread.choice === 'all_in') success = postTeamGames >= 3 && unavailableGames <= 1 && now.injuryGamesLeft === 0 && !newMajorInjury && postTeamWinPct >= 0.55;
-    else success = postTeamGames >= 3 && unavailableGames <= 1 && now.injuryGamesLeft === 0 && !newMajorInjury && postTeamWinPct >= 0.45;
+    if (thread.choice === 'foundation') success = postTeamGames >= 3 && injuryMissedGames === 0 && now.injuryGamesLeft === 0 && !newMajorInjury;
+    else if (thread.choice === 'all_in') success = postTeamGames >= 3 && injuryMissedGames <= 1 && now.injuryGamesLeft === 0 && !newMajorInjury && postTeamWinPct >= 0.55;
+    else success = postTeamGames >= 3 && injuryMissedGames <= 1 && now.injuryGamesLeft === 0 && !newMajorInjury && postTeamWinPct >= 0.45;
   }
-  return { success: success, postGames: postGames, postTeamGames: postTeamGames, unavailableGames: unavailableGames, newMajorInjury: newMajorInjury, injuryRiskDelta: injuryRiskDelta, postWinPct: postWinPct, postTeamWinPct: postTeamWinPct, postPts: postPts, postAst: postAst, lossStreak: now.lossStreak };
+  return { success: success, postGames: postGames, postTeamGames: postTeamGames, unavailableGames: unavailableGames, injuryMissedGames: injuryMissedGames, suspensionMissedGames: suspensionMissedGames, newMajorInjury: newMajorInjury, injuryRiskDelta: injuryRiskDelta, postWinPct: postWinPct, postTeamWinPct: postTeamWinPct, postPts: postPts, postAst: postAst, lossStreak: now.lossStreak };
 }
 
 function applySeasonThemeVariantCommit(thread) {
@@ -11803,6 +11853,7 @@ function resolveDirectorThread(thread) {
     if (reunited) {
       reunited.lastChoice = thread.choice;
       reunited.resolvedSeason = getNarrativeSeasonNumber();
+      reunited.pendingReunion = false;
       reunited.affinity = (Number(reunited.affinity) || 0) + (thread.choice === 'welcome' ? 2 : thread.choice === 'compete' ? 1 : 0);
     }
     if (thread.choice === 'welcome') {
@@ -11902,7 +11953,7 @@ function recordDirectorNarrativeEvent(thread, phase, data) {
 
 function checkSeasonNarrativeDirector(ctx) {
   var events = initializeSeasonNarrative();
-  updateSeasonNarrativeSignals(ctx);
+  if (!ctx || !ctx._narrativeSignalsUpdated) updateSeasonNarrativeSignals(ctx);
   prepareCarriedOverThreadBaselines();
   var gameNum = getEventGameNumber();
   var threads = events.storyThreads || [];
@@ -11973,14 +12024,14 @@ function recordNarrativePlayoffSeries(series) {
       }
     }
   }
-  var formerTeammate = getNarrativeFormerTeammates().find(function(teammate) {
+  var formerTeammates = getNarrativeFormerTeammates().filter(function(teammate) {
     return teammate && teammate.active && teammate.team === opponent;
   });
-  if (formerTeammate) {
+  formerTeammates.forEach(function(formerTeammate) {
     formerTeammate.playoffMeetings = (Number(formerTeammate.playoffMeetings) || 0) + 1;
     formerTeammate.lastPlayoffSeason = getNarrativeSeasonNumber();
     formerTeammate.lastPlayoffResult = userWon ? 'won' : 'lost';
-  }
+  });
 }
 
 function finalizeSeasonNarrativeAtSeasonEnd() {
@@ -12190,13 +12241,40 @@ function consumeActiveEventEffectsForCareerGame(options) {
   var fallbackGame = STATE.season && STATE.season.isPlayoffs
     ? ((STATE.season.playoffStats && STATE.season.playoffStats.games) || 0)
     : ((STATE.season.games || []).length);
-  var tickKey = availabilityGame > 0 ? 'career-team:' + availabilityGame : phase + ':' + fallbackGame;
+  var tickKey = options && options.gameKey ? String(options.gameKey) : (availabilityGame > 0 ? 'career-team:' + availabilityGame : phase + ':' + fallbackGame);
   if (events.lastActiveEffectTickKey === tickKey) return false;
   tickActiveEventEffects();
   events.lastActiveEffectTickKey = tickKey;
   events.careerTeamGamesPlayed = (Number(events.careerTeamGamesPlayed) || 0) + 1;
-  if (options && options.unavailable) events.playerUnavailableGames = (Number(events.playerUnavailableGames) || 0) + 1;
+  if (options && options.unavailable) {
+    events.playerUnavailableGames = (Number(events.playerUnavailableGames) || 0) + 1;
+    if (options.absenceType === 'injury') events.playerInjuryMissedGames = (Number(events.playerInjuryMissedGames) || 0) + 1;
+    if (options.absenceType === 'suspension') events.playerSuspensionMissedGames = (Number(events.playerSuspensionMissedGames) || 0) + 1;
+  }
   return true;
+}
+
+/** 统一记录每场生涯球队比赛；记忆与计时始终执行，是否弹窗由调用路径决定。 */
+function afterCareerTeamGame(options) {
+  options = options || {};
+  var ctx = {
+    game: options.game || {},
+    result: options.result || {},
+    stats: options.stats || {}
+  };
+  var isNewGame = consumeActiveEventEffectsForCareerGame({
+    unavailable: !!options.unavailable,
+    absenceType: options.absenceType || '',
+    gameKey: options.gameKey
+  });
+  ctx._narrativeSignalsUpdated = true;
+  if (!isNewGame) return { isNewGame: false, ctx: ctx };
+  initializeSeasonNarrative();
+  updateSeasonNarrativeSignals(ctx);
+  updateEventOpponentHistory(ctx);
+  queueGameDrivenPressureThread();
+  if (!options.unavailable) queueGameDrivenRivalryThread(ctx);
+  return { isNewGame: true, ctx: ctx };
 }
 
 function addActiveEventEffect(id, label, teamEdge, games) {
@@ -12306,10 +12384,9 @@ function pickWeightedEvent(candidates) {
 
 function checkRandomEvents(game, result, stats) {
   var ev = ensureSeasonEventState();
-  consumeActiveEventEffectsForCareerGame();
-  _lastGameCtx = { game: game, result: result, stats: stats || {} };
+  var afterGame = afterCareerTeamGame({ game: game, result: result, stats: stats || {}, allowPopup: true });
+  _lastGameCtx = afterGame.ctx;
   var ctx = _lastGameCtx;
-  updateEventOpponentHistory(ctx);
   var directedEvent = checkSeasonNarrativeDirector(ctx);
   if (directedEvent) return directedEvent;
   var gameNum = getEventGameNumber();
