@@ -4833,6 +4833,67 @@ function getActiveEventTeamEdge(teamA, teamB) {
 
 /** 比赛模拟 — 逐节生成真实比分，最终比分直接决定胜负。 */
 function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
+  const requestedOptions = gameOptions || {};
+  // seeded 调试/回放必须覆盖完整比赛链路，包括轮换、伤病、状态、比分和 Box Score。
+  // 默认在结束后恢复可变赛季状态；正式结算可显式传 commitSimulationState: true。
+  if (requestedOptions.randomSeed != null && !requestedOptions._seededExecution) {
+    const originalRandom = Math.random;
+    let seededState = 2166136261;
+    String(requestedOptions.randomSeed).split('').forEach(function(char) {
+      seededState ^= char.charCodeAt(0);
+      seededState = Math.imul(seededState, 16777619) >>> 0;
+    });
+    if (!seededState) seededState = 1;
+
+    const season = STATE.season || null;
+    function clonePlain(value) {
+      return value == null ? value : JSON.parse(JSON.stringify(value));
+    }
+    function captureProperty(target, key, shallow) {
+      if (!target) return null;
+      const exists = Object.prototype.hasOwnProperty.call(target, key);
+      const value = target[key];
+      return {
+        target: target,
+        key: key,
+        exists: exists,
+        value: shallow && value && typeof value === 'object'
+          ? Object.assign({}, value)
+          : clonePlain(value),
+      };
+    }
+    function restoreProperty(snapshot) {
+      if (!snapshot) return;
+      if (snapshot.exists) snapshot.target[snapshot.key] = snapshot.value;
+      else delete snapshot.target[snapshot.key];
+    }
+
+    const stateSnapshots = [
+      captureProperty(STATE, '_lineupCache', true),
+      captureProperty(season, '_npcSeasonProfiles', false),
+      captureProperty(season, '_careerTeamAvailabilityGame', false),
+      captureProperty(season, '_historicCelebrationSequence', false),
+      captureProperty(season, 'events', false),
+    ];
+    const seededOptions = Object.assign({}, requestedOptions, {
+      _seededExecution: true,
+      _suppressSimulationSideEffects: requestedOptions.commitSimulationState !== true,
+    });
+
+    Math.random = function() {
+      seededState = (Math.imul(seededState, 1664525) + 1013904223) >>> 0;
+      return seededState / 0x100000000;
+    };
+    try {
+      return simulateGameNew(teamA, teamB, seedBonus, probMultiplier, seededOptions);
+    } finally {
+      Math.random = originalRandom;
+      if (requestedOptions.commitSimulationState !== true) {
+        stateSnapshots.slice().reverse().forEach(restoreProperty);
+      }
+    }
+  }
+
   const options = Object.assign({}, gameOptions || {});
   if (typeof prepareLeagueGameRotation === 'function') {
     options._preparedRotations = Object.assign({}, options._preparedRotations || {});
@@ -4981,7 +5042,8 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
     ? (STATE.season._historicCelebrationSequence = (STATE.season._historicCelebrationSequence || 0) + 1)
     : Date.now();
   var celebrationGameId = 'sim:' + ((STATE.career && STATE.career.seasonCount) || 0) + ':' + celebrationSequence;
-  if (typeof document !== 'undefined' && typeof queueHistoricStatCelebrations === 'function') {
+  if (!options._suppressSimulationSideEffects
+    && typeof document !== 'undefined' && typeof queueHistoricStatCelebrations === 'function') {
     queueHistoricStatCelebrations(boxScore, celebrationGameId, { includeUser: false });
   }
 

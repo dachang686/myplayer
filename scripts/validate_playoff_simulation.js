@@ -606,6 +606,7 @@ function runRealRosterSmoke() {
     'getTeamName',
     'getLeaguePlayerAge',
     'af',
+    'ensureSeasonEventState',
     `${indexSource.slice(engineStart, engineEnd)}\nreturn { simulateGameNew, calcTeamPowerWithPlayer };`,
   )(
     leagueData.LEAGUE_PLAYER_DATA,
@@ -615,10 +616,52 @@ function runRealRosterSmoke() {
     team => (simConfig.TEAM_NAMES && simConfig.TEAM_NAMES[team]) || team,
     player => Number(player && player._age) || 27,
     af,
+    () => realState.season.events || (realState.season.events = { activeEffects: [] }),
   );
 
   return withSeed(9909, () => {
     const realSimulate = realEngine.simulateGameNew;
+    const previousCareerTeam = realState.careerTeam;
+    realState.careerTeam = 'SYNTHETIC_STRONG';
+    const stateBeforeSeededReplay = JSON.stringify(realState);
+    const seededOptions = {
+      randomSeed: 'complete-engine-replay',
+      commitSimulationState: false,
+      isHomeA: true,
+      isB2B: false,
+    };
+    const seededReplayA = realSimulate('SYNTHETIC_STRONG', 'SYNTHETIC_WEAK', 0, null, seededOptions);
+    const stateAfterSeededReplayA = JSON.stringify(realState);
+    const seededReplayB = realSimulate('SYNTHETIC_STRONG', 'SYNTHETIC_WEAK', 0, null, seededOptions);
+    const stateAfterSeededReplayB = JSON.stringify(realState);
+    realSimulate('SYNTHETIC_STRONG', 'SYNTHETIC_WEAK', 0, null, {
+      ...seededOptions,
+      commitSimulationState: true,
+    });
+    const committedStateAdvanced = JSON.stringify(realState) !== stateBeforeSeededReplay;
+    const restoredSeededState = JSON.parse(stateBeforeSeededReplay);
+    Object.keys(realState).forEach(key => { delete realState[key]; });
+    Object.assign(realState, restoredSeededState);
+    function realGameFingerprint(result) {
+      return {
+        scoreA: result.scoreA,
+        scoreB: result.scoreB,
+        qScoresA: result.qScoresA,
+        qScoresB: result.qScoresB,
+        expectedMargin: result.expectedMargin,
+        teamARotation: result.teamA.power.rotationMinutes,
+        teamBRotation: result.teamB.power.rotationMinutes,
+        boxScore: result.boxScore,
+      };
+    }
+    const realSeededDeterminism = {
+      same: JSON.stringify(realGameFingerprint(seededReplayA)) === JSON.stringify(realGameFingerprint(seededReplayB)),
+      statePreserved: stateBeforeSeededReplay === stateAfterSeededReplayA
+        && stateBeforeSeededReplay === stateAfterSeededReplayB,
+      committedStateAdvanced,
+      score: `${seededReplayA.scoreA}-${seededReplayA.scoreB}`,
+    };
+    realState.careerTeam = previousCareerTeam;
     let wins = 0;
     let total = 0;
     let invariantErrors = 0;
@@ -687,6 +730,7 @@ function runRealRosterSmoke() {
       winRatePHI: wins / games,
       averageTotal: total / games,
       invariantErrors,
+      realSeededDeterminism,
       syntheticLineup: {
         strongPower: strongPower.overall,
         weakPower: weakPower.overall,
@@ -757,6 +801,10 @@ if (closeRecordWithOneEightSeedEdge - closeRecordSeries < 0.025) {
   failures.push(`首轮种子差没有与常规赛战绩叠加：${JSON.stringify({ closeRecordSeries, closeRecordWithOneEightSeedEdge })}`);
 }
 if (!report.deterministic.same) failures.push('相同随机种子没有产生相同结果');
+if (!realRosterSmoke.realSeededDeterminism.same || !realRosterSmoke.realSeededDeterminism.statePreserved
+  || !realRosterSmoke.realSeededDeterminism.committedStateAdvanced) {
+  failures.push(`真实完整比赛链路无法按 seed 无副作用复现：${JSON.stringify(realRosterSmoke.realSeededDeterminism)}`);
+}
 if (outside(realRosterSmoke.syntheticLineup.neutralWinRate, 0.70, 0.80)) {
   failures.push(`截图级强弱阵容中立场胜率异常：${JSON.stringify(realRosterSmoke.syntheticLineup)}`);
 }
