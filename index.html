@@ -1469,7 +1469,7 @@ function setSeasonProgressGlobalAction() {
   }
 
   if (STATE._calendarAutoSimulating) {
-    setGlobalNextStatus('⏳ 赛季模拟中');
+    setGlobalNextAction('⏸ 暂停模拟', pauseSeasonSimulation);
     return;
   }
 
@@ -4041,12 +4041,28 @@ function startSeasonSimulation(targetDay) {
   if (!hasPendingGames) return;
   trackEvent({act:'click',blk:'BMC098',pos:'TC7',label:hasTargetDay ? '模拟到比赛日' : '开始模拟'});
   STATE.season._simulationStarted = true;
+  STATE.season._simulationPaused = false;
+  STATE._seasonSimulationRunId = (Number(STATE._seasonSimulationRunId) || 0) + 1;
   STATE._calendarAutoSimulating = true;
   renderSeasonSimulationControl();
   renderCalendar();
   renderSeasonInsights();
+  setSeasonProgressGlobalAction();
   queueSeasonAutoSave();
   quickSimAllGames(hasTargetDay ? targetDay : null);
+}
+
+function pauseSeasonSimulation() {
+  if (!STATE.season || !STATE._calendarAutoSimulating) return;
+  // 使已排队的回调失效，恢复模拟时不会和旧队列并发推进赛程。
+  STATE._seasonSimulationRunId = (Number(STATE._seasonSimulationRunId) || 0) + 1;
+  STATE._calendarAutoSimulating = false;
+  STATE.season._simulationPaused = true;
+  renderCalendar();
+  renderSeasonInsights();
+  renderSeasonSimulationControl();
+  setSeasonProgressGlobalAction();
+  queueSeasonAutoSave();
 }
 
 function simToDay(targetDay) {
@@ -4062,7 +4078,12 @@ function quickSimAllGames(targetDay) {
   if (games.length === 0) { STATE._calendarAutoSimulating = false; renderCalendar(); renderSeasonInsights(); renderSeasonSimulationControl(); return; }
 
   var gi = 0;
+  var runId = Number(STATE._seasonSimulationRunId) || 0;
+  function isCurrentSimulationRun() {
+    return STATE._calendarAutoSimulating && Number(STATE._seasonSimulationRunId) === runId;
+  }
   function simNextWithDelay() {
+    if (!isCurrentSimulationRun()) return;
     if (gi >= games.length) {
       var seasonIsComplete = !schedule.some(function(game) { return !game.simulated; });
       if (seasonIsComplete) processAllRemainingDays();
@@ -4070,6 +4091,7 @@ function quickSimAllGames(targetDay) {
       if (seasonIsComplete) calcSeasonAwards();
 
       STATE._calendarAutoSimulating = false;
+      STATE.season._simulationPaused = false;
       if (!seasonIsComplete && hasTargetDay) {
         var targetMonthIdx = SEASON_MONTHS.findIndex(function(month) {
           return targetDay >= month.start && targetDay <= month.end;
@@ -4096,6 +4118,7 @@ function quickSimAllGames(targetDay) {
       else if (ev && ev.injuryGamesLeft > 0) skipReason = 'injury';
       if (skipReason) {
         var runSkippedRegularGame = function() {
+          if (!isCurrentSimulationRun()) return;
           if (skipReason === 'suspension') ev.suspensionGamesLeft--;
           else ev.injuryGamesLeft--;
           var skipResult = simulateGameNew(STATE.careerTeam, g.opponent, 0, null, { userAvailable: false });
@@ -4118,6 +4141,7 @@ function quickSimAllGames(targetDay) {
             setTimeout(simNextWithDelay, 120);
         };
         var runPlayedThroughRegularGame = function(severity) {
+          if (!isCurrentSimulationRun()) return;
           ev.injuryGamesLeft = Math.max(0, (ev.injuryGamesLeft || 0) - 1);
           var hurtResult = simulateGameNew(STATE.careerTeam, g.opponent, 0, getInjuryPlayWinMultiplier(severity));
           recordLeagueBoxScore(hurtResult.boxScore, 'career:' + (g.gameNum || g.day || gi) + ':' + g.opponent);
@@ -6421,7 +6445,9 @@ function renderCalendar() {
   // 底部 — 只保留进度文字
   const calendarHint = STATE._calendarAutoSimulating
     ? '⏳ 模拟中，日历会随比赛进度自动更新'
-    : (simulationStarted ? '💡 点击任意未比赛程，可继续模拟至该场比赛' : '💡 点击比赛日可模拟到当天，或点击下方“开始模拟”模拟完整赛季');
+    : (STATE.season._simulationPaused
+      ? '⏸ 模拟已暂停，可点击“继续模拟”或任意未比赛程继续'
+      : (simulationStarted ? '💡 点击任意未比赛程，可继续模拟至该场比赛' : '💡 点击比赛日可模拟到当天，或点击下方“开始模拟”模拟完整赛季'));
   const teamWins = STATE.season.wins || 0;
   const teamLosses = STATE.season.losses || 0;
   htmlStr += `<div class="cal-footer">
@@ -9355,6 +9381,7 @@ function buildManualSaveSnapshot() {
   var rawState = JSON.parse(JSON.stringify(STATE));
   // 自动模拟定时器无法跨刷新恢复；存档按“已暂停、可继续”状态保存。
   rawState._calendarAutoSimulating = false;
+  if (rawState.season && STATE._calendarAutoSimulating) rawState.season._simulationPaused = true;
   // 排行榜只依赖赛季累计值，不再把全联盟逐场明细写入存档。
   if (rawState.season) rawState.season.leaguePlayerGameStats = [];
   if (STATE.season && STATE.season._processedDays instanceof Set) {
