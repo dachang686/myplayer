@@ -507,7 +507,7 @@ try {
   const hotRolls = [0.001, 0.5];
   Math.random = () => hotCalls < hotRolls.length ? hotRolls[hotCalls++] : 0.5;
   const hotBurst = simulation.getLeagueScoringBurst(1, 1);
-  if (eightyBurst.tier !== 'eightyPlus' || eightyBurst.hardCap < 80 || eightyBurst.shareCap < 0.8) {
+  if (eightyBurst.tier !== 'eightyPlus' || eightyBurst.hardCap !== 100 || eightyBurst.shareCap < 0.8) {
     console.error(`80+ 历史级爆发通道无效：${JSON.stringify(eightyBurst)}`);
     process.exitCode = 1;
   }
@@ -519,8 +519,8 @@ try {
     console.error(`60+ 历史级爆发通道无效：${JSON.stringify(sixtyBurst)}`);
     process.exitCode = 1;
   }
-  if (hotBurst.tier !== 'hot' || hotBurst.hardCap >= 60) {
-    console.error(`普通火热状态不应产生 60+：${JSON.stringify(hotBurst)}`);
+  if (hotBurst.tier !== 'hot' || hotBurst.hardCap !== 100 || hotBurst.shareCap >= 0.55) {
+    console.error(`普通火热状态不应以 59 分封顶，且高分球权上限应受控：${JSON.stringify(hotBurst)}`);
     process.exitCode = 1;
   }
 
