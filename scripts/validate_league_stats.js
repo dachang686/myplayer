@@ -131,6 +131,19 @@ function validateLineupFallbackAndStatRecording(source) {
   assertInvariant(new Set(starterIds).size === 5, '补位首发重复使用了同一名球员');
   assertInvariant(fallbackLineup.starters.SF && fallbackLineup.starters.SF.id === 'pf2', '缺位没有由剩余最高总评球员补上');
 
+  const duplicateIdData = {
+    TEST: lineupData.TEST.concat([{ id: 'pg', cname: '控卫重复项', pos: 'PG', ovr: 99 }]),
+  };
+  const calcDuplicateLineup = new Function(
+    'STATE', 'LEAGUE_PLAYER_DATA', 'getMyPlayerDisplayName',
+    `${source.slice(lineupStart, lineupEnd)}\nreturn calcTeamLineup;`,
+  )(lineupState, duplicateIdData, () => '验证球员');
+  const duplicateIdLineup = calcDuplicateLineup('TEST');
+  assertInvariant(
+    duplicateIdLineup.allPlayers.filter(player => player.id === 'pg').length === 1,
+    '重复写入同一球员 ID 时，阵容没有去重',
+  );
+
   const statState = {
     career: { seasonCount: 1 },
     season: { leaguePlayerSeasonStats: {}, _recordedLeagueGameIds: {} },
@@ -160,6 +173,36 @@ function validateLineupFallbackAndStatRecording(source) {
     assertInvariant(row.gp === 82, `首发 ${playerId} 的常规赛出场数没有限制在 82 场`);
   });
 
+  const sameNameState = {
+    career: { seasonCount: 1 },
+    season: { leaguePlayerSeasonStats: {}, _recordedLeagueGameIds: {} },
+  };
+  const sameNameData = {
+    TEST: [
+      { id: 'haggerty-starter', cname: '哈格蒂', pos: 'SG', ovr: 88 },
+      { id: 'haggerty-bench', cname: '哈格蒂', pos: 'SG', ovr: 89 },
+    ],
+  };
+  const sameNameRecorder = new Function(
+    'STATE', 'LEAGUE_PLAYER_DATA',
+    `${source.slice(statStart, statEnd)}\nreturn { recordLeagueBoxScore };`,
+  )(sameNameState, sameNameData);
+  sameNameRecorder.recordLeagueBoxScore({
+    TEST: [{ playerId: 'haggerty-bench', name: '哈格蒂', mins: 28, pts: 21 }],
+  }, 'same-name:1');
+  assertInvariant(
+    !sameNameState.season.leaguePlayerSeasonStats['TEST:haggerty-starter']
+      && sameNameState.season.leaguePlayerSeasonStats['TEST:haggerty-bench']?.pts === 21,
+    '同名球员的统计没有按 playerId 归属',
+  );
+  sameNameRecorder.recordLeagueBoxScore({
+    TEST: [{ playerId: 'stale-player-id', name: '哈格蒂', mins: 28, pts: 21 }],
+  }, 'same-name:2');
+  assertInvariant(
+    sameNameState.season.leaguePlayerSeasonStats['TEST:haggerty-bench'].gp === 1,
+    '失效 playerId 的同名旧数据被错误归属',
+  );
+
   const corrupted = statState.season.leaguePlayerSeasonStats['TEST:pg'];
   corrupted.gp = 101;
   corrupted.pts = 2020;
@@ -169,6 +212,42 @@ function validateLineupFallbackAndStatRecording(source) {
 }
 
 validateLineupFallbackAndStatRecording(indexSource);
+
+function validateGeneratedRookieIdentityMigration(source) {
+  const migrationStart = source.indexOf('function reconcileGeneratedRookieIdentities');
+  const migrationEnd = source.indexOf('function rngReset', migrationStart);
+  if (migrationStart < 0 || migrationEnd < 0) {
+    throw new Error('无法定位新秀候选人存档迁移逻辑');
+  }
+  const state = {
+    season: {
+      leaguePlayerSeasonStats: {
+        'TEST:r-2': { playerId: 'r-2', playerName: '哈格蒂', gp: 1, pts: 12 },
+      },
+    },
+  };
+  const data = {
+    TEST: [
+      { id: 'r-1', cname: '哈格蒂', _prospectId: 'D084' },
+      { id: 'r-2', cname: '哈格蒂', _prospectId: 'D084' },
+    ],
+  };
+  const migration = new Function(
+    'STATE', 'LEAGUE_PLAYER_DATA', 'LEAGUE_TEAM_IDS',
+    `var _usedRookieCandidateNames = {};\n${source.slice(migrationStart, migrationEnd)}\nreturn { reconcileGeneratedRookieIdentities, used: function() { return _usedRookieCandidateNames; } };`,
+  )(state, data, ['TEST']);
+  migration.reconcileGeneratedRookieIdentities();
+  assertInvariant(
+    migration.used().D084 && data.TEST[0].cname === '哈格蒂' && data.TEST[1].cname === '哈格蒂（2）',
+    '旧存档没有回填新秀候选池或区分重复新秀姓名',
+  );
+  assertInvariant(
+    state.season.leaguePlayerSeasonStats['TEST:r-2'].playerName === '哈格蒂（2）',
+    '历史重复新秀的赛季统计显示名没有同步更新',
+  );
+}
+
+validateGeneratedRookieIdentityMigration(indexSource);
 
 const dataSource = fs.readFileSync(path.join(root, 'js/data/league_players.js'), 'utf8');
 const leagueData = new Function(`${dataSource}\nreturn { LEAGUE_PLAYER_DATA, LEAGUE_TEAM_IDS };`)();

@@ -4543,9 +4543,16 @@ function recordLeagueBoxScore(boxScore, gameId) {
     var roster = LEAGUE_PLAYER_DATA[team] || [];
     (boxScore[team] || []).forEach(function(row) {
       if (!row || row._isUser || row.isUser) return;
-      var player = roster.find(function(p) {
-        return p.id === row.playerId || p.cname === row.name;
-      });
+      var rowPlayerId = String(row.playerId || '').trim();
+      var player = rowPlayerId
+        ? roster.find(function(p) { return String(p && p.id || '') === rowPlayerId; })
+        : null;
+      // 旧存档的 Box Score 可能没有 playerId；仅在姓名唯一时才兼容回退。
+      // 同名时宁可跳过这条旧数据，也不能将统计写进另一名球员。
+      if (!player && !rowPlayerId) {
+        var sameNamePlayers = roster.filter(function(p) { return p && p.cname === row.name; });
+        if (sameNamePlayers.length === 1) player = sameNamePlayers[0];
+      }
       if (!player) return;
 
       var playerId = player.id;
@@ -4650,7 +4657,17 @@ function getPositionDisplay(posStr) {
 /** 按位置计算球队首发+轮换（用户参与规划；未首发则第六人） */
 function calcTeamLineup(team, gameOptions) {
   const options = gameOptions || {};
-  const allPlayers = (LEAGUE_PLAYER_DATA[team] || []).slice();
+  var seenPlayerIds = {};
+  const allPlayers = (LEAGUE_PLAYER_DATA[team] || []).filter(function(player) {
+    if (!player) return false;
+    var playerId = String(player.id || '').trim();
+    // 球员 ID 才是联盟名单中的唯一身份。存档异常重复写入同一 ID 时，
+    // 只保留第一条，避免同一人同时出现在首发和替补。
+    if (!playerId) return true;
+    if (seenPlayerIds[playerId]) return false;
+    seenPlayerIds[playerId] = true;
+    return true;
+  });
   let userPlayer = null;
   var rosterSig = allPlayers.map(function(p) {
     return [p.id, p.pos, p.ovr, p.contract || ''].join(':');
@@ -9612,6 +9629,7 @@ function manualLoadGame(slot, options) {
           _usedRookieCandidateNames = Object.assign({}, snap.rookieState.usedCandidateNames || {});
           _rookieNameSeq = snap.rookieState.rookieNameSeq || 0;
         }
+        reconcileGeneratedRookieIdentities();
         _rngState = snap.rng || null;
         if (snap.localPlayerProfile) {
           LOCAL_PLAYER_PROFILE.nickname = snap.localPlayerProfile.nickname || LOCAL_PLAYER_PROFILE.nickname;
@@ -10383,6 +10401,57 @@ var _rngState = null;
 var _rookieNameSeq = 0;
 var _starRookieKeys = {};
 
+/**
+ * 早期存档没有记录已抽取的新秀候选人，加载后会把候选人再次放回选秀池，
+ * 从而产生同名的不同球员。以 _prospectId 回填候选池，并为历史重复项加序号。
+ */
+function reconcileGeneratedRookieIdentities() {
+  if (typeof LEAGUE_PLAYER_DATA === 'undefined' || typeof LEAGUE_TEAM_IDS === 'undefined') return;
+  _usedRookieCandidateNames = _usedRookieCandidateNames || {};
+  var firstNameByProspect = {};
+  var occurrenceByProspect = {};
+  var playerById = {};
+
+  LEAGUE_TEAM_IDS.forEach(function(team) {
+    (LEAGUE_PLAYER_DATA[team] || []).forEach(function(player) {
+      if (!player || !player._prospectId) return;
+      var prospectId = String(player._prospectId);
+      _usedRookieCandidateNames[prospectId] = true;
+      var baseName = player._rookieBaseName || player.cname || '';
+      if (!baseName) return;
+      player._rookieBaseName = baseName;
+      if (!firstNameByProspect[prospectId]) firstNameByProspect[prospectId] = baseName;
+      occurrenceByProspect[prospectId] = (occurrenceByProspect[prospectId] || 0) + 1;
+      if (occurrenceByProspect[prospectId] > 1 && baseName === firstNameByProspect[prospectId]) {
+        player.cname = baseName + '（' + occurrenceByProspect[prospectId] + '）';
+      }
+      if (player.id) playerById[String(player.id)] = player;
+    });
+  });
+
+  var seasonStats = STATE.season && STATE.season.leaguePlayerSeasonStats;
+  if (!seasonStats || typeof seasonStats !== 'object' || Array.isArray(seasonStats)) return;
+  Object.keys(seasonStats).forEach(function(key) {
+    var stat = seasonStats[key];
+    var player = stat && playerById[String(stat.playerId || '')];
+    if (player) stat.playerName = player.cname;
+  });
+}
+
+function getGeneratedRookieDisplayName(pick) {
+  var baseName = pick && pick.cn || '新秀';
+  var prospectId = String(pick && pick.id || '');
+  var occurrences = 0;
+  if (prospectId && typeof LEAGUE_PLAYER_DATA !== 'undefined' && typeof LEAGUE_TEAM_IDS !== 'undefined') {
+    LEAGUE_TEAM_IDS.forEach(function(team) {
+      (LEAGUE_PLAYER_DATA[team] || []).forEach(function(player) {
+        if (player && String(player._prospectId || '') === prospectId) occurrences++;
+      });
+    });
+  }
+  return occurrences ? baseName + '（' + (occurrences + 1) + '）' : baseName;
+}
+
 function rngReset() {
   var seed = 0;
   if (typeof crypto !== 'undefined' && crypto.getRandomValues && typeof Uint32Array !== 'undefined') {
@@ -10429,7 +10498,8 @@ function generateRookie() {
   var p = {
     id: 'R' + String(++_rookieNameSeq).padStart(6, '0'),
     _prospectId: pick.id,
-    cname: pick.cn,
+    _rookieBaseName: pick.cn,
+    cname: getGeneratedRookieDisplayName(pick),
     pos: pos, height: fixedRating ? fixedRating.height : '6\'7"', type: '新秀', ovr: ovr,
     _age: 19 + Math.floor(rngNext() * 3),
     loyalty: 60,
