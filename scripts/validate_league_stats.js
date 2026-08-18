@@ -326,8 +326,18 @@ const simulation = new Function(
   'af',
   'calcTeamLineup',
   'getLeaguePlayerAge',
-  `${simulationSource}\nreturn { generateBoxScore, syncUserStatsToBoxScore, getLeagueScoringBurst, LEAGUE_SCORING_BURST_RATES, getLeagueVersatilityBurst, applyLeagueVersatilityBurst, LEAGUE_VERSATILITY_BURST_RATES };`,
+  `${simulationSource}\nreturn { generateBoxScore, syncUserStatsToBoxScore, allocateLeagueCountingTotal, getLeagueScoringBurst, LEAGUE_SCORING_BURST_RATES, getLeagueVersatilityBurst, applyLeagueVersatilityBurst, LEAGUE_VERSATILITY_BURST_RATES };`,
 )(state, af, calcTeamLineup, player => Number(player._age) || 27);
+
+const exactCapAllocation = simulation.allocateLeagueCountingTotal(3, [3, 2, 1], [1, 1, 1]);
+assertInvariant(exactCapAllocation.reduce((sum, value) => sum + value, 0) === 3 && exactCapAllocation.every(value => value === 1), '合法硬 cap 分配错误');
+let insufficientCapRejected = false;
+try {
+  simulation.allocateLeagueCountingTotal(4, [3, 2, 1], [1, 1, 1]);
+} catch (error) {
+  insufficientCapRejected = /\u786c\u4e0a\u9650\u5bb9\u91cf/.test(error.message);
+}
+assertInvariant(insufficientCapRejected, 'caps 容量不足时仍突破球员硬上限');
 
 function seededRandom(seed) {
   let value = seed >>> 0;
@@ -362,6 +372,29 @@ function inspectBoxScore(boxScore, teamA, scoreA, teamB, scoreB) {
   return { errors, summaries };
 }
 
+function percentile(sortedValues, ratio) {
+  if (!sortedValues.length) return 0;
+  return sortedValues[Math.min(sortedValues.length - 1, Math.floor((sortedValues.length - 1) * ratio))];
+}
+
+function summarizeReconciliation(deltas, budgetRebalances, actionTotals) {
+  const absolute = deltas.map(value => Math.abs(value)).sort((a, b) => a - b);
+  const count = Math.max(1, absolute.length);
+  const within = (min, max) => absolute.filter(value => value >= min && value <= max).length / count;
+  return {
+    samples: absolute.length,
+    meanSigned: deltas.reduce((sum, value) => sum + value, 0) / count,
+    meanAbs: absolute.reduce((sum, value) => sum + value, 0) / count,
+    p50: percentile(absolute, 0.50), p90: percentile(absolute, 0.90),
+    p95: percentile(absolute, 0.95), p99: percentile(absolute, 0.99),
+    max: absolute[absolute.length - 1] || 0,
+    zeroRate: within(0, 0), oneToTwoRate: within(1, 2), threeToFiveRate: within(3, 5),
+    sixToTenRate: within(6, 10), overTenRate: absolute.filter(value => value > 10).length / count,
+    budgetRebalances,
+    actionTotals,
+  };
+}
+
 function runSeason(seed) {
   const originalRandom = Math.random;
   Math.random = seededRandom(seed);
@@ -372,6 +405,9 @@ function runSeason(seed) {
   const versatilityBursts = { quadruple: 0, quintuple: 0 };
   const shootingTotals = { fgm: 0, fga: 0, threeM: 0, threeA: 0, ftm: 0, fta: 0 };
   const signatureCounts = {};
+  const reconciliationDeltas = [];
+  const reconciliationActions = {};
+  let budgetRebalances = 0;
   let gamesValidated = 0;
   let invariantErrors = 0;
 
@@ -387,6 +423,15 @@ function runSeason(seed) {
         const inspection = inspectBoxScore(boxScore, teamA, scoreA, teamB, scoreB);
         invariantErrors += inspection.errors;
         gamesValidated++;
+        [teamA, teamB].forEach(team => {
+          const diagnostics = boxScore._diagnostics && boxScore._diagnostics[team];
+          if (!diagnostics) { invariantErrors++; return; }
+          reconciliationDeltas.push(diagnostics.reconcileDelta);
+          if (diagnostics.budgetRebalanced) budgetRebalances++;
+          Object.entries(diagnostics.actions || {}).forEach(([action, count]) => {
+            reconciliationActions[action] = (reconciliationActions[action] || 0) + count;
+          });
+        });
 
         [[teamA, scoreA], [teamB, scoreB]].forEach(([team, score]) => {
           const rows = boxScore[team] || [];
@@ -455,6 +500,7 @@ function runSeason(seed) {
       ft: shootingTotals.ftm / Math.max(1, shootingTotals.fta),
     },
     maxDuplicateSignature: Math.max(0, ...Object.values(signatureCounts)),
+    reconciliation: summarizeReconciliation(reconciliationDeltas, budgetRebalances, reconciliationActions),
     scoringBursts,
     versatilityBursts,
   };
@@ -659,10 +705,39 @@ function validateDeterministicBoxScore(seed) {
   return JSON.stringify(first) === JSON.stringify(second);
 }
 
+function validateExplicitBudgetRebalance(seed) {
+  const originalRandom = Math.random;
+  const teamA = Array.from({ length: 10 }, (_, index) => validationPlayer(`budget-a-${index}`, ['PG','SG','SF','PF','C'][index % 5], {}));
+  const teamB = Array.from({ length: 10 }, (_, index) => validationPlayer(`budget-b-${index}`, ['PG','SG','SF','PF','C'][index % 5], {}));
+  const minutes = Array(10).fill(24);
+  Math.random = seededRandom(seed);
+  state.season = { isPlayoffs: false };
+  try {
+    const boxScore = simulation.generateBoxScore('__BUDGET_A__', '__BUDGET_B__', 300, 300, {
+      _preparedRotations: {
+        __BUDGET_A__: exactRotation(teamA, minutes),
+        __BUDGET_B__: exactRotation(teamB, minutes),
+      },
+    });
+    const diagnostics = boxScore._diagnostics && boxScore._diagnostics.__BUDGET_A__;
+    const totalPoints = boxScore.__BUDGET_A__.reduce((sum, row) => sum + row.pts, 0);
+    return {
+      totalPoints,
+      hiddenMetadata: !Object.keys(boxScore).includes('_diagnostics'),
+      budgetRebalanced: !!(diagnostics && diagnostics.budgetRebalanced),
+      budgetActions: diagnostics && diagnostics.budgetActions || {},
+      finalPts: diagnostics && diagnostics.finalPts,
+    };
+  } finally {
+    Math.random = originalRandom;
+  }
+}
+
 const seasons = [1701, 2702, 3703, 4704, 5705, 6706].map(runSeason);
 const userSeason = runUserSeason(7707);
 const controlledProfiles = runControlledProfileValidation(8808);
 const deterministicBoxScore = validateDeterministicBoxScore(9909);
+const explicitBudgetRebalance = validateExplicitBudgetRebalance(10101);
 const fields = ['pts', 'reb', 'ast', 'stl', 'blk'];
 const averageScoringBursts = key => seasons.reduce((sum, season) => sum + season.scoringBursts[key], 0) / seasons.length;
 const report = {
@@ -675,6 +750,20 @@ const report = {
     invariantErrors: season.invariantErrors,
     shootingPct: Object.fromEntries(Object.entries(season.shootingPct).map(([key, value]) => [key, Number(value.toFixed(3))])),
     maxDuplicateSignature: season.maxDuplicateSignature,
+    reconciliation: {
+      samples: season.reconciliation.samples,
+      meanSigned: Number(season.reconciliation.meanSigned.toFixed(2)),
+      meanAbs: Number(season.reconciliation.meanAbs.toFixed(2)),
+      p50: season.reconciliation.p50, p90: season.reconciliation.p90,
+      p95: season.reconciliation.p95, p99: season.reconciliation.p99, max: season.reconciliation.max,
+      zeroRate: Number(season.reconciliation.zeroRate.toFixed(3)),
+      oneToTwoRate: Number(season.reconciliation.oneToTwoRate.toFixed(3)),
+      threeToFiveRate: Number(season.reconciliation.threeToFiveRate.toFixed(3)),
+      sixToTenRate: Number(season.reconciliation.sixToTenRate.toFixed(3)),
+      overTenRate: Number(season.reconciliation.overTenRate.toFixed(3)),
+      budgetRebalances: season.reconciliation.budgetRebalances,
+      actions: season.reconciliation.actionTotals,
+    },
     scoringBursts: season.scoringBursts,
     versatilityBursts: season.versatilityBursts,
     leaderRanges: Object.fromEntries(fields.map(field => [
@@ -706,6 +795,7 @@ const report = {
     role: controlledProfiles.role,
   },
   deterministicBoxScore,
+  explicitBudgetRebalance,
 };
 
 console.log(JSON.stringify(report, null, 2));
@@ -729,6 +819,10 @@ seasons.forEach((season, index) => {
     failures.push(`赛季 ${index + 1} 联盟命中率异常：${JSON.stringify(season.shootingPct)}`);
   }
   if (season.maxDuplicateSignature > 3) failures.push(`赛季 ${index + 1} 同一球员大量重复完全相同 Box Score：${season.maxDuplicateSignature}`);
+  if (season.reconciliation.meanAbs >= 4 || season.reconciliation.p90 > 8 || season.reconciliation.p95 > 10 || season.reconciliation.overTenRate > 0.03) {
+    failures.push(`赛季 ${index + 1} reconciliation 对原始投篮得分修正过强：${JSON.stringify(season.reconciliation)}`);
+  }
+  if (season.reconciliation.budgetRebalances !== 0) failures.push(`赛季 ${index + 1} 正常比分频繁触发投篮预算重平衡`);
   fields.forEach(field => {
     if (minimums[field] && season.leaders[field][0][field] < minimums[field]) failures.push(`赛季 ${index + 1} ${field} 榜首过低`);
     if (season.leaders[field][0][field] > limits[field].first) failures.push(`赛季 ${index + 1} ${field} 榜首过高`);
@@ -774,6 +868,12 @@ if (controlledProfiles.role.offensiveGuard.fga <= controlledProfiles.role.defens
 }
 if (!deterministicBoxScore) {
   console.error('相同 seed、阵容与输入未生成相同 Box Score');
+  process.exitCode = 1;
+}
+if (explicitBudgetRebalance.totalPoints !== 300 || explicitBudgetRebalance.finalPts !== 300
+  || !explicitBudgetRebalance.hiddenMetadata || !explicitBudgetRebalance.budgetRebalanced
+  || !Object.keys(explicitBudgetRebalance.budgetActions).length) {
+  console.error(`极端比分未通过显式投篮预算重平衡：${JSON.stringify(explicitBudgetRebalance)}`);
   process.exitCode = 1;
 }
 

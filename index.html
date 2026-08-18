@@ -5250,25 +5250,35 @@ function shouldNpcPlayLeagueGame(team, player, roleRank, careerTeamGameNumber) {
 function allocateLeagueCountingTotal(total, weights, caps) {
   total = Math.max(0, Math.round(total));
   var safeWeights = weights.map(function(weight) { return Math.max(0.0001, Number(weight) || 0); });
+  var safeCaps = null;
+  if (caps) {
+    if (!Array.isArray(caps) || caps.length !== safeWeights.length) {
+      throw new RangeError('计数统计 caps 必须与 weights 一一对应');
+    }
+    safeCaps = caps.map(function(cap) { return Math.max(0, Math.floor(Number(cap) || 0)); });
+    var totalCapacity = safeCaps.reduce(function(sum, cap) { return sum + cap; }, 0);
+    if (totalCapacity < total) {
+      throw new RangeError('计数统计总量超过硬上限容量：' + total + ' > ' + totalCapacity);
+    }
+  }
   var weightSum = safeWeights.reduce(function(sum, weight) { return sum + weight; }, 0);
   var allocated = safeWeights.map(function(weight, index) {
     var base = Math.floor(total * weight / weightSum * 0.68);
-    return caps ? Math.min(base, caps[index]) : base;
+    return safeCaps ? Math.min(base, safeCaps[index]) : base;
   });
   var remaining = total - allocated.reduce(function(sum, value) { return sum + value; }, 0);
 
   while (remaining > 0) {
     var availableWeight = 0;
     for (var i = 0; i < safeWeights.length; i++) {
-      if (!caps || allocated[i] < caps[i]) availableWeight += safeWeights[i];
+      if (!safeCaps || allocated[i] < safeCaps[i]) availableWeight += safeWeights[i];
     }
     if (availableWeight <= 0) {
-      allocated[safeWeights.indexOf(Math.max.apply(null, safeWeights))] += remaining;
-      break;
+      throw new RangeError('计数统计分配时硬上限容量耗尽');
     }
     var pick = Math.random() * availableWeight;
     for (var j = 0; j < safeWeights.length; j++) {
-      if (caps && allocated[j] >= caps[j]) continue;
+      if (safeCaps && allocated[j] >= safeCaps[j]) continue;
       pick -= safeWeights[j];
       if (pick <= 0) {
         allocated[j]++;
@@ -5376,7 +5386,7 @@ function getLeagueScoringBurst(star, scoringSkill) {
     return {
       tier: 'hot',
       gameForm: 1.60 + Math.random() * 0.55 + eligibility * 0.30,
-      shareCap: 0.34 + eligibility * 0.07,
+      shareCap: 0.35 + eligibility * 0.07,
       hardCap: 100,
     };
   }
@@ -5583,13 +5593,11 @@ function prepareLeagueGameRotation(team, gameOptions) {
 function generateBoxScore(teamA, teamB, totalA, totalB, gameOptions) {
   var options = gameOptions || {};
 
-  function sampleBinomial(attempts, probability) {
-    var made = 0;
+  function sampleShotMakes(attempts, probability) {
     probability = leagueStatClamp(probability, 0, 1);
-    for (var attempt = 0; attempt < attempts; attempt++) {
-      if (Math.random() < probability) made++;
-    }
-    return made;
+    var expected = Math.max(0, attempts) * probability;
+    var made = Math.floor(expected);
+    return made + (Math.random() < expected - made ? 1 : 0);
   }
 
   function prepareTeam(team, totalPts) {
@@ -5652,6 +5660,13 @@ function generateBoxScore(teamA, teamB, totalA, totalB, gameOptions) {
   function reconcileScore(context, lines) {
     function linePoints(line) { return line.twoM * 2 + line.threeM * 3 + line.ftm; }
     function totalPoints() { return lines.reduce(function(sum, line) { return sum + linePoints(line); }, 0); }
+    var diagnostics = {
+      rawPts: totalPoints(), targetPts: context.totalPts,
+      reconcileDelta: context.totalPts - totalPoints(), actions: {}, budgetActions: {}, budgetRebalanced: false,
+    };
+    function recordAction(group, name, amount) {
+      group[name] = (group[name] || 0) + (amount || 1);
+    }
     function candidates(madeField, attemptField, add, priorityField) {
       return lines.map(function(line, index) { return { line: line, index: index }; })
         .filter(function(item) { return add ? item.line[madeField] < item.line[attemptField] : item.line[madeField] > 0; })
@@ -5667,6 +5682,7 @@ function generateBoxScore(teamA, teamB, totalA, totalB, gameOptions) {
       var available = candidates(madeField, attemptField, add, priorityField);
       if (!available.length) return false;
       available[0].line[madeField] += add ? 1 : -1;
+      recordAction(diagnostics.actions, (add ? 'add_' : 'remove_') + madeField);
       return true;
     }
     function swapTwoForThree(addPoint) {
@@ -5675,23 +5691,21 @@ function generateBoxScore(teamA, teamB, totalA, totalB, gameOptions) {
       if (!remove.length || !add.length) return false;
       remove[0].line[addPoint ? 'twoM' : 'threeM']--;
       add[0].line[addPoint ? 'threeM' : 'twoM']++;
+      recordAction(diagnostics.actions, addPoint ? 'swap_two_to_three' : 'swap_three_to_two');
       return true;
     }
 
-    var delta = context.totalPts - totalPoints();
-    var guard = 0;
-    while (delta !== 0 && guard++ < 500) {
-      if (delta > 0) {
-        if (delta % 2 === 1 && adjust('ftm', 'fta', true, 'ftPct')) { delta--; continue; }
-        if (delta % 2 === 1 && swapTwoForThree(true)) { delta--; continue; }
-        if (delta >= 2 && adjust('twoM', 'twoA', true, 'twoPct')) { delta -= 2; continue; }
-        if (delta >= 3 && adjust('threeM', 'threeA', true, 'threePct')) { delta -= 3; continue; }
-        if (adjust('ftm', 'fta', true, 'ftPct')) { delta--; continue; }
-        var addTarget = lines.slice().sort(function(a, b) { return b.usageWeight - a.usageWeight; })[0];
-        addTarget.fta++;
-        addTarget.ftm++;
-        delta--;
-      } else {
+    function reconcileWithinBudget(delta) {
+      var guard = 0;
+      while (delta !== 0 && guard++ < 500) {
+        if (delta > 0) {
+          if (delta % 2 === 1 && adjust('ftm', 'fta', true, 'ftPct')) { delta--; continue; }
+          if (delta % 2 === 1 && swapTwoForThree(true)) { delta--; continue; }
+          if (delta >= 2 && adjust('twoM', 'twoA', true, 'twoPct')) { delta -= 2; continue; }
+          if (delta >= 3 && adjust('threeM', 'threeA', true, 'threePct')) { delta -= 3; continue; }
+          if (adjust('ftm', 'fta', true, 'ftPct')) { delta--; continue; }
+          break;
+        }
         var need = -delta;
         if (need % 2 === 1 && adjust('ftm', 'fta', false, 'ftPct')) { delta++; continue; }
         if (need % 2 === 1 && swapTwoForThree(false)) { delta++; continue; }
@@ -5700,6 +5714,53 @@ function generateBoxScore(teamA, teamB, totalA, totalB, gameOptions) {
         if (adjust('ftm', 'fta', false, 'ftPct')) { delta++; continue; }
         break;
       }
+      return delta;
+    }
+
+    function rebalanceAttemptBudget(delta) {
+      diagnostics.budgetRebalanced = true;
+      var byUsage = lines.slice().sort(function(a, b) { return b.usageWeight - a.usageWeight; });
+      if (delta > 0 && delta % 2 === 1) {
+        var madeTwo = byUsage.find(function(line) { return line.twoM > 0; });
+        if (madeTwo) {
+          madeTwo.twoM--;
+          madeTwo.twoA--;
+          madeTwo.threeA++;
+          recordAction(diagnostics.budgetActions, 'reclassify_made_two_as_three_attempt');
+        } else {
+          byUsage[0].fta++;
+          recordAction(diagnostics.budgetActions, 'add_fta_budget');
+        }
+      } else if (delta < 0 && (-delta) % 2 === 1) {
+        var madeThree = byUsage.find(function(line) { return line.threeM > 0; });
+        if (madeThree) {
+          madeThree.threeM--;
+          madeThree.threeA--;
+          madeThree.twoA++;
+          recordAction(diagnostics.budgetActions, 'reclassify_made_three_as_two_attempt');
+        } else {
+          var fallbackTwo = byUsage.find(function(line) { return line.twoM > 0; });
+          if (!fallbackTwo) return false;
+          fallbackTwo.twoM--;
+          fallbackTwo.fta++;
+          recordAction(diagnostics.budgetActions, 'replace_made_two_with_fta_budget');
+        }
+      }
+      var remaining = context.totalPts - totalPoints();
+      if (remaining > 0) {
+        var additionalTwoAttempts = Math.ceil(remaining / 2);
+        for (var attempt = 0; attempt < additionalTwoAttempts; attempt++) {
+          byUsage[attempt % byUsage.length].twoA++;
+        }
+        recordAction(diagnostics.budgetActions, 'add_two_point_attempt_budget', additionalTwoAttempts);
+      }
+      return true;
+    }
+
+    var delta = reconcileWithinBudget(diagnostics.reconcileDelta);
+    if (delta !== 0) {
+      if (!rebalanceAttemptBudget(delta)) throw new Error('Box Score 无法重平衡投篮预算');
+      delta = reconcileWithinBudget(context.totalPts - totalPoints());
     }
     if (delta !== 0) throw new Error('Box Score 无法在投篮约束内对齐球队比分');
     lines.forEach(function(line) {
@@ -5707,6 +5768,10 @@ function generateBoxScore(teamA, teamB, totalA, totalB, gameOptions) {
       line.fga = line.twoA + line.threeA;
       line.pts = linePoints(line);
     });
+    diagnostics.finalPts = totalPoints();
+    diagnostics.absoluteDelta = Math.abs(diagnostics.reconcileDelta);
+    diagnostics.scoringEnvironment = Number(context.scoringEnvironment) || 0;
+    context.reconciliation = diagnostics;
   }
 
   function generateShooting(context, opponent) {
@@ -5755,10 +5820,25 @@ function generateBoxScore(teamA, teamB, totalA, totalB, gameOptions) {
       var ftPct = leagueStatClamp(0.60 + ftSkill * 0.28 + leagueStatNormal(0, 0.018), 0.54, 0.94);
       return {
         fga: fga[index], threeA: threeA[index], twoA: twoA, fta: fta[index],
-        threeM: sampleBinomial(threeA[index], threePct), twoM: sampleBinomial(twoA, twoPct), ftm: sampleBinomial(fta[index], ftPct),
         threePct: threePct, twoPct: twoPct, ftPct: ftPct, usageWeight: context.usageWeights[index],
       };
     });
+    var expectedPoints = lines.reduce(function(sum, line) {
+      return sum + line.twoA * line.twoPct * 2 + line.threeA * line.threePct * 3 + line.fta * line.ftPct;
+    }, 0);
+    var scoringSensitivity = lines.reduce(function(sum, line) {
+      return sum + line.twoA * 1.60 + line.threeA * 1.95 + line.fta * 0.35;
+    }, 0) || 1;
+    var scoringEnvironment = leagueStatClamp((context.totalPts - expectedPoints) / scoringSensitivity, -0.10, 0.10);
+    lines.forEach(function(line) {
+      line.twoPct = leagueStatClamp(line.twoPct + scoringEnvironment * 0.80, 0.22, 0.78);
+      line.threePct = leagueStatClamp(line.threePct + scoringEnvironment * 0.65, 0.16, 0.64);
+      line.ftPct = leagueStatClamp(line.ftPct + scoringEnvironment * 0.35, 0.54, 0.94);
+      line.threeM = sampleShotMakes(line.threeA, line.threePct);
+      line.twoM = sampleShotMakes(line.twoA, line.twoPct);
+      line.ftm = sampleShotMakes(line.fta, line.ftPct);
+    });
+    context.scoringEnvironment = scoringEnvironment;
     reconcileScore(context, lines);
     context.shooting = lines;
     context.teamFga = lines.reduce(function(sum, line) { return sum + line.fga; }, 0);
@@ -5839,10 +5919,16 @@ function generateBoxScore(teamA, teamB, totalA, totalB, gameOptions) {
   var firstRebounds = firstMissRebounds.offense + secondMissRebounds.defense;
   var secondRebounds = secondMissRebounds.offense + firstMissRebounds.defense;
 
-  return {
+  var boxScore = {
     [teamA]: buildRows(first, second, firstRebounds),
     [teamB]: buildRows(second, first, secondRebounds),
   };
+  Object.defineProperty(boxScore, '_diagnostics', {
+    value: { [teamA]: first.reconciliation, [teamB]: second.reconciliation },
+    enumerable: false,
+    configurable: true,
+  });
+  return boxScore;
 }
 
 /** 同步带伤等赛后二次调整；投篮子项按剩余预算重分配，不允许 PTS 与命中数脱节。 */

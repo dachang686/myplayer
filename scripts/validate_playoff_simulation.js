@@ -696,6 +696,56 @@ function runRealRosterSmoke() {
       if (Array.isArray(result.teamB.power.rotationMinutes)
         && JSON.stringify(result.teamB.power.rotationMinutes) !== JSON.stringify(rowsB.map(row => row.mins))) invariantErrors++;
     }
+
+    const fullChainDeltas = [];
+    let fullChainBudgetRebalances = 0;
+    let fullChainInvariantErrors = 0;
+    let minimumTeamScore = Infinity;
+    let maximumTeamScore = -Infinity;
+    let fullChainGames = 0;
+    const fullChainSeasons = 3;
+    const teams = leagueData.LEAGUE_TEAM_IDS;
+    for (let season = 0; season < fullChainSeasons; season++) {
+      realState.season = { schedule: [], isPlayoffs: false, _npcSeasonProfiles: {}, events: { activeEffects: [] } };
+      for (let round = 0; round < 82; round++) {
+        for (let pair = 0; pair < teams.length; pair += 2) {
+          const teamA = teams[(pair + round + season) % teams.length];
+          const teamB = teams[(pair + round + season + 1) % teams.length];
+          const result = realSimulate(teamA, teamB, 0, null, { isHomeA: pair % 4 === 0, isB2B: round % 9 === 0 });
+          const rowsA = result.boxScore[teamA] || [];
+          const rowsB = result.boxScore[teamB] || [];
+          const sum = (rows, field) => rows.reduce((value, row) => value + (Number(row[field]) || 0), 0);
+          [[rowsA, result.scoreA], [rowsB, result.scoreB]].forEach(([rows, score]) => {
+            if (sum(rows, 'pts') !== score || sum(rows, 'mins') !== 240 || sum(rows, 'ast') > sum(rows, 'fgm')) fullChainInvariantErrors++;
+            rows.forEach(row => {
+              if (row.pts !== 2 * (row.fgm - row.threeM) + 3 * row.threeM + row.ftm
+                || row.fgm > row.fga || row.threeM > row.threeA || row.threeA > row.fga
+                || row.threeM > row.fgm || row.ftm > row.fta) fullChainInvariantErrors++;
+            });
+          });
+          if (sum(rowsA, 'stl') > sum(rowsB, 'tov') || sum(rowsB, 'stl') > sum(rowsA, 'tov')) fullChainInvariantErrors++;
+          [teamA, teamB].forEach(team => {
+            const diagnostics = result.boxScore._diagnostics && result.boxScore._diagnostics[team];
+            if (!diagnostics) { fullChainInvariantErrors++; return; }
+            fullChainDeltas.push(Math.abs(diagnostics.reconcileDelta));
+            if (diagnostics.budgetRebalanced) fullChainBudgetRebalances++;
+          });
+          minimumTeamScore = Math.min(minimumTeamScore, result.scoreA, result.scoreB);
+          maximumTeamScore = Math.max(maximumTeamScore, result.scoreA, result.scoreB);
+          fullChainGames++;
+        }
+      }
+    }
+    fullChainDeltas.sort((a, b) => a - b);
+    const fullChainPercentile = ratio => fullChainDeltas[Math.min(fullChainDeltas.length - 1, Math.floor((fullChainDeltas.length - 1) * ratio))] || 0;
+    const fullChainReconciliation = {
+      samples: fullChainDeltas.length,
+      meanAbs: fullChainDeltas.reduce((sum, value) => sum + value, 0) / Math.max(1, fullChainDeltas.length),
+      p90: fullChainPercentile(0.90), p95: fullChainPercentile(0.95), p99: fullChainPercentile(0.99),
+      max: fullChainDeltas[fullChainDeltas.length - 1] || 0,
+      overTenRate: fullChainDeltas.filter(value => value > 10).length / Math.max(1, fullChainDeltas.length),
+      budgetRebalances: fullChainBudgetRebalances,
+    };
     const previousPlayoffState = realState.season.isPlayoffs;
     const previousStandings = realState.season.standings;
     realState.season.isPlayoffs = false;
@@ -745,6 +795,14 @@ function runRealRosterSmoke() {
       winRatePHI: wins / games,
       averageTotal: total / games,
       invariantErrors,
+      fullChain: {
+        seasons: fullChainSeasons,
+        games: fullChainGames,
+        minimumTeamScore,
+        maximumTeamScore,
+        invariantErrors: fullChainInvariantErrors,
+        reconciliation: fullChainReconciliation,
+      },
       realSeededDeterminism,
       syntheticLineup: {
         strongPower: strongPower.overall,
@@ -897,6 +955,20 @@ if (!legacyBracketRepair.aheadProgressResult.repaired || legacyBracketRepair.ahe
   failures.push(`旧存档超前进度修复失败：${JSON.stringify(legacyBracketRepair.aheadProgressResult)}`);
 }
 if (realRosterSmoke.invariantErrors) failures.push(`真实名单联调存在 ${realRosterSmoke.invariantErrors} 个不变量错误`);
+if (!realRosterSmoke.fullChain || realRosterSmoke.fullChain.seasons < 3 || realRosterSmoke.fullChain.games < 3690
+  || realRosterSmoke.fullChain.invariantErrors) {
+  failures.push(`正式比赛引擎全链路赛季验证失败：${JSON.stringify(realRosterSmoke.fullChain)}`);
+}
+if (realRosterSmoke.fullChain.minimumTeamScore > 95 || realRosterSmoke.fullChain.maximumTeamScore < 125) {
+  failures.push(`正式全链路未覆盖低分/高分/加时级输入：${JSON.stringify(realRosterSmoke.fullChain)}`);
+}
+if (realRosterSmoke.fullChain.reconciliation.meanAbs >= 4
+  || realRosterSmoke.fullChain.reconciliation.p90 > 8
+  || realRosterSmoke.fullChain.reconciliation.p95 > 10
+  || realRosterSmoke.fullChain.reconciliation.overTenRate > 0.03
+  || realRosterSmoke.fullChain.reconciliation.budgetRebalances !== 0) {
+  failures.push(`正式全链路 reconciliation 修正过强：${JSON.stringify(realRosterSmoke.fullChain.reconciliation)}`);
+}
 if (outside(realRosterSmoke.winRatePHI, 0.68, 0.88)) failures.push(`真实强弱队胜率异常：${realRosterSmoke.winRatePHI}`);
 if (outside(realRosterSmoke.averageTotal, 205, 235)) failures.push(`真实名单场均总分异常：${realRosterSmoke.averageTotal}`);
 
