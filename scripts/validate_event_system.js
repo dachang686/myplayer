@@ -684,6 +684,33 @@ if (registryStart < 0 || registryEnd < 0) {
     failures.push('玩家转会后，已提交的当前队友选择仍按原球队关系结算');
   }
 
+  // 玩家加盟前队友所在球队，是“我来到他的球队”，不能写成前队友返回或重新加盟。
+  const joinedFormerMate = { id: 'joined-former-mate', cname: '目的地旧友', ovr: 88 };
+  leagueData.PLAYER_JOIN_DEST = [joinedFormerMate, { id: 'join-dest-mate', cname: '目的地新队友', ovr: 84 }];
+  state.careerTeam = 'PLAYER_OLD';
+  state.career.flags = {
+    formerStoryTeammates: [{ id: joinedFormerMate.id, cname: joinedFormerMate.cname, team: 'PLAYER_JOIN_DEST', active: true, affinity: 5, reunionCount: 1 }],
+  };
+  state.season = {
+    games: [], wins: 0, losses: 0, isPlayoffs: false, isUserStarter: true, playerStats: {}, schedule: [], events: createEventState(0),
+  };
+  state.season.events.narrativeTeam = 'PLAYER_OLD';
+  state.season.events.seasonTheme = { id: 'title', variantId: 'title_pressure', title: '原队争冠', season: 8 };
+  state.season.events.storyThreads = [{
+    id: 'join-dest-old-team', kind: 'team', title: '原队方向', emoji: '🧭', state: 'queued',
+    openingGame: 4, resolutionGame: 20, payload: { themeId: 'title', teamAtBinding: 'PLAYER_OLD' },
+  }];
+  state.careerTeam = 'PLAYER_JOIN_DEST';
+  const joinedFormerSeason = eventModule.initializeSeasonNarrative();
+  const joinedFormerThread = joinedFormerSeason.storyThreads.find(thread => thread.kind === 'reunited_teammate' && thread.payload?.teammateId === joinedFormerMate.id);
+  const joinedFormerOpening = joinedFormerThread && eventModule.getDirectorThreadOpening(joinedFormerThread);
+  const joinedFormerRecord = state.career.flags.reunitedStoryTeammates?.find(mate => mate.id === joinedFormerMate.id);
+  if (!joinedFormerThread || joinedFormerThread.payload?.reunionCause !== 'player_joined_teammate' ||
+      !joinedFormerThread.title.includes('在新球队重逢') || !joinedFormerOpening?.body.includes('这次不是他回归') ||
+      /返回|重新加入/.test(joinedFormerThread.title + joinedFormerOpening?.body) || joinedFormerRecord?.reunionCause !== 'player_joined_teammate') {
+    failures.push('玩家加盟前队友所在球队时，仍错误提示前队友返回或重新加盟');
+  }
+
   state.careerTeam = 'HOME';
   state.career.seasons = [];
 
@@ -1083,6 +1110,7 @@ if (failures.length) {
     playerTeamContextMigration: true,
     playerLeftFormerTeammateCopy: true,
     committedTeammateTransferGuard: true,
+    playerJoinedFormerTeammateCopy: true,
     playerTeamChangeWiring: true,
     relationshipIdentityDeduplication: true,
     activeEffectCareerGameClock: true,

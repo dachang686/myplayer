@@ -213,8 +213,8 @@ function validateLineupFallbackAndStatRecording(source) {
 
 validateLineupFallbackAndStatRecording(indexSource);
 
-function validateGeneratedRookieIdentityMigration(source) {
-  const migrationStart = source.indexOf('function reconcileGeneratedRookieIdentities');
+function validateGeneratedRookieCandidateMigration(source) {
+  const migrationStart = source.indexOf('function normalizeLegacyGeneratedRookieLabels');
   const migrationEnd = source.indexOf('function rngReset', migrationStart);
   if (migrationStart < 0 || migrationEnd < 0) {
     throw new Error('无法定位新秀候选人存档迁移逻辑');
@@ -229,25 +229,22 @@ function validateGeneratedRookieIdentityMigration(source) {
   const data = {
     TEST: [
       { id: 'r-1', cname: '哈格蒂', _prospectId: 'D084' },
-      { id: 'r-2', cname: '哈格蒂', _prospectId: 'D084' },
+      { id: 'r-2', cname: '哈格蒂（2）', _prospectId: 'D084', _rookieBaseName: '哈格蒂' },
     ],
   };
   const migration = new Function(
     'STATE', 'LEAGUE_PLAYER_DATA', 'LEAGUE_TEAM_IDS',
-    `var _usedRookieCandidateNames = {};\n${source.slice(migrationStart, migrationEnd)}\nreturn { reconcileGeneratedRookieIdentities, used: function() { return _usedRookieCandidateNames; } };`,
+    `var _usedRookieCandidateNames = {};\n${source.slice(migrationStart, migrationEnd)}\nreturn { normalizeLegacyGeneratedRookieLabels, restoreUsedRookieCandidatesFromLeague, used: function() { return _usedRookieCandidateNames; } };`,
   )(state, data, ['TEST']);
-  migration.reconcileGeneratedRookieIdentities();
+  migration.normalizeLegacyGeneratedRookieLabels();
+  migration.restoreUsedRookieCandidatesFromLeague();
   assertInvariant(
-    migration.used().D084 && data.TEST[0].cname === '哈格蒂' && data.TEST[1].cname === '哈格蒂（2）',
-    '旧存档没有回填新秀候选池或区分重复新秀姓名',
-  );
-  assertInvariant(
-    state.season.leaguePlayerSeasonStats['TEST:r-2'].playerName === '哈格蒂（2）',
-    '历史重复新秀的赛季统计显示名没有同步更新',
+    migration.used().D084 && data.TEST[0].cname === '哈格蒂' && data.TEST[1].cname === '哈格蒂' && !data.TEST[1]._rookieBaseName,
+    '旧存档没有回填新秀候选池，或未清理错误的新秀显示名',
   );
 }
 
-validateGeneratedRookieIdentityMigration(indexSource);
+validateGeneratedRookieCandidateMigration(indexSource);
 
 const dataSource = fs.readFileSync(path.join(root, 'js/data/league_players.js'), 'utf8');
 const leagueData = new Function(`${dataSource}\nreturn { LEAGUE_PLAYER_DATA, LEAGUE_TEAM_IDS };`)();
@@ -340,6 +337,31 @@ function seededRandom(seed) {
   };
 }
 
+function inspectBoxScore(boxScore, teamA, scoreA, teamB, scoreB) {
+  let errors = 0;
+  const summaries = {};
+  [[teamA, scoreA], [teamB, scoreB]].forEach(([team, score]) => {
+    const rows = boxScore[team] || [];
+    const sum = field => rows.reduce((total, row) => total + (Number(row[field]) || 0), 0);
+    summaries[team] = {
+      pts: sum('pts'), mins: sum('mins'), fgm: sum('fgm'), fga: sum('fga'),
+      threeM: sum('threeM'), threeA: sum('threeA'), ftm: sum('ftm'), fta: sum('fta'),
+      reb: sum('reb'), ast: sum('ast'), stl: sum('stl'), blk: sum('blk'), tov: sum('tov'),
+    };
+    if (summaries[team].pts !== score || summaries[team].mins !== 240 || summaries[team].ast > summaries[team].fgm) errors++;
+    rows.forEach(row => {
+      const fields = ['pts','mins','fgm','fga','threeM','threeA','ftm','fta','reb','ast','stl','blk','tov'];
+      if (fields.some(field => !Number.isFinite(Number(row[field])) || Number(row[field]) < 0)) errors++;
+      if (row.fgm > row.fga || row.threeM > row.threeA || row.ftm > row.fta || row.threeA > row.fga || row.threeM > row.fgm) errors++;
+      if (row.pts !== 2 * (row.fgm - row.threeM) + 3 * row.threeM + row.ftm) errors++;
+    });
+  });
+  if (summaries[teamA].stl > summaries[teamB].tov || summaries[teamB].stl > summaries[teamA].tov) errors++;
+  const totalMisses = (summaries[teamA].fga - summaries[teamA].fgm) + (summaries[teamB].fga - summaries[teamB].fgm);
+  if (summaries[teamA].reb + summaries[teamB].reb > totalMisses) errors++;
+  return { errors, summaries };
+}
+
 function runSeason(seed) {
   const originalRandom = Math.random;
   Math.random = seededRandom(seed);
@@ -348,6 +370,9 @@ function runSeason(seed) {
   const teamAssistTotals = [];
   const scoringBursts = { fiftyPlus: 0, sixtyPlus: 0, seventyPlus: 0, eightyPlus: 0, max: 0 };
   const versatilityBursts = { quadruple: 0, quintuple: 0 };
+  const shootingTotals = { fgm: 0, fga: 0, threeM: 0, threeA: 0, ftm: 0, fta: 0 };
+  const signatureCounts = {};
+  let gamesValidated = 0;
   let invariantErrors = 0;
 
   try {
@@ -359,6 +384,9 @@ function runSeason(seed) {
         const scoreA = 102 + Math.floor(Math.random() * 21);
         const scoreB = 102 + Math.floor(Math.random() * 21);
         const boxScore = simulation.generateBoxScore(teamA, teamB, scoreA, scoreB);
+        const inspection = inspectBoxScore(boxScore, teamA, scoreA, teamB, scoreB);
+        invariantErrors += inspection.errors;
+        gamesValidated++;
 
         [[teamA, scoreA], [teamB, scoreB]].forEach(([team, score]) => {
           const rows = boxScore[team] || [];
@@ -380,9 +408,18 @@ function runSeason(seed) {
             const key = `${team}:${row.playerId}`;
             const record = totals[key] || (totals[key] = {
               id: row.playerId, name: row.name, team, gp: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0,
+              fgm: 0, fga: 0, threeM: 0, threeA: 0, ftm: 0, fta: 0,
             });
             record.gp++;
             ['pts', 'reb', 'ast', 'stl', 'blk'].forEach(field => { record[field] += row[field] || 0; });
+            ['fgm','fga','threeM','threeA','ftm','fta'].forEach(field => {
+              record[field] += row[field] || 0;
+              shootingTotals[field] += row[field] || 0;
+            });
+            if (team === 'WAS' && row.playerId === 'P0510') {
+              const signature = ['pts','reb','ast','stl','blk','fgm','fga','threeM','threeA','ftm','fta'].map(field => row[field]).join(':');
+              signatureCounts[signature] = (signatureCounts[signature] || 0) + 1;
+            }
           });
         });
       }
@@ -411,6 +448,13 @@ function runSeason(seed) {
     invariantErrors,
     full82: rows.filter(row => row.gp === 82).length,
     averageTeamAssists: teamAssistTotals.reduce((sum, value) => sum + value, 0) / teamAssistTotals.length,
+    gamesValidated,
+    shootingPct: {
+      fg: shootingTotals.fgm / Math.max(1, shootingTotals.fga),
+      three: shootingTotals.threeM / Math.max(1, shootingTotals.threeA),
+      ft: shootingTotals.ftm / Math.max(1, shootingTotals.fta),
+    },
+    maxDuplicateSignature: Math.max(0, ...Object.values(signatureCounts)),
     scoringBursts,
     versatilityBursts,
   };
@@ -454,13 +498,24 @@ function runUserSeason(seed) {
       totals.bestPts = Math.max(totals.bestPts, userRow.pts || 0);
 
       if (game === 0) {
-        const before = Object.fromEntries(['pts','reb','ast','stl','blk','tov','mins'].map(field => [field, sum(field)]));
+        const conservedFields = ['pts','reb','ast','stl','blk','tov','mins','fgm','fga','threeM','threeA','ftm','fta'];
+        const before = Object.fromEntries(conservedFields.map(field => [field, sum(field)]));
         const reduced = { ...userRow };
-        ['pts','reb','ast','stl','blk','tov'].forEach(field => { reduced[field] = Math.round((reduced[field] || 0) * 0.65); });
+        ['reb','ast','stl','blk','tov','fgm','fga','threeM','threeA','ftm','fta'].forEach(field => { reduced[field] = Math.round((reduced[field] || 0) * 0.65); });
+        reduced.fgm = Math.min(reduced.fgm, reduced.fga);
+        reduced.threeA = Math.min(reduced.threeA, reduced.fga);
+        reduced.threeM = Math.min(reduced.threeM, reduced.threeA, reduced.fgm);
+        reduced.ftm = Math.min(reduced.ftm, reduced.fta);
+        reduced.pts = 2 * (reduced.fgm - reduced.threeM) + 3 * reduced.threeM + reduced.ftm;
         reduced.mins = Math.max(8, Math.round((reduced.mins || 0) * 0.7));
         simulation.syncUserStatsToBoxScore({ boxScore }, reduced);
-        ['pts','reb','ast','stl','blk','tov','mins'].forEach(field => {
+        conservedFields.forEach(field => {
           if (sum(field) !== before[field]) injuryRedistributionErrors++;
+        });
+        rows.forEach(row => {
+          if (row.pts !== 2 * (row.fgm - row.threeM) + 3 * row.threeM + row.ftm || row.fgm > row.fga || row.threeM > row.threeA || row.threeM > row.fgm || row.ftm > row.fta) {
+            injuryRedistributionErrors++;
+          }
         });
       }
     }
@@ -478,8 +533,136 @@ function runUserSeason(seed) {
   return averages;
 }
 
+function validationPlayer(id, position, overrides) {
+  return Object.assign({
+    id, cname: id, pos: position, ovr: 78,
+    threePT: 70, MID: 70, FIN: 70, DNK: 70, HAN: 70, PAS: 70,
+    PDEF: 70, STL: 70, IDEF: 70, BLK: 70, REB: 70, ATH: 70, STR: 70, CLU: 70,
+  }, overrides || {});
+}
+
+function exactRotation(players, minutes) {
+  return { players, roleRanks: players.map((player, index) => index), minutes };
+}
+
+function runControlledProfileValidation(seed) {
+  const originalRandom = Math.random;
+  const trendTeam = [
+    validationPlayer('high-three', 'SG', { threePT: 95 }),
+    validationPlayer('low-three', 'SG', { threePT: 55 }),
+    validationPlayer('high-rebound', 'C', { REB: 95 }),
+    validationPlayer('low-rebound', 'C', { REB: 50 }),
+    validationPlayer('high-pass', 'PG', { PAS: 95, HAN: 90 }),
+    validationPlayer('low-pass', 'PG', { PAS: 50, HAN: 50 }),
+    validationPlayer('high-steal', 'SF', { STL: 95, PDEF: 90 }),
+    validationPlayer('low-steal', 'SF', { STL: 50, PDEF: 50 }),
+    validationPlayer('high-block', 'PF', { BLK: 95, IDEF: 90 }),
+    validationPlayer('low-block', 'PF', { BLK: 50, IDEF: 50 }),
+  ];
+  const opponent = Array.from({ length: 10 }, (_, index) => validationPlayer(`trend-opp-${index}`, ['PG','SG','SF','PF','C'][index % 5], {}));
+  const roleTeam = [
+    validationPlayer('defensive-center', 'C', {
+      ovr: 95, threePT: 45, MID: 50, FIN: 58, DNK: 62, HAN: 48, PAS: 55,
+      PDEF: 92, STL: 82, IDEF: 97, BLK: 97, REB: 96, ATH: 82, STR: 94, CLU: 72,
+    }),
+    validationPlayer('offensive-guard', 'PG', {
+      ovr: 88, threePT: 94, MID: 92, FIN: 91, DNK: 72, HAN: 96, PAS: 88,
+      PDEF: 65, STL: 68, IDEF: 45, BLK: 40, REB: 48, ATH: 90, STR: 60, CLU: 92,
+    }),
+  ].concat(Array.from({ length: 8 }, (_, index) => validationPlayer(`role-mate-${index}`, ['SG','SF','PF','C'][index % 4], { ovr: 76 })));
+  const trendMinutes = Array(10).fill(24);
+  const roleMinutes = [36, 36].concat(Array(8).fill(21));
+  const totals = {};
+  [...trendTeam, ...roleTeam].forEach(player => {
+    totals[player.id] = { gp: 0, pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, fga: 0, threeA: 0, threeM: 0 };
+  });
+  leagueData.LEAGUE_PLAYER_DATA.__TREND__ = trendTeam;
+  leagueData.LEAGUE_PLAYER_DATA.__ROLE__ = roleTeam;
+  leagueData.LEAGUE_PLAYER_DATA.__CONTROL__ = opponent;
+  Math.random = seededRandom(seed);
+  state.season = { isPlayoffs: false };
+  try {
+    for (let game = 0; game < 600; game++) {
+      const preparedTrend = {
+        __TREND__: exactRotation(trendTeam, trendMinutes),
+        __CONTROL__: exactRotation(opponent, trendMinutes),
+      };
+      const trendBox = simulation.generateBoxScore('__TREND__', '__CONTROL__', 112, 108, { _preparedRotations: preparedTrend });
+      trendBox.__TREND__.forEach(row => {
+        const record = totals[row.playerId];
+        record.gp++;
+        ['pts','reb','ast','stl','blk','fga','threeA','threeM'].forEach(field => { record[field] += row[field] || 0; });
+      });
+      const preparedRole = {
+        __ROLE__: exactRotation(roleTeam, roleMinutes),
+        __CONTROL__: exactRotation(opponent, trendMinutes),
+      };
+      const roleBox = simulation.generateBoxScore('__ROLE__', '__CONTROL__', 112, 108, { _preparedRotations: preparedRole });
+      roleBox.__ROLE__.slice(0, 2).forEach(row => {
+        const record = totals[row.playerId];
+        record.gp++;
+        ['pts','reb','ast','stl','blk','fga','threeA','threeM'].forEach(field => { record[field] += row[field] || 0; });
+      });
+    }
+  } finally {
+    Math.random = originalRandom;
+    delete leagueData.LEAGUE_PLAYER_DATA.__TREND__;
+    delete leagueData.LEAGUE_PLAYER_DATA.__ROLE__;
+    delete leagueData.LEAGUE_PLAYER_DATA.__CONTROL__;
+  }
+  const perGame = id => Object.fromEntries(Object.entries(totals[id]).map(([field, value]) => [field, field === 'gp' ? value : value / Math.max(1, totals[id].gp)]));
+  const highThree = perGame('high-three');
+  const lowThree = perGame('low-three');
+  const defensiveCenter = perGame('defensive-center');
+  const offensiveGuard = perGame('offensive-guard');
+  return {
+    games: 600,
+    three: {
+      highAttempts: highThree.threeA, lowAttempts: lowThree.threeA,
+      highPct: totals['high-three'].threeM / Math.max(1, totals['high-three'].threeA),
+      lowPct: totals['low-three'].threeM / Math.max(1, totals['low-three'].threeA),
+    },
+    rebound: { high: perGame('high-rebound').reb, low: perGame('low-rebound').reb },
+    assist: { high: perGame('high-pass').ast, low: perGame('low-pass').ast },
+    steal: { high: perGame('high-steal').stl, low: perGame('low-steal').stl },
+    block: { high: perGame('high-block').blk, low: perGame('low-block').blk },
+    role: {
+      defensiveCenter: { ovr: 95, fga: defensiveCenter.fga, pts: defensiveCenter.pts },
+      offensiveGuard: { ovr: 88, fga: offensiveGuard.fga, pts: offensiveGuard.pts },
+    },
+  };
+}
+
+function validateDeterministicBoxScore(seed) {
+  const originalRandom = Math.random;
+  const teamA = Array.from({ length: 10 }, (_, index) => validationPlayer(`seed-a-${index}`, ['PG','SG','SF','PF','C'][index % 5], { ovr: 76 + index }));
+  const teamB = Array.from({ length: 10 }, (_, index) => validationPlayer(`seed-b-${index}`, ['PG','SG','SF','PF','C'][index % 5], { ovr: 85 - index }));
+  const minutes = Array(10).fill(24);
+  const generate = () => {
+    Math.random = seededRandom(seed);
+    state.season = { isPlayoffs: false };
+    return simulation.generateBoxScore('__SEED_A__', '__SEED_B__', 113, 109, {
+      _preparedRotations: {
+        __SEED_A__: exactRotation(teamA, minutes),
+        __SEED_B__: exactRotation(teamB, minutes),
+      },
+    });
+  };
+  let first;
+  let second;
+  try {
+    first = generate();
+    second = generate();
+  } finally {
+    Math.random = originalRandom;
+  }
+  return JSON.stringify(first) === JSON.stringify(second);
+}
+
 const seasons = [1701, 2702, 3703, 4704, 5705, 6706].map(runSeason);
 const userSeason = runUserSeason(7707);
+const controlledProfiles = runControlledProfileValidation(8808);
+const deterministicBoxScore = validateDeterministicBoxScore(9909);
 const fields = ['pts', 'reb', 'ast', 'stl', 'blk'];
 const averageScoringBursts = key => seasons.reduce((sum, season) => sum + season.scoringBursts[key], 0) / seasons.length;
 const report = {
@@ -487,8 +670,11 @@ const report = {
     season: index + 1,
     full82: season.full82,
     qualified: season.qualified.length,
+    gamesValidated: season.gamesValidated,
     averageTeamAssists: Number(season.averageTeamAssists.toFixed(1)),
     invariantErrors: season.invariantErrors,
+    shootingPct: Object.fromEntries(Object.entries(season.shootingPct).map(([key, value]) => [key, Number(value.toFixed(3))])),
+    maxDuplicateSignature: season.maxDuplicateSignature,
     scoringBursts: season.scoringBursts,
     versatilityBursts: season.versatilityBursts,
     leaderRanges: Object.fromEntries(fields.map(field => [
@@ -510,6 +696,16 @@ const report = {
     .slice(0, 12)
     .map(row => ({ id: row.id, name: row.name, gp: row.gp, ppg: row.pts, rpg: row.reb, apg: row.ast })),
   userSeason,
+  controlledProfiles: {
+    games: controlledProfiles.games,
+    three: Object.fromEntries(Object.entries(controlledProfiles.three).map(([key, value]) => [key, Number(value.toFixed(3))])),
+    rebound: Object.fromEntries(Object.entries(controlledProfiles.rebound).map(([key, value]) => [key, Number(value.toFixed(2))])),
+    assist: Object.fromEntries(Object.entries(controlledProfiles.assist).map(([key, value]) => [key, Number(value.toFixed(2))])),
+    steal: Object.fromEntries(Object.entries(controlledProfiles.steal).map(([key, value]) => [key, Number(value.toFixed(2))])),
+    block: Object.fromEntries(Object.entries(controlledProfiles.block).map(([key, value]) => [key, Number(value.toFixed(2))])),
+    role: controlledProfiles.role,
+  },
+  deterministicBoxScore,
 };
 
 console.log(JSON.stringify(report, null, 2));
@@ -526,8 +722,13 @@ const minimums = { ast: 10, blk: 2.5 };
 const failures = [];
 seasons.forEach((season, index) => {
   if (season.invariantErrors > 0) failures.push(`赛季 ${index + 1} 存在 ${season.invariantErrors} 个总量守恒错误`);
+  if (season.gamesValidated < 500) failures.push(`赛季 ${index + 1} 守恒验证场次不足：${season.gamesValidated}`);
   if (season.full82 < 5 || season.full82 > 50) failures.push(`赛季 ${index + 1} 打满 82 场人数异常：${season.full82}`);
   if (season.averageTeamAssists < 23 || season.averageTeamAssists > 29) failures.push(`赛季 ${index + 1} 球队场均助攻异常：${season.averageTeamAssists}`);
+  if (season.shootingPct.fg < 0.43 || season.shootingPct.fg > 0.52 || season.shootingPct.three < 0.31 || season.shootingPct.three > 0.41 || season.shootingPct.ft < 0.70 || season.shootingPct.ft > 0.86) {
+    failures.push(`赛季 ${index + 1} 联盟命中率异常：${JSON.stringify(season.shootingPct)}`);
+  }
+  if (season.maxDuplicateSignature > 3) failures.push(`赛季 ${index + 1} 同一球员大量重复完全相同 Box Score：${season.maxDuplicateSignature}`);
   fields.forEach(field => {
     if (minimums[field] && season.leaders[field][0][field] < minimums[field]) failures.push(`赛季 ${index + 1} ${field} 榜首过低`);
     if (season.leaders[field][0][field] > limits[field].first) failures.push(`赛季 ${index + 1} ${field} 榜首过高`);
@@ -549,6 +750,30 @@ if (userSeason.invariantErrors || userSeason.injuryRedistributionErrors) {
 }
 if (userSeason.pts < 16 || userSeason.pts > 31 || userSeason.ast > 11 || userSeason.bestPts > 94) {
   console.error(`用户赛季分布超出合理范围：${JSON.stringify(userSeason)}`);
+  process.exitCode = 1;
+}
+
+if (controlledProfiles.three.highAttempts <= controlledProfiles.three.lowAttempts * 1.15 || controlledProfiles.three.highPct <= controlledProfiles.three.lowPct + 0.035) {
+  console.error(`三分属性趋势不成立：${JSON.stringify(controlledProfiles.three)}`);
+  process.exitCode = 1;
+}
+[
+  ['篮板', controlledProfiles.rebound],
+  ['助攻', controlledProfiles.assist],
+  ['抢断', controlledProfiles.steal],
+  ['盖帽', controlledProfiles.block],
+].forEach(([label, trend]) => {
+  if (trend.high <= trend.low * 1.20) {
+    console.error(`${label}属性趋势不成立：${JSON.stringify(trend)}`);
+    process.exitCode = 1;
+  }
+});
+if (controlledProfiles.role.offensiveGuard.fga <= controlledProfiles.role.defensiveCenter.fga || controlledProfiles.role.offensiveGuard.pts <= controlledProfiles.role.defensiveCenter.pts) {
+  console.error(`OVR 错误主导 Usage/得分：${JSON.stringify(controlledProfiles.role)}`);
+  process.exitCode = 1;
+}
+if (!deterministicBoxScore) {
+  console.error('相同 seed、阵容与输入未生成相同 Box Score');
   process.exitCode = 1;
 }
 
