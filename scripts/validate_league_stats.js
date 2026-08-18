@@ -591,6 +591,62 @@ function exactRotation(players, minutes) {
   return { players, roleRanks: players.map((player, index) => index), minutes };
 }
 
+function runIsolationPair(seed, label, highOverrides, lowOverrides) {
+  const originalRandom = Math.random;
+  const totals = {
+    high: { gp: 0, pts: 0, ast: 0, tov: 0, fgm: 0, fga: 0, threeM: 0, threeA: 0 },
+    low: { gp: 0, pts: 0, ast: 0, tov: 0, fgm: 0, fga: 0, threeM: 0, threeA: 0 },
+  };
+  const minutes = Array(10).fill(24);
+  try {
+    for (let orientation = 0; orientation < 2; orientation++) {
+      Math.random = seededRandom(seed + orientation * 7919);
+      state.season = { isPlayoffs: false };
+      const high = validationPlayer(`${label}-high-${orientation}`, 'PG', highOverrides);
+      const low = validationPlayer(`${label}-low-${orientation}`, 'PG', lowOverrides);
+      const subjects = orientation === 0 ? [high, low] : [low, high];
+      const team = subjects.concat(Array.from({ length: 8 }, (_, index) => validationPlayer(`${label}-mate-${orientation}-${index}`, ['SG','SF','PF','C'][index % 4], {})));
+      const opponent = Array.from({ length: 10 }, (_, index) => validationPlayer(`${label}-opp-${orientation}-${index}`, ['PG','SG','SF','PF','C'][index % 5], {}));
+      for (let game = 0; game < 300; game++) {
+        const boxScore = simulation.generateBoxScore(`__${label}_TEAM__`, `__${label}_OPP__`, 110, 108, {
+          _preparedRotations: {
+            [`__${label}_TEAM__`]: exactRotation(team, minutes),
+            [`__${label}_OPP__`]: exactRotation(opponent, minutes),
+          },
+        });
+        (boxScore[`__${label}_TEAM__`] || []).slice(0, 2).forEach(row => {
+          const bucket = row.playerId.includes('-high-') ? totals.high : totals.low;
+          bucket.gp++;
+          ['pts','ast','tov','fgm','fga','threeM','threeA'].forEach(field => { bucket[field] += row[field] || 0; });
+        });
+      }
+    }
+  } finally {
+    Math.random = originalRandom;
+  }
+  function summarize(record) {
+    return {
+      ppg: record.pts / record.gp, apg: record.ast / record.gp, tov: record.tov / record.gp,
+      fga: record.fga / record.gp, fgPct: record.fgm / Math.max(1, record.fga),
+      threeA: record.threeA / record.gp, threePct: record.threeM / Math.max(1, record.threeA),
+    };
+  }
+  return { high: summarize(totals.high), low: summarize(totals.low) };
+}
+
+function runPlaymakingIsolationValidation() {
+  return {
+    pass: runIsolationPair(12101, 'PASS_ISOLATION', { PAS: 95 }, { PAS: 50 }),
+    handle: runIsolationPair(13101, 'HANDLE_ISOLATION', { HAN: 95 }, { HAN: 50 }),
+    clutch: runIsolationPair(14101, 'CLUTCH_ISOLATION', { CLU: 95 }, { CLU: 50 }),
+    organizerVsScorer: runIsolationPair(15101, 'ROLE_ISOLATION', {
+      threePT: 68, MID: 68, FIN: 70, DNK: 60, HAN: 95, PAS: 95, ATH: 75, STR: 65, CLU: 70,
+    }, {
+      threePT: 94, MID: 92, FIN: 90, DNK: 85, HAN: 82, PAS: 65, ATH: 88, STR: 75, CLU: 70,
+    }),
+  };
+}
+
 function runControlledProfileValidation(seed) {
   const originalRandom = Math.random;
   const trendTeam = [
@@ -736,9 +792,14 @@ function validateExplicitBudgetRebalance(seed) {
 const seasons = [1701, 2702, 3703, 4704, 5705, 6706].map(runSeason);
 const userSeason = runUserSeason(7707);
 const controlledProfiles = runControlledProfileValidation(8808);
+const playmakingIsolation = runPlaymakingIsolationValidation();
 const deterministicBoxScore = validateDeterministicBoxScore(9909);
 const explicitBudgetRebalance = validateExplicitBudgetRebalance(10101);
 const fields = ['pts', 'reb', 'ast', 'stl', 'blk'];
+const roundIsolationPair = pair => Object.fromEntries(Object.entries(pair).map(([side, metrics]) => [
+  side,
+  Object.fromEntries(Object.entries(metrics).map(([field, value]) => [field, Number(value.toFixed(3))])),
+]));
 const averageScoringBursts = key => seasons.reduce((sum, season) => sum + season.scoringBursts[key], 0) / seasons.length;
 const report = {
   seasons: seasons.map((season, index) => ({
@@ -794,6 +855,7 @@ const report = {
     block: Object.fromEntries(Object.entries(controlledProfiles.block).map(([key, value]) => [key, Number(value.toFixed(2))])),
     role: controlledProfiles.role,
   },
+  playmakingIsolation: Object.fromEntries(Object.entries(playmakingIsolation).map(([name, pair]) => [name, roundIsolationPair(pair)])),
   deterministicBoxScore,
   explicitBudgetRebalance,
 };
@@ -808,7 +870,7 @@ const limits = {
   blk: { first: 4, tenth: 2.3 },
 };
 // 允许伤病和出场资格造成的赛季波动；2.5+ 仍代表联盟级护框榜首，不为过测试抬高球员属性。
-const minimums = { ast: 10, blk: 2.5 };
+const minimums = { pts: 27, ast: 10, blk: 2.5 };
 const failures = [];
 seasons.forEach((season, index) => {
   if (season.invariantErrors > 0) failures.push(`赛季 ${index + 1} 存在 ${season.invariantErrors} 个总量守恒错误`);
@@ -868,6 +930,38 @@ if (controlledProfiles.role.offensiveGuard.fga <= controlledProfiles.role.defens
 }
 if (!deterministicBoxScore) {
   console.error('相同 seed、阵容与输入未生成相同 Box Score');
+  process.exitCode = 1;
+}
+const passIsolation = playmakingIsolation.pass;
+const passFgaGap = Math.abs(passIsolation.high.fga - passIsolation.low.fga) / Math.max(0.01, passIsolation.low.fga);
+const passPpgGap = Math.abs(passIsolation.high.ppg - passIsolation.low.ppg) / Math.max(0.01, passIsolation.low.ppg);
+if (passIsolation.high.apg <= passIsolation.low.apg * 4 || passFgaGap >= 0.05 || passPpgGap >= 0.05
+  || Math.abs(passIsolation.high.fgPct - passIsolation.low.fgPct) >= 0.02
+  || Math.abs(passIsolation.high.threePct - passIsolation.low.threePct) >= 0.025) {
+  console.error(`PAS 仍越界主导个人得分：${JSON.stringify({ passIsolation, passFgaGap, passPpgGap })}`);
+  process.exitCode = 1;
+}
+const handleIsolation = playmakingIsolation.handle;
+const handleFgaRatio = handleIsolation.high.fga / Math.max(0.01, handleIsolation.low.fga);
+if (handleFgaRatio < 1.045 || handleFgaRatio > 1.12 || handleIsolation.high.apg <= handleIsolation.low.apg * 1.5
+  || handleIsolation.high.tov >= handleIsolation.low.tov
+  || Math.abs(handleIsolation.high.fgPct - handleIsolation.low.fgPct) >= 0.02) {
+  console.error(`HAN 的自主进攻/组织职责越界：${JSON.stringify({ handleIsolation, handleFgaRatio })}`);
+  process.exitCode = 1;
+}
+const clutchIsolation = playmakingIsolation.clutch;
+if (Math.abs(clutchIsolation.high.fga - clutchIsolation.low.fga) / Math.max(0.01, clutchIsolation.low.fga) >= 0.05
+  || Math.abs(clutchIsolation.high.ppg - clutchIsolation.low.ppg) / Math.max(0.01, clutchIsolation.low.ppg) >= 0.05
+  || Math.abs(clutchIsolation.high.fgPct - clutchIsolation.low.fgPct) >= 0.02
+  || Math.abs(clutchIsolation.high.threePct - clutchIsolation.low.threePct) >= 0.02) {
+  console.error(`CLU 仍在全场基础投篮中持续加成：${JSON.stringify(clutchIsolation)}`);
+  process.exitCode = 1;
+}
+const roleIsolation = playmakingIsolation.organizerVsScorer;
+if (roleIsolation.high.apg <= roleIsolation.low.apg * 2
+  || roleIsolation.low.fga <= roleIsolation.high.fga * 1.25
+  || roleIsolation.low.ppg <= roleIsolation.high.ppg * 1.40) {
+  console.error(`组织核心仍压过真实得分核心：${JSON.stringify(roleIsolation)}`);
   process.exitCode = 1;
 }
 if (explicitBudgetRebalance.totalPoints !== 300 || explicitBudgetRebalance.finalPts !== 300

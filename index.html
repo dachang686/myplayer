@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; media-src 'self' data: blob:; worker-src 'self' blob:;">
   <script>
@@ -25,6 +25,8 @@ window.open = function(){ return null; };
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>篮坛造星局 · Court Forge</title>
+  <script src="js/translations.js"></script>
+  <script src="js/i18n.js"></script>
   <link rel="stylesheet" href="css/draft.css">
   <style>
 /* ============================================================
@@ -63,6 +65,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .home-help-link{display:inline-flex;align-items:center;gap:7px;min-height:36px;padding:7px 10px;border:1px solid var(--border);border-radius:9px;background:transparent;color:var(--text-dim);font:700 11px var(--font-body);cursor:pointer;transition:border-color .18s cubic-bezier(.16,1,.3,1),color .18s cubic-bezier(.16,1,.3,1),background .18s cubic-bezier(.16,1,.3,1)}
 .home-help-link span{display:grid;place-items:center;width:18px;height:18px;border:1px solid currentColor;border-radius:50%;font-size:10px}
 .home-help-link:hover,.home-help-link:focus-visible{border-color:var(--orange);color:var(--orange);background:var(--orange-bg);outline:none}
+.language-actions{display:flex;align-items:center;gap:7px}.language-toggle{display:inline-flex;align-items:center;justify-content:center;min-width:42px;min-height:36px;padding:7px 10px;border:1px solid var(--border);border-radius:9px;background:transparent;color:var(--text-dim);font:800 11px var(--font-body);cursor:pointer;transition:border-color .18s cubic-bezier(.16,1,.3,1),color .18s cubic-bezier(.16,1,.3,1),background .18s cubic-bezier(.16,1,.3,1)}.language-toggle:hover,.language-toggle:focus-visible{border-color:var(--orange);color:var(--orange);background:var(--orange-bg);outline:none}
 .home-shell{padding:0 20px}
 .home-hero{position:relative;padding:38px 0 30px;isolation:isolate}
 .home-hero::before{content:'';position:absolute;z-index:-1;right:-98px;top:8px;width:250px;height:250px;border:1px solid var(--border);border-radius:50%;opacity:.7}
@@ -5385,8 +5388,8 @@ function getLeagueScoringBurst(star, scoringSkill) {
   if (roll < eightyChance + seventyChance + sixtyChance + LEAGUE_SCORING_BURST_RATES.hot) {
     return {
       tier: 'hot',
-      gameForm: 1.60 + Math.random() * 0.55 + eligibility * 0.30,
-      shareCap: 0.35 + eligibility * 0.07,
+      gameForm: 1.75 + Math.random() * 0.65 + eligibility * 0.30,
+      shareCap: 0.42 + eligibility * 0.08,
       hardCap: 100,
     };
   }
@@ -5411,20 +5414,20 @@ function getLeagueOffenseProfile(player) {
   var athletic = skill('ATH');
   var strength = skill('STR');
   var clutch = skill('CLU');
-  var threeEfficiency = three * 0.72 + handle * 0.16 + clutch * 0.12;
-  var midEfficiency = mid * 0.68 + handle * 0.18 + clutch * 0.14;
-  var rimEfficiency = finish * 0.38 + dunk * 0.26 + athletic * 0.18 + strength * 0.12 + handle * 0.06;
+  var threeEfficiency = three;
+  var midEfficiency = mid;
+  var rimEfficiency = finish * 0.44 + dunk * 0.24 + athletic * 0.20 + strength * 0.12;
   var regionAbilities = [threeEfficiency, midEfficiency, rimEfficiency].sort(function(a, b) { return b - a; });
   var scoring = regionAbilities[0] * 0.55 + regionAbilities[1] * 0.30 + regionAbilities[2] * 0.15;
-  var playmaking = pass * 0.55 + handle * 0.30 + clutch * 0.15;
-  var usage = scoring * 0.50 + handle * 0.25 + pass * 0.15 + clutch * 0.10;
-  var threeVolume = 0.16 + three * 0.55 + handle * 0.08;
-  var midVolume = 0.14 + mid * 0.38 + clutch * 0.05;
+  var playmaking = pass * 0.70 + handle * 0.25 + clutch * 0.05;
+  var usage = scoring * 0.89 + handle * 0.08 + pass * 0.03;
+  var threeVolume = 0.16 + three * 0.55;
+  var midVolume = 0.14 + mid * 0.38;
   var rimVolume = 0.20 + finish * 0.25 + dunk * 0.18 + athletic * 0.10 + strength * 0.06;
   var volumeTotal = threeVolume + midVolume + rimVolume || 1;
   var threeRate = leagueStatClamp(threeVolume / volumeTotal, 0.08, 0.62);
   var rimShare = leagueStatClamp(rimVolume / Math.max(0.01, rimVolume + midVolume), 0.22, 0.82);
-  var ftRate = leagueStatClamp(0.08 + rimEfficiency * 0.19 + handle * 0.05, 0.08, 0.34);
+  var ftRate = leagueStatClamp(0.08 + rimEfficiency * 0.22, 0.08, 0.34);
   return {
     scoring: scoring,
     impact: scoring * 0.78 + playmaking * 0.22,
@@ -5616,16 +5619,13 @@ function generateBoxScore(teamA, teamB, totalA, totalB, gameOptions) {
     var offense = players.map(function(player) { return getLeagueOffenseProfile(player); });
     var offSkill = offense.map(function(profile) { return profile.scoring; });
     var rebSkill = players.map(function(player) { return af(parseInt(player.REB) || 50); });
-    var passSkill = players.map(function(player) { return af(parseInt(player.PAS) || 50) * 0.68 + af(parseInt(player.HAN) || 50) * 0.24 + af(parseInt(player.CLU) || 50) * 0.08; });
+    var passSkill = players.map(function(player) { return af(parseInt(player.PAS) || 50) * 0.72 + af(parseInt(player.HAN) || 50) * 0.28; });
     var stealSkill = players.map(function(player) { return af(parseInt(player.STL) || 50) * 0.72 + af(parseInt(player.PDEF) || 50) * 0.18 + af(parseInt(player.ATH) || 50) * 0.10; });
     var blockSkill = players.map(function(player) { return af(parseInt(player.BLK) || 50) * 0.62 + af(parseInt(player.IDEF) || 50) * 0.38; });
     var handleSkill = players.map(function(player) { return af(parseInt(player.HAN) || 50) * 0.52 + af(parseInt(player.PAS) || 50) * 0.28 + af(parseInt(player.CLU) || 50) * 0.20; });
     var perimeterDefense = players.map(function(player) { return af(parseInt(player.PDEF) || 50) * 0.62 + af(parseInt(player.STL) || 50) * 0.18 + af(parseInt(player.ATH) || 50) * 0.20; });
     var interiorDefense = players.map(function(player) { return af(parseInt(player.IDEF) || 50) * 0.48 + af(parseInt(player.BLK) || 50) * 0.30 + af(parseInt(player.STR) || 50) * 0.22; });
-    var hierarchy = offense.map(function(profile, index) { return { index: index, value: profile.usage }; })
-      .sort(function(a, b) { return b.value - a.value; });
-    var hierarchyRank = [];
-    hierarchy.forEach(function(item, rank) { hierarchyRank[item.index] = rank; });
+    var averageScoring = offSkill.reduce(function(sum, value) { return sum + value; }, 0) / Math.max(1, offSkill.length);
     var bursts = players.map(function(player, index) {
       var ovrSignal = leagueStatClamp(((parseInt(player.ovr) || 70) - 78) / 21, 0, 1);
       var eligibility = offSkill[index] * 0.82 + ovrSignal * 0.18;
@@ -5633,9 +5633,9 @@ function generateBoxScore(teamA, teamB, totalA, totalB, gameOptions) {
     });
     var usageWeights = players.map(function(player, index) {
       var roleOpportunity = roleRanks[index] < 5 ? 1.06 : leagueStatClamp(0.90 - (roleRanks[index] - 5) * 0.045, 0.66, 0.90);
-      var hierarchyOpportunity = 0.86 + (players.length <= 1 ? 0.12 : (players.length - 1 - hierarchyRank[index]) / (players.length - 1) * 0.24);
+      var hierarchyOpportunity = leagueStatClamp(1 + (offSkill[index] - averageScoring) * 0.80, 0.80, 1.25);
       return minutes[index]
-        * (0.22 + Math.pow(offense[index].usage, 1.45) * 1.48)
+        * (0.22 + offense[index].usage * 1.48)
         * roleOpportunity * hierarchyOpportunity * profiles[index].scoring * bursts[index].gameForm;
     });
     var minuteWeighted = function(values) {
@@ -5815,8 +5815,7 @@ function generateBoxScore(teamA, teamB, totalA, totalB, gameOptions) {
       var rimPct = leagueStatClamp(0.43 + efficiency.rim * 0.235 + interiorAdjustment + formAdjustment + burstEfficiency + leagueStatNormal(0, 0.030), 0.30, 0.78);
       var midPct = leagueStatClamp(0.31 + efficiency.mid * 0.185 + perimeterAdjustment * 0.45 + formAdjustment + burstEfficiency + leagueStatNormal(0, 0.032), 0.22, 0.66);
       var twoPct = rimPct * profile.shotProfile.rimShare + midPct * (1 - profile.shotProfile.rimShare);
-      var ftSkill = af(parseInt(player.CLU) || 50) * 0.42 + af(parseInt(player.threePT) || 50) * 0.24
-        + af(parseInt(player.MID) || 50) * 0.22 + af(parseInt(player.HAN) || 50) * 0.12;
+      var ftSkill = af(parseInt(player.threePT) || 50) * 0.52 + af(parseInt(player.MID) || 50) * 0.48;
       var ftPct = leagueStatClamp(0.60 + ftSkill * 0.28 + leagueStatNormal(0, 0.018), 0.54, 0.94);
       return {
         fga: fga[index], threeA: threeA[index], twoA: twoA, fta: fta[index],
@@ -5861,7 +5860,7 @@ function generateBoxScore(teamA, teamB, totalA, totalB, gameOptions) {
     var teamAssists = leagueStatClamp(Math.round(leagueStatNormal(context.teamFgm * (0.48 + context.teamPassing * 0.20), 1.7)), 10, Math.min(35, context.teamFgm));
     var teamSteals = leagueStatClamp(Math.round(leagueStatNormal(opponent.teamTurnovers * (0.43 + context.teamStealing * 0.18), 1.0)), 2, Math.min(13, opponent.teamTurnovers));
     var opponentTwoA = opponent.teamFga - opponent.teamThreeA;
-    var teamBlocks = leagueStatClamp(Math.round(leagueStatNormal(opponentTwoA * (0.058 + context.teamBlocking * 0.095), 1.0)), 1, Math.min(11, opponentTwoA));
+    var teamBlocks = leagueStatClamp(Math.round(leagueStatNormal(opponentTwoA * (0.055 + context.teamBlocking * 0.090), 1.0)), 1, Math.min(11, opponentTwoA));
     var burst = context.versatilityBurst;
     if (burst) {
       if (burst.tier === 'quintuple') {

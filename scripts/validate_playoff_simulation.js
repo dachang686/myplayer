@@ -585,11 +585,19 @@ function runRealRosterSmoke() {
   leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_UPGRADED_STAR = syntheticTeam('UPGRADED', [99, 85, 85, 85, 85], [80, 78, 76, 74, 72]);
   leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_STRUCTURE_STRONG = syntheticTeam('STRUCTURE-STRONG', [85, 85, 85, 85, 85], [80, 78, 76, 74, 72]);
   leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_STRUCTURE_WEAK = syntheticTeam('STRUCTURE-WEAK', [85, 85, 85, 85, 85], [80, 78, 76, 74, 72]);
+  leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_CLUTCH_HIGH = syntheticTeam('CLUTCH-HIGH', [85, 85, 85, 85, 85], [80, 78, 76, 74, 72]);
+  leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_CLUTCH_LOW = syntheticTeam('CLUTCH-LOW', [85, 85, 85, 85, 85], [80, 78, 76, 74, 72]);
   leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_STRUCTURE_STRONG.forEach(player => {
     attributeKeys.forEach(key => { player[key] = 95; });
   });
   leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_STRUCTURE_WEAK.forEach(player => {
     attributeKeys.forEach(key => { player[key] = 70; });
+  });
+  leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_CLUTCH_HIGH.forEach(player => {
+    attributeKeys.forEach(key => { player[key] = key === 'CLU' ? 95 : 72; });
+  });
+  leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_CLUTCH_LOW.forEach(player => {
+    attributeKeys.forEach(key => { player[key] = key === 'CLU' ? 50 : 72; });
   });
   const engineStart = indexSource.indexOf('function getPlayerPositions');
   const engineEnd = indexSource.indexOf('/** 属性→效率系数：递减曲线', engineStart);
@@ -746,6 +754,18 @@ function runRealRosterSmoke() {
       overTenRate: fullChainDeltas.filter(value => value > 10).length / Math.max(1, fullChainDeltas.length),
       budgetRebalances: fullChainBudgetRebalances,
     };
+    let clutchWins = 0;
+    const clutchGames = 5000;
+    realState.season = { schedule: [], isPlayoffs: false, _npcSeasonProfiles: {}, events: { activeEffects: [] } };
+    for (let game = 0; game < clutchGames; game++) {
+      const result = realSimulate('SYNTHETIC_CLUTCH_HIGH', 'SYNTHETIC_CLUTCH_LOW', 0, null, {
+        isHomeA: null,
+        isB2B: false,
+        ignoreNpcAvailability: true,
+      });
+      if (result.won) clutchWins++;
+    }
+    const clutchIsolation = { games: clutchGames, highClutchWinRate: clutchWins / clutchGames };
     const previousPlayoffState = realState.season.isPlayoffs;
     const previousStandings = realState.season.standings;
     realState.season.isPlayoffs = false;
@@ -803,6 +823,7 @@ function runRealRosterSmoke() {
         invariantErrors: fullChainInvariantErrors,
         reconciliation: fullChainReconciliation,
       },
+      clutchIsolation,
       realSeededDeterminism,
       syntheticLineup: {
         strongPower: strongPower.overall,
@@ -968,6 +989,10 @@ if (realRosterSmoke.fullChain.reconciliation.meanAbs >= 4
   || realRosterSmoke.fullChain.reconciliation.overTenRate > 0.03
   || realRosterSmoke.fullChain.reconciliation.budgetRebalances !== 0) {
   failures.push(`正式全链路 reconciliation 修正过强：${JSON.stringify(realRosterSmoke.fullChain.reconciliation)}`);
+}
+if (!realRosterSmoke.clutchIsolation || realRosterSmoke.clutchIsolation.highClutchWinRate < 0.525
+  || realRosterSmoke.clutchIsolation.highClutchWinRate > 0.575) {
+  failures.push(`CLU 未主要在胶着第四节/加时产生可控优势：${JSON.stringify(realRosterSmoke.clutchIsolation)}`);
 }
 if (outside(realRosterSmoke.winRatePHI, 0.68, 0.88)) failures.push(`真实强弱队胜率异常：${realRosterSmoke.winRatePHI}`);
 if (outside(realRosterSmoke.averageTotal, 205, 235)) failures.push(`真实名单场均总分异常：${realRosterSmoke.averageTotal}`);
