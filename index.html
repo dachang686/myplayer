@@ -5428,9 +5428,10 @@ function getLeagueOffenseProfile(player) {
   var threeRate = leagueStatClamp(threeVolume / volumeTotal, 0.08, 0.62);
   var rimShare = leagueStatClamp(rimVolume / Math.max(0.01, rimVolume + midVolume), 0.22, 0.82);
   var ftRate = leagueStatClamp(0.08 + rimEfficiency * 0.22, 0.08, 0.34);
+  var elitePlaymaking = leagueStatClamp((playmaking - 0.75) / 0.25, 0, 1);
   return {
     scoring: scoring,
-    impact: scoring * 0.78 + playmaking * 0.22,
+    impact: scoring * 0.68 + playmaking * 0.32 + Math.pow(elitePlaymaking, 1.5) * 0.08,
     usage: usage,
     playmaking: playmaking,
     threePoint: threeEfficiency,
@@ -5462,14 +5463,17 @@ function getPlayerGameImpact(player) {
     return leagueStatClamp(25 + 74 * Math.pow(normalized, 1 / 1.275), 25, 99);
   }
   var overall = leagueStatClamp(Number(player && player.ovr) || 50, 40, 99);
-  var rawOffense = toRating(getLeagueOffenseProfile(player).impact);
+  var offenseProfile = getLeagueOffenseProfile(player);
+  var rawOffense = toRating(offenseProfile.impact);
+  var rawPlaymaking = toRating(offenseProfile.playmaking);
   var rawDefense = toRating(getLeagueDefenseImpact(player));
   var athletic = leagueStatClamp(Number(player && player.ATH) || overall, 25, 99);
   var clutch = leagueStatClamp(Number(player && player.CLU) || overall, 25, 99);
   var anchorWeight = 0.72;
+  var eliteCreationBonus = Math.max(0, rawPlaymaking - 80) * 0.24;
   return {
     overall: overall,
-    offense: overall * anchorWeight + rawOffense * (1 - anchorWeight),
+    offense: leagueStatClamp(overall * anchorWeight + rawOffense * (1 - anchorWeight) + eliteCreationBonus, 25, 99),
     defense: overall * anchorWeight + rawDefense * (1 - anchorWeight),
     athletic: overall * 0.78 + athletic * 0.22,
     clutch: overall * 0.78 + clutch * 0.22,
