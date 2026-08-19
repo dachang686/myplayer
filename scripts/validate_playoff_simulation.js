@@ -37,14 +37,16 @@ if (!/repairPlayoffBracketState\(\)/.test(playoffsSource)) {
 }
 
 function validatePlayInRouting() {
-  const flowStart = playoffsSource.indexOf('function renderPlayoffs');
-  const flowEnd = playoffsSource.indexOf('function getPlayoffTreeSeriesResult', flowStart);
-  if (flowStart < 0 || flowEnd < 0) throw new Error('无法定位附加赛入口流程');
+  const helperStart = playoffsSource.indexOf('function createPlayInState');
+  const helperEnd = playoffsSource.indexOf('function buildPlayoffBracket', helperStart);
+  const renderStart = playoffsSource.indexOf('function renderPlayoffs', helperEnd);
+  const flowEnd = playoffsSource.indexOf('function getPlayoffTreeSeriesResult', renderStart);
+  if (helperStart < 0 || helperEnd < 0 || renderStart < 0 || flowEnd < 0) throw new Error('无法定位附加赛入口流程');
 
-  const calls = { playIn: 0, save: 0, bracket: 0 };
-  const staleBracket = { conf: 'NORTH', teams: Array.from({ length: 8 }, (_, index) => ({ team: `T${index + 1}` })) };
+  const calls = { playIn: 0, save: 0, brackets: [], playInGames: [], bracketUI: 0 };
+  const staleBracket = { conf: 'NORTH', teams: Array.from({ length: 8 }, (_, index) => ({ team: `N${index + 1}` })) };
   const routeState = {
-    careerTeam: 'T9',
+    careerTeam: 'N9',
     season: {
       standings: {},
       isPlayoffs: true,
@@ -61,33 +63,47 @@ function validatePlayInRouting() {
     'getConferenceSeed',
     'getConference',
     'getConferenceSorted',
+    'simulatePlayInMatch',
     'renderPlayInUI',
     'queueSeasonAutoSave',
     'buildPlayoffBracket',
     'getOtherPlayoffConference',
     'renderPlayoffBracketUI',
-    `${playoffsSource.slice(flowStart, flowEnd)}\nreturn { renderPlayoffs, resumePlayoffs };`,
+    `${playoffsSource.slice(helperStart, helperEnd)}\n${playoffsSource.slice(renderStart, flowEnd)}\nreturn { renderPlayoffs, resumePlayoffs };`,
   )(
     routeState,
     () => {},
     () => {},
     team => Number(team.slice(1)),
-    () => 'NORTH',
-    () => Array.from({ length: 15 }, (_, index) => ({ team: `T${index + 1}`, wins: 60 - index, losses: 22 + index })),
+    team => team.startsWith('N') ? 'NORTH' : 'SOUTH',
+    conf => Array.from({ length: 15 }, (_, index) => ({
+      team: `${conf === 'NORTH' ? 'N' : 'S'}${index + 1}`,
+      wins: 60 - index,
+      losses: 22 + index,
+    })),
+    (teamA, teamB, gameId) => {
+      calls.playInGames.push({ teamA, teamB, gameId });
+      return { aWins: true, scoreA: 100, scoreB: 90, absenceType: null };
+    },
     () => { calls.playIn++; },
     () => { calls.save++; },
-    () => { calls.bracket++; return staleBracket; },
+    (conf, pi) => {
+      calls.brackets.push({ conf, pi });
+      return { conf, teams: Array.from({ length: 8 }, (_, index) => ({ team: `${conf === 'NORTH' ? 'N' : 'S'}${index + 1}` })) };
+    },
     () => 'SOUTH',
-    () => {},
+    () => { calls.bracketUI++; },
   );
 
   playoffFlow.renderPlayoffs();
   const freshEntry = {
     playInRendered: calls.playIn === 1,
-    bracketNotBuilt: calls.bracket === 0,
-    playInInitialized: routeState.season.playInState?.seed9?.team === 'T9',
+    bracketNotBuilt: calls.brackets.length === 0,
+    playInInitialized: routeState.season.playInState?.seed9?.team === 'N9',
     staleBracketCleared: routeState.season.playoffBracket === null && routeState.season.otherBracket === null,
     playoffFlagCleared: routeState.season.isPlayoffs === false,
+    otherConferencePlayInComplete: routeState.season.otherPlayInState?.gameAResult?.winner === 'S7'
+      && routeState.season.otherPlayInState?.gameCResult?.winner === 'S8',
   };
 
   routeState.season.isPlayoffs = true;
@@ -95,26 +111,58 @@ function validatePlayInRouting() {
   routeState.season.otherBracket = { conf: 'SOUTH' };
   routeState.season.playoffSeed = 9;
   calls.playIn = 0;
+  calls.brackets = [];
   playoffFlow.resumePlayoffs();
   const legacyResume = {
     playInRendered: calls.playIn === 1,
     staleBracketCleared: routeState.season.playoffBracket === null && routeState.season.otherBracket === null,
-    bracketNotBuilt: calls.bracket === 0,
+    bracketNotBuilt: calls.brackets.length === 0,
   };
 
-  routeState.season.playInState.gameAResult = { winner: 'T7', loser: 'T8' };
-  routeState.season.playInState.gameBResult = { winner: 'T9', loser: 'T10' };
-  routeState.season.playInState.gameCResult = { winner: 'T9', loser: 'T8' };
+  routeState.season.playInState.gameAResult = { winner: 'N7', loser: 'N8' };
+  routeState.season.playInState.gameBResult = { winner: 'N9', loser: 'N10' };
+  routeState.season.playInState.gameCResult = { winner: 'N9', loser: 'N8' };
   routeState.season.playInState.playoffSeed = 8;
   calls.playIn = 0;
+  calls.brackets = [];
   playoffFlow.renderPlayoffs();
   const qualifiedEntry = {
     playInNotRendered: calls.playIn === 0,
-    bothConferenceBracketsBuilt: calls.bracket === 2,
+    bothConferenceBracketsBuilt: calls.brackets.length === 2,
+    bothBracketsUsePlayInWinners: calls.brackets[0]?.pi?.gameCResult?.winner === 'N9'
+      && calls.brackets[1]?.pi?.gameCResult?.winner === 'S8',
     playoffFlagSet: routeState.season.isPlayoffs === true,
   };
 
-  return { freshEntry, legacyResume, qualifiedEntry };
+  routeState.careerTeam = 'N1';
+  routeState.season = { standings: {} };
+  calls.brackets = [];
+  calls.playInGames = [];
+  playoffFlow.renderPlayoffs();
+  const automaticBothConferences = {
+    bothBracketsBuilt: calls.brackets.length === 2,
+    allPlayInGamesSimulated: calls.playInGames.length === 6,
+    ownConferenceUsesPlayInWinner: routeState.season.playoffBracket?.teams?.[7]?.team === 'N8',
+    otherConferenceUsesPlayInWinner: routeState.season.otherBracket?.teams?.[7]?.team === 'S8',
+  };
+
+  const preservedBracket = { conf: 'NORTH', marker: 'keep', rounds: [[{ winner: 'N1' }]] };
+  const preservedOtherBracket = { conf: 'SOUTH', marker: 'keep-other', rounds: [[{ winner: 'S1' }]] };
+  routeState.season.playoffBracket = preservedBracket;
+  routeState.season.otherBracket = preservedOtherBracket;
+  calls.brackets = [];
+  calls.playInGames = [];
+  calls.bracketUI = 0;
+  playoffFlow.renderPlayoffs();
+  const reentryPreservesBracket = {
+    noBracketRebuilt: calls.brackets.length === 0,
+    noPlayInResimulated: calls.playInGames.length === 0,
+    samePlayerBracket: routeState.season.playoffBracket === preservedBracket,
+    sameOtherBracket: routeState.season.otherBracket === preservedOtherBracket,
+    bracketRendered: calls.bracketUI === 1,
+  };
+
+  return { freshEntry, legacyResume, qualifiedEntry, automaticBothConferences, reentryPreservesBracket };
 }
 
 const playInRouting = validatePlayInRouting();

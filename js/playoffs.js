@@ -3,29 +3,8 @@ function renderPlayIn() {
   showScreen('screen-playoffs');
   
   const conf = getConference(STATE.careerTeam);
-  const sorted = getConferenceSorted(conf);
-  const mySeed = getConferenceSeed(STATE.careerTeam);
   
-  // 提取附加赛球队 (7-10)
-  const playInTeams = sorted.filter(t => {
-    const s = getConferenceSeed(t.team);
-    return s >= 7 && s <= 10;
-  });
-  
-  // 确定各队角色
-  const seed7 = playInTeams.find(t => getConferenceSeed(t.team) === 7);
-  const seed8 = playInTeams.find(t => getConferenceSeed(t.team) === 8);
-  const seed9 = playInTeams.find(t => getConferenceSeed(t.team) === 9);
-  const seed10 = playInTeams.find(t => getConferenceSeed(t.team) === 10);
-  
-  STATE.season.playInState = {
-    seed7, seed8, seed9, seed10,
-    gameAResult: null,  // 7v8
-    gameBResult: null,  // 9v10
-    gameCResult: null,  // 败7/8 vs 胜9/10
-    isEliminated: false,
-    playoffSeed: null,  // 最终进入季后赛的种子 (7 or 8)
-  };
+  STATE.season.playInState = createPlayInState(conf);
   
   renderPlayInUI();
   if (typeof queueSeasonAutoSave === 'function') queueSeasonAutoSave();
@@ -355,6 +334,59 @@ function isPlayoffTeamAHome(gameNum, teamAIsHigherSeed) {
   return highSeedHome ? !!teamAIsHigherSeed : !teamAIsHigherSeed;
 }
 
+/** 创建指定分区的附加赛状态。 */
+function createPlayInState(conf) {
+  const sorted = getConferenceSorted(conf);
+  const getSeedTeam = (seed) => sorted.find(team => getConferenceSeed(team.team) === seed) || null;
+  return {
+    conf,
+    seed7: getSeedTeam(7),
+    seed8: getSeedTeam(8),
+    seed9: getSeedTeam(9),
+    seed10: getSeedTeam(10),
+    gameAResult: null,
+    gameBResult: null,
+    gameCResult: null,
+    isEliminated: false,
+    playoffSeed: null,
+  };
+}
+
+function isPlayInResolved(playInState) {
+  return !!(playInState?.gameAResult?.winner
+    && playInState?.gameBResult?.winner
+    && playInState?.gameCResult?.winner);
+}
+
+/** 自动完成不含玩家球队的分区附加赛，并保留结果供季后赛树使用。 */
+function autoSimConferencePlayIn(conf, playInState) {
+  const pi = playInState?.conf === conf ? playInState : createPlayInState(conf);
+  if (!pi.seed7 || !pi.seed8 || !pi.seed9 || !pi.seed10) return pi;
+
+  const simulate = (teamA, teamB, gameId, label) => {
+    const result = simulatePlayInMatch(teamA, teamB, gameId);
+    return {
+      winner: result.aWins ? teamA : teamB,
+      loser: result.aWins ? teamB : teamA,
+      teamAScore: result.scoreA,
+      teamBScore: result.scoreB,
+      label,
+      absenceType: result.absenceType || null,
+    };
+  };
+
+  if (!pi.gameAResult) {
+    pi.gameAResult = simulate(pi.seed7.team, pi.seed8.team, 'A', '第7vs8种子');
+  }
+  if (!pi.gameBResult) {
+    pi.gameBResult = simulate(pi.seed9.team, pi.seed10.team, 'B', '第9vs10种子');
+  }
+  if (!pi.gameCResult && pi.gameAResult?.loser && pi.gameBResult?.winner) {
+    pi.gameCResult = simulate(pi.gameAResult.loser, pi.gameBResult.winner, 'C', '败者组决赛');
+  }
+  return pi;
+}
+
 /** 为指定分区构建季后赛对阵数据结构 */
 function buildPlayoffBracket(conf, playInState) {
   const sorted = getConferenceSorted(conf);
@@ -532,33 +564,34 @@ function renderPlayoffs() {
     return;
   }
   
+  const conf = getConference(STATE.careerTeam);
+  const otherConf = getOtherPlayoffConference(conf);
+
   // ★ 附加赛检测：种子7-10且附加赛未完成 → 初始化附加赛
   const seed = getConferenceSeed(STATE.careerTeam);
   let pi = STATE.season.playInState;
   const playInNeeded = seed >= 7 && seed <= 10;
-  let playInComplete = pi?.playoffSeed != null && !pi?.isEliminated &&
-    !!(pi?.gameAResult && pi?.gameBResult && pi?.gameCResult);
+  let playInComplete = pi?.playoffSeed != null && !pi?.isEliminated && isPlayInResolved(pi);
   
   if (playInNeeded && !playInComplete && !pi?.isEliminated && (!pi || !pi.seed7)) {
-    // 初始化附加赛状态
-    const conf = getConference(STATE.careerTeam);
-    const sorted = getConferenceSorted(conf);
-    const playInTeams = sorted.filter(t => {
-      const s = getConferenceSeed(t.team);
-      return s >= 7 && s <= 10;
-    });
-    const seed7 = playInTeams.find(t => getConferenceSeed(t.team) === 7);
-    const seed8 = playInTeams.find(t => getConferenceSeed(t.team) === 8);
-    const seed9 = playInTeams.find(t => getConferenceSeed(t.team) === 9);
-    const seed10 = playInTeams.find(t => getConferenceSeed(t.team) === 10);
-    
-    STATE.season.playInState = {
-      seed7, seed8, seed9, seed10,
-      gameAResult: null, gameBResult: null, gameCResult: null,
-      isEliminated: false, playoffSeed: null,
-    };
+    STATE.season.playInState = createPlayInState(conf);
     pi = STATE.season.playInState;
     playInComplete = false;
+  }
+
+  // 已经有季后赛树时只恢复渲染，不能覆盖已完成系列赛与另一分区进度。
+  if (!(playInNeeded && !playInComplete) && STATE.season.playoffBracket) {
+    STATE.season.isPlayoffs = true;
+    STATE.season._viewConf = STATE.season._viewConf || conf;
+    renderPlayoffBracketUI();
+    return;
+  }
+
+  // 另一分区始终自动完成附加赛；玩家未参与附加赛时，自己的分区也同样自动完成。
+  STATE.season.otherPlayInState = autoSimConferencePlayIn(otherConf, STATE.season.otherPlayInState);
+  if (!playInNeeded) {
+    pi = autoSimConferencePlayIn(conf, pi);
+    STATE.season.playInState = pi;
   }
 
   // 第 7-10 种子必须先完成附加赛。旧版本会在这里直接创建前八名
@@ -579,12 +612,9 @@ function renderPlayoffs() {
   // 季后赛流程
   const pi2 = STATE.season.playInState;
   const mySeed = pi2?.playoffSeed || seed;
-  const conf = getConference(STATE.careerTeam);
-  
   // ★ 附加赛结果修正种子：用附加赛晋级者替换原7/8号种子
   const bracket = buildPlayoffBracket(conf, pi2);
-  const otherConf = getOtherPlayoffConference(conf);
-  const otherBracket = buildPlayoffBracket(otherConf);
+  const otherBracket = buildPlayoffBracket(otherConf, STATE.season.otherPlayInState);
   
   STATE.season.playoffBracket = bracket;
   STATE.season.otherBracket = otherBracket;

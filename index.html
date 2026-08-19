@@ -2910,7 +2910,7 @@ function revealPlayer() {
     <div class="rv-card-wrap">
       <div class="reveal-card">
         <div class="rv-item" style="animation-delay:0.1s"><div class="reveal-label">我的球员</div></div>
-         <div class="rv-item" style="animation-delay:0.2s"><div class="big-cname">${getMyPlayerDisplayName()}</div></div>
+         <div class="rv-item" style="animation-delay:0.2s"><div class="big-cname">${escapeSeasonUiText(getMyPlayerDisplayName())}</div></div>
         <div class="rv-ovr" style="animation-delay:0.3s"><div class="big-ovr">${STATE.finalOVR}</div></div>
         <div class="rv-item" style="animation-delay:0.4s"><div class="big-pos">${SIM_CONFIG.POSITIONS[STATE.position]}</div></div>
       </div>
@@ -6846,7 +6846,7 @@ function renderSeasonInsights() {
   var threePct = ps.threeA ? ((ps.threeM || 0) / ps.threeA * 100).toFixed(1) : '—';
   var ftPct = ps.fta ? ((ps.ftm || 0) / ps.fta * 100).toFixed(1) : '—';
   var pctText = function(value) { return value === '—' ? value : value + '%'; };
-  var displayName = typeof getMyPlayerDisplayName === 'function' ? getMyPlayerDisplayName() : '我的球员';
+  var displayName = escapeSeasonUiText(typeof getMyPlayerDisplayName === 'function' ? getMyPlayerDisplayName() : '我的球员');
   var eventState = typeof ensureSeasonEventState === 'function' ? ensureSeasonEventState() : {};
   var seasonTheme = eventState.seasonTheme;
   var activeThreads = (eventState.storyThreads || []).filter(function(thread) {
@@ -8273,7 +8273,7 @@ function renderMyCard(isFinal, activeTab) {
       <div class="mc-header">
         <div class="mc-summary-line">
           <span class="mc-pos">${SIM_CONFIG.POSITIONS[STATE.position]}</span>
-          <span class="mc-name">${getMyPlayerDisplayName()}</span>
+          <span class="mc-name">${escapeSeasonUiText(getMyPlayerDisplayName())}</span>
           <span class="mc-ovr">${STATE.finalOVR}</span>
           <span class="mc-team-line">${getTeamName(STATE.careerTeam)} · ${STATE.season.wins}-${STATE.season.losses}</span>
         </div>

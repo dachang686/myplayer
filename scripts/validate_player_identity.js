@@ -61,6 +61,27 @@ const starIdentityWorks = vm.runInContext(
 if (!starIdentityWorks) failures.push('明星新秀未按来源 ID 正确识别');
 
 const html = read('index.html');
+const escapeSeasonUiTextStart = html.indexOf('function escapeSeasonUiText');
+const escapeSeasonUiTextEnd = html.indexOf('function bindSeasonRankingInteractions', escapeSeasonUiTextStart);
+if (escapeSeasonUiTextStart < 0 || escapeSeasonUiTextEnd < 0) {
+  failures.push('未找到昵称 HTML 转义工具');
+} else {
+  const escapeSeasonUiText = new Function(
+    `${html.slice(escapeSeasonUiTextStart, escapeSeasonUiTextEnd)}\nreturn escapeSeasonUiText;`,
+  )();
+  const hostileNickname = '<img src=x onerror=alert(1)>';
+  if (escapeSeasonUiText(hostileNickname) !== '&lt;img src=x onerror=alert(1)&gt;') {
+    failures.push('昵称 HTML 转义结果错误');
+  }
+  const protectedNicknameSinks = [
+    /class="big-cname">\$\{escapeSeasonUiText\(getMyPlayerDisplayName\(\)\)\}<\/div>/,
+    /var displayName = escapeSeasonUiText\(typeof getMyPlayerDisplayName === 'function' \? getMyPlayerDisplayName\(\) : '我的球员'\);/,
+    /class="mc-name">\$\{escapeSeasonUiText\(getMyPlayerDisplayName\(\)\)\}<\/span>/,
+  ];
+  if (!protectedNicknameSinks.every((pattern) => pattern.test(html))) {
+    failures.push('昵称写入 HTML 的展示页未统一转义');
+  }
+}
 const positionLogicStart = html.indexOf('// ==================== 跨位置衰减 ====================');
 const positionLogicEnd = html.indexOf('// ==================== 初始化 ====================', positionLogicStart);
 if (positionLogicStart < 0 || positionLogicEnd < 0) {
@@ -177,6 +198,7 @@ const result = {
   uniqueIds: new Set(players.map((player) => player.id)).size,
   draftPlayers: draftPlayers.length,
   legacyEnglishNameFields: players.filter((player) => player.name || player.nameEN).length,
+  nicknameHtmlEscaping: !failures.some((failure) => failure.indexOf('昵称') >= 0),
   gameplayBaselineCompared: baselineCompared
 };
 
