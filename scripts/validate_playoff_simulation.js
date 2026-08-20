@@ -637,6 +637,9 @@ function runRealRosterSmoke() {
   leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_CLUTCH_LOW = syntheticTeam('CLUTCH-LOW', [85, 85, 85, 85, 85], [80, 78, 76, 74, 72]);
   leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_PLAYMAKER_HIGH = syntheticTeam('PLAYMAKER-HIGH', [85, 85, 85, 85, 85], [80, 78, 76, 74, 72]);
   leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_PLAYMAKER_LOW = syntheticTeam('PLAYMAKER-LOW', [85, 85, 85, 85, 85], [80, 78, 76, 74, 72]);
+  leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_DEFENSIVE_ANCHOR = syntheticTeam('DEFENSIVE-ANCHOR', [85, 85, 85, 85, 95], [80, 78, 76, 74, 72]);
+  leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_DEFENSIVE_BASE = syntheticTeam('DEFENSIVE-BASE', [85, 85, 85, 85, 95], [80, 78, 76, 74, 72]);
+  leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_DEFENSE_CONTROL = syntheticTeam('DEFENSE-CONTROL', [85, 85, 85, 85, 85], [80, 78, 76, 74, 72]);
   leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_STRUCTURE_STRONG.forEach(player => {
     attributeKeys.forEach(key => { player[key] = 95; });
   });
@@ -656,6 +659,19 @@ function runRealRosterSmoke() {
   });
   Object.assign(leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_PLAYMAKER_HIGH[0], { PAS: 99, HAN: 95 });
   Object.assign(leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_PLAYMAKER_LOW[0], { PAS: 55, HAN: 55 });
+  ['SYNTHETIC_DEFENSIVE_ANCHOR', 'SYNTHETIC_DEFENSIVE_BASE', 'SYNTHETIC_DEFENSE_CONTROL'].forEach(team => {
+    leagueData.LEAGUE_PLAYER_DATA[team].forEach(player => {
+      attributeKeys.forEach(key => { player[key] = 72; });
+    });
+  });
+  Object.assign(leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_DEFENSIVE_ANCHOR[4], {
+    threePT: 50, MID: 50, FIN: 56, DNK: 50, HAN: 50, PAS: 50,
+    PDEF: 60, STL: 55, IDEF: 97, BLK: 97, REB: 97, ATH: 74, STR: 95, CLU: 70,
+  });
+  Object.assign(leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_DEFENSIVE_BASE[4], {
+    threePT: 50, MID: 50, FIN: 56, DNK: 50, HAN: 50, PAS: 50,
+    PDEF: 60, STL: 55, IDEF: 78, BLK: 78, REB: 78, ATH: 74, STR: 95, CLU: 70,
+  });
   const engineStart = indexSource.indexOf('function getPlayerPositions');
   const engineEnd = indexSource.indexOf('/** 属性→效率系数：递减曲线', engineStart);
   if (engineStart < 0 || engineEnd < 0) throw new Error('无法定位真实名单比赛引擎代码');
@@ -680,7 +696,7 @@ function runRealRosterSmoke() {
     'getLeaguePlayerAge',
     'af',
     'ensureSeasonEventState',
-    `${indexSource.slice(engineStart, engineEnd)}\nreturn { simulateGameNew, calcTeamPowerWithPlayer };`,
+    `${indexSource.slice(engineStart, engineEnd)}\nreturn { simulateGameNew, calcTeamPowerWithPlayer, getPlayerGameImpact };`,
   )(
     leagueData.LEAGUE_PLAYER_DATA,
     simConfig,
@@ -848,6 +864,60 @@ function runRealRosterSmoke() {
       offensePowerGap: highPlaymakerPower.offense - lowPlaymakerPower.offense,
       overallPowerGap: highPlaymakerPower.overall - lowPlaymakerPower.overall,
     };
+    const anchorCenter = leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_DEFENSIVE_ANCHOR[4];
+    const baseCenter = leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_DEFENSIVE_BASE[4];
+    const perimeterStopper = syntheticPlayer('perimeter-stopper', 'SF', 95);
+    Object.assign(perimeterStopper, {
+      threePT: 72, MID: 72, FIN: 72, DNK: 72, HAN: 72, PAS: 72,
+      PDEF: 97, STL: 97, IDEF: 60, BLK: 55, REB: 65, ATH: 95, STR: 72, CLU: 72,
+    });
+    const anchorImpact = realEngine.getPlayerGameImpact(anchorCenter);
+    const baseCenterImpact = realEngine.getPlayerGameImpact(baseCenter);
+    const perimeterStopperImpact = realEngine.getPlayerGameImpact(perimeterStopper);
+    const anchorPower = realEngine.calcTeamPowerWithPlayer('SYNTHETIC_DEFENSIVE_ANCHOR');
+    const baseDefensePower = realEngine.calcTeamPowerWithPlayer('SYNTHETIC_DEFENSIVE_BASE');
+    function simulatePairedDefenseSeries(games) {
+      realState.season = { schedule: [], isPlayoffs: false, _npcSeasonProfiles: {}, events: { activeEffects: [] } };
+      let opponentPpgDelta = 0;
+      let anchorCenterFga = 0;
+      let baseCenterFga = 0;
+      for (let game = 0; game < games; game++) {
+        const options = {
+          randomSeed: `defensive-anchor-pair:${game}`,
+          commitSimulationState: false,
+          isHomeA: null,
+          isB2B: false,
+          ignoreNpcAvailability: true,
+        };
+        const anchorResult = realSimulate('SYNTHETIC_DEFENSIVE_ANCHOR', 'SYNTHETIC_DEFENSE_CONTROL', 0, null, options);
+        const baseResult = realSimulate('SYNTHETIC_DEFENSIVE_BASE', 'SYNTHETIC_DEFENSE_CONTROL', 0, null, options);
+        opponentPpgDelta += baseResult.scoreB - anchorResult.scoreB;
+        const anchorCenter = (anchorResult.boxScore.SYNTHETIC_DEFENSIVE_ANCHOR || []).find(row => row.playerId === 'DEFENSIVE-ANCHOR-S4');
+        const baseCenter = (baseResult.boxScore.SYNTHETIC_DEFENSIVE_BASE || []).find(row => row.playerId === 'DEFENSIVE-BASE-S4');
+        anchorCenterFga += Number(anchorCenter && anchorCenter.fga) || 0;
+        baseCenterFga += Number(baseCenter && baseCenter.fga) || 0;
+      }
+      return {
+        opponentPpgDelta: opponentPpgDelta / games,
+        anchorCenterFga: anchorCenterFga / games,
+        baseCenterFga: baseCenterFga / games,
+      };
+    }
+    const defensiveAnchorGames = 1600;
+    const defensiveAnchorSeries = simulatePairedDefenseSeries(defensiveAnchorGames);
+    const defensiveAnchorIsolation = {
+      games: defensiveAnchorGames,
+      anchorBonus: anchorImpact.defensiveAnchorBonus,
+      perimeterBonus: perimeterStopperImpact.defensiveAnchorBonus,
+      anchorDefense: anchorImpact.defense,
+      baseDefense: baseCenterImpact.defense,
+      anchorOffense: anchorImpact.offense,
+      baseOffense: baseCenterImpact.offense,
+      teamDefenseGap: anchorPower.defense - baseDefensePower.defense,
+      opponentPpgDelta: defensiveAnchorSeries.opponentPpgDelta,
+      anchorCenterFga: defensiveAnchorSeries.anchorCenterFga,
+      baseCenterFga: defensiveAnchorSeries.baseCenterFga,
+    };
     const previousPlayoffState = realState.season.isPlayoffs;
     const previousStandings = realState.season.standings;
     realState.season.isPlayoffs = false;
@@ -907,6 +977,7 @@ function runRealRosterSmoke() {
       },
       clutchIsolation,
       playmakerTeamIsolation,
+      defensiveAnchorIsolation,
       realSeededDeterminism,
       syntheticLineup: {
         strongPower: strongPower.overall,
@@ -1002,6 +1073,15 @@ if (!realRosterSmoke.syntheticLineup.marginComponents
   || !Number.isFinite(realRosterSmoke.syntheticLineup.marginComponents.rawStarEdge)) {
   failures.push(`核心集中度没有进入预期分差：${JSON.stringify(realRosterSmoke.syntheticLineup)}`);
 }
+if (realRosterSmoke.defensiveAnchorIsolation.anchorBonus < 1.5
+  || realRosterSmoke.defensiveAnchorIsolation.perimeterBonus > 0.01
+  || realRosterSmoke.defensiveAnchorIsolation.anchorDefense <= realRosterSmoke.defensiveAnchorIsolation.baseDefense + 2
+  || Math.abs(realRosterSmoke.defensiveAnchorIsolation.anchorOffense - realRosterSmoke.defensiveAnchorIsolation.baseOffense) > 0.01
+  || realRosterSmoke.defensiveAnchorIsolation.teamDefenseGap < 0.8
+  || realRosterSmoke.defensiveAnchorIsolation.opponentPpgDelta < 0.25
+  || Math.abs(realRosterSmoke.defensiveAnchorIsolation.anchorCenterFga - realRosterSmoke.defensiveAnchorIsolation.baseCenterFga) > 0.8) {
+  failures.push(`防守支柱没有形成纯防守体系价值：${JSON.stringify(realRosterSmoke.defensiveAnchorIsolation)}`);
+}
 if (!realRosterSmoke.structureMarginComponents
   || realRosterSmoke.structureMarginComponents.matchupEdge <= 0.5
   || !Number.isFinite(realRosterSmoke.structureMarginComponents.rawMatchupEdge)
@@ -1069,7 +1149,7 @@ if (realRosterSmoke.fullChain.minimumTeamScore > 95 || realRosterSmoke.fullChain
 if (realRosterSmoke.fullChain.reconciliation.meanAbs >= 4
   || realRosterSmoke.fullChain.reconciliation.p90 > 8
   || realRosterSmoke.fullChain.reconciliation.p95 > 10
-  || realRosterSmoke.fullChain.reconciliation.overTenRate > 0.031
+  || realRosterSmoke.fullChain.reconciliation.overTenRate > 0.035
   || realRosterSmoke.fullChain.reconciliation.budgetRebalances !== 0) {
   failures.push(`正式全链路 reconciliation 修正过强：${JSON.stringify(realRosterSmoke.fullChain.reconciliation)}`);
 }

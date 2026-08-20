@@ -5453,6 +5453,12 @@ function getLeagueDefenseImpact(player) {
   return options[0] * 0.55 + options[1] * 0.30 + options[2] * 0.15;
 }
 
+/** 防守支柱只奖励护框、篮板和对抗同时顶级的内线核心，避免把外线单防/抢断重复放大。 */
+function getLeagueDefensiveAnchor(player) {
+  function skill(key) { return af(parseInt(player[key]) || 50); }
+  return skill('IDEF') * 0.40 + skill('BLK') * 0.25 + skill('REB') * 0.20 + skill('STR') * 0.15;
+}
+
 /**
  * 唯一的球员比赛能力出口。
  * overall 直接继承分位置 OVR；攻防、运动和关键球只描述能力结构，并以 overall 为锚点，
@@ -5468,16 +5474,20 @@ function getPlayerGameImpact(player) {
   var rawOffense = toRating(offenseProfile.impact);
   var rawPlaymaking = toRating(offenseProfile.playmaking);
   var rawDefense = toRating(getLeagueDefenseImpact(player));
+  var rawDefensiveAnchor = toRating(getLeagueDefensiveAnchor(player));
   var athletic = leagueStatClamp(Number(player && player.ATH) || overall, 25, 99);
   var clutch = leagueStatClamp(Number(player && player.CLU) || overall, 25, 99);
   var anchorWeight = 0.72;
   var eliteCreationBonus = Math.max(0, rawPlaymaking - 80) * 0.24;
+  // 防守大核心通过护框、回合终结和内线对抗抬升体系防守；外线抢断型防守人不会触发此奖励。
+  var eliteAnchorBonus = Math.max(0, rawDefensiveAnchor - 82) * 0.18;
   return {
     overall: overall,
     offense: leagueStatClamp(overall * anchorWeight + rawOffense * (1 - anchorWeight) + eliteCreationBonus, 25, 99),
-    defense: overall * anchorWeight + rawDefense * (1 - anchorWeight),
+    defense: leagueStatClamp(overall * anchorWeight + rawDefense * (1 - anchorWeight) + eliteAnchorBonus, 25, 99),
     athletic: overall * 0.78 + athletic * 0.22,
     clutch: overall * 0.78 + clutch * 0.22,
+    defensiveAnchorBonus: eliteAnchorBonus,
   };
 }
 
