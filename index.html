@@ -5420,7 +5420,8 @@ function getLeagueOffenseProfile(player) {
   var regionAbilities = [threeEfficiency, midEfficiency, rimEfficiency].sort(function(a, b) { return b - a; });
   var scoring = regionAbilities[0] * 0.55 + regionAbilities[1] * 0.30 + regionAbilities[2] * 0.15;
   var playmaking = pass * 0.70 + handle * 0.25 + clutch * 0.05;
-  var usage = scoring * 0.89 + handle * 0.08 + pass * 0.03;
+  // 得分能力决定大部分出手；控球可小幅提升自主创造，传球只保留组织职责带来的轻微参与度增益。
+  var usage = scoring * 0.88 + handle * 0.08 + pass * 0.04;
   var threeVolume = 0.16 + three * 0.55;
   var midVolume = 0.14 + mid * 0.38;
   var rimVolume = 0.20 + finish * 0.25 + dunk * 0.18 + athletic * 0.10 + strength * 0.06;
@@ -5493,38 +5494,74 @@ function allocateLeagueRotationMinutes(players, roleRanks, rotationOptions) {
   var isPlayoffs = typeof options.isPlayoffs === 'boolean'
     ? options.isPlayoffs
     : !!(STATE.season && STATE.season.isPlayoffs);
-  var benchBase = isPlayoffs ? [22, 17, 12, 8, 5, 4, 4] : [24.5, 20.5, 16, 12, 9, 6, 4];
   var noiseDeviation = options.randomize === false ? 0 : 0.7;
+  var regularRoles = [
+    { base: 29.5, slope: 0.22 }, // 首发
+    { base: 23.5, slope: 0.50, maxMinutes: 33 }, // 第六人可凭实力接近首发分钟
+    { base: 19.5, slope: 0.18 },
+    { base: 15.5, slope: 0.12 },
+    { base: 11.5, slope: 0.08 },
+    { base: 8, slope: 0.05 },
+    { base: 5, slope: 0.03 },
+  ];
+  var playoffRoles = [
+    { base: 33, slope: 0.25 }, // 首发
+    { base: 22, slope: 0.55, maxMinutes: 34 }, // 季后赛缩短轮换后，顶级第六人同样应获得核心时间
+    { base: 15, slope: 0.20 },
+    { base: 10, slope: 0.10 },
+    { base: 6, slope: 0.06 },
+    { base: 4, slope: 0.04 },
+    { base: 4, slope: 0.02 },
+  ];
+  function getRoleProfile(rank) {
+    var roleIndex = rank < 5 ? 0 : rank - 4;
+    return (isPlayoffs ? playoffRoles : regularRoles)[Math.max(0, Math.min(roleIndex, 6))]
+      || (isPlayoffs ? playoffRoles[playoffRoles.length - 1] : regularRoles[regularRoles.length - 1]);
+  }
+  var roles = players.map(function(player, index) { return getRoleProfile(roleRanks[index]); });
   var raw = players.map(function(player, index) {
-    var rank = roleRanks[index];
     var ovr = getPlayerGameImpact(player).overall;
-    var base;
-    if (rank < 5) {
-      base = isPlayoffs
-        ? 33 + (ovr - 75) * 0.30
-        : 29.5 + (ovr - 75) * 0.24;
-    } else {
-      var playoffReduction = rank <= 6 ? 3 : (rank <= 8 ? 2 : 1);
-      base = (benchBase[rank - 5] || 4) + (ovr - 75) * 0.08 - (isPlayoffs ? playoffReduction : 0);
-    }
+    var role = roles[index];
+    var base = role.base + (ovr - 75) * role.slope;
     return Math.max(4, base + (noiseDeviation ? leagueStatNormal(0, noiseDeviation) : 0));
+  });
+  var minuteCaps = roles.map(function(role) {
+    return Number.isFinite(role.maxMinutes) ? role.maxMinutes : Infinity;
   });
   var rawTotal = raw.reduce(function(sum, value) { return sum + value; }, 0) || 1;
   var minutes = raw.map(function(value) { return Math.max(4, Math.round(value * 240 / rawTotal)); });
   var difference = 240 - minutes.reduce(function(sum, value) { return sum + value; }, 0);
   var order = minutes.map(function(value, index) { return index; }).sort(function(a, b) { return raw[b] - raw[a]; });
-  var cursor = 0;
-  while (difference !== 0 && order.length) {
-    var target = order[cursor % order.length];
-    if (difference > 0) {
-      minutes[target]++;
-      difference--;
-    } else if (minutes[target] > 4) {
-      minutes[target]--;
-      difference++;
+  function reconcileMinutes(delta) {
+    var cursor = 0;
+    var limit = Math.max(2400, players.length * 480);
+    while (delta !== 0 && order.length && limit-- > 0) {
+      var eligible = order.filter(function(index) {
+        return delta > 0 ? minutes[index] < minuteCaps[index] : minutes[index] > 4;
+      });
+      if (!eligible.length) throw new RangeError('轮换分钟无法在上下限内分配到 240 分钟');
+      var target = eligible[cursor % eligible.length];
+      if (delta > 0) {
+        minutes[target]++;
+        delta--;
+      } else {
+        minutes[target]--;
+        delta++;
+      }
+      cursor++;
     }
-    cursor++;
+    if (delta !== 0) throw new RangeError('轮换分钟分配未收敛');
   }
+  reconcileMinutes(difference);
+  // 第六人的 maxMinutes 是实际比赛分钟硬上限；被截去的时间回流给其余可用轮换。
+  var cappedMinutes = 0;
+  minutes.forEach(function(value, index) {
+    if (value > minuteCaps[index]) {
+      cappedMinutes += value - minuteCaps[index];
+      minutes[index] = minuteCaps[index];
+    }
+  });
+  if (cappedMinutes) reconcileMinutes(cappedMinutes);
   return minutes;
 }
 
@@ -5557,7 +5594,9 @@ function buildLeagueGameRotation(team, gameOptions) {
   }
   return {
     players: selected,
-    roleRanks: selected.map(function(player) { return unique.indexOf(player); }),
+    // 可出场阵容的实际顺序决定比赛角色。伤停后原第六人会升格为 active starter，
+    // 但 shouldNpcPlayLeagueGame 仍在上方按原始 roleRank 判断伤停/轮休概率。
+    roleRanks: selected.map(function(player, index) { return index; }),
   };
 }
 
@@ -5636,7 +5675,16 @@ function generateBoxScore(teamA, teamB, totalA, totalB, gameOptions) {
       return getLeagueScoringBurst(eligibility, offSkill[index]);
     });
     var usageWeights = players.map(function(player, index) {
-      var roleOpportunity = roleRanks[index] < 5 ? 1.06 : leagueStatClamp(0.90 - (roleRanks[index] - 5) * 0.045, 0.66, 0.90);
+      var roleOpportunity;
+      if (roleRanks[index] < 5) {
+        roleOpportunity = 1.06;
+      } else if (roleRanks[index] === 5) {
+        // 高总评第六人已通过 minutes 获得核心时间，不再被固定替补标签额外大幅削减球权。
+        var sixthManMinuteFactor = leagueStatClamp((minutes[index] - 26) / 4, 0, 1);
+        roleOpportunity = 0.90 + sixthManMinuteFactor * 0.10;
+      } else {
+        roleOpportunity = leagueStatClamp(0.90 - (roleRanks[index] - 5) * 0.045, 0.66, 0.90);
+      }
       var hierarchyOpportunity = leagueStatClamp(1 + (offSkill[index] - averageScoring) * 0.80, 0.80, 1.25);
       return minutes[index]
         * (0.22 + offense[index].usage * 1.48)

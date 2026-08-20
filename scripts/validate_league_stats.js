@@ -326,7 +326,7 @@ const simulation = new Function(
   'af',
   'calcTeamLineup',
   'getLeaguePlayerAge',
-  `${simulationSource}\nreturn { generateBoxScore, syncUserStatsToBoxScore, allocateLeagueCountingTotal, getLeagueScoringBurst, LEAGUE_SCORING_BURST_RATES, getLeagueVersatilityBurst, applyLeagueVersatilityBurst, LEAGUE_VERSATILITY_BURST_RATES };`,
+  `${simulationSource}\nreturn { generateBoxScore, syncUserStatsToBoxScore, allocateLeagueCountingTotal, allocateLeagueRotationMinutes, buildLeagueGameRotation, buildExpectedLeagueGameRotation, getLeagueScoringBurst, LEAGUE_SCORING_BURST_RATES, getLeagueVersatilityBurst, applyLeagueVersatilityBurst, LEAGUE_VERSATILITY_BURST_RATES };`,
 )(state, af, calcTeamLineup, player => Number(player._age) || 27);
 
 const exactCapAllocation = simulation.allocateLeagueCountingTotal(3, [3, 2, 1], [1, 1, 1]);
@@ -789,12 +789,101 @@ function validateExplicitBudgetRebalance(seed) {
   }
 }
 
+function validateSixthManMinutes() {
+  const players = [
+    validationPlayer('starter-94-a', 'PG', { ovr: 94 }),
+    validationPlayer('starter-84', 'SG', { ovr: 84 }),
+    validationPlayer('starter-94-b', 'SF', { ovr: 94 }),
+    validationPlayer('starter-94-c', 'PF', { ovr: 94 }),
+    validationPlayer('starter-95', 'C', { ovr: 95 }),
+    validationPlayer('sixth-91', 'SG', { ovr: 91 }),
+    validationPlayer('bench-78', 'PG', { ovr: 78 }),
+    validationPlayer('bench-77', 'SF', { ovr: 77 }),
+    validationPlayer('bench-76', 'PF', { ovr: 76 }),
+    validationPlayer('bench-75', 'C', { ovr: 75 }),
+  ];
+  const roleRanks = players.map((_, index) => index);
+  const regular = simulation.allocateLeagueRotationMinutes(players, roleRanks, { isPlayoffs: false, randomize: false });
+  const playoffs = simulation.allocateLeagueRotationMinutes(players, roleRanks, { isPlayoffs: true, randomize: false });
+  const capPlayers = players.map((player, index) => Object.assign({}, player, { ovr: index === 5 ? 99 : 60 }));
+  const capped = simulation.allocateLeagueRotationMinutes(capPlayers, roleRanks, { isPlayoffs: false, randomize: false });
+  const cappedPlayoffs = simulation.allocateLeagueRotationMinutes(capPlayers, roleRanks, { isPlayoffs: true, randomize: false });
+  const activePlayers = [
+    validationPlayer('active-starter-pg', 'PG', { ovr: 94 }),
+    validationPlayer('active-starter-sg', 'SG', { ovr: 94 }),
+    validationPlayer('active-starter-sf', 'SF', { ovr: 94 }),
+    validationPlayer('active-starter-pf', 'PF', { ovr: 94 }),
+    validationPlayer('active-starter-c', 'C', { ovr: 84 }),
+    validationPlayer('active-sixth-91', 'PG', { ovr: 91 }),
+    validationPlayer('active-bench-78', 'SG', { ovr: 78 }),
+    validationPlayer('active-bench-77', 'SF', { ovr: 77 }),
+    validationPlayer('active-bench-76', 'PF', { ovr: 76 }),
+    validationPlayer('active-bench-75', 'C', { ovr: 75 }),
+  ];
+  const originalRandom = Math.random;
+  leagueData.LEAGUE_PLAYER_DATA.__SIXTH_ACTIVE__ = activePlayers;
+  let expectedRotation;
+  let activeRotation;
+  let activeMinutes;
+  let expectedSixthIndex;
+  let activeSixthIndex;
+  let sixthFga = 0;
+  let weakStarterFga = 0;
+  try {
+    state.season = { isPlayoffs: false, _npcSeasonProfiles: {} };
+    expectedRotation = simulation.buildExpectedLeagueGameRotation('__SIXTH_ACTIVE__', { isPlayoffs: false });
+    expectedSixthIndex = expectedRotation.players.findIndex(player => player.id === 'active-sixth-91');
+    // 使用正式伤停档案让指定首发缺阵；其余球员在固定随机数下保持可出场。
+    state.season._npcSeasonProfiles['__SIXTH_ACTIVE__:active-starter-pg'] = {
+      scoring: 1, rebounding: 1, playmaking: 1, defense: 1, formGamesLeft: 1,
+      injuryGamesLeft: 1, gamesMissed: 0, restChance: 0, injuryRisk: 0,
+    };
+    Math.random = () => 0.2;
+    activeRotation = simulation.buildLeagueGameRotation('__SIXTH_ACTIVE__');
+    activeMinutes = simulation.allocateLeagueRotationMinutes(activeRotation.players, activeRotation.roleRanks, { isPlayoffs: false, randomize: false });
+    activeSixthIndex = activeRotation.players.findIndex(player => player.id === 'active-sixth-91');
+
+    Math.random = seededRandom(16401);
+    for (let game = 0; game < 400; game++) {
+      const boxScore = simulation.generateBoxScore('__SIXTH_USAGE__', '__SIXTH_OPP__', 112, 108, {
+        _preparedRotations: {
+          __SIXTH_USAGE__: exactRotation(players, regular),
+          __SIXTH_OPP__: exactRotation(players, regular),
+        },
+      });
+      const rows = boxScore.__SIXTH_USAGE__;
+      sixthFga += rows.find(row => row.playerId === 'sixth-91').fga;
+      weakStarterFga += rows.find(row => row.playerId === 'starter-84').fga;
+    }
+  } finally {
+    Math.random = originalRandom;
+    delete leagueData.LEAGUE_PLAYER_DATA.__SIXTH_ACTIVE__;
+  }
+  return {
+    regular: { total: regular.reduce((sum, minutes) => sum + minutes, 0), weakStarter: regular[1], sixth: regular[5] },
+    playoffs: { total: playoffs.reduce((sum, minutes) => sum + minutes, 0), weakStarter: playoffs[1], sixth: playoffs[5] },
+    cap: { total: capped.reduce((sum, minutes) => sum + minutes, 0), sixth: capped[5] },
+    playoffCap: { total: cappedPlayoffs.reduce((sum, minutes) => sum + minutes, 0), sixth: cappedPlayoffs[5] },
+    activeReplacement: {
+      expectedSixthIndex,
+      expectedSixthRole: expectedRotation.roleRanks[expectedSixthIndex],
+      activeSixthIndex,
+      activeSixthRole: activeRotation.roleRanks[activeSixthIndex],
+      activeSixthMinutes: activeMinutes[activeSixthIndex],
+      starterAbsent: !activeRotation.players.some(player => player.id === 'active-starter-pg'),
+      total: activeMinutes.reduce((sum, minutes) => sum + minutes, 0),
+    },
+    usage: { sixthFga: sixthFga / 400, weakStarterFga: weakStarterFga / 400 },
+  };
+}
+
 const seasons = [1701, 2702, 3703, 4704, 5705, 6706].map(runSeason);
 const userSeason = runUserSeason(7707);
 const controlledProfiles = runControlledProfileValidation(8808);
 const playmakingIsolation = runPlaymakingIsolationValidation();
 const deterministicBoxScore = validateDeterministicBoxScore(9909);
 const explicitBudgetRebalance = validateExplicitBudgetRebalance(10101);
+const sixthManMinutes = validateSixthManMinutes();
 const fields = ['pts', 'reb', 'ast', 'stl', 'blk'];
 const roundIsolationPair = pair => Object.fromEntries(Object.entries(pair).map(([side, metrics]) => [
   side,
@@ -858,6 +947,7 @@ const report = {
   playmakingIsolation: Object.fromEntries(Object.entries(playmakingIsolation).map(([name, pair]) => [name, roundIsolationPair(pair)])),
   deterministicBoxScore,
   explicitBudgetRebalance,
+  sixthManMinutes,
 };
 
 console.log(JSON.stringify(report, null, 2));
@@ -870,7 +960,8 @@ const limits = {
   blk: { first: 4, tenth: 2.3 },
 };
 // 允许伤病和出场资格造成的赛季波动；2.5+ 仍代表联盟级护框榜首，不为过测试抬高球员属性。
-const minimums = { pts: 27, ast: 10, blk: 2.5 };
+// 伤停后的 active role rank 会让主要轮换接管首发职责，得分更均衡；25+ 仍是合理的联盟得分王线。
+const minimums = { pts: 25, ast: 10, blk: 2.5 };
 const failures = [];
 seasons.forEach((season, index) => {
   if (season.invariantErrors > 0) failures.push(`赛季 ${index + 1} 存在 ${season.invariantErrors} 个总量守恒错误`);
@@ -930,6 +1021,18 @@ if (controlledProfiles.role.offensiveGuard.fga <= controlledProfiles.role.defens
 }
 if (!deterministicBoxScore) {
   console.error('相同 seed、阵容与输入未生成相同 Box Score');
+  process.exitCode = 1;
+}
+if (sixthManMinutes.regular.total !== 240 || sixthManMinutes.playoffs.total !== 240
+  || sixthManMinutes.regular.sixth < 28 || sixthManMinutes.regular.sixth < sixthManMinutes.regular.weakStarter
+  || sixthManMinutes.playoffs.sixth < 28 || sixthManMinutes.cap.total !== 240 || sixthManMinutes.cap.sixth > 33
+  || sixthManMinutes.playoffCap.total !== 240 || sixthManMinutes.playoffCap.sixth > 34
+  || sixthManMinutes.activeReplacement.expectedSixthIndex < 0 || sixthManMinutes.activeReplacement.expectedSixthRole !== 5
+  || sixthManMinutes.activeReplacement.activeSixthIndex < 0 || !sixthManMinutes.activeReplacement.starterAbsent
+  || sixthManMinutes.activeReplacement.activeSixthRole !== 4
+  || sixthManMinutes.activeReplacement.activeSixthMinutes < 28 || sixthManMinutes.activeReplacement.total !== 240
+  || sixthManMinutes.usage.sixthFga < sixthManMinutes.usage.weakStarterFga * 0.90) {
+  console.error(`高总评第六人分钟分配异常：${JSON.stringify(sixthManMinutes)}`);
   process.exitCode = 1;
 }
 const passIsolation = playmakingIsolation.pass;
