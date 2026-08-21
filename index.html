@@ -1132,6 +1132,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 <script src="js/data/legacy_text.js"></script>
 <script src="js/data/career_biography_text.js"></script>
 <script src="js/playoffs.js"></script>
+<script src="js/simulation_v2.js"></script>
 <script src="js/career_legacy_records.js"></script>
 <script>
 // ── Storage 工具 ──
@@ -4978,8 +4979,8 @@ function getSeasonModifierTeamEdge(teamA, teamB) {
   return (chemistryEdge + moraleEdge) * side;
 }
 
-function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
 /** 比赛模拟 — 先按综合战力与攻防结构计算预期分差，再逐节生成比分；最终比分决定胜负。 */
+function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
   const requestedOptions = gameOptions || {};
   // seeded 调试/回放必须覆盖完整比赛链路，包括轮换、伤病、状态、比分和 Box Score。
   // 默认在结束后恢复可变赛季状态；正式结算可显式传 commitSimulationState: true。
@@ -5039,6 +5040,10 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
         stateSnapshots.slice().reverse().forEach(restoreProperty);
       }
     }
+  }
+  var selectedEngine = requestedOptions.engineVersion || (STATE.season && STATE.season.simulationEngine);
+  if (selectedEngine === 'v2' && typeof simulateGameAggregateV2 === 'function') {
+    return simulateGameAggregateV2(teamA, teamB, seedBonus, probMultiplier, requestedOptions);
   }
 
   const options = Object.assign({}, gameOptions || {});
