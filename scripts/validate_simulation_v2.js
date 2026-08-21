@@ -32,7 +32,7 @@ const attrFactor = value => {
 };
 const af = value => Math.pow(attrFactor(value), 1.5);
 const ensureSeasonEventState = () => state.season.events || (state.season.events = { activeEffects: [] });
-const runtime = new Function(
+const runtimeBundle = new Function(
   'LEAGUE_PLAYER_DATA',
   'SIM_CONFIG',
   'STATE',
@@ -41,7 +41,7 @@ const runtime = new Function(
   'getLeaguePlayerAge',
   'af',
   'ensureSeasonEventState',
-  indexSource.slice(engineStart, engineEnd) + '\n' + v2Source + '\nreturn globalThis.simulateGameAggregateV2;',
+  indexSource.slice(engineStart, engineEnd) + '\n' + v2Source + '\nreturn { v2: globalThis.simulateGameAggregateV2, dispatcher: simulateGameNew };',
 )(
   leagueData.LEAGUE_PLAYER_DATA,
   simConfig,
@@ -52,8 +52,11 @@ const runtime = new Function(
   af,
   ensureSeasonEventState,
 );
+const runtime = runtimeBundle.v2;
+const dispatcher = runtimeBundle.dispatcher;
 
 if (typeof runtime !== 'function') throw new Error('V2 引擎没有暴露 simulateGameAggregateV2');
+if (typeof dispatcher !== 'function') throw new Error('V2 dispatcher 没有暴露 simulateGameNew');
 
 function seeded(seed, callback) {
   const originalRandom = Math.random;
@@ -87,6 +90,14 @@ function checkResult(result, teamA, teamB) {
     if (row.fgm > row.fga || row.threeM > row.threeA || row.threeA > row.fga || row.ftm > row.fta) errors.push('shot-invariant');
   });
   if (sum(rowsA, 'ast') > sum(rowsA, 'fgm') || sum(rowsB, 'ast') > sum(rowsB, 'fgm')) errors.push('assist-invariant');
+  (result.engineDiagnostics && result.engineDiagnostics.periods || []).forEach(period => {
+    if (!period.isOvertime) return;
+    const identityA = period.fgaA - period.offensiveReboundsA + period.tovA + period.ftaA * 0.44;
+    const identityB = period.fgaB - period.offensiveReboundsB + period.tovB + period.ftaB * 0.44;
+    if (Math.abs(identityA - period.possessionsA) > 2 || Math.abs(identityB - period.possessionsB) > 2) {
+      errors.push('ot-possession-invariant');
+    }
+  });
   if (sum(rowsA, 'stl') > sum(rowsB, 'tov') || sum(rowsB, 'stl') > sum(rowsA, 'tov')) errors.push('steal-invariant');
   return errors;
 }
@@ -96,6 +107,7 @@ const allTeams = leagueData.LEAGUE_TEAM_IDS.slice();
 const validationSeasons = 10;
 const gamesPerSeason = (allTeams.length / 2) * 82;
 const validationGames = validationSeasons * gamesPerSeason;
+const invariantKinds = {};
 const coveredTeams = new Set();
 let invariantErrors = 0;
 let totalA = 0;
@@ -117,7 +129,9 @@ for (let game = 0; game < validationGames; game++) {
     isB2BB: game % 11 === 0,
     ignoreNpcAvailability: true,
   }));
-  invariantErrors += checkResult(result, teamA, teamB).length;
+  const errors = checkResult(result, teamA, teamB);
+  invariantErrors += errors.length;
+  errors.forEach(error => { invariantKinds[error] = (invariantKinds[error] || 0) + 1; });
   totalA += result.scoreA;
   totalB += result.scoreB;
   [result.boxScore[teamA] || [], result.boxScore[teamB] || []].forEach(rows => {
@@ -281,6 +295,23 @@ const ovrLowResult = seeded(23000, () => runtime(ovrLow, ovrOpponent, 0, null, {
 const ovrIsolation = fingerprint(ovrHighResult) === fingerprint(ovrLowResult);
 
 
+state.season._npcSeasonProfiles = {};
+const dispatcherResult = seeded(24000, () => dispatcher(teams[0], teams[1], 0, null, {
+  engineVersion: 'v2',
+  isHomeA: true,
+  isB2BA: true,
+  isB2BB: false,
+  ignoreNpcAvailability: true,
+}));
+const dispatcherIntegration = dispatcherResult
+  && dispatcherResult.engineVersion === 'v2'
+  && dispatcherResult.isHomeA === true
+  && dispatcherResult.isB2BA === true
+  && dispatcherResult.isB2BB === false
+  && dispatcherResult.scoreA === sum(dispatcherResult.boxScore[teams[0]] || [], 'pts')
+  && dispatcherResult.scoreB === sum(dispatcherResult.boxScore[teams[1]] || [], 'pts');
+const v2ModifierPath = v2Source.includes('formVariance') && v2Source.includes('mediaPressure');
+
 const specialistStats = {
   pas99: pas99Stats,
   pas50: pas50Stats,
@@ -290,6 +321,8 @@ const specialistStats = {
   anchorTwo: anchorTwoStats,
   deterministicV2,
   v2HasDirectOvrEventPath,
+  dispatcherIntegration,
+  v2ModifierPath,
   ovrIsolation,
 };
 
@@ -319,6 +352,7 @@ const result = {
   partial99PlayerFga: partialPlayerFga / 800,
   teamsCovered: coveredTeams.size,
   specialistStats,
+  invariantKinds,
 };
 if (invariantErrors > 0) throw new Error('V2 守恒错误：' + JSON.stringify(result));
 if (result.teamsCovered !== allTeams.length
@@ -346,6 +380,8 @@ if (result.full99PlayerPpg - result.partial99PlayerPpg < 1.5
   || specialistStats.anchorTwo.rim >= specialistStats.anchorOne.rim
   || !specialistStats.deterministicV2
   || !specialistStats.ovrIsolation
+  || !specialistStats.dispatcherIntegration
+  || !specialistStats.v2ModifierPath
   || specialistStats.v2HasDirectOvrEventPath) {
   throw new Error('V2 专项因果隔离失败：' + JSON.stringify(result));
 }

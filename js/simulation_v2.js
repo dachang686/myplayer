@@ -125,8 +125,15 @@
       return clamp(han[index] * 0.45 + ath[index] * 0.25 + threat[index] * 0.30, 0, 1);
     });
     var form = players.map(function(player) {
-      if (player._isUser && typeof getSeasonUsageBias === 'function') {
-        return clamp(Math.sqrt(Number(getSeasonUsageBias()) || 1), 0.88, 1.12);
+      if (player._isUser) {
+        var baseForm = typeof getSeasonUsageBias === 'function'
+          ? clamp(Math.sqrt(Number(getSeasonUsageBias()) || 1), 0.88, 1.12)
+          : 1;
+        var seasonMods = (STATE && STATE.season && STATE.season.mods) || {};
+        var variance = (Number(seasonMods.formVariance) || 0)
+          + (Number(seasonMods.mediaPressure) || 0) * 0.35;
+        var varianceScale = clamp(1 + variance * 0.06, 0.55, 1.60);
+        return clamp(baseForm + (normal(1, 0.055) - 1) * varianceScale, 0.76, 1.24);
       }
       if (typeof getNpcSeasonProfile === 'function') {
         var profile = getNpcSeasonProfile(team, player);
@@ -247,9 +254,10 @@
       0.050, 0.120,
     );
     var offensiveRebounds = Math.round(effectivePossessions * offensiveReboundRate);
+    var rawFga = Math.round(effectivePossessions - fta * 0.44 + offensiveRebounds);
     var fga = clamp(
-      Math.round(effectivePossessions - fta * 0.44 + offensiveRebounds),
-      15, 31,
+      rawFga,
+      1, Math.max(1, effectivePossessions + offensiveRebounds),
     );
     var threeRate = clamp(
       weightedThree / Math.max(0.01, weightedThree + weightedMid + weightedRim)
@@ -317,9 +325,12 @@
     return {
       lines: lines,
       score: lines.reduce(function(sum, line) { return sum + line.pts; }, 0),
+      possessions: possessions,
       fgm: lines.reduce(function(sum, line) { return sum + line.fgm; }, 0),
       turnovers: turnovers,
       offensiveRebounds: offensiveRebounds,
+      fga: lines.reduce(function(sum, line) { return sum + line.fga; }, 0),
+      fta: lines.reduce(function(sum, line) { return sum + line.fta; }, 0),
       missedField: lines.reduce(function(sum, line) { return sum + line._missedField; }, 0),
       missedFt: lines.reduce(function(sum, line) { return sum + line._missedFt; }, 0),
       rimAttempts: lines.reduce(function(sum, line) { return sum + line._rimA; }, 0),
@@ -396,14 +407,26 @@
     secondByPlayer.forEach(function(value, index) { secondQuarter.lines[index].reb += value; });
   }
 
-  function mergeLines(totalLines, quarterLines) {
+  function mergeLines(totalLines, quarterLines, includeMinutes) {
     quarterLines.forEach(function(line, index) {
       var target = totalLines[index];
       ['pts', 'reb', 'ast', 'stl', 'blk', 'tov', 'fgm', 'fga', 'ftm', 'fta', 'threeM', 'threeA'].forEach(function(field) {
         target[field] += Number(line[field]) || 0;
       });
+      if (includeMinutes) target.mins += Number(line.mins) || 0;
     });
   }
+  function makePeriodContext(context, periodMinutes) {
+    var opportunity = context.opportunity.map(function(value, index) {
+      return value * (Number(periodMinutes[index]) || 0) / Math.max(1, Number(context.minutes[index]) || 0);
+    });
+    return Object.assign({}, context, {
+      minutes: periodMinutes,
+      weights: periodMinutes,
+      opportunity: opportunity,
+    });
+  }
+
 
   function simulateGameAggregateV2(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
     var options = Object.assign({}, gameOptions || {});
@@ -427,13 +450,6 @@
     var availabilityA = probMultiplier == null ? 0 : (Number(probMultiplier) - 1) * 0.045;
     var availabilityB = 0;
     var biasA = homeA + availabilityA + Number(seedBonus || 0) * 0.003 + activeEventEdge * 0.004 + seasonEdge * 0.004 - first.fatigue * 0.012;
-    function addOvertimeMinutes(context, totalLines) {
-      var extraMinutes = allocateTotal(25, context.weights, context.players.map(function() { return 5; }));
-      extraMinutes.forEach(function(value, index) {
-        totalLines[index].mins += value;
-      });
-    }
-
     var biasB = homeB + availabilityB - activeEventEdge * 0.004 - seasonEdge * 0.004 - second.fatigue * 0.012;
     var basePace = clamp(Math.round(
       100 + ((first.pace + second.pace) / 2 - 0.50) * 7
@@ -449,44 +465,65 @@
     var rimAttemptsB = 0;
     var highlight = false;
     var keyEvents = [];
+    var periodDiagnostics = [];
 
-    function runQuarter(possessions, quarterIndex) {
+    function runQuarter(possessions, quarterIndex, isOvertime) {
       var clutch = (quarterIndex === 3 && Math.abs(scoreA - scoreB) <= 8)
         || quarterIndex >= 4;
-      first.usagePressure = clamp((first.attack - 0.50) * 0.50, 0, 0.25);
-      second.usagePressure = clamp((second.attack - 0.50) * 0.50, 0, 0.25);
-      var quarterA = makeQuarter(first, second, Math.max(15, possessions + Math.round(normal(0, 0.7))), biasA, clutch);
-      var quarterB = makeQuarter(second, first, Math.max(15, possessions + Math.round(normal(0, 0.7))), biasB, clutch);
+      var contextA = first;
+      var contextB = second;
+      if (isOvertime) {
+        contextA = makePeriodContext(first, allocateTotal(25, first.weights, first.players.map(function() { return 5; })));
+        contextB = makePeriodContext(second, allocateTotal(25, second.weights, second.players.map(function() { return 5; })));
+      }
+      contextA.usagePressure = clamp((contextA.attack - 0.50) * 0.50, 0, 0.25);
+      contextB.usagePressure = clamp((contextB.attack - 0.50) * 0.50, 0, 0.25);
+      var quarterA = makeQuarter(contextA, contextB, Math.max(1, possessions + Math.round(normal(0, 0.7))), biasA, clutch);
+      var quarterB = makeQuarter(contextB, contextA, Math.max(1, possessions + Math.round(normal(0, 0.7))), biasB, clutch);
       rimAttemptsA += quarterA.rimAttempts;
       rimAttemptsB += quarterB.rimAttempts;
-      first._quarterLines = quarterA.lines;
-      second._quarterLines = quarterB.lines;
-      addAssists(first, quarterA);
-      addAssists(second, quarterB);
-      addTurnovers(first, quarterA);
-      addTurnovers(second, quarterB);
-      addDefensiveEvents(first, quarterB);
-      addDefensiveEvents(second, quarterA);
-      addRebounds(first, second, quarterA, quarterB);
-      mergeLines(totalLinesA, quarterA.lines);
-      mergeLines(totalLinesB, quarterB.lines);
+      contextA._quarterLines = quarterA.lines;
+      contextB._quarterLines = quarterB.lines;
+      addAssists(contextA, quarterA);
+      addAssists(contextB, quarterB);
+      addTurnovers(contextA, quarterA);
+      addTurnovers(contextB, quarterB);
+      addDefensiveEvents(contextA, quarterB);
+      addDefensiveEvents(contextB, quarterA);
+      addRebounds(contextA, contextB, quarterA, quarterB);
+      mergeLines(totalLinesA, quarterA.lines, !!isOvertime);
+      mergeLines(totalLinesB, quarterB.lines, !!isOvertime);
       scoreA += quarterA.score;
       scoreB += quarterB.score;
       if (Math.abs(quarterA.score - quarterB.score) >= 10) highlight = true;
-      return { scoreA: quarterA.score, scoreB: quarterB.score };
+      return {
+        scoreA: quarterA.score,
+        scoreB: quarterB.score,
+        possessionsA: quarterA.possessions,
+        possessionsB: quarterB.possessions,
+        fgaA: quarterA.fga,
+        fgaB: quarterB.fga,
+        ftaA: quarterA.fta,
+        ftaB: quarterB.fta,
+        tovA: quarterA.turnovers,
+        tovB: quarterB.turnovers,
+        offensiveReboundsA: quarterA.offensiveRebounds,
+        offensiveReboundsB: quarterB.offensiveRebounds,
+        isOvertime: !!isOvertime,
+      };
     }
 
     for (var quarter = 0; quarter < 4; quarter++) {
       var quarterResult = runQuarter(Math.max(15, Math.round(basePace / 4)), quarter);
       qScoresA.push(quarterResult.scoreA);
       qScoresB.push(quarterResult.scoreB);
+      periodDiagnostics.push(quarterResult);
     }
     var overtime = 0;
     while (scoreA === scoreB) {
       overtime++;
-      var overtimeResult = runQuarter(Math.max(7, Math.round(basePace * 5 / 48)), 4);
-      addOvertimeMinutes(first, totalLinesA);
-      addOvertimeMinutes(second, totalLinesB);
+      var overtimeResult = runQuarter(Math.max(1, Math.round(basePace * 5 / 48)), 4, true);
+      periodDiagnostics.push(overtimeResult);
       keyEvents.push('⏱ 加时赛 #' + overtime);
       highlight = true;
       if (overtimeResult.scoreA !== overtimeResult.scoreB) break;
@@ -539,6 +576,7 @@
       engineDiagnostics: {
         rimAttemptsA: rimAttemptsA,
         rimAttemptsB: rimAttemptsB,
+        periods: periodDiagnostics,
       },
     };
   }
