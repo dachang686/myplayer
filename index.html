@@ -4885,21 +4885,24 @@ function calcTeamPowerWithPlayer(team, gameOptions) {
 }
 
 /**
- * 将阵容结构保留为 overall 之外的连续残差：
- * overall 表示平均实力，攻防残差表示能力结构，核心集中度表示顶级球员的超额价值。
+ * overall 表示主体阵容实力；绝对攻防能力只提供小额结构加成，
+ * 避免攻防与 OVR 解耦后，高 OVR 球队因“距离自身 OVR 更远”反而被扣分。
  */
 function getTeamCompetitiveRating(power) {
   const overall = Number.isFinite(power && power.overall) ? power.overall : 50;
-  const structureRating = (
-    ((Number(power && power.offense) || overall) - overall)
-    + ((Number(power && power.defense) || overall) - overall)
-  ) * 0.85;
+  const offense = Number(power && power.offense) || overall;
+  const defense = Number(power && power.defense) || overall;
+  // OVR 是主体实力；40 是中性展示基准，保持战力数值尺度且在双方相减时抵消。
+  const rosterRating = 40 + overall * 0.50;
+  // 80 + 80 是中性展示基准，双方 structure 相减时会抵消，不影响比赛分差。
+  const structureRating = (offense + defense - 160) * 0.20;
   const starRating = (Number(power && power.starConcentration) || 0) * 0.85;
   return {
     overall: overall,
+    roster: rosterRating,
     structure: structureRating,
     star: starRating,
-    total: overall + structureRating + starRating,
+    total: rosterRating + structureRating + starRating,
   };
 }
 
@@ -5026,9 +5029,9 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
   const overallB = Number.isFinite(powerB.overall)
     ? powerB.overall
     : powerB.offense * 0.45 + powerB.defense * 0.45 + powerB.depth * 0.10;
-  const rosterEdge = overallA - overallB;
   const competitiveA = getTeamCompetitiveRating(powerA);
   const competitiveB = getTeamCompetitiveRating(powerB);
+  const rosterEdge = competitiveA.roster - competitiveB.roster;
   const rawMatchupEdge = competitiveA.structure - competitiveB.structure;
   const rawStarEdge = competitiveA.star - competitiveB.star;
   // 当前名单和 2K 移植基准的结构差实测最大值均低于 8；使用 ±8 只拦截病态阵容，
@@ -5478,8 +5481,8 @@ function getLeagueDefensiveAnchor(player) {
 
 /**
  * 唯一的球员比赛能力出口。
- * overall 直接继承分位置 OVR；进攻以真实得分/组织能力为主，只保留少量 overall 兜底；
- * 防守、运动和关键球继续沿用各自现有结构。
+ * overall 直接继承分位置 OVR；攻防以真实专项能力为主，只保留少量 overall 兜底；
+ * 运动和关键球继续沿用各自现有结构。
  */
 function getPlayerGameImpact(player) {
   function toRating(value) {
@@ -5495,7 +5498,7 @@ function getPlayerGameImpact(player) {
   var athletic = leagueStatClamp(Number(player && player.ATH) || overall, 25, 99);
   var clutch = leagueStatClamp(Number(player && player.CLU) || overall, 25, 99);
   var offenseOverallWeight = 0.15;
-  var defenseOverallWeight = 0.72;
+  var defenseOverallWeight = 0.15;
   var eliteCreationBonus = Math.max(0, rawPlaymaking - 82) * 0.18;
   // 防守大核心通过护框、回合终结和内线对抗抬升体系防守；外线抢断型防守人不会触发此奖励。
   var eliteAnchorBonus = Math.max(0, rawDefensiveAnchor - 82) * 0.18;

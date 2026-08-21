@@ -20,6 +20,31 @@ if (/predeterminedWinner|最终结果由预定胜者决定/.test(indexSimulation
 if (!/const won = scoreA > scoreB/.test(indexSimulation)) {
   throw new Error('比赛胜负没有直接读取最终比分');
 }
+
+function validateCompetitiveRatingMonotonicity() {
+  const start = indexSource.indexOf('function getTeamCompetitiveRating');
+  const end = indexSource.indexOf('function getTeamBattlePower', start);
+  if (start < 0 || end < 0) throw new Error('无法定位球队竞争力公式');
+  const getRating = new Function(`${indexSource.slice(start, end)}\nreturn getTeamCompetitiveRating;`)();
+  const base = { overall: 88, offense: 84, defense: 74, starConcentration: 0 };
+  const stronger = { overall: 92, offense: 86, defense: 78, starConcentration: 0 };
+  function margin(powerA, powerB) {
+    const ratingA = getRating(powerA);
+    const ratingB = getRating(powerB);
+    return (ratingA.roster - ratingB.roster)
+      + (ratingA.structure - ratingB.structure)
+      + (ratingA.star - ratingB.star);
+  }
+  return {
+    dominatedMargin: margin(stronger, base),
+    overallOnly: margin(Object.assign({}, base, { overall: base.overall + 1 }), base),
+    offenseOnly: margin(Object.assign({}, base, { offense: base.offense + 1 }), base),
+    defenseOnly: margin(Object.assign({}, base, { defense: base.defense + 1 }), base),
+  };
+}
+
+const competitiveRatingMonotonicity = validateCompetitiveRatingMonotonicity();
+
 if (!/\[true, true, false, false, true, false, true\]/.test(playoffsSource)) {
   throw new Error('季后赛主场顺序不是 2-2-1-1-1');
 }
@@ -696,7 +721,7 @@ function runRealRosterSmoke() {
     'getLeaguePlayerAge',
     'af',
     'ensureSeasonEventState',
-    `${indexSource.slice(engineStart, engineEnd)}\nreturn { simulateGameNew, calcTeamPowerWithPlayer, getPlayerGameImpact };`,
+    `${indexSource.slice(engineStart, engineEnd)}\nreturn { simulateGameNew, calcTeamPowerWithPlayer, getPlayerGameImpact, getTeamCompetitiveRating };`,
   )(
     leagueData.LEAGUE_PLAYER_DATA,
     simConfig,
@@ -842,6 +867,8 @@ function runRealRosterSmoke() {
     realState.season = { schedule: [], isPlayoffs: false, _npcSeasonProfiles: {}, events: { activeEffects: [] } };
     const highPlaymakerPower = realEngine.calcTeamPowerWithPlayer('SYNTHETIC_PLAYMAKER_HIGH');
     const lowPlaymakerPower = realEngine.calcTeamPowerWithPlayer('SYNTHETIC_PLAYMAKER_LOW');
+    const highPlaymakerRating = realEngine.getTeamCompetitiveRating(highPlaymakerPower);
+    const lowPlaymakerRating = realEngine.getTeamCompetitiveRating(lowPlaymakerPower);
     let playmakerWins = 0;
     let highPlaymakerPoints = 0;
     let lowPlaymakerPoints = 0;
@@ -862,6 +889,7 @@ function runRealRosterSmoke() {
       highPoints: highPlaymakerPoints / playmakerGames,
       lowPoints: lowPlaymakerPoints / playmakerGames,
       offensePowerGap: highPlaymakerPower.offense - lowPlaymakerPower.offense,
+      appliedStructureGap: highPlaymakerRating.structure - lowPlaymakerRating.structure,
       overallPowerGap: highPlaymakerPower.overall - lowPlaymakerPower.overall,
     };
     const anchorCenter = leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_DEFENSIVE_ANCHOR[4];
@@ -896,6 +924,18 @@ function runRealRosterSmoke() {
       clutchGap: highClutchImpact.offense - lowClutchImpact.offense,
       overallGap: offenseProfileImpact.offense - lowerOverallImpact.offense,
       eliteScorerOffense: eliteScorerImpact.offense,
+    };
+    const jokicDefensePlayer = syntheticPlayer('jokic-defense-profile', 'C', 97);
+    Object.assign(jokicDefensePlayer, {
+      PDEF: 60, STL: 69, IDEF: 82, BLK: 55, REB: 94, ATH: 61, STR: 95,
+    });
+    const lowerOverallDefensePlayer = Object.assign({}, jokicDefensePlayer, { ovr: 77 });
+    const jokicDefenseImpact = realEngine.getPlayerGameImpact(jokicDefensePlayer);
+    const lowerOverallDefenseImpact = realEngine.getPlayerGameImpact(lowerOverallDefensePlayer);
+    const defensiveRatingIsolation = {
+      profileDefense: jokicDefenseImpact.defense,
+      overallGap: jokicDefenseImpact.defense - lowerOverallDefenseImpact.defense,
+      anchorBonus: jokicDefenseImpact.defensiveAnchorBonus,
     };
     const anchorPower = realEngine.calcTeamPowerWithPlayer('SYNTHETIC_DEFENSIVE_ANCHOR');
     const baseDefensePower = realEngine.calcTeamPowerWithPlayer('SYNTHETIC_DEFENSIVE_BASE');
@@ -1001,6 +1041,7 @@ function runRealRosterSmoke() {
       clutchIsolation,
       playmakerTeamIsolation,
       offensiveRatingIsolation,
+      defensiveRatingIsolation,
       defensiveAnchorIsolation,
       realSeededDeterminism,
       syntheticLineup: {
@@ -1043,6 +1084,7 @@ const report = {
     score: `${deterministicA.scoreA}-${deterministicA.scoreB}`,
   },
   inferredRegularSeasonContext,
+  competitiveRatingMonotonicity,
   bracketMapping,
   legacyBracketRepair,
   realRosterSmoke,
@@ -1075,6 +1117,12 @@ if (closeRecordWithOneEightSeedEdge - closeRecordSeries < 0.025) {
   failures.push(`首轮种子差没有与常规赛战绩叠加：${JSON.stringify({ closeRecordSeries, closeRecordWithOneEightSeedEdge })}`);
 }
 if (!report.deterministic.same) failures.push('相同随机种子没有产生相同结果');
+if (competitiveRatingMonotonicity.dominatedMargin <= 0
+  || Math.abs(competitiveRatingMonotonicity.overallOnly - 0.50) > 0.001
+  || Math.abs(competitiveRatingMonotonicity.offenseOnly - 0.20) > 0.001
+  || Math.abs(competitiveRatingMonotonicity.defenseOnly - 0.20) > 0.001) {
+  failures.push(`球队 OVR/进攻/防守不满足单调性：${JSON.stringify(competitiveRatingMonotonicity)}`);
+}
 if (!realRosterSmoke.realSeededDeterminism.same || !realRosterSmoke.realSeededDeterminism.statePreserved
   || !realRosterSmoke.realSeededDeterminism.committedStateAdvanced) {
   failures.push(`真实完整比赛链路无法按 seed 无副作用复现：${JSON.stringify(realRosterSmoke.realSeededDeterminism)}`);
@@ -1181,12 +1229,12 @@ if (!realRosterSmoke.clutchIsolation || realRosterSmoke.clutchIsolation.highClut
   || realRosterSmoke.clutchIsolation.highClutchWinRate > 0.575) {
   failures.push(`CLU 未主要在胶着第四节/加时产生可控优势：${JSON.stringify(realRosterSmoke.clutchIsolation)}`);
 }
-// 进攻评级改为真实能力占 85% 后，顶级组织者应形成明确但仍受控的球队级优势；
-// 保护实际得分/胜率量级，不再沿用 OVR 占 72% 时偏窄的 offensePowerGap 上限。
+// 球员层保留明确的组织进攻差；比赛层只把绝对攻防差转换为小额结构优势。
 if (!realRosterSmoke.playmakerTeamIsolation
-  || outside(realRosterSmoke.playmakerTeamIsolation.highWinRate, 0.525, 0.57)
+  || outside(realRosterSmoke.playmakerTeamIsolation.highWinRate, 0.505, 0.525)
   || outside(realRosterSmoke.playmakerTeamIsolation.offensePowerGap, 1.45, 1.95)
-  || outside(realRosterSmoke.playmakerTeamIsolation.highPoints - realRosterSmoke.playmakerTeamIsolation.lowPoints, 1.00, 1.80)
+  || outside(realRosterSmoke.playmakerTeamIsolation.appliedStructureGap, 0.30, 0.40)
+  || outside(realRosterSmoke.playmakerTeamIsolation.highPoints - realRosterSmoke.playmakerTeamIsolation.lowPoints, 0.15, 0.60)
   || Math.abs(realRosterSmoke.playmakerTeamIsolation.overallPowerGap) > 0.01) {
   failures.push(`顶级组织能力的球队级攻防收益过弱或过强：${JSON.stringify(realRosterSmoke.playmakerTeamIsolation)}`);
 }
@@ -1196,6 +1244,12 @@ if (!realRosterSmoke.offensiveRatingIsolation
   || outside(realRosterSmoke.offensiveRatingIsolation.overallGap, 2.9, 3.1)
   || realRosterSmoke.offensiveRatingIsolation.eliteScorerOffense < 92) {
   failures.push(`基础进攻评级仍被 OVR/CLU 主导或压低真实进攻核心：${JSON.stringify(realRosterSmoke.offensiveRatingIsolation)}`);
+}
+if (!realRosterSmoke.defensiveRatingIsolation
+  || outside(realRosterSmoke.defensiveRatingIsolation.profileDefense, 84.5, 86)
+  || outside(realRosterSmoke.defensiveRatingIsolation.overallGap, 2.9, 3.1)
+  || Math.abs(realRosterSmoke.defensiveRatingIsolation.anchorBonus) > 0.001) {
+  failures.push(`基础防守评级仍被 OVR 主导或错误触发防守支柱奖励：${JSON.stringify(realRosterSmoke.defensiveRatingIsolation)}`);
 }
 if (outside(realRosterSmoke.winRatePHI, 0.68, 0.88)) failures.push(`真实强弱队胜率异常：${realRosterSmoke.winRatePHI}`);
 if (outside(realRosterSmoke.averageTotal, 205, 235)) failures.push(`真实名单场均总分异常：${realRosterSmoke.averageTotal}`);
