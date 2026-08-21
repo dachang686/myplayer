@@ -428,7 +428,7 @@
     var availabilityB = 0;
     var biasA = homeA + availabilityA + Number(seedBonus || 0) * 0.003 + activeEventEdge * 0.004 + seasonEdge * 0.004 - first.fatigue * 0.012;
     function addOvertimeMinutes(context, totalLines) {
-      var extraMinutes = allocateTotal(5, context.weights, context.players.map(function() { return 5; }));
+      var extraMinutes = allocateTotal(25, context.weights, context.players.map(function() { return 5; }));
       extraMinutes.forEach(function(value, index) {
         totalLines[index].mins += value;
       });
@@ -451,7 +451,8 @@
     var keyEvents = [];
 
     function runQuarter(possessions, quarterIndex) {
-      var clutch = quarterIndex === 3 && Math.abs(scoreA - scoreB) <= 8;
+      var clutch = (quarterIndex === 3 && Math.abs(scoreA - scoreB) <= 8)
+        || quarterIndex >= 4;
       first.usagePressure = clamp((first.attack - 0.50) * 0.50, 0, 0.25);
       second.usagePressure = clamp((second.attack - 0.50) * 0.50, 0, 0.25);
       var quarterA = makeQuarter(first, second, Math.max(15, possessions + Math.round(normal(0, 0.7))), biasA, clutch);

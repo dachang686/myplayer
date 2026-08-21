@@ -79,7 +79,7 @@ function checkResult(result, teamA, teamB) {
   const errors = [];
   if (result.engineVersion !== 'v2') errors.push('engineVersion');
   if (result.scoreA !== sum(rowsA, 'pts') || result.scoreB !== sum(rowsB, 'pts')) errors.push('score-boxscore');
-  const expectedMinutes = 240 + (Number(result.ot) || 0) * 5;
+  const expectedMinutes = 240 + (Number(result.ot) || 0) * 25;
   if (sum(rowsA, 'mins') !== expectedMinutes || sum(rowsB, 'mins') !== expectedMinutes) errors.push('minutes');
   if (result.marginComponents.rosterEdge !== 0 || result.marginComponents.starEdge !== 0) errors.push('ovr-margin');
   if (Object.prototype.hasOwnProperty.call(result, 'reconciliation')) errors.push('reconciliation');
@@ -93,7 +93,9 @@ function checkResult(result, teamA, teamB) {
 
 const teams = leagueData.LEAGUE_TEAM_IDS.slice(0, 2);
 const allTeams = leagueData.LEAGUE_TEAM_IDS.slice();
-const validationGames = 3690;
+const validationSeasons = 10;
+const gamesPerSeason = (allTeams.length / 2) * 82;
+const validationGames = validationSeasons * gamesPerSeason;
 const coveredTeams = new Set();
 let invariantErrors = 0;
 let totalA = 0;
@@ -102,8 +104,10 @@ const leagueTotals = {
   fga: 0, fgm: 0, fta: 0, ftm: 0, reb: 0, ast: 0, tov: 0, stl: 0, blk: 0,
 };
 for (let game = 0; game < validationGames; game++) {
-  const round = Math.floor(game / (allTeams.length / 2));
-  const slot = game % (allTeams.length / 2);
+  const seasonGame = game % gamesPerSeason;
+  if (seasonGame === 0) state.season._npcSeasonProfiles = {};
+  const round = Math.floor(seasonGame / (allTeams.length / 2));
+  const slot = seasonGame % (allTeams.length / 2);
   const teamA = allTeams[(slot + round) % allTeams.length];
   const teamB = allTeams[(allTeams.length - 1 - slot + round) % allTeams.length];
   coveredTeams.add(teamA); coveredTeams.add(teamB);
@@ -223,7 +227,7 @@ function fingerprint(gameResult) {
     scoreB: gameResult.scoreB,
     qScoresA: gameResult.qScoresA,
     qScoresB: gameResult.qScoresB,
-    boxScore: gameResult.boxScore,
+    boxScore: Object.keys(gameResult.boxScore).sort().map(key => gameResult.boxScore[key]),
     engineDiagnostics: gameResult.engineDiagnostics,
   });
 }
@@ -235,6 +239,47 @@ const deterministicV2 = fingerprint(deterministicA) === fingerprint(deterministi
 const v2HasDirectOvrEventPath = /\bovr\b/i.test(
   v2Source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, ''),
 );
+function makeFixedOvrTeam(id, firstOvr) {
+  const base = JSON.parse(JSON.stringify(leagueData.LEAGUE_PLAYER_DATA[teams[0]].slice(0, 10)));
+  base.forEach((player, index) => {
+    player.id = 'OVR-ISO-' + index;
+    player.cname = 'OVR-ISO-' + index;
+    player.ovr = 90;
+    player._isUser = true;
+    ['threePT', 'MID', 'FIN', 'DNK', 'HAN', 'ATH', 'PAS', 'STR', 'REB', 'PDEF', 'IDEF', 'STL', 'BLK', 'CLU'].forEach(key => {
+      player[key] = 80;
+    });
+  });
+  base[0].ovr = firstOvr;
+  leagueData.LEAGUE_PLAYER_DATA[id] = base;
+  return id;
+}
+
+function fixedRotation(team) {
+  const players = leagueData.LEAGUE_PLAYER_DATA[team].map(player => Object.assign({}, player, { _isUser: true }));
+  return {
+    players,
+    roleRanks: players.map((_, index) => index),
+    minutes: [36, 34, 32, 30, 28, 24, 20, 16, 12, 8],
+  };
+}
+const ovrHigh = makeFixedOvrTeam('V2_OVR_HIGH', 99);
+const ovrLow = makeFixedOvrTeam('V2_OVR_LOW', 70);
+const ovrOpponent = makeFixedOvrTeam('V2_OVR_OPP', 90);
+state.season._npcSeasonProfiles = {};
+const ovrHighResult = seeded(23000, () => runtime(ovrHigh, ovrOpponent, 0, null, {
+  isHomeA: null,
+  ignoreNpcAvailability: true,
+  _preparedRotations: { [ovrHigh]: fixedRotation(ovrHigh), [ovrOpponent]: fixedRotation(ovrOpponent) },
+}));
+state.season._npcSeasonProfiles = {};
+const ovrLowResult = seeded(23000, () => runtime(ovrLow, ovrOpponent, 0, null, {
+  isHomeA: null,
+  ignoreNpcAvailability: true,
+  _preparedRotations: { [ovrLow]: fixedRotation(ovrLow), [ovrOpponent]: fixedRotation(ovrOpponent) },
+}));
+const ovrIsolation = fingerprint(ovrHighResult) === fingerprint(ovrLowResult);
+
 
 const specialistStats = {
   pas99: pas99Stats,
@@ -245,6 +290,7 @@ const specialistStats = {
   anchorTwo: anchorTwoStats,
   deterministicV2,
   v2HasDirectOvrEventPath,
+  ovrIsolation,
 };
 
 const result = {
@@ -279,6 +325,11 @@ if (result.teamsCovered !== allTeams.length
   || result.averageTotal < 210 || result.averageTotal > 240
   || result.distribution.fta < 10 || result.distribution.fta > 24
   || result.distribution.tov < 8 || result.distribution.tov > 18
+  || result.distribution.fga < 80 || result.distribution.fga > 105
+  || result.distribution.reb < 40 || result.distribution.reb > 56
+  || result.distribution.ast < 20 || result.distribution.ast > 34
+  || result.distribution.stl < 2.5 || result.distribution.stl > 7
+  || result.distribution.blk < 1.5 || result.distribution.blk > 5
   || result.distribution.fgPct < 0.43 || result.distribution.fgPct > 0.55
   || result.distribution.ftPct < 0.68 || result.distribution.ftPct > 0.92) {
   throw new Error('V2 联盟覆盖或基础分布越界：' + JSON.stringify(result));
@@ -294,6 +345,7 @@ if (result.full99PlayerPpg - result.partial99PlayerPpg < 1.5
   || specialistStats.han99.tov >= specialistStats.han50.tov
   || specialistStats.anchorTwo.rim >= specialistStats.anchorOne.rim
   || !specialistStats.deterministicV2
+  || !specialistStats.ovrIsolation
   || specialistStats.v2HasDirectOvrEventPath) {
   throw new Error('V2 专项因果隔离失败：' + JSON.stringify(result));
 }
