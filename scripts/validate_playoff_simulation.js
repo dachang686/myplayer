@@ -809,10 +809,12 @@ function runRealRosterSmoke() {
     let minimumTeamScore = Infinity;
     let maximumTeamScore = -Infinity;
     let fullChainGames = 0;
+    const fullChainScoringLeaders = [];
     const fullChainSeasons = 3;
     const teams = leagueData.LEAGUE_TEAM_IDS;
     for (let season = 0; season < fullChainSeasons; season++) {
       realState.season = { schedule: [], isPlayoffs: false, _npcSeasonProfiles: {}, events: { activeEffects: [] } };
+      const seasonPlayerTotals = {};
       for (let round = 0; round < 82; round++) {
         for (let pair = 0; pair < teams.length; pair += 2) {
           const teamA = teams[(pair + round + season) % teams.length];
@@ -821,12 +823,21 @@ function runRealRosterSmoke() {
           const rowsA = result.boxScore[teamA] || [];
           const rowsB = result.boxScore[teamB] || [];
           const sum = (rows, field) => rows.reduce((value, row) => value + (Number(row[field]) || 0), 0);
-          [[rowsA, result.scoreA], [rowsB, result.scoreB]].forEach(([rows, score]) => {
+          [[teamA, rowsA, result.scoreA], [teamB, rowsB, result.scoreB]].forEach(([team, rows, score]) => {
             if (sum(rows, 'pts') !== score || sum(rows, 'mins') !== 240 || sum(rows, 'ast') > sum(rows, 'fgm')) fullChainInvariantErrors++;
             rows.forEach(row => {
               if (row.pts !== 2 * (row.fgm - row.threeM) + 3 * row.threeM + row.ftm
                 || row.fgm > row.fga || row.threeM > row.threeA || row.threeA > row.fga
                 || row.threeM > row.fgm || row.ftm > row.fta) fullChainInvariantErrors++;
+              if (!row.playerId || row._isUser) return;
+              const key = `${team}:${row.playerId}`;
+              const total = seasonPlayerTotals[key] || (seasonPlayerTotals[key] = {
+                playerId: row.playerId, name: row.name, team, gp: 0, pts: 0, fga: 0, fta: 0,
+              });
+              total.gp++;
+              total.pts += Number(row.pts) || 0;
+              total.fga += Number(row.fga) || 0;
+              total.fta += Number(row.fta) || 0;
             });
           });
           if (sum(rowsA, 'stl') > sum(rowsB, 'tov') || sum(rowsB, 'stl') > sum(rowsA, 'tov')) fullChainInvariantErrors++;
@@ -841,6 +852,25 @@ function runRealRosterSmoke() {
           fullChainGames++;
         }
       }
+      const scoringLeaders = Object.values(seasonPlayerTotals)
+        .filter(player => player.gp >= 58)
+        .map(player => ({
+          ...player,
+          ppg: player.pts / player.gp,
+          fgaPerGame: player.fga / player.gp,
+          ftaPerGame: player.fta / player.gp,
+        }))
+        .sort((a, b) => b.ppg - a.ppg)
+        .slice(0, 10);
+      fullChainScoringLeaders.push({
+        season: season + 1,
+        first: Number(scoringLeaders[0].ppg.toFixed(1)),
+        third: Number(scoringLeaders[2].ppg.toFixed(1)),
+        tenth: Number(scoringLeaders[9].ppg.toFixed(1)),
+        spread: Number((scoringLeaders[0].ppg - scoringLeaders[9].ppg).toFixed(1)),
+        firstFga: Number(scoringLeaders[0].fgaPerGame.toFixed(1)),
+        firstFta: Number(scoringLeaders[0].ftaPerGame.toFixed(1)),
+      });
     }
     fullChainDeltas.sort((a, b) => a - b);
     const fullChainPercentile = ratio => fullChainDeltas[Math.min(fullChainDeltas.length - 1, Math.floor((fullChainDeltas.length - 1) * ratio))] || 0;
@@ -1035,6 +1065,7 @@ function runRealRosterSmoke() {
         games: fullChainGames,
         minimumTeamScore,
         maximumTeamScore,
+        scoringLeaders: fullChainScoringLeaders,
         invariantErrors: fullChainInvariantErrors,
         reconciliation: fullChainReconciliation,
       },
