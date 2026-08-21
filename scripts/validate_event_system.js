@@ -72,7 +72,7 @@ if (registryStart < 0 || registryEnd < 0) {
     return state.career.profile[key];
   };
   const createEventState = injuryRiskBonus => ({
-    version: 8,
+    version: 9,
     suspensionGamesLeft: 0, suspensionReason: '', injuryGamesLeft: 0, injuryReason: '',
     triggeredIds: [], storyTimeline: [], lastTriggerGameNum: null, lastTriggerByLane: {}, eventCounts: {},
     playoffEventCount: 0, injuryRiskBonus: Number(injuryRiskBonus) || 0, majorInjuryThisSeason: false,
@@ -110,6 +110,7 @@ if (registryStart < 0 || registryEnd < 0) {
   )({}, state, leagueData, addProfileDelta, profile, () => '测试队友', ensureEventState);
 
   const registry = eventModule.EVENT_REGISTRY;
+  const flightDelayEventFixture = registry.find(event => event.id === 'flight_delay');
   leagueData._draftClass2026Applied = true;
   const narrativePlayerWithMetadata = eventModule.findNarrativePlayer('active-rival');
   if (!narrativePlayerWithMetadata || narrativePlayerWithMetadata.team !== 'AWAY') {
@@ -962,28 +963,29 @@ if (registryStart < 0 || registryEnd < 0) {
       failures.push('同一场比赛重复进入赛后流程时仍会再次抽取随机事件');
     }
 
-    // 降噪：普通花絮写入时间线但不弹窗，同主题事件在主题冷却内不应再次抽取。
+    // 降噪：真实 flight_delay 事件必须先由 automatic impact 生成 detail，
+    // 再以 quiet 方式写入时间线；同主题事件在冷却内不应再次抽取。
+    const flightDelayEvent = flightDelayEventFixture || {
+      id: 'missing_flight_delay_fixture', lane: 'story', noiseTheme: 'off_court', weight: 1,
+      condition: () => true,
+      execute: () => ({ emoji: '🧪', title: '缺失包机事件', body: '', desc: '测试 fixture 缺失' }),
+    };
+    if (flightDelayEvent.id !== 'flight_delay') failures.push('事件注册表缺少 flight_delay 测试对象');
     registry.splice(0, registry.length,
+      flightDelayEvent,
       {
-        id: 'validation_quiet_media_a',
+        id: 'validation_quiet_off_court_b',
         lane: 'story',
-        noiseTheme: 'media_drama',
+        noiseTheme: 'off_court',
         weight: 1,
         condition: () => true,
-        execute: () => ({ emoji: '🧪', title: '测试普通花絮 A', body: '静默记录', desc: '普通媒体花絮', detail: '影响：媒体关注度略有变化。' }),
-      },
-      {
-        id: 'validation_quiet_media_b',
-        lane: 'story',
-        noiseTheme: 'media_drama',
-        weight: 1,
-        condition: () => true,
-        execute: () => ({ emoji: '🧪', title: '测试普通花絮 B', body: '主题冷却', desc: '同主题普通花絮' }),
+        execute: () => ({ emoji: '🧪', title: '测试场外花絮 B', body: '主题冷却', desc: '同主题场外花絮' }),
       },
     );
+    state.career.flags = { eventLifecycle: {} };
     state.season = {
-      games: [{ game: { opponent: 'AWAY' } }], wins: 1, losses: 0, isPlayoffs: false,
-      playerStats: { games: 1 }, playoffStats: { games: 0 },
+      games: Array.from({ length: 8 }, () => ({ game: { opponent: 'AWAY' } })), wins: 8, losses: 0, isPlayoffs: false,
+      playerStats: { games: 8 }, playoffStats: { games: 0 },
       events: Object.assign(createEventState(0), {
         seasonTheme: { id: 'rise', variantId: 'rise_usage', title: '成长赛季', season: 1 },
         storyThreads: [{ id: 'quiet-test-thread', kind: 'role', state: 'resolved' }],
@@ -997,8 +999,8 @@ if (registryStart < 0 || registryEnd < 0) {
       { isBatch: true },
     );
     const quietTimeline = state.season.events.storyTimeline[0];
-    if (quietResult || !quietTimeline || quietTimeline.delivery !== 'quiet' || quietTimeline.noiseLevel !== 'ambient' || quietTimeline.noiseTheme !== 'media_drama' || quietTimeline.detail !== '影响：媒体关注度略有变化。') {
-      failures.push('普通花絮没有静默写入时间线');
+    if (quietResult || !quietTimeline || quietTimeline.id !== 'flight_delay' || quietTimeline.delivery !== 'quiet' || quietTimeline.noiseLevel !== 'ambient' || quietTimeline.noiseTheme !== 'off_court' || quietTimeline.detail !== '影响：旅途疲劳使本赛季伤病风险略升。' || state.season.events.injuryRiskBonus !== 0.25) {
+      failures.push('真实普通事件没有经过 automatic impact 后静默写入时间线');
     }
     state.season.games.push({ game: { opponent: 'AWAY' } });
     const cooledOutResult = eventModule.checkRandomEvents(
@@ -1007,7 +1009,7 @@ if (registryStart < 0 || registryEnd < 0) {
       { pts: 20, reb: 5, ast: 5 },
       { isBatch: true },
     );
-    if (cooledOutResult || state.season.events.storyTimeline.length !== 1 || eventModule.isRandomEventNoiseEligible(registry[1], 2)) {
+    if (cooledOutResult || state.season.events.storyTimeline.length !== 1 || eventModule.isRandomEventNoiseEligible(registry[1], 9)) {
       failures.push('同主题普通花絮没有遵守主题冷却');
     }
 
