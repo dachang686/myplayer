@@ -1288,11 +1288,39 @@ function getCurrentSeasonLabel() {
 }
 
 function getNextSeasonMods() {
-  if (!STATE.career) return { injuryRiskBonus: 0, formVariance: 0, teamChemistry: 0 };
+  if (!STATE.career) return createSeasonModifierState();
   if (!STATE.career.nextSeasonMods) {
-    STATE.career.nextSeasonMods = { injuryRiskBonus: 0, formVariance: 0, teamChemistry: 0 };
+    STATE.career.nextSeasonMods = createSeasonModifierState();
   }
+  var defaults = createSeasonModifierState();
+  Object.keys(defaults).forEach(function(key) {
+    if (STATE.career.nextSeasonMods[key] == null) STATE.career.nextSeasonMods[key] = defaults[key];
+  });
   return STATE.career.nextSeasonMods;
+}
+
+function createSeasonModifierState(source) {
+  source = source || {};
+  return {
+    injuryRiskBonus: Number(source.injuryRiskBonus) || 0,
+    formVariance: Number(source.formVariance) || 0,
+    teamChemistry: Number(source.teamChemistry) || 0,
+    moraleBonus: Number(source.moraleBonus) || 0,
+    mediaPressure: Number(source.mediaPressure) || 0
+  };
+}
+
+/** 休赛期效果只转移一次；进入新赛季后由 season.mods 持久化并供正式系统读取。 */
+function consumeNextSeasonMods() {
+  var active = createSeasonModifierState(getNextSeasonMods());
+  if (STATE.career) STATE.career.nextSeasonMods = createSeasonModifierState();
+  return active;
+}
+
+function getActiveSeasonMods() {
+  if (!STATE.season) return createSeasonModifierState();
+  STATE.season.mods = createSeasonModifierState(STATE.season.mods);
+  return STATE.season.mods;
 }
 
 function updateSeasonBadge(activeId) {
@@ -3538,8 +3566,8 @@ function selectCareerTeam(team) {
   
   function renderRosterPlayer(p, isUser, idx) {
     var pOvr = parseInt(p.ovr) || 0;
-    var pPos = p.posCn || p.pos || '—';
-    var pName = p.cname;
+    var pPos = escapeSeasonUiText(p.posCn || p.pos || '—');
+    var pName = escapeSeasonUiText(p.cname);
     var imgHtml;
     if (isUser) {
       imgHtml = '<' + 'img class="bp-headshot" style="border-radius:50%;border:2px solid var(--border);width:28px;height:28px;object-fit:cover;" src="' + avatarUrl + '" onerror="this.onerror=null;this.src=\'' + defaultAvatar + '\'">';
@@ -3593,8 +3621,8 @@ function previewTeamRosterModal(team, onConfirmSign, offerYears) {
   rosterHtml += '<div style="font-family:var(--font-display);font-size:12px;color:var(--orange);padding:4px 0;font-weight:700;">🏀 首发五虎</div>';
   starters.forEach(function(p) {
     var pOvr = parseInt(p.ovr) || 0;
-    var pPos = p.posCn || p.pos || '—';
-    var pName = p.cname;
+    var pPos = escapeSeasonUiText(p.posCn || p.pos || '—');
+    var pName = escapeSeasonUiText(p.cname);
     var pAge = getSeasonTeamPlayerAge(p);
     var ageText = pAge > 0 ? pAge + '岁' : '—';
     var hs = typeof getPlayerHeadshotStyle === 'function' ? getPlayerHeadshotStyle(p.id, 26) : '';
@@ -3612,8 +3640,8 @@ function previewTeamRosterModal(team, onConfirmSign, offerYears) {
     rosterHtml += '<div style="font-family:var(--font-display);font-size:12px;color:var(--text-dim);padding:8px 0 4px;font-weight:700;border-top:1px solid var(--border);margin-top:6px;">🔄 主要轮换阵容</div>';
     bench.slice(0, 5).forEach(function(p) {
       var pOvr = parseInt(p.ovr) || 0;
-      var pPos = p.posCn || p.pos || '—';
-      var pName = p.cname;
+      var pPos = escapeSeasonUiText(p.posCn || p.pos || '—');
+      var pName = escapeSeasonUiText(p.cname);
       var pAge = getSeasonTeamPlayerAge(p);
       var ageText = pAge > 0 ? pAge + '岁' : '—';
       var hs = typeof getPlayerHeadshotStyle === 'function' ? getPlayerHeadshotStyle(p.id, 24) : '';
@@ -3993,6 +4021,7 @@ function getConferenceSorted(conf) {
 function startSeason() {
   clearLineupCache();
   var currentStarterStatus = STATE.careerTeam && STATE.finalOVR ? !!calcTeamLineup(STATE.careerTeam).isUserStarter : true;
+  var seasonMods = consumeNextSeasonMods();
   if (STATE.career && STATE.career.flags && STATE.career.flags.startBench) currentStarterStatus = false;
   STATE.season = {
     wins: 0, losses: 0,
@@ -4017,7 +4046,8 @@ function startSeason() {
     _gamesPlayed: {},
     _leagueGameLog: [],
     rankings: null,
-    events: createSeasonEventState(getNextSeasonMods().injuryRiskBonus || 0),
+    mods: seasonMods,
+    events: createSeasonEventState(seasonMods.injuryRiskBonus || 0),
   };
   
   initStandings();
@@ -4247,7 +4277,7 @@ function quickSimAllGames(targetDay) {
 
       // ★ 赛后检测随机事件
       var evData = null;
-      try { evData = checkRandomEvents(g, result, stats, { isBatch: true }); } catch(ex) {}
+      try { evData = checkRandomEvents(g, result, stats, { isBatch: true }); } catch(ex) { console.error('[Event][Random]', ex); }
       var branchEv = null;
       if (evData) {
         if (evData._consequence === 'suspension') {
@@ -4256,7 +4286,7 @@ function quickSimAllGames(targetDay) {
           STATE.season.events.injuryReason = evData.desc;
         }
       } else {
-        try { branchEv = checkSeasonBranchEvent(g, result, stats); } catch(ex) {}
+        try { branchEv = checkSeasonBranchEvent(g, result, stats); } catch(ex) { console.error('[Event][Branch]', ex); }
       }
 
        gi++;
@@ -4640,7 +4670,16 @@ function simDayLeagueGames(day) {
       // 跳过包含我方球队的比赛（这些已经通过我们的比赛模拟过了）
       if (g.home === STATE.careerTeam || g.away === STATE.careerTeam) return;
       
-      const result = simulateGameNew(g.home, g.away, 0, null, { isHomeA: true, isB2B: false });
+      const previousGames = dayMap[d - 1] || [];
+      const playedPreviousDay = function(team) {
+        return previousGames.some(function(previous) { return previous.home === team || previous.away === team; });
+      };
+      const result = simulateGameNew(g.home, g.away, 0, null, {
+        isHomeA: true,
+        isB2BA: playedPreviousDay(g.home),
+        isB2BB: playedPreviousDay(g.away),
+        gameDay: d
+      });
       recordLeagueBoxScore(result.boxScore, 'league:' + d + ':' + g.home + ':' + g.away);
       if (result.won) {
         standings[g.home].wins++; standings[g.away].losses++;
@@ -4926,8 +4965,21 @@ function getActiveEventTeamEdge(teamA, teamB) {
   return Math.max(-2.5, Math.min(2.5, edge)) * side;
 }
 
-/** 比赛模拟 — 先按综合战力与攻防结构计算预期分差，再逐节生成比分；最终比分决定胜负。 */
+/** 跨赛季选择只给玩家球队小量级、可诊断的正式比赛效果。 */
+function getSeasonModifierTeamEdge(teamA, teamB) {
+  if (!STATE.season || !STATE.careerTeam) return 0;
+  var side = teamA === STATE.careerTeam ? 1 : (teamB === STATE.careerTeam ? -1 : 0);
+  if (!side) return 0;
+  var mods = (STATE.season && STATE.season.mods) || {};
+  var chemistryEdge = Math.max(-0.8, Math.min(0.8, (Number(mods.teamChemistry) || 0) * 0.08));
+  var gamesPlayed = Number(ensureSeasonEventState().careerTeamGamesPlayed) || 0;
+  var moraleRemaining = Math.max(0, 1 - gamesPlayed / 12);
+  var moraleEdge = Math.max(-0.8, Math.min(0.8, (Number(mods.moraleBonus) || 0) * 0.10)) * moraleRemaining;
+  return (chemistryEdge + moraleEdge) * side;
+}
+
 function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
+/** 比赛模拟 — 先按综合战力与攻防结构计算预期分差，再逐节生成比分；最终比分决定胜负。 */
   const requestedOptions = gameOptions || {};
   // seeded 调试/回放必须覆盖完整比赛链路，包括轮换、伤病、状态、比分和 Box Score。
   // 默认在结束后恢复可变赛季状态；正式结算可显式传 commitSimulationState: true。
@@ -5017,10 +5069,22 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
   else if (gameIdx >= 0) isHomeA = !!schedule[gameIdx]?.home;
   const currentScheduleGame = gameIdx >= 0 ? schedule[gameIdx] : null;
   const previousScheduleGame = gameIdx > 0 ? schedule[gameIdx - 1] : null;
-  const isB2B = typeof options.isB2B === 'boolean'
-    ? options.isB2B
-    : !!(currentScheduleGame && previousScheduleGame
-      && Number(currentScheduleGame.day) - Number(previousScheduleGame.day) === 1);
+  const currentDay = Number.isFinite(Number(options.gameDay))
+    ? Number(options.gameDay)
+    : (currentScheduleGame ? Number(currentScheduleGame.day) : null);
+  function playedOnPreviousDay(team) {
+    if (!Number.isFinite(currentDay) || !STATE.season || !STATE.season._dayMap) return false;
+    return (STATE.season._dayMap[currentDay - 1] || []).some(function(game) {
+      return game && (game.home === team || game.away === team);
+    });
+  }
+  // isB2B 保留为旧调用的 A 队别名；新调用必须分别描述双方。
+  const legacyScheduleB2BA = !!(currentScheduleGame && previousScheduleGame
+    && Number(currentScheduleGame.day) - Number(previousScheduleGame.day) === 1);
+  const isB2BA = typeof options.isB2BA === 'boolean'
+    ? options.isB2BA
+    : (typeof options.isB2B === 'boolean' ? options.isB2B : (playedOnPreviousDay(teamA) || legacyScheduleB2BA));
+  const isB2BB = typeof options.isB2BB === 'boolean' ? options.isB2BB : playedOnPreviousDay(teamB);
 
   // 球队总评提供基础战力，攻防结构与巨星集中度提供受限的额外分差。
   const competitiveA = getTeamCompetitiveRating(powerA);
@@ -5048,11 +5112,12 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
   const availabilityEdge = Number.isFinite(options.availabilityEdge)
     ? options.availabilityEdge
     : (probMultiplier != null ? (probMultiplier - 1) * 25 : 0);
-  const fatigueEdge = isB2B ? -1.0 : 0;
+  const fatigueEdge = (isB2BB ? 1.0 : 0) - (isB2BA ? 1.0 : 0);
   const eventTeamEdge = getActiveEventTeamEdge(teamA, teamB);
+  const seasonModifierTeamEdge = getSeasonModifierTeamEdge(teamA, teamB);
   const expectedMargin = clamp(
     rosterEdge + matchupEdge + starEdge + seasonFormEdge + homeCourtEdge
-      + availabilityEdge + fatigueEdge + eventTeamEdge,
+      + availabilityEdge + fatigueEdge + eventTeamEdge + seasonModifierTeamEdge,
     -18,
     18
   );
@@ -5065,7 +5130,7 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
     powerA.offense + powerB.offense - powerA.defense - powerB.defense
   ) * 0.32;
   const expectedTotal = clamp(
-    gamePace * 2.16 + matchupScoring + (isB2B ? -3 : 0),
+    gamePace * 2.16 + matchupScoring - (isB2BA ? 1.5 : 0) - (isB2BB ? 1.5 : 0),
     196,
     244
   );
@@ -5154,6 +5219,8 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
     pace: gamePace,
     possPerQ,
     isHomeA,
+    isB2BA,
+    isB2BB,
     expectedMargin,
     marginComponents: {
       rosterEdge,
@@ -5166,6 +5233,7 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
       availabilityEdge,
       fatigueEdge,
       eventTeamEdge,
+      seasonModifierTeamEdge,
     },
     eventTeamEdge,
     estimatedWinProb,
@@ -5418,6 +5486,16 @@ function getLeagueScoringBurst(star, scoringSkill) {
  * 进攻档案分成三个职责：Usage 决定机会，Shot Profile 决定出手区域，
  * Efficiency 决定各区域效率。同一组终结属性不再通过“突破/篮下/转换”被重复计入 Top3。
  */
+function applyCareerSeasonFormVariance(burst) {
+  if (!burst) return burst;
+  var mods = (STATE.season && STATE.season.mods) || {};
+  var variance = (Number(mods.formVariance) || 0) + (Number(mods.mediaPressure) || 0) * 0.35;
+  var scale = leagueStatClamp(1 + variance * 0.06, 0.55, 1.60);
+  return Object.assign({}, burst, {
+    gameForm: leagueStatClamp(1 + (burst.gameForm - 1) * scale, 0.55, 7.5)
+  });
+}
+
 function getLeagueOffenseProfile(player) {
   function skill(key) { return af(parseInt(player[key]) || 50); }
   var three = skill('threePT');
@@ -5697,7 +5775,8 @@ function generateBoxScore(teamA, teamB, totalA, totalB, gameOptions) {
     var bursts = players.map(function(player, index) {
       var ovrSignal = leagueStatClamp(((parseInt(player.ovr) || 70) - 78) / 21, 0, 1);
       var eligibility = offSkill[index] * 0.82 + ovrSignal * 0.18;
-      return getLeagueScoringBurst(eligibility, offSkill[index]);
+      var burst = getLeagueScoringBurst(eligibility, offSkill[index]);
+      return player._isUser ? applyCareerSeasonFormVariance(burst) : burst;
     });
     var usageWeights = players.map(function(player, index) {
       var roleOpportunity;
@@ -6154,6 +6233,7 @@ function generatePlayerStatsNew(attrs, gameResult, isPlayoff) {
       mins: Number(userBoxRow.mins) || 0,
     };
   }
+  throw new Error('[PlayerStats] 正式比赛缺少用户 Box Score 行，已拒绝启用旧版独立统计模型');
   const cfg = SIM_CONFIG.PLAYER_STATS;
   const pos = STATE.position || 'PG';
   const posScale = cfg.POS_SCALE[pos] || cfg.POS_SCALE.PG;
@@ -8545,6 +8625,10 @@ function applyAnnualAttributeDrift() {
   function applyList(list, minDelta, maxDelta, label) {
     list.forEach(function(k) {
       var delta = minDelta + Math.floor(Math.random() * (maxDelta - minDelta + 1));
+      if (delta < 0 && c.flags && c.flags.bodyManagement && age > 30
+        && slowTech.indexOf(k) >= 0) {
+        delta = Math.min(0, delta + 1);
+      }
       if (delta !== 0) {
         addAttrDelta(k, delta);
         changes.push((delta > 0 ? '+' : '') + delta + ' ' + attrCN(k) + (label ? '（' + label + '）' : ''));
@@ -8982,7 +9066,7 @@ function applyChoiceBonus(ch, msg) {
 
 function getMentalPressure() {
   if (!STATE.career) return 0;
-  var mods = getNextSeasonMods();
+  var mods = STATE.season && STATE.season.mods ? getActiveSeasonMods() : getNextSeasonMods();
   var profile = STATE.career.profile || {};
   var rl = getBranchNode('relationship');
   var fm = getBranchNode('family');

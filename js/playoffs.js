@@ -173,37 +173,24 @@ function autoSimNonUserPlayInGames() {
 function simulatePlayInMatch(teamA, teamB, gameId) {
   const myTeam = STATE.careerTeam;
   const involvesCareerTeam = teamA === myTeam || teamB === myTeam;
-  if (!involvesCareerTeam) {
-    const powerA = calcTeamPowerWithPlayer(teamA);
-    const powerB = calcTeamPowerWithPlayer(teamB);
-    const avgA = (powerA.offense + powerA.defense + powerA.depth) / 3;
-    const avgB = (powerB.offense + powerB.defense + powerB.depth) / 3;
-    const winProb = avgA / (avgA + avgB + 0.01);
-    const adjustedProb = winProb * 0.6 + 0.2 + Math.random() * 0.2;
-    const aWins = Math.random() < adjustedProb;
-    return {
-      aWins,
-      scoreA: Math.round(avgA * (0.8 + Math.random() * 0.4)),
-      scoreB: Math.round(avgB * (0.8 + Math.random() * 0.4)),
-      absenceType: null,
-    };
-  }
-
-  const events = typeof ensureSeasonEventState === 'function' ? ensureSeasonEventState() : (STATE.season.events || {});
   let absenceType = null;
-  if ((Number(events.suspensionGamesLeft) || 0) > 0) absenceType = 'suspension';
-  else if ((Number(events.injuryGamesLeft) || 0) > 0) absenceType = 'injury';
-  if (absenceType === 'suspension') events.suspensionGamesLeft--;
-  if (absenceType === 'injury') events.injuryGamesLeft--;
+  if (involvesCareerTeam) {
+    const events = typeof ensureSeasonEventState === 'function' ? ensureSeasonEventState() : (STATE.season.events || {});
+    if ((Number(events.suspensionGamesLeft) || 0) > 0) absenceType = 'suspension';
+    else if ((Number(events.injuryGamesLeft) || 0) > 0) absenceType = 'injury';
+    if (absenceType === 'suspension') events.suspensionGamesLeft--;
+    if (absenceType === 'injury') events.injuryGamesLeft--;
+  }
 
   const careerIsA = teamA === myTeam;
   const simulated = simulateGameNew(teamA, teamB, 0, null, {
     isHomeA: true,
-    isB2B: false,
+    isB2BA: false,
+    isB2BB: false,
     userAvailable: !absenceType,
   });
   const careerWon = careerIsA ? !!simulated.won : !simulated.won;
-  if (typeof afterCareerTeamGame === 'function') {
+  if (involvesCareerTeam && typeof afterCareerTeamGame === 'function') {
     afterCareerTeamGame({
       game: { opponent: careerIsA ? teamB : teamA, isPlayIn: true, simulated: true },
       result: { won: careerWon, scoreA: simulated.scoreA, scoreB: simulated.scoreB },
@@ -1120,7 +1107,7 @@ function simOnePlayoffGame(round, seriesIdx, teamA, teamB, isMySeries, gameNum, 
             return;
           }
         }
-      } catch(ex) {}
+      } catch(ex) { console.error('[Event][Playoff]', ex); }
     }
     simOnePlayoffGame(round, seriesIdx, teamA, teamB, isMySeries, gameNum + 1, newWinsA, newWinsB, seriesGames, userGameStats, roundName, onDone);
   }, isMySeries ? 600 : 50);

@@ -1061,6 +1061,7 @@ if (playInMatchStart < 0 || playInMatchEnd < 0) {
   };
   let simulatedOptions = null;
   let afterPlayIn = null;
+  let simulationCalls = 0;
   const playInFns = new Function(
     'STATE', 'calcTeamPowerWithPlayer', 'ensureSeasonEventState', 'simulateGameNew', 'afterCareerTeamGame',
     `${playoffsSource.slice(playInMatchStart, playInMatchEnd)}\nreturn { simulatePlayInMatch };`,
@@ -1070,6 +1071,7 @@ if (playInMatchStart < 0 || playInMatchEnd < 0) {
     () => playInState.season.events,
     (teamA, teamB, seedBonus, multiplier, options) => {
       simulatedOptions = options;
+      simulationCalls++;
       return { won: false, scoreA: 101, scoreB: 107 };
     },
     options => { afterPlayIn = options; },
@@ -1079,6 +1081,14 @@ if (playInMatchStart < 0 || playInMatchEnd < 0) {
       simulatedOptions?.userAvailable !== false || Object.prototype.hasOwnProperty.call(simulatedOptions || {}, 'availabilityEdge') ||
       afterPlayIn?.absenceType !== 'injury' || afterPlayIn?.gameKey !== 'play-in:4:A' || afterPlayIn?.allowPopup !== false) {
     failures.push('玩家附加赛没有接入正式比赛引擎、伤停扣减或统一球队比赛时钟');
+  }
+  afterPlayIn = null;
+  const npcPlayInResult = playInFns.simulatePlayInMatch('NPC_A', 'NPC_B', 'B');
+  if (simulationCalls !== 2 || npcPlayInResult.aWins !== false ||
+      npcPlayInResult.aWins !== (npcPlayInResult.scoreA > npcPlayInResult.scoreB) ||
+      npcPlayInResult.absenceType !== null || afterPlayIn !== null ||
+      playInState.season.events.injuryGamesLeft !== 1) {
+    failures.push('NPC 附加赛没有统一走正式比赛引擎，或错误消费了玩家伤停/比赛时钟');
   }
 }
 
@@ -1159,6 +1169,40 @@ if (!/afterCareerTeamGame\(\{ game: g, result: skipResult,[\s\S]*absenceType: sk
   failures.push('常规赛或季后赛的伤停跳过路径没有消费短期事件效果');
 }
 
+// 休赛期效果必须一次性迁移到 season.mods，不能在开季重置时丢字段或继续读取暂存区。
+const seasonModStart = indexSource.indexOf('function getNextSeasonMods');
+const seasonModEnd = indexSource.indexOf('function updateSeasonBadge', seasonModStart);
+if (seasonModStart < 0 || seasonModEnd < 0) {
+  failures.push('无法定位赛季 modifier 迁移函数');
+} else {
+  const seasonModState = {
+    career: {
+      nextSeasonMods: {
+        injuryRiskBonus: -1, formVariance: 2, teamChemistry: 3, moraleBonus: 4, mediaPressure: 5,
+      },
+    },
+    season: {},
+  };
+  const seasonModFns = new Function(
+    'STATE',
+    `${indexSource.slice(seasonModStart, seasonModEnd)}
+return { consumeNextSeasonMods, getActiveSeasonMods };`,
+  )(seasonModState);
+  const transferred = seasonModFns.consumeNextSeasonMods();
+  seasonModState.season.mods = transferred;
+  const active = seasonModFns.getActiveSeasonMods();
+  const resetValues = Object.values(seasonModState.career.nextSeasonMods);
+  if (JSON.stringify(active) !== JSON.stringify({
+        injuryRiskBonus: -1, formVariance: 2, teamChemistry: 3, moraleBonus: 4, mediaPressure: 5,
+      }) ||
+      resetValues.length !== 5 || resetValues.some(value => value !== 0) ||
+      !indexSource.includes('const seasonModifierTeamEdge = getSeasonModifierTeamEdge(teamA, teamB)') ||
+      !indexSource.includes('applyCareerSeasonFormVariance(burst)') ||
+      !offseasonSource.includes('mods: typeof createSeasonModifierState')) {
+    failures.push('nextSeasonMods 没有完整迁移到 season.mods 或未接入正式比赛消费链');
+  }
+}
+
 if (failures.length) {
   console.error(failures.join('\n'));
   process.exitCode = 1;
@@ -1208,6 +1252,7 @@ if (failures.length) {
     healthThemeAvailabilityOutcome: true,
     themeVariantCursor: true,
     directorLaneThrottle: true,
+    seasonModifierTransfer: true,
     injuryInstanceRecovery: true,
   }));
 }

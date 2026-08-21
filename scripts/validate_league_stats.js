@@ -271,6 +271,13 @@ userStatsReaders.forEach(reader => {
   if (stats.pts !== 27 || stats.ast !== 9 || stats.mins !== 36 || stats.threeM !== 4) {
     throw new Error('用户赛季统计没有直接读取整队 Box Score');
   }
+  let rejectedMissingUserRow = false;
+  try {
+    reader({}, { boxScore: { WAS: [] } }, false);
+  } catch (error) {
+    rejectedMissingUserRow = /缺少用户 Box Score/.test(String(error && error.message));
+  }
+  if (!rejectedMissingUserRow) throw new Error('用户 Box Score 缺失时仍会静默启用旧版独立统计');
 });
 
 const state = { season: { isPlayoffs: false } };

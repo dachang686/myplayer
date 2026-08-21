@@ -462,6 +462,24 @@ function deterministicGameFingerprint(result) {
   };
 }
 
+const fatigueIsolation = withSeed(8813, () => {
+  const none = simulateGame('EQUAL_A', 'EQUAL_B', 0, null, { isHomeA: null, isB2BA: false, isB2BB: false });
+  const onlyA = simulateGame('EQUAL_A', 'EQUAL_B', 0, null, { isHomeA: null, isB2BA: true, isB2BB: false });
+  const onlyB = simulateGame('EQUAL_A', 'EQUAL_B', 0, null, { isHomeA: null, isB2BA: false, isB2BB: true });
+  const both = simulateGame('EQUAL_A', 'EQUAL_B', 0, null, { isHomeA: null, isB2BA: true, isB2BB: true });
+  return {
+    onlyADelta: onlyA.expectedMargin - none.expectedMargin,
+    onlyBDelta: onlyB.expectedMargin - none.expectedMargin,
+    bothDelta: both.expectedMargin - none.expectedMargin,
+    flags: {
+      none: [none.isB2BA, none.isB2BB],
+      onlyA: [onlyA.isB2BA, onlyA.isB2BB],
+      onlyB: [onlyB.isB2BA, onlyB.isB2BB],
+      both: [both.isB2BA, both.isB2BB],
+    },
+  };
+});
+
 const inferredRegularSeasonContext = withSeed(8818, () => {
   state.season.schedule = [
     { day: 20, home: true, simulated: true },
@@ -1114,6 +1132,7 @@ const report = {
     same: JSON.stringify(deterministicGameFingerprint(deterministicA)) === JSON.stringify(deterministicGameFingerprint(deterministicB)),
     score: `${deterministicA.scoreA}-${deterministicA.scoreB}`,
   },
+  fatigueIsolation,
   inferredRegularSeasonContext,
   competitiveRatingMonotonicity,
   bracketMapping,
@@ -1193,6 +1212,12 @@ if (!realRosterSmoke.structureMarginComponents
 }
 if (inferredRegularSeasonContext.isHomeA !== false || inferredRegularSeasonContext.fatigueMarginDelta !== -1) {
   failures.push(`常规赛主客场/背靠背推断错误：${JSON.stringify(inferredRegularSeasonContext)}`);
+if (fatigueIsolation.onlyADelta !== -1 || fatigueIsolation.onlyBDelta !== 1 || fatigueIsolation.bothDelta !== 0 ||
+    JSON.stringify(fatigueIsolation.flags) !== JSON.stringify({
+      none: [false, false], onlyA: [true, false], onlyB: [false, true], both: [true, true],
+    })) {
+  failures.push(`双方背靠背疲劳隔离错误：${JSON.stringify(fatigueIsolation)}`);
+}
 }
 if (!bracketMapping.correctSemifinals || bracketMapping.champion !== 'T1') failures.push(`季后赛半区映射错误：${JSON.stringify(bracketMapping)}`);
 if (JSON.stringify(bracketMapping.homePattern) !== JSON.stringify([true, true, false, false])) {

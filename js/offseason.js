@@ -885,8 +885,8 @@ function showRosterReview() {
 
   function renderPlayer(p, isUser) {
     var pOvr = parseInt(p.ovr) || 0;
-    var pPos = p.posCn || p.pos || '—';
-    var pName = p.cname;
+    var pPos = escapeSeasonUiText(p.posCn || p.pos || '—');
+    var pName = escapeSeasonUiText(p.cname);
     var imgHtml;
     if (isUser) {
       imgHtml = '<' + 'img style="border-radius:50%;border:2px solid var(--border);width:28px;height:28px;object-fit:cover;flex-shrink:0;" src="' + avatarUrl + '" onerror="this.onerror=null;this.src=\'' + defaultAvatar + '\'">';
@@ -951,6 +951,9 @@ function resetForNewSeason() {
   saveCurrentSeasonToCareer();
   _rngState = null;
   var oldTeam = STATE.careerTeam;
+  var seasonMods = typeof consumeNextSeasonMods === 'function'
+    ? consumeNextSeasonMods()
+    : getNextSeasonMods();
   STATE._careerSaved = false;
   STATE.season = {
     wins: 0, losses: 0,
@@ -964,13 +967,13 @@ function resetForNewSeason() {
     playoffBracket: null, otherBracket: null,
     _viewConf: null, _gamesPlayed: {}, _leagueGameLog: [], rankings: null,
     _simulationStarted: false,
+    mods: typeof createSeasonModifierState === 'function' ? createSeasonModifierState(seasonMods) : seasonMods,
     events: typeof createSeasonEventState === 'function'
-      ? createSeasonEventState(getNextSeasonMods().injuryRiskBonus || 0)
-      : { suspensionGamesLeft:0, suspensionReason:'', injuryGamesLeft:0, injuryReason:'', triggeredIds:[], storyTimeline:[], lastTriggerGameNum:null, playoffEventCount:0, injuryRiskBonus: getNextSeasonMods().injuryRiskBonus || 0, majorInjuryThisSeason:false, playThroughPrompted:{}, regularPlayThroughPromptCount:0 },
+      ? createSeasonEventState(seasonMods.injuryRiskBonus || 0)
+      : { suspensionGamesLeft:0, suspensionReason:'', injuryGamesLeft:0, injuryReason:'', triggeredIds:[], storyTimeline:[], lastTriggerGameNum:null, playoffEventCount:0, injuryRiskBonus: seasonMods.injuryRiskBonus || 0, majorInjuryThisSeason:false, playThroughPrompted:{}, regularPlayThroughPromptCount:0 },
   };
   STATE.careerTeam = oldTeam;
   if (STATE.career && STATE.career.flags) delete STATE.career.flags.startBench;
-  STATE.career.nextSeasonMods = { injuryRiskBonus: 0, formVariance: 0, teamChemistry: 0 };
   syncUserStarterStatus();
   initStandings();
   buildRealSchedule();

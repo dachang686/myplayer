@@ -1285,8 +1285,8 @@ const STAGED_BRANCH_EVENTS = [
       { label: '罚球稳定', hint: '关键时刻的心理锚点', apply: function() {
         getBranchState('skill_training').lastFocus = 'free_throw';
         setBranchNode('training', 'skill_first', { lastFocus: 'free_throw' });
-        addAttrDelta('CLU', 1); addAttrDelta('ATH', 1); STATE.finalOVR = calcOVR(STATE.attrs);
-        return '你每天罚 200 球，每一球之前都做同一个呼吸。两个月后，站在罚球线上时，你听见的只剩自己的呼吸。<br><br>效果：关键球+1，运动+1。';
+        addAttrDelta('MID', 1); addAttrDelta('threePT', 1); STATE.finalOVR = calcOVR(STATE.attrs);
+        return '你每天罚 200 球，每一球之前都做同一个呼吸。两个月后，站在罚球线上时，你听见的只剩自己的呼吸。<br><br>效果：中投+1，三分+1；两项都会提高正式罚球手感。';
       }}
     ]
   },
@@ -1520,7 +1520,7 @@ const STAGED_BRANCH_EVENTS = [
     choices: [
       { label: '主动承担领袖责任', hint: '球队默契和传球提升', apply: function() { var mods = getNextSeasonMods(); setBranchNode('team_practice', 'practice_response', { leadership: 'vocal' }); mods.teamChemistry = Math.min(5, (mods.teamChemistry || 0) + 2); addAttrDelta('PAS', 1); STATE.finalOVR = calcOVR(STATE.attrs); return '你不再只是参加合练的人，而是安排训练内容、提醒年轻队友站位的人。<br><br>效果：传球+1；球队默契提升；球队线进入队魂阶段。'; }},
       { label: '保持低调，只做好自己', hint: '降低波动，不争队内话语权', apply: function() { var mods = getNextSeasonMods(); setBranchNode('team_practice', 'practice_response', { leadership: 'quiet' }); mods.formVariance = Math.max(-3, (mods.formVariance || 0) - 1); return '你没有演讲，也没有喊口号，只是每天第一个到训练馆。久而久之，这也成了一种声音。<br><br>效果：下赛季状态波动略降；球队线进入队魂阶段。'; }},
-      { label: '把舞台让给年轻队友', hint: '年轻球员成长，个人声望温和', apply: function() { var mods = getNextSeasonMods(); setBranchNode('team_practice', 'practice_mentor', { leadership: 'mentor' }); mods.teamChemistry = Math.min(5, (mods.teamChemistry || 0) + 1); STATE.career.flags.youthDevelopment = true; return '你把训练安排和回合组织交给年轻人，只在关键节点帮他们纠错。他们开始敢在你面前大声说话。<br><br>重点：你选择让位。<br><br>影响：球队默契略升；年轻球员成长。'; }}
+      { label: '把舞台让给年轻队友', hint: '球队默契提升，个人声望温和', apply: function() { var mods = getNextSeasonMods(); setBranchNode('team_practice', 'practice_mentor', { leadership: 'mentor' }); mods.teamChemistry = Math.min(5, (mods.teamChemistry || 0) + 1); return '你把训练安排和回合组织交给年轻人，只在关键节点帮他们纠错。他们开始敢在你面前大声说话。<br><br>重点：你选择让位。<br><br>影响：球队默契略升；年轻队友获得更多训练主导权。'; }}
     ]
   },
   {
@@ -2839,7 +2839,7 @@ const STAGED_BRANCH_EVENTS = [
       }},
       { label: '先回应家长的质疑', hint: '把训练安排讲清楚', apply: function() {
         setBranchNode('training_camp', 'crisis_parent', { crisis: 'parent' });
-        addProfileDelta('mediaPressure', 1, -10, 10);
+        addSeasonMod('mediaPressure', 1, -10, 10);
         return '有家长在群里质疑训练强度。你没有删消息，只发了一条长回复，把每堂课的内容列出来。<br><br>效果：媒体压力+1。';
       }},
       { label: '先顶住赞助商的要求', hint: '坚持训练营的纯粹', apply: function() {
@@ -3053,7 +3053,7 @@ const STAGED_BRANCH_EVENTS = [
       }},
       { label: '先回应作秀质疑', hint: '舆论压力上升', apply: function() {
         setBranchNode('charity', 'crisis_show', { crisis: 'show' });
-        addProfileDelta('mediaPressure', 1, -10, 10);
+        addSeasonMod('mediaPressure', 1, -10, 10);
         return '热搜词条变成“球员作秀”。你没有急着发声明，因为你知道，解释可能让事情更糟。<br><br>效果：媒体压力+1。';
       }},
       { label: '先排查合作品牌', hint: '争议大幅上升', apply: function() {
@@ -3710,11 +3710,10 @@ const STAGED_BRANCH_EVENTS = [
         addSeasonMod('teamChemistry', 1, -10, 10);
         return '教练把你们俩单独拉去战术室，画了七套双人配合。从那以后，你和{队友}的名字开始被写在同一行。<br><br>效果：传球+1；球队默契+1。';
       }},
-      { label: '让他承担更多球权', hint: '队友成长，关系更信任', apply: function() {
+      { label: '让他承担更多球权', hint: '共享球权，关系更信任', apply: function() {
         setBranchNode('teammate_bond', 'bond_share', { bondType: 'share' });
-        STATE.career.flags.teammateGrowth = true;
         addSeasonMod('teamChemistry', 1, -10, 10);
-        return '你主动把一些回合让给{队友}发起。他第一次打出生涯新高时，赛后第一件事是找你撞胸。<br><br>效果：球队默契+1；队友成长。';
+        return '你主动把一些回合让给{队友}发起。他第一次打出生涯新高时，赛后第一件事是找你撞胸。<br><br>效果：球队默契+1；队友信任加深。';
       }},
       { label: '关键时刻自己接管', hint: '关键球提升，关系偏依赖', apply: function() {
         setBranchNode('teammate_bond', 'bond_own', { bondType: 'own' });

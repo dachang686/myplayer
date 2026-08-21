@@ -315,11 +315,11 @@ if (!Object.values(ACHIEVEMENT_FEATURES).some(v => v)) {
           var cn = getTeamCN(team);
           var progress = '<span class="cq-toast-detail">征服联盟 ' + total + '/30</span>';
           if (championshipStreak > 1) {
-            showToast("🏆 " + getChampionshipStreakLabel(championshipStreak) + "！<br><span class=\"cq-toast-team\">带领 " + cn + " 夺冠</span><br>" + progress);
+            showAchievementToast("🏆 " + getChampionshipStreakLabel(championshipStreak) + "！<br><span class=\"cq-toast-team\">带领 " + cn + " 夺冠</span><br>" + progress);
           } else if (isFirst) {
-            showToast("🏆 首次带领 " + cn + " 夺冠！<br>" + progress);
+            showAchievementToast("🏆 首次带领 " + cn + " 夺冠！<br>" + progress);
           } else {
-            showToast("🏆 " + cn + " 再夺冠！<br>" + progress);
+            showAchievementToast("🏆 " + cn + " 再夺冠！<br>" + progress);
           }
 
           if (isFirst) {
@@ -337,7 +337,7 @@ if (!Object.values(ACHIEVEMENT_FEATURES).some(v => v)) {
               setTimeout(function () {
                 var msg = "🎉 " + milestones[total];
                 if (total === 30) msg += " 🏆🏆🏆";
-                showToast(msg);
+                showAchievementToast(msg);
               }, 3300);
             }
           }
@@ -627,7 +627,7 @@ if (!Object.values(ACHIEVEMENT_FEATURES).some(v => v)) {
   }
 
   /** Toast 通知 — 金牌弹出 */
-  function showToast(msg) {
+  function showAchievementToast(msg) {
     var existing = document.querySelector(".cq-toast");
     if (existing) {
       existing.remove();
