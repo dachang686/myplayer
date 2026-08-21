@@ -874,6 +874,29 @@ function runRealRosterSmoke() {
     const anchorImpact = realEngine.getPlayerGameImpact(anchorCenter);
     const baseCenterImpact = realEngine.getPlayerGameImpact(baseCenter);
     const perimeterStopperImpact = realEngine.getPlayerGameImpact(perimeterStopper);
+    const offenseProfilePlayer = syntheticPlayer('offense-profile', 'C', 96);
+    Object.assign(offenseProfilePlayer, {
+      threePT: 69, MID: 79, FIN: 90, DNK: 80, HAN: 86, PAS: 75,
+      PDEF: 72, STL: 72, IDEF: 86, BLK: 91, REB: 90, ATH: 85, STR: 90, CLU: 85,
+    });
+    const lowClutchPlayer = Object.assign({}, offenseProfilePlayer, { CLU: 25 });
+    const highClutchPlayer = Object.assign({}, offenseProfilePlayer, { CLU: 99 });
+    const lowerOverallPlayer = Object.assign({}, offenseProfilePlayer, { ovr: 76 });
+    const eliteScorer = syntheticPlayer('elite-scorer', 'SG', 88);
+    Object.assign(eliteScorer, {
+      threePT: 95, MID: 95, FIN: 95, DNK: 90, HAN: 95, PAS: 95, ATH: 95, STR: 85,
+    });
+    const offenseProfileImpact = realEngine.getPlayerGameImpact(offenseProfilePlayer);
+    const lowClutchImpact = realEngine.getPlayerGameImpact(lowClutchPlayer);
+    const highClutchImpact = realEngine.getPlayerGameImpact(highClutchPlayer);
+    const lowerOverallImpact = realEngine.getPlayerGameImpact(lowerOverallPlayer);
+    const eliteScorerImpact = realEngine.getPlayerGameImpact(eliteScorer);
+    const offensiveRatingIsolation = {
+      profileOffense: offenseProfileImpact.offense,
+      clutchGap: highClutchImpact.offense - lowClutchImpact.offense,
+      overallGap: offenseProfileImpact.offense - lowerOverallImpact.offense,
+      eliteScorerOffense: eliteScorerImpact.offense,
+    };
     const anchorPower = realEngine.calcTeamPowerWithPlayer('SYNTHETIC_DEFENSIVE_ANCHOR');
     const baseDefensePower = realEngine.calcTeamPowerWithPlayer('SYNTHETIC_DEFENSIVE_BASE');
     function simulatePairedDefenseSeries(games) {
@@ -977,6 +1000,7 @@ function runRealRosterSmoke() {
       },
       clutchIsolation,
       playmakerTeamIsolation,
+      offensiveRatingIsolation,
       defensiveAnchorIsolation,
       realSeededDeterminism,
       syntheticLineup: {
@@ -1157,12 +1181,21 @@ if (!realRosterSmoke.clutchIsolation || realRosterSmoke.clutchIsolation.highClut
   || realRosterSmoke.clutchIsolation.highClutchWinRate > 0.575) {
   failures.push(`CLU 未主要在胶着第四节/加时产生可控优势：${JSON.stringify(realRosterSmoke.clutchIsolation)}`);
 }
+// 进攻评级改为真实能力占 85% 后，顶级组织者应形成明确但仍受控的球队级优势；
+// 保护实际得分/胜率量级，不再沿用 OVR 占 72% 时偏窄的 offensePowerGap 上限。
 if (!realRosterSmoke.playmakerTeamIsolation
-  || outside(realRosterSmoke.playmakerTeamIsolation.highWinRate, 0.525, 0.55)
-  || outside(realRosterSmoke.playmakerTeamIsolation.offensePowerGap, 0.90, 1.50)
-  || outside(realRosterSmoke.playmakerTeamIsolation.highPoints - realRosterSmoke.playmakerTeamIsolation.lowPoints, 0.70, 1.50)
+  || outside(realRosterSmoke.playmakerTeamIsolation.highWinRate, 0.525, 0.57)
+  || outside(realRosterSmoke.playmakerTeamIsolation.offensePowerGap, 1.45, 1.95)
+  || outside(realRosterSmoke.playmakerTeamIsolation.highPoints - realRosterSmoke.playmakerTeamIsolation.lowPoints, 1.00, 1.80)
   || Math.abs(realRosterSmoke.playmakerTeamIsolation.overallPowerGap) > 0.01) {
   failures.push(`顶级组织能力的球队级攻防收益过弱或过强：${JSON.stringify(realRosterSmoke.playmakerTeamIsolation)}`);
+}
+if (!realRosterSmoke.offensiveRatingIsolation
+  || outside(realRosterSmoke.offensiveRatingIsolation.profileOffense, 82, 85)
+  || Math.abs(realRosterSmoke.offensiveRatingIsolation.clutchGap) > 0.001
+  || outside(realRosterSmoke.offensiveRatingIsolation.overallGap, 2.9, 3.1)
+  || realRosterSmoke.offensiveRatingIsolation.eliteScorerOffense < 92) {
+  failures.push(`基础进攻评级仍被 OVR/CLU 主导或压低真实进攻核心：${JSON.stringify(realRosterSmoke.offensiveRatingIsolation)}`);
 }
 if (outside(realRosterSmoke.winRatePHI, 0.68, 0.88)) failures.push(`真实强弱队胜率异常：${realRosterSmoke.winRatePHI}`);
 if (outside(realRosterSmoke.averageTotal, 205, 235)) failures.push(`真实名单场均总分异常：${realRosterSmoke.averageTotal}`);

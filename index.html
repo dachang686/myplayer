@@ -5431,13 +5431,13 @@ function getLeagueOffenseProfile(player) {
   var pass = skill('PAS');
   var athletic = skill('ATH');
   var strength = skill('STR');
-  var clutch = skill('CLU');
   var threeEfficiency = three;
   var midEfficiency = mid;
   var rimEfficiency = finish * 0.44 + dunk * 0.24 + athletic * 0.20 + strength * 0.12;
   var regionAbilities = [threeEfficiency, midEfficiency, rimEfficiency].sort(function(a, b) { return b - a; });
   var scoring = regionAbilities[0] * 0.55 + regionAbilities[1] * 0.30 + regionAbilities[2] * 0.15;
-  var playmaking = pass * 0.70 + handle * 0.25 + clutch * 0.05;
+  // 关键球是比赛末段的情境属性，不应持续抬高整场组织与基础进攻评级。
+  var playmaking = pass * 0.65 + handle * 0.35;
   // 得分能力决定大部分出手；控球可小幅提升自主创造，传球只保留组织职责带来的轻微参与度增益。
   var usage = scoring * 0.88 + handle * 0.08 + pass * 0.04;
   var threeVolume = 0.16 + three * 0.55;
@@ -5447,10 +5447,9 @@ function getLeagueOffenseProfile(player) {
   var threeRate = leagueStatClamp(threeVolume / volumeTotal, 0.08, 0.62);
   var rimShare = leagueStatClamp(rimVolume / Math.max(0.01, rimVolume + midVolume), 0.22, 0.82);
   var ftRate = leagueStatClamp(0.08 + rimEfficiency * 0.22, 0.08, 0.34);
-  var elitePlaymaking = leagueStatClamp((playmaking - 0.75) / 0.25, 0, 1);
   return {
     scoring: scoring,
-    impact: scoring * 0.68 + playmaking * 0.32 + Math.pow(elitePlaymaking, 1.5) * 0.08,
+    impact: scoring * 0.72 + playmaking * 0.28,
     usage: usage,
     playmaking: playmaking,
     threePoint: threeEfficiency,
@@ -5479,8 +5478,8 @@ function getLeagueDefensiveAnchor(player) {
 
 /**
  * 唯一的球员比赛能力出口。
- * overall 直接继承分位置 OVR；攻防、运动和关键球只描述能力结构，并以 overall 为锚点，
- * 避免同一名球员在阵容页与比赛引擎中被两套独立权重重新定价。
+ * overall 直接继承分位置 OVR；进攻以真实得分/组织能力为主，只保留少量 overall 兜底；
+ * 防守、运动和关键球继续沿用各自现有结构。
  */
 function getPlayerGameImpact(player) {
   function toRating(value) {
@@ -5495,14 +5494,15 @@ function getPlayerGameImpact(player) {
   var rawDefensiveAnchor = toRating(getLeagueDefensiveAnchor(player));
   var athletic = leagueStatClamp(Number(player && player.ATH) || overall, 25, 99);
   var clutch = leagueStatClamp(Number(player && player.CLU) || overall, 25, 99);
-  var anchorWeight = 0.72;
-  var eliteCreationBonus = Math.max(0, rawPlaymaking - 80) * 0.24;
+  var offenseOverallWeight = 0.15;
+  var defenseOverallWeight = 0.72;
+  var eliteCreationBonus = Math.max(0, rawPlaymaking - 82) * 0.18;
   // 防守大核心通过护框、回合终结和内线对抗抬升体系防守；外线抢断型防守人不会触发此奖励。
   var eliteAnchorBonus = Math.max(0, rawDefensiveAnchor - 82) * 0.18;
   return {
     overall: overall,
-    offense: leagueStatClamp(overall * anchorWeight + rawOffense * (1 - anchorWeight) + eliteCreationBonus, 25, 99),
-    defense: leagueStatClamp(overall * anchorWeight + rawDefense * (1 - anchorWeight) + eliteAnchorBonus, 25, 99),
+    offense: leagueStatClamp(overall * offenseOverallWeight + rawOffense * (1 - offenseOverallWeight) + eliteCreationBonus, 25, 99),
+    defense: leagueStatClamp(overall * defenseOverallWeight + rawDefense * (1 - defenseOverallWeight) + eliteAnchorBonus, 25, 99),
     athletic: overall * 0.78 + athletic * 0.22,
     clutch: overall * 0.78 + clutch * 0.22,
     defensiveAnchorBonus: eliteAnchorBonus,
