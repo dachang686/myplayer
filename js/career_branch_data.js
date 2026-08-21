@@ -281,9 +281,9 @@ const BRANCH_EVENTS = [
         advanceBranch('relationship', 1, { status: 'declined' });
         var roll = Math.random();
         if (roll < 0.55) {
-          addAttrDelta('STA', 1);
+          addAttrDelta('ATH', 1);
           STATE.finalOVR = calcOVR(STATE.attrs);
-          return '你回了一条很短但体面的消息，然后把手机交给训练师保管。整个夏天，你的作息准得像比赛计时器。<br><br>效果：耐力+1。';
+          return '你回了一条很短但体面的消息，然后把手机交给训练师保管。整个夏天，你的作息准得像比赛计时器。<br><br>效果：运动+1。';
         }
         return '你选择不让这个夏天偏离训练计划。媒体没有故事可写，朋友笑你无趣，但教练组很满意。<br><br>效果：无属性变化，但避免了感情线风险。';
       }}
@@ -333,9 +333,9 @@ const BRANCH_EVENTS = [
       { label: '拒绝社交，留在训练馆', hint: '错过人脉，但得到纯训练收益', apply: function() {
         advanceBranch('network', 1, { status: 'training' });
         addAttrDelta('MID', 1);
-        addAttrDelta('STA', 1);
+        addAttrDelta('ATH', 1);
         STATE.finalOVR = calcOVR(STATE.attrs);
-        return '你婉拒了球局，把那一整天留给训练馆。助教说你可能错过了一些人脉，但你只回了一句：球会替我介绍自己。<br><br>效果：中投+1，耐力+1。';
+        return '你婉拒了球局，把那一整天留给训练馆。助教说你可能错过了一些人脉，但你只回了一句：球会替我介绍自己。<br><br>效果：中投+1，运动+1。';
       }}
     ]
   }
@@ -679,8 +679,8 @@ const STAGED_BRANCH_EVENTS = [
       }},
       { label: '礼貌拒绝，专注训练', hint: '不开启恋爱线，获得小训练收益', apply: function() {
         setBranchNode('relationship', 'declined', { status: 'declined', declinedSeason: STATE.career.seasonCount });
-        addAttrDelta('STA', 1); STATE.finalOVR = calcOVR(STATE.attrs);
-        return '你回了一条很短但体面的消息，然后把手机交给训练师保管。<br><br>效果：耐力+1；恋爱线记录为“曾经拒绝”。';
+        addAttrDelta('ATH', 1); STATE.finalOVR = calcOVR(STATE.attrs);
+        return '你回了一条很短但体面的消息，然后把手机交给训练师保管。<br><br>效果：运动+1；恋爱线记录为“曾经拒绝”。';
       }}
     ]
   },
@@ -714,8 +714,8 @@ const STAGED_BRANCH_EVENTS = [
       }},
       { label: '再次拒绝，专注篮球', hint: '恋爱线永久收束', apply: function() {
         setBranchNode('relationship', 'declined_closed', { status: 'declined', secondDecline: true });
-        addAttrDelta('STA', 1); STATE.finalOVR = calcOVR(STATE.attrs);
-        return '你回了一条很短的感谢，然后把手机交回训练师。这次你知道，自己选的就是这条路。<br><br>效果：耐力+1；恋爱线记录为“二次拒绝”，不再开启。';
+        addAttrDelta('ATH', 1); STATE.finalOVR = calcOVR(STATE.attrs);
+        return '你回了一条很短的感谢，然后把手机交回训练师。这次你知道，自己选的就是这条路。<br><br>效果：运动+1；恋爱线记录为“二次拒绝”，不再开启。';
       }}
     ]
   },
@@ -974,8 +974,8 @@ const STAGED_BRANCH_EVENTS = [
         if (STATE.career.relationships.partner) STATE.career.relationships.partner.status = 'hurt_moved_on';
         STATE.career.flags.relationshipHurt = true;
         mods.formVariance = Math.max(-3, (mods.formVariance || 0) - 1);
-        addAttrDelta('STA', 1); STATE.finalOVR = calcOVR(STATE.attrs);
-        return intro + '<br><br>你约教练加练，把那些没回的消息全部清空。痛是真的，但你决定不让它定义你。<br><br>重点：你选择走出阴影。<br><br>影响：耐力+1；下赛季状态波动略降；获得“走出阴影”标签。';
+        addAttrDelta('ATH', 1); STATE.finalOVR = calcOVR(STATE.attrs);
+        return intro + '<br><br>你约教练加练，把那些没回的消息全部清空。痛是真的，但你决定不让它定义你。<br><br>重点：你选择走出阴影。<br><br>影响：运动+1；下赛季状态波动略降；获得“走出阴影”标签。';
       }}
     ]
   },
@@ -990,11 +990,11 @@ const STAGED_BRANCH_EVENTS = [
     body: '恋爱线以单身结束。你可以选择怎么消化这段空白。',
     requires: function() { var n = getBranchNode('relationship'); return n === 'breakup' || n === 'declined_closed'; },
     choices: [
-      { label: '专注篮球', hint: '耐力提升，心更静', apply: function() {
+      { label: '专注篮球', hint: '运动提升，心更静', apply: function() {
         setBranchNode('relationship', 'single_focus', { finalStatus: 'focused' });
-        addAttrDelta('STA', 1); STATE.finalOVR = calcOVR(STATE.attrs);
+        addAttrDelta('ATH', 1); STATE.finalOVR = calcOVR(STATE.attrs);
         STATE.career.flags.singleFocus = true;
-        return '你把休赛期重新排满。助教说你又回到了刚进联盟时的样子：眼里只有训练和比赛。<br><br>效果：耐力+1；获得“单身专注”标签。';
+        return '你把休赛期重新排满。助教说你又回到了刚进联盟时的样子：眼里只有训练和比赛。<br><br>效果：运动+1；获得“单身专注”标签。';
       }},
       { label: '顺其自然', hint: '保持开放，不刻意寻找', apply: function() {
         setBranchNode('relationship', 'single_open', { finalStatus: 'open' });
@@ -1025,8 +1025,8 @@ const STAGED_BRANCH_EVENTS = [
       }},
       { label: '拒绝社交，留在训练馆', hint: '放弃社交，把整个夏天留给训练', apply: function() {
         setBranchNode('network', 'training_focus', { status: 'training' });
-        addAttrDelta('MID', 1); addAttrDelta('STA', 1); STATE.finalOVR = calcOVR(STATE.attrs);
-        return '你婉拒了球局，把那一整天留给训练馆。助教说你可能错过了一些人脉，但你只回了一句：球会替我介绍自己。<br><br>效果：中投+1，耐力+1。';
+        addAttrDelta('MID', 1); addAttrDelta('ATH', 1); STATE.finalOVR = calcOVR(STATE.attrs);
+        return '你婉拒了球局，把那一整天留给训练馆。助教说你可能错过了一些人脉，但你只回了一句：球会替我介绍自己。<br><br>效果：中投+1，运动+1。';
       }}
     ]
   },
@@ -1109,8 +1109,8 @@ const STAGED_BRANCH_EVENTS = [
       }},
       { label: '继续把时间留给训练', hint: '彻底走训练馆路线', apply: function() {
         setBranchNode('network', 'training_resource', { identity: 'training_resource' });
-        addAttrDelta('MID', 1); addAttrDelta('STA', 1); STATE.finalOVR = calcOVR(STATE.attrs);
-        return '你把名片收进抽屉，第二天照常出现在训练馆。助教没有再劝，因为他知道，这条路同样是你想要的。<br><br>效果：中投+1，耐力+1；获得“顶级训练资源”标签；人脉线以训练身份收束。';
+        addAttrDelta('MID', 1); addAttrDelta('ATH', 1); STATE.finalOVR = calcOVR(STATE.attrs);
+        return '你把名片收进抽屉，第二天照常出现在训练馆。助教没有再劝，因为他知道，这条路同样是你想要的。<br><br>效果：中投+1，运动+1；获得“顶级训练资源”标签；人脉线以训练身份收束。';
       }}
     ]
   },
@@ -1157,8 +1157,8 @@ const STAGED_BRANCH_EVENTS = [
       }},
       { label: '把圈子用于训练资源', hint: '训练收益稳定', apply: function() {
         setBranchNode('network', 'training_resource', { identity: 'training_resource' });
-        addAttrDelta('STA', 1); STATE.finalOVR = calcOVR(STATE.attrs);
-        return '你把人脉主要用在训练师、康复师和高质量陪练上。它不热闹，但非常实用。<br><br>效果：耐力+1；获得“顶级训练资源”长期标签。';
+        addAttrDelta('ATH', 1); STATE.finalOVR = calcOVR(STATE.attrs);
+        return '你把人脉主要用在训练师、康复师和高质量陪练上。它不热闹，但非常实用。<br><br>效果：运动+1；获得“顶级训练资源”长期标签。';
       }}
     ]
   },
@@ -1276,17 +1276,17 @@ const STAGED_BRANCH_EVENTS = [
         setBranchNode('training', 'skill_first', { lastFocus: 'playmaking' });
         return applyTrainingOutcome('PAS', 'CLU', 'playmakingPity', ['你和助教把每套战术拆成三层选择：第一选择被锁死，第二选择被延误，第三选择才是真正能赢的球。'], { primary: '传球', secondary: '关键球' });
       }},
-      { label: '无球跑动', hint: '空间/中投/耐力', apply: function() {
+      { label: '无球跑动', hint: '空间/中投/运动', apply: function() {
         getBranchState('skill_training').lastFocus = 'offball';
         setBranchNode('training', 'skill_first', { lastFocus: 'offball' });
-        addAttrDelta('MID', 1); addAttrDelta('STA', 1); STATE.finalOVR = calcOVR(STATE.attrs);
-        return '你整个夏天都在和助教玩“找空位”游戏：不看球，只看防守人的眼睛。训练结束，你开始能提前半拍出现在正确的位置。<br><br>效果：中投+1，耐力+1。';
+        addAttrDelta('MID', 1); addAttrDelta('ATH', 1); STATE.finalOVR = calcOVR(STATE.attrs);
+        return '你整个夏天都在和助教玩“找空位”游戏：不看球，只看防守人的眼睛。训练结束，你开始能提前半拍出现在正确的位置。<br><br>效果：中投+1，运动+1。';
       }},
       { label: '罚球稳定', hint: '关键时刻的心理锚点', apply: function() {
         getBranchState('skill_training').lastFocus = 'free_throw';
         setBranchNode('training', 'skill_first', { lastFocus: 'free_throw' });
-        addAttrDelta('CLU', 1); addAttrDelta('STA', 1); STATE.finalOVR = calcOVR(STATE.attrs);
-        return '你每天罚 200 球，每一球之前都做同一个呼吸。两个月后，站在罚球线上时，你听见的只剩自己的呼吸。<br><br>效果：关键球+1，耐力+1。';
+        addAttrDelta('CLU', 1); addAttrDelta('ATH', 1); STATE.finalOVR = calcOVR(STATE.attrs);
+        return '你每天罚 200 球，每一球之前都做同一个呼吸。两个月后，站在罚球线上时，你听见的只剩自己的呼吸。<br><br>效果：关键球+1，运动+1。';
       }}
     ]
   },
@@ -1315,8 +1315,8 @@ const STAGED_BRANCH_EVENTS = [
       { label: '营养作息', hint: '睡眠和饮食重建，状态更稳', apply: function() {
         setBranchNode('training', 'body_plan', { plan: 'nutrition' });
         addSeasonMod('formVariance', -2, -10, 10);
-        addAttrDelta('STA', 1); STATE.finalOVR = calcOVR(STATE.attrs);
-        return '你戒了夜宵，把手机放在客厅充电。两个月后，队医说你的恢复指标像换了个人。<br><br>效果：状态波动-2；耐力+1。';
+        addAttrDelta('ATH', 1); STATE.finalOVR = calcOVR(STATE.attrs);
+        return '你戒了夜宵，把手机放在客厅充电。两个月后，队医说你的恢复指标像换了个人。<br><br>效果：状态波动-2；运动+1。';
       }},
       { label: '家人陪伴康复', hint: '心理放松，家人参与训练生活', apply: function() {
         setBranchNode('training', 'body_plan', { plan: 'family' });
@@ -1341,15 +1341,15 @@ const STAGED_BRANCH_EVENTS = [
       }},
       { label: '专项主导 + 导师点拨', hint: '技术优先，导师纠正细节', apply: function() {
         setBranchNode('training', 'dual_plan', { plan: 'skill_first' });
-        addAttrDelta('MID', 1); addAttrDelta('STA', 1); STATE.finalOVR = calcOVR(STATE.attrs);
+        addAttrDelta('MID', 1); addAttrDelta('ATH', 1); STATE.finalOVR = calcOVR(STATE.attrs);
         addSeasonMod('formVariance', -1, -10, 10);
-        return '下午的专项课决定方向，上午的导师课只负责纠错。一个夏天下来，你的动作没变多，但每个动作都变对了。<br><br>效果：中投+1，耐力+1；状态波动-1。';
+        return '下午的专项课决定方向，上午的导师课只负责纠错。一个夏天下来，你的动作没变多，但每个动作都变对了。<br><br>效果：中投+1，运动+1；状态波动-1。';
       }},
       { label: '轻量双修', hint: '两项都练但都不过载', apply: function() {
         setBranchNode('training', 'dual_plan', { plan: 'light' });
-        addAttrDelta('STA', 1); addAttrDelta('PAS', 1); STATE.finalOVR = calcOVR(STATE.attrs);
+        addAttrDelta('ATH', 1); addAttrDelta('PAS', 1); STATE.finalOVR = calcOVR(STATE.attrs);
         addSeasonMod('injuryRiskBonus', -1, -4, 8);
-        return '你把强度控制在八成，只求每堂课都完整。训练师说：完整比猛烈更能坚持到九月。<br><br>效果：耐力+1，传球+1；伤病风险-1。';
+        return '你把强度控制在八成，只求每堂课都完整。训练师说：完整比猛烈更能坚持到九月。<br><br>效果：运动+1，传球+1；伤病风险-1。';
       }}
     ]
   },
@@ -1434,14 +1434,14 @@ const STAGED_BRANCH_EVENTS = [
       }},
       { label: '补强短板', hint: '低风险均衡成长', apply: function() {
         setBranchNode('training', 'skill_deep', { identityPath: 'balanced' });
-        addAttrDelta('STA', 1); addAttrDelta('PAS', 1); STATE.finalOVR = calcOVR(STATE.attrs);
-        return '你没有继续追逐一个夸张突破，而是把夏天拆给体能、传球和基础动作。<br><br>效果：耐力+1，传球+1。';
+        addAttrDelta('ATH', 1); addAttrDelta('PAS', 1); STATE.finalOVR = calcOVR(STATE.attrs);
+        return '你没有继续追逐一个夸张突破，而是把夏天拆给体能、传球和基础动作。<br><br>效果：运动+1，传球+1。';
       }},
-      { label: '强化体能', hint: '耐力与恢复优先', apply: function() {
+      { label: '强化体能', hint: '运动与恢复优先', apply: function() {
         setBranchNode('training', 'skill_deep', { identityPath: 'stamina' });
-        addAttrDelta('STA', 2); STATE.finalOVR = calcOVR(STATE.attrs);
+        addAttrDelta('ATH', 2); STATE.finalOVR = calcOVR(STATE.attrs);
         addSeasonMod('injuryRiskBonus', -1, -4, 8);
-        return '你把夏天后半段交给体能师。训练师说：技术决定你有多高，体能决定你能站多高多久。<br><br>效果：耐力+2；伤病风险-1。';
+        return '你把夏天后半段交给体能师。训练师说：技术决定你有多高，体能决定你能站多高多久。<br><br>效果：运动+2；伤病风险-1。';
       }},
       { label: '实战检验', hint: '用比赛验证训练', apply: function() {
         setBranchNode('training', 'skill_deep', { identityPath: 'live' });
@@ -2231,8 +2231,8 @@ const STAGED_BRANCH_EVENTS = [
       }},
       { label: '用训练消化', hint: '保持节奏，把情绪留在球馆', apply: function() {
         setBranchNode('mental_health', 'mh_training', { help: 'training' });
-        addAttrDelta('STA', 1); STATE.finalOVR = calcOVR(STATE.attrs);
-        return '你把自己泡在训练馆里，练到筋疲力尽。身体累了，心反而安静了一点。训练师没有劝你休息，只在你投完最后一球时递了一瓶水。<br><br>效果：耐力+1。';
+        addAttrDelta('ATH', 1); STATE.finalOVR = calcOVR(STATE.attrs);
+        return '你把自己泡在训练馆里，练到筋疲力尽。身体累了，心反而安静了一点。训练师没有劝你休息，只在你投完最后一球时递了一瓶水。<br><br>效果：运动+1。';
       }},
       { label: '硬扛', hint: '表面没事，风险累积', apply: function() {
         setBranchNode('mental_health', 'mh_tough', { help: 'tough' });
@@ -2580,8 +2580,8 @@ const STAGED_BRANCH_EVENTS = [
       }},
       { label: '专业团队', hint: '训练时间更稳', apply: function() {
         setBranchNode('family_children', 'care_help', { care: 'help' });
-        addAttrDelta('STA', 1); STATE.finalOVR = calcOVR(STATE.attrs);
-        return '你请了育儿师，也请了夜班阿姨。训练没落下，但你偶尔会想：他第一次笑的时候，是谁先看见的。<br><br>效果：耐力+1。';
+        addAttrDelta('ATH', 1); STATE.finalOVR = calcOVR(STATE.attrs);
+        return '你请了育儿师，也请了夜班阿姨。训练没落下，但你偶尔会想：他第一次笑的时候，是谁先看见的。<br><br>效果：运动+1。';
       }}
     ]
   },
@@ -3818,9 +3818,9 @@ const STAGED_BRANCH_EVENTS = [
       }},
       { label: '婉拒，专注训练', hint: '把邀约放进抽屉，夏天留给球馆', apply: function() {
         setBranchNode('crossover', 'declined', { status: 'declined' });
-        addAttrDelta('STA', 1);
+        addAttrDelta('ATH', 1);
         STATE.finalOVR = calcOVR(STATE.attrs);
-        return '你回了一条很短的感谢，然后把手机交给训练师保管。训练馆里没有舞台，但你听了一晚上《中国人能飞》。<br><br>影响：耐力+1；你暂时选择了球馆。';
+        return '你回了一条很短的感谢，然后把手机交给训练师保管。训练馆里没有舞台，但你听了一晚上《中国人能飞》。<br><br>影响：运动+1；你暂时选择了球馆。';
       }}
     ]
   },

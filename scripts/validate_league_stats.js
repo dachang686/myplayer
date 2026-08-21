@@ -478,6 +478,8 @@ function runSeason(seed) {
     ['pts', 'reb', 'ast', 'stl', 'blk'].forEach(field => {
       result[field] = Math.round(record[field] / record.gp * 10) / 10;
     });
+    result.fgaPerGame = record.fga / record.gp;
+    result.ftaPerGame = record.fta / record.gp;
     return result;
   });
   const qualified = rows.filter(row => row.gp >= 58);
@@ -890,6 +892,18 @@ const roundIsolationPair = pair => Object.fromEntries(Object.entries(pair).map((
   Object.fromEntries(Object.entries(metrics).map(([field, value]) => [field, Number(value.toFixed(3))])),
 ]));
 const averageScoringBursts = key => seasons.reduce((sum, season) => sum + season.scoringBursts[key], 0) / seasons.length;
+const scoringLeaderDistribution = seasons.map((season, index) => {
+  const leaders = season.leaders.pts;
+  return {
+    season: index + 1,
+    first: leaders[0].pts,
+    third: leaders[2].pts,
+    tenth: leaders[9].pts,
+    spread: Number((leaders[0].pts - leaders[9].pts).toFixed(1)),
+    firstFga: Number(leaders[0].fgaPerGame.toFixed(1)),
+    firstFta: Number(leaders[0].ftaPerGame.toFixed(1)),
+  };
+});
 const report = {
   seasons: seasons.map((season, index) => ({
     season: index + 1,
@@ -929,6 +943,7 @@ const report = {
     field,
     seasons.slice(1).map((season, index) => topTenOverlap(seasons[index].leaders[field], season.leaders[field])),
   ])),
+  scoringLeaderDistribution,
   sampleTeam: seasons[0].rows
     .filter(row => row.team === 'WAS')
     .sort((a, b) => b.gp - a.gp)
@@ -960,8 +975,8 @@ const limits = {
   blk: { first: 4, tenth: 2.3 },
 };
 // 允许伤病和出场资格造成的赛季波动；2.5+ 仍代表联盟级护框榜首，不为过测试抬高球员属性。
-// 伤停后的 active role rank 会让主要轮换接管首发职责，得分更均衡；25+ 仍是合理的联盟得分王线。
-const minimums = { pts: 25, ast: 10, blk: 2.5 };
+// 26 是单季异常硬下限；头部得分的多数赛季水平与梯度由 scoringLeaderDistribution 单独验证。
+const minimums = { pts: 26, ast: 10, blk: 2.5 };
 const failures = [];
 seasons.forEach((season, index) => {
   if (season.invariantErrors > 0) failures.push(`赛季 ${index + 1} 存在 ${season.invariantErrors} 个总量守恒错误`);
@@ -985,6 +1000,17 @@ seasons.forEach((season, index) => {
   const sampleTeamHighAssistCount = season.rows.filter(row => row.team === 'WAS' && row.gp >= 20 && row.ast >= 5).length;
   if (sampleTeamHighAssistCount > 2) failures.push(`赛季 ${index + 1} 样本球队有 ${sampleTeamHighAssistCount} 人场均至少 5 助攻`);
 });
+
+const scoringLeaderAtLeast27 = scoringLeaderDistribution.filter(season => season.first >= 27).length;
+const scoringLeaderAtLeast29 = scoringLeaderDistribution.filter(season => season.first >= 29).length;
+const scoringTopThreeAtLeast26 = scoringLeaderDistribution.filter(season => season.third >= 26).length;
+const narrowScoringSeason = scoringLeaderDistribution.find(season => season.spread < 3);
+if (scoringLeaderAtLeast27 < 4 || scoringLeaderAtLeast29 < 2 || scoringTopThreeAtLeast26 < 2 || narrowScoringSeason) {
+  console.error(`联盟头部得分集中度不足：${JSON.stringify({
+    scoringLeaderAtLeast27, scoringLeaderAtLeast29, scoringTopThreeAtLeast26, narrowScoringSeason, scoringLeaderDistribution,
+  })}`);
+  process.exitCode = 1;
+}
 
 if (failures.length) {
   console.error(failures.join('\n'));

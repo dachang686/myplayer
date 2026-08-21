@@ -1266,7 +1266,7 @@ const STATE = {
     flags: {},
     draft: null,
     mobility: null,
-    nextSeasonMods: { injuryRiskBonus: 0, formVariance: 0, teamChemistry: 0, moraleBonus: 0, mediaPressure: 0, staminaLoad: 0 },
+    nextSeasonMods: { injuryRiskBonus: 0, formVariance: 0, teamChemistry: 0, moraleBonus: 0, mediaPressure: 0 },
     annualChangeSeason: 0,
     offseasonEventSeason: 0,
   },
@@ -1745,7 +1745,7 @@ function createFreshCareer() {
     flags: {},
     draft: null,
     mobility: null,
-    nextSeasonMods: { injuryRiskBonus:0, formVariance:0, teamChemistry:0, moraleBonus:0, mediaPressure:0, staminaLoad:0 },
+    nextSeasonMods: { injuryRiskBonus:0, formVariance:0, teamChemistry:0, moraleBonus:0, mediaPressure:0 },
     annualChangeSeason: 0,
     offseasonEventSeason: 0
   };
@@ -5435,8 +5435,8 @@ function getLeagueOffenseProfile(player) {
   var scoring = regionAbilities[0] * 0.55 + regionAbilities[1] * 0.30 + regionAbilities[2] * 0.15;
   // 关键球是比赛末段的情境属性，不应持续抬高整场组织与基础进攻评级。
   var playmaking = pass * 0.65 + handle * 0.35;
-  // 得分能力决定大部分出手；控球可小幅提升自主创造，传球只保留组织职责带来的轻微参与度增益。
-  var usage = scoring * 0.88 + handle * 0.08 + pass * 0.04;
+  // 得分能力决定主要出手，控球只补充自主创造；传球负责组织，不再抬高个人 FGA。
+  var usage = scoring * 0.92 + handle * 0.08;
   var threeVolume = 0.16 + three * 0.55;
   var midVolume = 0.14 + mid * 0.38;
   var rimVolume = 0.20 + finish * 0.25 + dunk * 0.18 + athletic * 0.10 + strength * 0.06;
@@ -5711,8 +5711,9 @@ function generateBoxScore(teamA, teamB, totalA, totalB, gameOptions) {
         roleOpportunity = leagueStatClamp(0.90 - (roleRanks[index] - 5) * 0.045, 0.66, 0.90);
       }
       var hierarchyOpportunity = leagueStatClamp(1 + (offSkill[index] - averageScoring) * 0.80, 0.80, 1.25);
+      // 轻度非线性拉开核心与普通主力的球权，但不改变球队 FGA 或总得分。
       return minutes[index]
-        * (0.22 + offense[index].usage * 1.48)
+        * (0.22 + Math.pow(offense[index].usage, 1.40) * 1.48)
         * roleOpportunity * hierarchyOpportunity * profiles[index].scoring * bursts[index].gameForm;
     });
     var minuteWeighted = function(values) {
