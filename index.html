@@ -4926,7 +4926,7 @@ function getActiveEventTeamEdge(teamA, teamB) {
   return Math.max(-2.5, Math.min(2.5, edge)) * side;
 }
 
-/** 比赛模拟 — 逐节生成真实比分，最终比分直接决定胜负。 */
+/** 比赛模拟 — 先按综合战力与攻防结构计算预期分差，再逐节生成比分；最终比分决定胜负。 */
 function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
   const requestedOptions = gameOptions || {};
   // seeded 调试/回放必须覆盖完整比赛链路，包括轮换、伤病、状态、比分和 Box Score。
@@ -5022,13 +5022,7 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
     : !!(currentScheduleGame && previousScheduleGame
       && Number(currentScheduleGame.day) - Number(previousScheduleGame.day) === 1);
 
-  // 球员总评已经按位置能力与预计分钟聚合；攻防维度只决定比赛风格，不再二次重估阵容强弱。
-  const overallA = Number.isFinite(powerA.overall)
-    ? powerA.overall
-    : powerA.offense * 0.45 + powerA.defense * 0.45 + powerA.depth * 0.10;
-  const overallB = Number.isFinite(powerB.overall)
-    ? powerB.overall
-    : powerB.offense * 0.45 + powerB.defense * 0.45 + powerB.depth * 0.10;
+  // 球队总评提供基础战力，攻防结构与巨星集中度提供受限的额外分差。
   const competitiveA = getTeamCompetitiveRating(powerA);
   const competitiveB = getTeamCompetitiveRating(powerB);
   const rosterEdge = competitiveA.roster - competitiveB.roster;
