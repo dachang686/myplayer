@@ -37,7 +37,7 @@ if (stateStart < 0 || stateEnd < 0) {
   if (repaired.playerInjuryMissedGames !== 2 || repaired.playerSuspensionMissedGames !== 0) {
     failures.push('旧存档总缺席数没有保守迁移到新的伤病/禁赛计数结构');
   }
-  for (const key of ['lastTriggerByLane', 'eventCounts', 'opponentHistory', 'activeEffects', 'lastActiveEffectTickKey', 'careerTeamGamesPlayed', 'playerUnavailableGames', 'playerInjuryMissedGames', 'playerSuspensionMissedGames', 'narrativeTeam', 'storyThreads', 'storySignals', 'directorEvents', 'narrativeSeasonFinalized']) {
+  for (const key of ['lastTriggerByLane', 'eventCounts', 'opponentHistory', 'activeEffects', 'lastActiveEffectTickKey', 'careerTeamGamesPlayed', 'playerUnavailableGames', 'playerInjuryMissedGames', 'playerSuspensionMissedGames', 'narrativeTeam', 'storyThreads', 'storySignals', 'directorEvents', 'eventNoise', 'narrativeSeasonFinalized']) {
     if (!Object.prototype.hasOwnProperty.call(repaired, key)) failures.push(`旧存档没有补齐事件字段 ${key}`);
   }
 }
@@ -81,7 +81,9 @@ if (registryStart < 0 || registryEnd < 0) {
     playerInjuryMissedGames: 0, playerSuspensionMissedGames: 0,
     narrativeTeam: null, seasonTheme: null, storyThreads: [],
     storySignals: { games: 0, wins: 0, losses: 0, winStreak: 0, lossStreak: 0, standoutStreak: 0, closeGames: 0, lastOpponent: null },
-    directorEvents: [], narrativeSeasonFinalized: false,
+    directorEvents: [],
+    eventNoise: { version: 1, lastGeneratedByTheme: {}, lastPopupByTheme: {}, lastPopupGameNum: null, suppressedCount: 0, suppressedByTheme: {} },
+    narrativeSeasonFinalized: false,
   });
   const ensureEventState = () => {
     const current = state.season.events || {};
@@ -104,7 +106,7 @@ if (registryStart < 0 || registryEnd < 0) {
     'getCareerProfile',
     'getBondedTeammateName',
     'ensureSeasonEventState',
-    `${indexSource.slice(registryStart, registryEnd)}\nreturn { EVENT_REGISTRY, checkRandomEvents, getRandomEventLane, initializeSeasonNarrative, canTriggerEventByLifecycle, recordEventLifecycle, meetsCareerEventIdentity, recordNarrativePlayoffSeries, finalizeSeasonNarrativeAtSeasonEnd, commitDirectorThreadChoice, resolveDirectorThread, getNarrativeThreadOutcome, getSeasonThemeEventWeight, chooseSeasonNarrativeTheme, chooseNarrativeThemeVariant, getSeasonThemeStoryline, getSeasonNarrativeTeammate, getNarrativeFormerTeammates, getDirectorThreadOpening, queueGameDrivenPressureThread, getActiveNarrativeThreadCount, selectNarrativeFormerTeammate, checkSeasonNarrativeDirector, consumeActiveEventEffectsForCareerGame, afterCareerTeamGame, findNarrativePlayer, syncNarrativeReunitedTeammates, syncNarrativeAfterPlayerTeamChange, isNarrativeThreadInCurrentTeamContext };`,
+    `${indexSource.slice(registryStart, registryEnd)}\nreturn { EVENT_REGISTRY, checkRandomEvents, getRandomEventLane, getEventNoiseLevel, getEventNoiseTheme, getEventNoiseThemeCooldown, isRandomEventNoiseEligible, shouldPresentRandomEvent, initializeSeasonNarrative, canTriggerEventByLifecycle, recordEventLifecycle, meetsCareerEventIdentity, recordNarrativePlayoffSeries, finalizeSeasonNarrativeAtSeasonEnd, commitDirectorThreadChoice, resolveDirectorThread, getNarrativeThreadOutcome, getSeasonThemeEventWeight, chooseSeasonNarrativeTheme, chooseNarrativeThemeVariant, getSeasonThemeStoryline, getSeasonNarrativeTeammate, getNarrativeFormerTeammates, getDirectorThreadOpening, queueGameDrivenPressureThread, getActiveNarrativeThreadCount, selectNarrativeFormerTeammate, checkSeasonNarrativeDirector, consumeActiveEventEffectsForCareerGame, afterCareerTeamGame, findNarrativePlayer, syncNarrativeReunitedTeammates, syncNarrativeAfterPlayerTeamChange, isNarrativeThreadInCurrentTeamContext };`,
   )({}, state, leagueData, addProfileDelta, profile, () => '测试队友', ensureEventState);
 
   const registry = eventModule.EVENT_REGISTRY;
@@ -959,9 +961,90 @@ if (registryStart < 0 || registryEnd < 0) {
     if (duplicateResult || state.season.events.triggeredIds.includes('validation_duplicate_story') || state.season.events.storyTimeline.length !== 1) {
       failures.push('同一场比赛重复进入赛后流程时仍会再次抽取随机事件');
     }
+
+    // 降噪：普通花絮写入时间线但不弹窗，同主题事件在主题冷却内不应再次抽取。
+    registry.splice(0, registry.length,
+      {
+        id: 'validation_quiet_media_a',
+        lane: 'story',
+        noiseTheme: 'media_drama',
+        weight: 1,
+        condition: () => true,
+        execute: () => ({ emoji: '🧪', title: '测试普通花絮 A', body: '静默记录', desc: '普通媒体花絮', detail: '影响：媒体关注度略有变化。' }),
+      },
+      {
+        id: 'validation_quiet_media_b',
+        lane: 'story',
+        noiseTheme: 'media_drama',
+        weight: 1,
+        condition: () => true,
+        execute: () => ({ emoji: '🧪', title: '测试普通花絮 B', body: '主题冷却', desc: '同主题普通花絮' }),
+      },
+    );
+    state.season = {
+      games: [{ game: { opponent: 'AWAY' } }], wins: 1, losses: 0, isPlayoffs: false,
+      playerStats: { games: 1 }, playoffStats: { games: 0 },
+      events: Object.assign(createEventState(0), {
+        seasonTheme: { id: 'rise', variantId: 'rise_usage', title: '成长赛季', season: 1 },
+        storyThreads: [{ id: 'quiet-test-thread', kind: 'role', state: 'resolved' }],
+      }),
+    };
+    Math.random = () => 0;
+    const quietResult = eventModule.checkRandomEvents(
+      { opponent: 'AWAY' },
+      { won: true, scoreA: 110, scoreB: 105 },
+      { pts: 20, reb: 5, ast: 5 },
+      { isBatch: true },
+    );
+    const quietTimeline = state.season.events.storyTimeline[0];
+    if (quietResult || !quietTimeline || quietTimeline.delivery !== 'quiet' || quietTimeline.noiseLevel !== 'ambient' || quietTimeline.noiseTheme !== 'media_drama' || quietTimeline.detail !== '影响：媒体关注度略有变化。') {
+      failures.push('普通花絮没有静默写入时间线');
+    }
+    state.season.games.push({ game: { opponent: 'AWAY' } });
+    const cooledOutResult = eventModule.checkRandomEvents(
+      { opponent: 'AWAY' },
+      { won: true, scoreA: 110, scoreB: 105 },
+      { pts: 20, reb: 5, ast: 5 },
+      { isBatch: true },
+    );
+    if (cooledOutResult || state.season.events.storyTimeline.length !== 1 || eventModule.isRandomEventNoiseEligible(registry[1], 2)) {
+      failures.push('同主题普通花絮没有遵守主题冷却');
+    }
+
+    // 降噪不能吞掉重大事件：伤病/禁赛和需要决策的事件仍必须返回给弹窗层。
+    registry.splice(0, registry.length, {
+      id: 'injury_validation_major',
+      lane: 'injury',
+      weight: 1,
+      condition: () => true,
+      execute: () => ({ emoji: '🧪', title: '测试重大伤病', body: '重大事件', desc: '需要休战', _consequence: 'injury', _games: 2 }),
+    });
+    state.season = {
+      games: [{ game: { opponent: 'AWAY' } }], wins: 1, losses: 0, isPlayoffs: false,
+      playerStats: { games: 1 }, playoffStats: { games: 0 },
+      events: Object.assign(createEventState(0), {
+        seasonTheme: { id: 'rise', variantId: 'rise_usage', title: '成长赛季', season: 1 },
+        storyThreads: [{ id: 'major-test-thread', kind: 'role', state: 'resolved' }],
+      }),
+    };
+    const majorResult = eventModule.checkRandomEvents(
+      { opponent: 'AWAY' },
+      { won: true, scoreA: 110, scoreB: 105 },
+      { pts: 20, reb: 5, ast: 5 },
+      { isBatch: true },
+    );
+    if (!majorResult || majorResult._noiseLevel !== 'major' || majorResult._noisePresented !== true || state.season.events.storyTimeline[0]?.delivery !== 'popup') {
+      failures.push('重大伤病被事件降噪错误吞掉');
+    }
   } finally {
     Math.random = originalRandom;
   }
+}
+
+if (!indexSource.includes("detail: data.detail || ''") ||
+    !indexSource.includes('function formatTimelineEventDescription') ||
+    !indexSource.includes('String(event.detail)')) {
+  failures.push('静默事件效果说明没有持久化或接入事件记录展示');
 }
 
 // 玩家附加赛必须复用正式比赛引擎，并把伤停与球队比赛时钟交给统一赛后入口。

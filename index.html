@@ -1312,7 +1312,7 @@ function updateSeasonBadge(activeId) {
 /** 赛季事件状态统一入口；新增字段均在 ensureSeasonEventState 中兼容旧存档。 */
 function createSeasonEventState(injuryRiskBonus) {
   return {
-    version: 8,
+    version: 9,
     suspensionGamesLeft: 0,
     suspensionReason: '',
     injuryGamesLeft: 0,
@@ -1340,6 +1340,15 @@ function createSeasonEventState(injuryRiskBonus) {
     storyThreads: [],
     storySignals: { games: 0, wins: 0, losses: 0, winStreak: 0, lossStreak: 0, standoutStreak: 0, closeGames: 0, lastOpponent: null },
     directorEvents: [],
+    // 事件降噪层：记录主题疲劳与静默事件，不改变事件本身的效果。
+    eventNoise: {
+      version: 1,
+      lastGeneratedByTheme: {},
+      lastPopupByTheme: {},
+      lastPopupGameNum: null,
+      suppressedCount: 0,
+      suppressedByTheme: {}
+    },
     narrativeSeasonFinalized: false
   };
 }
@@ -1366,11 +1375,20 @@ function ensureSeasonEventState() {
   }
   if (!Array.isArray(current.storyThreads)) current.storyThreads = [];
   if (!Array.isArray(current.directorEvents)) current.directorEvents = [];
+  if (!current.eventNoise || typeof current.eventNoise !== 'object' || Array.isArray(current.eventNoise)) {
+    current.eventNoise = defaults.eventNoise;
+  }
+  if (!current.eventNoise.lastGeneratedByTheme || typeof current.eventNoise.lastGeneratedByTheme !== 'object') current.eventNoise.lastGeneratedByTheme = {};
+  if (!current.eventNoise.lastPopupByTheme || typeof current.eventNoise.lastPopupByTheme !== 'object') current.eventNoise.lastPopupByTheme = {};
+  if (!current.eventNoise.suppressedByTheme || typeof current.eventNoise.suppressedByTheme !== 'object') current.eventNoise.suppressedByTheme = {};
+  if (current.eventNoise.lastPopupGameNum == null) current.eventNoise.lastPopupGameNum = null;
+  if (current.eventNoise.suppressedCount == null) current.eventNoise.suppressedCount = 0;
+  current.eventNoise.version = 1;
   if (typeof current.narrativeSeasonFinalized !== 'boolean') current.narrativeSeasonFinalized = false;
   if (current.seasonTheme != null && (typeof current.seasonTheme !== 'object' || Array.isArray(current.seasonTheme))) current.seasonTheme = null;
   // v6 及更早存档只有总缺席数；迁移时按更保守的伤病缺席处理，避免进行中的健康线被误判成功。
   if (previousVersion < 7 && !hadInjuryMissedCounter) current.playerInjuryMissedGames = legacyUnavailableGames;
-  current.version = 8;
+  current.version = 9;
   STATE.season.events = current;
   return current;
 }
@@ -4229,7 +4247,7 @@ function quickSimAllGames(targetDay) {
 
       // ★ 赛后检测随机事件
       var evData = null;
-      try { evData = checkRandomEvents(g, result, stats); } catch(ex) {}
+      try { evData = checkRandomEvents(g, result, stats, { isBatch: true }); } catch(ex) {}
       var branchEv = null;
       if (evData) {
         if (evData._consequence === 'suspension') {
@@ -8007,6 +8025,16 @@ function getMyCardEventItems() {
   var seen = {};
   var sequence = 0;
 
+  function formatTimelineEventDescription(event) {
+    var base = event && event.choice
+      ? '选择：' + event.choice + (event.result ? ' · ' + String(event.result).replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '') : '')
+      : ((event && event.desc) || '');
+    var detail = event && event.detail
+      ? String(event.detail).replace(/<br\s*\/?>/gi, ' · ').replace(/<[^>]+>/g, '')
+      : '';
+    return [base, detail].filter(function(text) { return !!String(text || '').trim(); }).join(' · ');
+  }
+
   function addEvent(item) {
     if (!item || !item.title) return;
     var key = item.key || [item.seasonLabel, item.title, item.desc].join('|');
@@ -8044,13 +8072,10 @@ function getMyCardEventItems() {
   (career.seasons || []).forEach(function(season) {
     var seasonNum = Math.max(1, parseInt(season.seasonNum, 10) || 1);
     (season.events || []).forEach(function(event) {
-      var timelineDesc = event.choice
-        ? '选择：' + event.choice + (event.result ? ' · ' + String(event.result).replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '') : '')
-        : (event.desc || '');
       addEvent({
         key: 'timeline|' + seasonNum + '|' + (event.gameNum || 0) + '|' + (event.title || ''),
         title: event.title || '赛季事件',
-        desc: timelineDesc,
+        desc: formatTimelineEventDescription(event),
         emoji: event.emoji || '📌',
         seasonLabel: getSeasonLabel(seasonNum) + (event.phase === 'playoffs' ? ' · 季后赛第' : ' · 第') + (event.gameNum || 0) + '场',
         rank: seasonNum + (event.gameNum || 0) / 1000,
@@ -8061,13 +8086,10 @@ function getMyCardEventItems() {
   var currentSeasonNum = Math.max(1, (career.seasonCount || 0) + (STATE._careerSaved ? 0 : 1));
   var currentTimeline = (STATE.season && STATE.season.events && STATE.season.events.storyTimeline) || [];
   currentTimeline.forEach(function(event) {
-    var timelineDesc = event.choice
-      ? '选择：' + event.choice + (event.result ? ' · ' + String(event.result).replace(/<br\s*\/?>/gi, ' ').replace(/<[^>]+>/g, '') : '')
-      : (event.desc || '');
     addEvent({
       key: 'timeline|' + currentSeasonNum + '|' + (event.gameNum || 0) + '|' + (event.title || ''),
       title: event.title || '赛季事件',
-      desc: timelineDesc,
+      desc: formatTimelineEventDescription(event),
       emoji: event.emoji || '📌',
       seasonLabel: getSeasonLabel(currentSeasonNum) + (event.phase === 'playoffs' ? ' · 季后赛第' : ' · 第') + (event.gameNum || 0) + '场',
       rank: currentSeasonNum + (event.gameNum || 0) / 1000,
@@ -9121,6 +9143,9 @@ function checkSeasonBranchEvent(game, result, stats) {
 
 function showSeasonBranchEvent(ev, done) {
   if (!ev) return;
+  if (typeof noteEventNoisePresentation === 'function') {
+    noteEventNoisePresentation('branch:' + (ev.branch || ev.id || 'season'), 'major', getEventGameNumber());
+  }
   STATE._seasonBranchEvent = ev;
   STATE._seasonBranchDone = typeof done === 'function' ? done : null;
   STATE._seasonBranchScenePage = 0;
@@ -13023,6 +13048,122 @@ function getRandomEventLaneRate(lane, candidates) {
   return Math.min(90, rate);
 }
 
+// ━━━ 事件降噪：事件可以发生，但只有值得玩家决策的事件才打断 ━━━
+var EVENT_NOISE_THEME_COOLDOWNS = {
+  on_court_drama: 8,
+  media_drama: 8,
+  locker_room: 10,
+  off_court: 12,
+  highlight: 5,
+  story_misc: 7,
+  career: 6,
+  branch: 8,
+  discipline: 10,
+  injury: 10,
+  director: 0
+};
+
+function ensureEventNoiseState() {
+  var events = ensureSeasonEventState();
+  if (!events.eventNoise || typeof events.eventNoise !== 'object' || Array.isArray(events.eventNoise)) {
+    events.eventNoise = { version: 1, lastGeneratedByTheme: {}, lastPopupByTheme: {}, lastPopupGameNum: null, suppressedCount: 0, suppressedByTheme: {} };
+  }
+  var noise = events.eventNoise;
+  if (!noise.lastGeneratedByTheme || typeof noise.lastGeneratedByTheme !== 'object') noise.lastGeneratedByTheme = {};
+  if (!noise.lastPopupByTheme || typeof noise.lastPopupByTheme !== 'object') noise.lastPopupByTheme = {};
+  if (!noise.suppressedByTheme || typeof noise.suppressedByTheme !== 'object') noise.suppressedByTheme = {};
+  if (noise.lastPopupGameNum == null) noise.lastPopupGameNum = null;
+  if (noise.suppressedCount == null) noise.suppressedCount = 0;
+  noise.version = 1;
+  return noise;
+}
+
+function getEventNoiseLevel(def, data) {
+  if (data && data._noiseLevel) return data._noiseLevel;
+  if (def && def.noiseLevel) return def.noiseLevel;
+  var lane = data && data._eventLane || getRandomEventLane(def);
+  if (lane === 'director' || lane === 'career' || lane === 'injury' || lane === 'discipline') return 'major';
+  if (data && (data._consequence === 'injury' || data._consequence === 'suspension')) return 'major';
+  if (def && (def.majorInjury || isMajorInjuryEventDef(def))) return 'major';
+  if (data && Array.isArray(data.choices) && data.choices.length) return 'major';
+  return 'ambient';
+}
+
+function getEventNoiseTheme(def, data) {
+  if (data && data._noiseTheme) return data._noiseTheme;
+  if (def && def.noiseTheme) return def.noiseTheme;
+  var id = String(def && def.id || data && data._eventId || '');
+  var lane = data && data._eventLane || getRandomEventLane(def);
+  if (lane === 'director') return 'director';
+  if (lane === 'injury' || id.indexOf('injury_') === 0) return 'injury';
+  if (lane === 'discipline' || id.indexOf('susp_') === 0) return 'discipline';
+  if (lane === 'career' || id.indexOf('career_') === 0) return 'career';
+  if (id.indexOf('fight_') === 0 || id.indexOf('trash_') === 0 ||
+      ['shoe_off','ball_hit_ref','jersey_wrong','sleep_on_bench','shower_slip','food_poisoning','warmup_dunk_fail','pass_hit_coach','hit_photographer','towel_slip','celebrate_coach','power_outage'].indexOf(id) >= 0) {
+    return 'on_court_drama';
+  }
+  if (['reporter_interview','like_controversy','ig_live_leak','game_rating_post','espn_grandma','shaq_five','like_fan_photo','game_live_curse','meme','tiktok_dance','kendrick_perkins','stephen_a'].indexOf(id) >= 0) {
+    return 'media_drama';
+  }
+  if (['team_dinner','veteran_dinner','music_war','game_night','missing_shoes','friend_security'].indexOf(id) >= 0) {
+    return 'locker_room';
+  }
+  if (isOffCourtEventId(id) || ['charity','crypto_loss','lambo_ticket','relatives_tickets','pet_dog','learn_guitar','sponsor_car','movie_cameo','lucky_socks','flight_delay','lucky_bracelet'].indexOf(id) >= 0) {
+    return 'off_court';
+  }
+  if (['behind_the_back','gamemom_call','towel_celebration','record_milestone_ball','three_point_celebration'].indexOf(id) >= 0) {
+    return 'highlight';
+  }
+  return lane === 'story' ? 'story_misc' : lane;
+}
+
+function getEventNoiseThemeCooldown(theme, level) {
+  if (level === 'major') return 0;
+  return EVENT_NOISE_THEME_COOLDOWNS[theme] == null ? 7 : EVENT_NOISE_THEME_COOLDOWNS[theme];
+}
+
+function isRandomEventNoiseEligible(def, gameNum) {
+  var level = getEventNoiseLevel(def);
+  if (level === 'major') return true;
+  var theme = getEventNoiseTheme(def);
+  var last = ensureEventNoiseState().lastGeneratedByTheme[theme];
+  var cooldown = getEventNoiseThemeCooldown(theme, level);
+  return last == null || gameNum - Number(last) >= cooldown;
+}
+
+function noteEventNoisePresentation(theme, level, gameNum) {
+  var noise = ensureEventNoiseState();
+  theme = theme || 'story_misc';
+  gameNum = gameNum == null ? getEventGameNumber() : gameNum;
+  noise.lastPopupGameNum = gameNum;
+  noise.lastPopupByTheme[theme] = gameNum;
+  return { theme: theme, level: level || 'major', gameNum: gameNum };
+}
+
+function shouldPresentRandomEvent(def, data, options) {
+  var level = getEventNoiseLevel(def, data);
+  if (level === 'major') return true;
+  // 普通事件只作为时间线记忆；后续如果有明确的 medium 事件，再以非阻塞窗口呈现。
+  if (level !== 'medium' || (options && options.isBatch)) return false;
+  var noise = ensureEventNoiseState();
+  var gameNum = getEventGameNumber();
+  if (noise.lastPopupGameNum != null && gameNum - Number(noise.lastPopupGameNum) < 4) return false;
+  return true;
+}
+
+function recordEventNoiseGeneration(theme, level, presented, gameNum) {
+  var noise = ensureEventNoiseState();
+  theme = theme || 'story_misc';
+  gameNum = gameNum == null ? getEventGameNumber() : gameNum;
+  noise.lastGeneratedByTheme[theme] = gameNum;
+  if (presented) {
+    noteEventNoisePresentation(theme, level, gameNum);
+  } else {
+    noise.suppressedCount = (Number(noise.suppressedCount) || 0) + 1;
+    noise.suppressedByTheme[theme] = (Number(noise.suppressedByTheme[theme]) || 0) + 1;
+  }
+}
+
 function getEventScoreDiff(ctx) {
   if (!ctx || !ctx.result) return 99;
   return Math.abs((Number(ctx.result.scoreA) || 0) - (Number(ctx.result.scoreB) || 0));
@@ -13188,6 +13329,9 @@ function recordRandomEvent(def, data) {
   var lane = getRandomEventLane(def);
   var countKey = getEventCountKey(lane);
   var gameNum = getEventGameNumber();
+  var noiseLevel = data && data._noiseLevel || getEventNoiseLevel(def, data);
+  var noiseTheme = data && data._noiseTheme || getEventNoiseTheme(def, data);
+  var noisePresented = !data || data._noisePresented !== false;
   events.triggeredIds.push(def.id);
   events.lastTriggerGameNum = gameNum;
   events.lastTriggerByLane[countKey] = gameNum;
@@ -13200,13 +13344,21 @@ function recordRandomEvent(def, data) {
     phase: STATE.season.isPlayoffs ? 'playoffs' : 'regular',
     title: data.title,
     desc: data.desc || '',
-    emoji: data.emoji || '📌'
+    detail: data.detail || '',
+    emoji: data.emoji || '📌',
+    noiseLevel: noiseLevel,
+    noiseTheme: noiseTheme,
+    delivery: noisePresented ? 'popup' : 'quiet'
   };
   events.storyTimeline.push(timelineItem);
+  recordEventNoiseGeneration(noiseTheme, noiseLevel, noisePresented, gameNum);
   recordEventLifecycle(def);
   data._timelineIndex = events.storyTimeline.length - 1;
   data._eventId = def.id;
   data._eventLane = lane;
+  data._noiseLevel = noiseLevel;
+  data._noiseTheme = noiseTheme;
+  data._noisePresented = noisePresented;
 }
 
 function finalizeRandomEventChoice(data, choice, resultText) {
@@ -13233,7 +13385,7 @@ function pickWeightedEvent(candidates) {
   return candidates[candidates.length - 1];
 }
 
-function checkRandomEvents(game, result, stats) {
+function checkRandomEvents(game, result, stats, options) {
   var ev = ensureSeasonEventState();
   var afterGame = afterCareerTeamGame({ game: game, result: result, stats: stats || {}, allowPopup: true });
   if (!afterGame.isNewGame) return null;
@@ -13255,6 +13407,7 @@ function checkRandomEvents(game, result, stats) {
     var candidates = EVENT_REGISTRY.filter(function(def) {
       if (getRandomEventLane(def) !== lane) return false;
       if (ev.triggeredIds.indexOf(def.id) >= 0) return false;
+      if (!isRandomEventNoiseEligible(def, gameNum)) return false;
       return meetsRandomEventContext(def, ctx);
     });
     if (!candidates.length) continue;
@@ -13297,8 +13450,11 @@ function checkRandomEvents(game, result, stats) {
     ev.suspensionGamesLeft += data._games;
     ev.suspensionReason = data.desc || data.title;
   }
+  data._noiseLevel = getEventNoiseLevel(picked, data);
+  data._noiseTheme = getEventNoiseTheme(picked, data);
+  data._noisePresented = shouldPresentRandomEvent(picked, data, options);
   recordRandomEvent(picked, data);
-  return data;
+  return data._noisePresented ? data : null;
 }
 
 
