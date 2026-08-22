@@ -5716,11 +5716,23 @@ function buildLeagueGameRotation(team, gameOptions) {
     STATE.season._careerTeamAvailabilityGame = careerTeamGameNumber;
   }
   var available = [];
+  var unavailable = [];
   unique.forEach(function(player, roleRank) {
-    if ((player._isUser && options.userAvailable !== false)
+    var canPlay = (player._isUser && options.userAvailable !== false)
       || (!player._isUser && (options.ignoreNpcAvailability
-        || shouldNpcPlayLeagueGame(team, player, roleRank, careerTeamGameNumber, options)))) available.push(player);
+        || shouldNpcPlayLeagueGame(team, player, roleRank, careerTeamGameNumber, options)));
+    if (canPlay) available.push(player);
+    else unavailable.push({ player: player, roleRank: roleRank });
   });
+  // 伤病/轮休叠加时，优先从完整名单中启用紧急递补，保证正式比赛永远至少有5人。
+  // 玩家明确休战时不把玩家本人重新塞回场上；若完整名单本身不足5人，仍由核心引擎 fail-closed。
+  if (available.length < 5 && options.allowEmergencyAvailability !== false) {
+    unavailable.slice().sort(function(a, b) { return a.roleRank - b.roleRank; }).forEach(function(entry) {
+      if (available.length >= 5) return;
+      if (entry.player && entry.player._isUser && options.userAvailable === false) return;
+      available.push(Object.assign({}, entry.player, { _emergencyAvailability: true }));
+    });
+  }
   var targetSize = 9 + (Math.random() < 0.68 ? 1 : (Math.random() < 0.70 ? 2 : 0));
   var selected = available.slice(0, targetSize);
   if (user && options.userAvailable !== false && selected.indexOf(user) < 0) {

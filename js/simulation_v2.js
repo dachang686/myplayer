@@ -131,7 +131,9 @@
       || Math.round(regulationMinutes) !== 240) {
       throw new Error('[V2] 无法生成有效轮换：' + team + '（常规赛分钟必须总计240且单人不超过48）');
     }
-    if (options.userMinutesFactor != null) {
+    // 仅剩五名可用球员时，带伤出战只能保留必要分钟；伤病仍通过属性因子生效。
+    // 不能把五人全部压到48分钟以下后再强行补回，否则必然突破硬上限。
+    if (options.userMinutesFactor != null && players.length > 5) {
       var userIndex = players.findIndex(function(player) { return !!player._isUser; });
       if (userIndex >= 0) {
         var originalUserMinutes = minutes[userIndex];

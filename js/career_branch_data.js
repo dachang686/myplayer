@@ -736,7 +736,7 @@ const STAGED_BRANCH_EVENTS = [
         if (STATE.career.relationships.partner) STATE.career.relationships.partner.status = 'stable';
         mods.formVariance = Math.max(-3, (mods.formVariance || 0) - 1);
         mods.teamChemistry = Math.min(5, (mods.teamChemistry || 0) + 1);
-        return '你们决定不公开，也不把这件事变成新闻。队友偶尔调侃你，但更衣室气氛反而轻松了不少。<br><br>效果：下赛季状态波动略降；球队默契略升。';
+        return '你们决定不公开，也不把这件事变成新闻。队友偶尔调侃你，但更衣室气氛反而轻松了不少。<br><br>效果：下赛季状态波动略降；下赛季球队默契略升。';
       }},
       { label: '享受热恋，不想太克制', hint: '可能状态火热，也可能分心', apply: function() {
         var mods = getNextSeasonMods();

@@ -486,7 +486,7 @@ function buildPlayoffBracket(conf, playInState) {
 }
 
 /** 自动模拟指定分区的一轮；玩家每完成一轮后，另一分区同步推进同一轮。 */
-function autoSimConferenceBracketRound(confBracket, round) {
+function autoSimConferenceBracketRound(confBracket, round, simulationOptions) {
   if (!confBracket || round < 0 || round > 2) return false;
   const seriesList = confBracket.rounds?.[round] || [];
   if (!seriesList.length) return false;
@@ -594,7 +594,7 @@ function repairPlayoffBracketState() {
     }
   }
 
-  const repairedOtherBracket = buildPlayoffBracket(expectedOtherConf);
+  const repairedOtherBracket = buildPlayoffBracket(expectedOtherConf, STATE.season.otherPlayInState);
   for (let round = 0; round < completedRounds; round++) {
     autoSimConferenceBracketRound(repairedOtherBracket, round);
   }
@@ -1299,7 +1299,7 @@ function simPlayoffSeries(round, seriesIdx) {
     // 检查是否所有同轮系列赛都完成了
     const allDone = bracket.rounds[round].every(s => s?.winner);
     if (allDone && round < 2) bracket.currentRound = round + 1;
-    if (allDone && round < 3) {
+    if (allDone && round < 3 && !(simulationOptions && simulationOptions.skipOtherSync)) {
       autoSimConferenceBracketRound(STATE.season.otherBracket, round);
     }
     
@@ -1311,7 +1311,8 @@ function simPlayoffSeries(round, seriesIdx) {
     // ★ 分区决赛完成 → 先设置总决赛 (第3轮) 对阵（在用户跳转前执行）
     if (round === 2 && allDone) {
       const otherBracket = STATE.season.otherBracket;
-      bracket.otherConfChampion = otherBracket?.confChampion || simOtherConference(getOtherPlayoffConference(bracket.conf));
+      bracket.otherConfChampion = otherBracket?.confChampion
+        || simOtherConference(getOtherPlayoffConference(bracket.conf), otherBracket);
       const finalsRound = bracket.rounds[3];
       if (finalsRound && finalsRound[0] === null) {
         finalsRound[0] = {
@@ -1360,40 +1361,19 @@ function simPlayoffSeries(round, seriesIdx) {
     renderPlayoffBracketUI();
   });
 }
-/** 模拟另一分区的季后赛，返回冠军球队（使用联盟对阵：1v8/4v5/2v7/3v6） */
-function simOtherConference(conf) {
-  const sorted = getConferenceSorted(conf);
-  const teams = sorted.slice(0, 8).map(t => t.team);
-  if (teams.length < 8) return teams[0] || '';
-  const confBracket = { teams: teams.map(team => ({ team })) };
-  
-  // 让首轮胜者自然进入正确半区：1/8 vs 4/5、2/7 vs 3/6。
-  const bracketOrder = [0, 7, 3, 4, 1, 6, 2, 5];
-  let roundTeams = bracketOrder.map(i => teams[i]);
-  
-  // 3轮7场4胜
-  const simSeries = (tA, tB, round) => {
-    const teamAIsHigherSeed = isTeamAHigherPlayoffSeed(tA, tB, round, confBracket);
-    const seedBonus = getPlayoffSeriesSeedBonus(tA, tB, round, confBracket);
-    let wA = 0, wB = 0;
-    for (let g = 0; g < 7 && wA < 4 && wB < 4; g++) {
-      const isHomeA = isPlayoffTeamAHome(g, teamAIsHigherSeed);
-      const result = simulateGameNew(tA, tB, seedBonus, null, { isHomeA: isHomeA, isB2B: false });
-      if (result.won) wA++;
-      else wB++;
-    }
-    return wA >= 4 ? tA : tB;
-  };
-  
-  for (let r = 0; r < 3; r++) {
-    const winners = [];
-    for (let i = 0; i < roundTeams.length; i += 2) {
-      if (i + 1 >= roundTeams.length) { winners.push(roundTeams[i]); break; }
-      winners.push(simSeries(roundTeams[i], roundTeams[i + 1], r));
-    }
-    roundTeams = winners;
+/** 兜底模拟另一分区：优先补跑已有 bracket，避免丢失 Play-In 7/8 号种子。 */
+function simOtherConference(conf, existingBracket) {
+  let confBracket = isPlayoffBracketForConference(existingBracket, conf)
+    ? existingBracket
+    : buildPlayoffBracket(conf, STATE.season && STATE.season.otherPlayInState);
+  if (!confBracket || !Array.isArray(confBracket.teams) || confBracket.teams.length < 8) return '';
+
+  const completedRounds = getCompletedPlayoffConferenceRounds(confBracket);
+  for (let round = completedRounds; round < 3; round++) {
+    if (!autoSimConferenceBracketRound(confBracket, round, { skipOtherSync: true })) break;
   }
-  return roundTeams[0];
+  if (STATE.season) STATE.season.otherBracket = confBracket;
+  return confBracket.confChampion || '';
 }
 
 function maybeRecordFirstSixtyWinMilestone() {

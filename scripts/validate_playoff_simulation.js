@@ -225,6 +225,47 @@ function validateBracketSeedOrdering() {
 }
 
 const bracketSeedOrdering = validateBracketSeedOrdering();
+
+function validateOtherConferenceFallback() {
+  const fallbackStart = playoffsSource.indexOf('function simOtherConference');
+  const fallbackEnd = playoffsSource.indexOf('function maybeRecordFirstSixtyWinMilestone', fallbackStart);
+  if (fallbackStart < 0 || fallbackEnd < 0) throw new Error('无法定位另一分区兜底模拟函数');
+  const existingBracket = {
+    conf: 'NORTH',
+    teams: [
+      { team: 'N1' }, { team: 'N2' }, { team: 'N3' }, { team: 'N4' },
+      { team: 'N5' }, { team: 'N6' }, { team: 'N8' }, { team: 'N7' },
+    ],
+  };
+  const state = { season: { otherBracket: null, otherPlayInState: { marker: 'preserve-play-in' } } };
+  const calls = { build: 0, rounds: [] };
+  const simulate = new Function(
+    'STATE',
+    'isPlayoffBracketForConference',
+    'buildPlayoffBracket',
+    'getCompletedPlayoffConferenceRounds',
+    'autoSimConferenceBracketRound',
+    `${playoffsSource.slice(fallbackStart, fallbackEnd)}\nreturn simOtherConference;`,
+  )(
+    state,
+    bracket => bracket === existingBracket,
+    () => { calls.build++; return null; },
+    () => 0,
+    (bracket, round, options) => {
+      calls.rounds.push({ bracket, round, options });
+      if (round === 2) bracket.confChampion = 'N8';
+      return true;
+    },
+  );
+  const champion = simulate('NORTH', existingBracket);
+  return {
+    preservesExistingBracket: state.season.otherBracket === existingBracket && calls.build === 0,
+    preservesPlayInSeedOrder: champion === 'N8' && calls.rounds.length === 3
+      && calls.rounds.every(call => call.bracket === existingBracket && call.options?.skipOtherSync === true),
+  };
+}
+
+const otherConferenceFallback = validateOtherConferenceFallback();
 const renderPlayoffsStart = playoffsSource.indexOf('function renderPlayoffs');
 const resumePlayoffsStart = playoffsSource.indexOf('function resumePlayoffs', renderPlayoffsStart);
 const renderPlayoffsSource = playoffsSource.slice(renderPlayoffsStart, resumePlayoffsStart);
@@ -1297,6 +1338,7 @@ const report = {
   playInRotationFlags,
   playInFunctionalRules,
   bracketSeedOrdering,
+  otherConferenceFallback,
   playInRouting,
   playInCompletion,
   standingsTiebreakers,
@@ -1418,6 +1460,9 @@ if (!Object.values(playInFunctionalRules).every(Boolean)) {
 }
 if (!Object.values(bracketSeedOrdering).every(Boolean)) {
   failures.push(`正式季后赛 seed 主场身份错误：${JSON.stringify(bracketSeedOrdering)}`);
+}
+if (!Object.values(otherConferenceFallback).every(Boolean)) {
+  failures.push(`另一分区兜底模拟丢失 bracket/Play-In 状态：${JSON.stringify(otherConferenceFallback)}`);
 }
 if (!Object.values(playInRouting.legacyResume).every(Boolean)) {
   failures.push(`附加赛旧存档恢复错误：${JSON.stringify(playInRouting.legacyResume)}`);

@@ -42,7 +42,7 @@ const runtimeBundle = new Function(
   'getLeaguePlayerAge',
   'af',
   'ensureSeasonEventState',
-  indexSource.slice(engineStart, engineEnd) + '\n' + v2Source + '\nreturn { v2: globalThis.simulateGameAggregateV2, dispatcher: simulateGameNew, getNpcSeasonProfile, refreshNpcShortTermForm };',
+  indexSource.slice(engineStart, engineEnd) + '\n' + v2Source + '\nreturn { v2: globalThis.simulateGameAggregateV2, dispatcher: simulateGameNew, getNpcSeasonProfile, refreshNpcShortTermForm, buildLeagueGameRotation };',
 )(
   leagueData.LEAGUE_PLAYER_DATA,
   simConfig,
@@ -394,6 +394,51 @@ function fixedRotation(team, userIndex, customMinutes) {
     minutes: customMinutes || [36, 34, 32, 30, 28, 24, 20, 16, 12, 8],
   };
 }
+
+function validateEmergencyReplacement() {
+  const team = 'V2_EMERGENCY_TEAM';
+  const originalCareerTeam = state.careerTeam;
+  const originalFinalOVR = state.finalOVR;
+  const originalPosition = state.position;
+  const originalAttrs = state.attrs;
+  const originalCache = state._lineupCache;
+  const originalProfiles = state.season._npcSeasonProfiles;
+  leagueData.LEAGUE_PLAYER_DATA[team] = JSON.parse(JSON.stringify(leagueData.LEAGUE_PLAYER_DATA[teams[0]].slice(0, 10)))
+    .map((player, index) => Object.assign(player, { id: team + '-' + index, _isUser: false }));
+  try {
+    state.careerTeam = team;
+    state.finalOVR = 90;
+    state.position = 'PG';
+    state.attrs = {};
+    state._lineupCache = {};
+    state.season._npcSeasonProfiles = {};
+    leagueData.LEAGUE_PLAYER_DATA[team].forEach((player, index) => {
+      state.season._npcSeasonProfiles[team + ':' + player.id] = {
+        scoring: 1, rebounding: 1, playmaking: 1, defense: 1, formGamesLeft: 1,
+        injuryGamesLeft: index < 6 ? 1 : 0,
+        gamesMissed: 0, restChance: 0, injuryRisk: 0,
+      };
+    });
+    const rotation = runtimeBundle.buildLeagueGameRotation(team, {
+      isPlayoffs: true,
+      isPlayIn: true,
+      userAvailable: false,
+      ignoreNpcAvailability: false,
+    });
+    return rotation.players.length >= 5
+      && rotation.players.some(player => player && player._emergencyAvailability === true);
+  } finally {
+    state.careerTeam = originalCareerTeam;
+    state.finalOVR = originalFinalOVR;
+    state.position = originalPosition;
+    state.attrs = originalAttrs;
+    state._lineupCache = originalCache;
+    state.season._npcSeasonProfiles = originalProfiles;
+    delete leagueData.LEAGUE_PLAYER_DATA[team];
+  }
+}
+
+const emergencyReplacementPath = validateEmergencyReplacement();
 const ovrHigh = makeFixedOvrTeam('V2_OVR_HIGH', 99);
 const ovrLow = makeFixedOvrTeam('V2_OVR_LOW', 70);
 const ovrOpponent = makeFixedOvrTeam('V2_OVR_OPP', 90);
@@ -594,10 +639,10 @@ try {
 } catch (error) {
   overCapRotationThrows = /\[V2\] 无法生成有效轮换/.test(String(error && error.message));
 }
-let fivePlayerInjuryThrows = false;
+let fivePlayerInjuryMinutesSafe = false;
 try {
   const fivePlayerRotation = fixedRotation(ovrOpponent, 0, [48, 48, 48, 48, 48]);
-  runtime('V2_FIVE_PLAYER_INJURY', ovrOpponent, 0, null, {
+  const fivePlayerResult = runtime('V2_FIVE_PLAYER_INJURY', ovrOpponent, 0, null, {
     isHomeA: null,
     ignoreNpcAvailability: true,
     userAttributeFactor: 0.86,
@@ -611,8 +656,16 @@ try {
       [ovrOpponent]: fixedRotation(ovrOpponent),
     },
   });
+  const fivePlayerRows = fivePlayerResult.boxScore.V2_FIVE_PLAYER_INJURY || [];
+  const fivePlayerUser = fivePlayerRows.find(row => row.playerId === 'OVR-ISO-0');
+  fivePlayerInjuryMinutesSafe = fivePlayerResult.engineVersion === 'v2'
+    && fivePlayerRows.length === 5
+    && sum(fivePlayerRows, 'mins') === 240
+    && fivePlayerRows.every(row => Number(row.mins) >= 0 && Number(row.mins) <= 48)
+    && fivePlayerUser
+    && Number(fivePlayerUser.mins) === 48;
 } catch (error) {
-  fivePlayerInjuryThrows = /\[V2\] 无法生成有效轮换/.test(String(error && error.message));
+  fivePlayerInjuryMinutesSafe = false;
 }
 const diagnosticComponents = dispatcherResult && dispatcherResult.marginComponents;
 const diagnosticReconstructedMargin = diagnosticComponents
@@ -630,6 +683,95 @@ const diagnosticFieldSemantics = !!(dispatcherResult
   && Math.abs(dispatcherResult.estimatedWinProb - (1 / (1 + Math.exp(-dispatcherResult.expectedMargin / 6.5)))) < 1e-12);
 
 const v2ModifierPath = v2Source.includes('formVariance') && v2Source.includes('mediaPressure');
+function modifierProbe(mods, seed) {
+  state.season.mods = Object.assign({ formVariance: 0, mediaPressure: 0, teamChemistry: 0, moraleBonus: 0 }, mods);
+  state.season._usageBias = 1;
+  state.season._npcSeasonProfiles = {};
+  const result = seeded(seed, () => runtime(ovrHigh, ovrOpponent, 0, null, {
+    isHomeA: null,
+    ignoreNpcAvailability: true,
+    _preparedRotations: {
+      [ovrHigh]: fixedRotation(ovrHigh, 0),
+      [ovrOpponent]: fixedRotation(ovrOpponent),
+    },
+  }));
+  const userRow = (result.boxScore[ovrHigh] || []).find(row => row.playerId === 'OVR-ISO-0');
+  return userRow ? JSON.stringify({ pts: userRow.pts, fga: userRow.fga, fgm: userRow.fgm, mins: userRow.mins }) : '';
+}
+const modifierProbeResults = Array.from({ length: 240 }, (_, index) => {
+  const seed = 28000 + index;
+  return {
+    baseline: modifierProbe({ formVariance: 0, mediaPressure: 0 }, seed),
+    lowForm: modifierProbe({ formVariance: -3, mediaPressure: 0 }, seed),
+    highForm: modifierProbe({ formVariance: 3, mediaPressure: 0 }, seed),
+    media: modifierProbe({ formVariance: 0, mediaPressure: 3 }, seed),
+  };
+});
+const v2ModifierFunctionalPath = modifierProbeResults.some(row =>
+  row.baseline && row.lowForm && row.highForm && row.media
+  && row.lowForm !== row.baseline
+  && row.highForm !== row.baseline
+  && row.media !== row.baseline,
+);
+
+function runNpcAvailabilityStress() {
+  const originalCareerTeam = state.careerTeam;
+  const originalSeason = state.season;
+  const originalCache = state._lineupCache;
+  let games = 0;
+  let simulationErrors = 0;
+  let invariantErrors = 0;
+  try {
+    state.careerTeam = null;
+    for (let season = 0; season < 10; season++) {
+      state._lineupCache = {};
+      state.season = {
+        schedule: [],
+        isPlayoffs: false,
+        _npcSeasonProfiles: {},
+        events: { activeEffects: [] },
+        mods: { formVariance: 0, mediaPressure: 0, teamChemistry: 0, moraleBonus: 0 },
+      };
+      for (let game = 0; game < gamesPerSeason; game++) {
+        const round = Math.floor(game / (allTeams.length / 2));
+        const slot = game % (allTeams.length / 2);
+        const teamA = allTeams[(slot + round + season) % allTeams.length];
+        const teamB = allTeams[(allTeams.length - 1 - slot + round + season) % allTeams.length];
+        try {
+          const result = seeded(310000 + season * gamesPerSeason + game, () => runtime(teamA, teamB, 0, null, {
+            isHomeA: game % 2 === 0,
+            isB2BA: game % 9 === 0,
+            isB2BB: game % 13 === 0,
+            isPlayoffs: false,
+            isPlayIn: false,
+            ignoreNpcAvailability: false,
+          }));
+          const rowsA = result.boxScore[teamA] || [];
+          const rowsB = result.boxScore[teamB] || [];
+          const expectedMinutes = 240 + (Number(result.ot) || 0) * 25;
+          if (result.engineVersion !== 'v2'
+            || sum(rowsA, 'pts') !== result.scoreA
+            || sum(rowsB, 'pts') !== result.scoreB
+            || sum(rowsA, 'mins') !== expectedMinutes
+            || sum(rowsB, 'mins') !== expectedMinutes
+            || rowsA.concat(rowsB).some(row => Number(row.mins) > 48 + (Number(result.ot) || 0) * 5)) {
+            invariantErrors++;
+          }
+        } catch (error) {
+          simulationErrors++;
+        }
+        games++;
+      }
+    }
+  } finally {
+    state.careerTeam = originalCareerTeam;
+    state.season = originalSeason;
+    state._lineupCache = originalCache;
+  }
+  return { seasons: 10, games, simulationErrors, invariantErrors };
+}
+
+const npcAvailabilityStress = runNpcAvailabilityStress();
 
 const specialistStats = {
   pas99: pas99Stats,
@@ -644,15 +786,18 @@ const specialistStats = {
   dispatcherIntegration,
   teamBAvailabilityIntegration,
   v2ModifierPath,
+  v2ModifierFunctionalPath,
+  npcAvailabilityStress,
   ovrIsolation,
   npcFormOvrIsolation,
+  emergencyReplacementPath,
   seededStateRestored,
   enginePersistencePath,
   diagnosticsFailClosed,
   emptyRotationThrows,
   shortRotationThrows,
   overCapRotationThrows,
-  fivePlayerInjuryThrows,
+  fivePlayerInjuryMinutesSafe,
   diagnosticFieldSemantics,
 };
 
@@ -760,15 +905,19 @@ if (result.full99PlayerPpg - result.partial99PlayerPpg < 1.5
   || !specialistStats.deterministicV2
   || !specialistStats.ovrIsolation
   || !specialistStats.npcFormOvrIsolation
+  || !specialistStats.emergencyReplacementPath
   || !specialistStats.seededStateRestored
   || !specialistStats.diagnosticsFailClosed
   || !specialistStats.dispatcherIntegration
   || !specialistStats.v2ModifierPath
+  || !specialistStats.v2ModifierFunctionalPath
+  || specialistStats.npcAvailabilityStress.simulationErrors > 0
+  || specialistStats.npcAvailabilityStress.invariantErrors > 0
   || !specialistStats.teamBAvailabilityIntegration
   || !specialistStats.emptyRotationThrows
   || !specialistStats.shortRotationThrows
   || !specialistStats.overCapRotationThrows
-  || !specialistStats.fivePlayerInjuryThrows
+  || !specialistStats.fivePlayerInjuryMinutesSafe
   || !specialistStats.diagnosticFieldSemantics
   || specialistStats.v2HasDirectOvrEventPath) {
   throw new Error('V2 专项因果隔离失败：' + JSON.stringify(result));
