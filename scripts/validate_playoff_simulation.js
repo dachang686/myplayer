@@ -75,7 +75,7 @@ if (!/getPlayoffSeriesSeedBonus\(teamA, teamB, round, STATE\.season && STATE\.se
 }
 const playInRotationFlags = {
   simulationUsesPostseason: /function simulatePlayInMatch[\s\S]*?isPlayoffs:\s*true,[\s\S]*?isPlayIn:\s*true/.test(playoffsSource),
-  npcReadsGameOptions: /function shouldNpcPlayLeagueGame\([^)]*gameOptions[\s\S]*?typeof options\.isPlayoffs === 'boolean'[\s\S]*?isPostseasonRotation/.test(indexSource),
+  npcReadsGameOptions: /function getNpcLeagueGameAvailability\([^)]*gameOptions[\s\S]*?typeof options\.isPlayoffs === 'boolean'[\s\S]*?isPostseasonRotation/.test(indexSource),
   prepareReadsGameOptions: /function prepareLeagueGameRotation\([^)]*[\s\S]*?typeof options\.isPlayoffs === 'boolean'/.test(indexSource),
 };
 if (Object.values(playInRotationFlags).some(flag => !flag)) {
@@ -146,7 +146,7 @@ function validatePlayInFunctionalRules() {
     && calls.after[0]?.playedThroughInjury === true
     && calls.worsened === 1;
 
-  const npcStart = indexSource.indexOf('function shouldNpcPlayLeagueGame');
+  const npcStart = indexSource.indexOf('function getNpcLeagueGameAvailability');
   const npcEnd = indexSource.indexOf('/** 把球队总量', npcStart);
   if (npcStart < 0 || npcEnd < 0) throw new Error('无法定位 NPC 出场判断函数');
   const profile = {
@@ -261,11 +261,53 @@ function validateOtherConferenceFallback() {
   return {
     preservesExistingBracket: state.season.otherBracket === existingBracket && calls.build === 0,
     preservesPlayInSeedOrder: champion === 'N8' && calls.rounds.length === 3
-      && calls.rounds.every(call => call.bracket === existingBracket && call.options?.skipOtherSync === true),
+      && calls.rounds.every(call => call.bracket === existingBracket && call.options === undefined),
   };
 }
 
 const otherConferenceFallback = validateOtherConferenceFallback();
+
+function validateUserSeriesRoundSync() {
+  const seriesStart = playoffsSource.indexOf('function simPlayoffSeries');
+  const seriesEnd = playoffsSource.indexOf('/** 兜底模拟另一分区', seriesStart);
+  if (seriesStart < 0 || seriesEnd < 0) throw new Error('无法定位玩家季后赛系列赛入口');
+  const playerSeries = { high: { team: 'N1' }, low: { team: 'N8' }, winner: null };
+  const otherBracket = { conf: 'SOUTH', marker: 'other' };
+  const bracket = {
+    conf: 'NORTH',
+    rounds: [[playerSeries], [null, null], [null], [null]],
+    currentRound: 0,
+    results: [],
+  };
+  const state = {
+    careerTeam: 'N1',
+    season: { playoffBracket: bracket, otherBracket, playoffStats: {}, awards: [] },
+  };
+  const calls = { synced: [], renders: 0 };
+  const runSeries = new Function(
+    'STATE', 'trackEvent', 'clearPlayoffGamecast', 'document', 'getTeamName', 'simOnePlayoffGame',
+    'getPlayoffSeriesSeedBonus', 'isTeamAHigherPlayoffSeed', 'isPlayoffTeamAHome', 'simulateGameNew',
+    'autoSimConferenceBracketRound', 'queueSeasonAutoSave', 'renderPlayoffBracketUI',
+    playoffsSource.slice(seriesStart, seriesEnd) + '\nreturn simPlayoffSeries;',
+  )(
+    state, () => {}, () => {}, { getElementById: () => null }, team => team,
+    (round, seriesIdx, teamA, teamB, isMySeries, gameNum, winsA, winsB, games, userStats, roundName, done) => done(4, 0, [], []),
+    () => 0, () => true, () => true,
+    () => ({ won: true, scoreA: 100, scoreB: 90, qScoresA: [], qScoresB: [], boxScore: {} }),
+    (target, round) => { calls.synced.push({ target, round }); return true; },
+    () => {}, () => { calls.renders++; },
+  );
+  runSeries(0, 0);
+  return {
+    completedWithoutReferenceError: playerSeries.winner === 'N1' && bracket.currentRound === 1,
+    syncedExactOtherBracket: calls.synced.length === 1
+      && calls.synced[0].target === otherBracket
+      && calls.synced[0].round === 0,
+    rendered: calls.renders === 1,
+  };
+}
+
+const userSeriesRoundSync = validateUserSeriesRoundSync();
 const renderPlayoffsStart = playoffsSource.indexOf('function renderPlayoffs');
 const resumePlayoffsStart = playoffsSource.indexOf('function resumePlayoffs', renderPlayoffsStart);
 const renderPlayoffsSource = playoffsSource.slice(renderPlayoffsStart, resumePlayoffsStart);
@@ -1339,6 +1381,7 @@ const report = {
   playInFunctionalRules,
   bracketSeedOrdering,
   otherConferenceFallback,
+  userSeriesRoundSync,
   playInRouting,
   playInCompletion,
   standingsTiebreakers,
@@ -1463,6 +1506,9 @@ if (!Object.values(bracketSeedOrdering).every(Boolean)) {
 }
 if (!Object.values(otherConferenceFallback).every(Boolean)) {
   failures.push(`另一分区兜底模拟丢失 bracket/Play-In 状态：${JSON.stringify(otherConferenceFallback)}`);
+}
+if (!Object.values(userSeriesRoundSync).every(Boolean)) {
+  failures.push(`玩家系列赛结束后的另一分区同步错误：${JSON.stringify(userSeriesRoundSync)}`);
 }
 if (!Object.values(playInRouting.legacyResume).every(Boolean)) {
   failures.push(`附加赛旧存档恢复错误：${JSON.stringify(playInRouting.legacyResume)}`);

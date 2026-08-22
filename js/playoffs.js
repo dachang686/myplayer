@@ -486,7 +486,7 @@ function buildPlayoffBracket(conf, playInState) {
 }
 
 /** 自动模拟指定分区的一轮；玩家每完成一轮后，另一分区同步推进同一轮。 */
-function autoSimConferenceBracketRound(confBracket, round, simulationOptions) {
+function autoSimConferenceBracketRound(confBracket, round) {
   if (!confBracket || round < 0 || round > 2) return false;
   const seriesList = confBracket.rounds?.[round] || [];
   if (!seriesList.length) return false;
@@ -1299,7 +1299,7 @@ function simPlayoffSeries(round, seriesIdx) {
     // 检查是否所有同轮系列赛都完成了
     const allDone = bracket.rounds[round].every(s => s?.winner);
     if (allDone && round < 2) bracket.currentRound = round + 1;
-    if (allDone && round < 3 && !(simulationOptions && simulationOptions.skipOtherSync)) {
+    if (allDone && round < 3) {
       autoSimConferenceBracketRound(STATE.season.otherBracket, round);
     }
     
@@ -1370,7 +1370,7 @@ function simOtherConference(conf, existingBracket) {
 
   const completedRounds = getCompletedPlayoffConferenceRounds(confBracket);
   for (let round = completedRounds; round < 3; round++) {
-    if (!autoSimConferenceBracketRound(confBracket, round, { skipOtherSync: true })) break;
+    if (!autoSimConferenceBracketRound(confBracket, round)) break;
   }
   if (STATE.season) STATE.season.otherBracket = confBracket;
   return confBracket.confChampion || '';

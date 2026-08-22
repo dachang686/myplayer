@@ -419,14 +419,42 @@ function validateEmergencyReplacement() {
         gamesMissed: 0, restChance: 0, injuryRisk: 0,
       };
     });
+    const injuredIds = new Set(leagueData.LEAGUE_PLAYER_DATA[team].slice(0, 6).map(player => player.id));
     const rotation = runtimeBundle.buildLeagueGameRotation(team, {
       isPlayoffs: true,
       isPlayIn: true,
       userAvailable: false,
       ignoreNpcAvailability: false,
     });
-    return rotation.players.length >= 5
-      && rotation.players.some(player => player && player._emergencyAvailability === true);
+    const injuredProfiles = leagueData.LEAGUE_PLAYER_DATA[team].slice(0, 6)
+      .map(player => state.season._npcSeasonProfiles[team + ':' + player.id]);
+    const replacements = rotation.players.filter(player => player && player._emergencyReplacement === true);
+    const hardshipReplacementValid = rotation.players.length >= 5
+      && replacements.length === 1
+      && replacements[0].id === team + '-HARDSHIP-1'
+      && rotation.players.every(player => !injuredIds.has(player && player.id))
+      && injuredProfiles.every(profile => profile.injuryGamesLeft === 0 && profile.gamesMissed === 1);
+    leagueData.LEAGUE_PLAYER_DATA[team].forEach((player, index) => {
+      state.season._npcSeasonProfiles[team + ':' + player.id] = {
+        scoring: 1, rebounding: 1, playmaking: 1, defense: 1, formGamesLeft: 1,
+        injuryGamesLeft: 0, gamesMissed: 0, restChance: index < 6 ? 2 : 0, injuryRisk: 0,
+      };
+    });
+    const restRotation = runtimeBundle.buildLeagueGameRotation(team, {
+      isPlayoffs: false,
+      userAvailable: false,
+      ignoreNpcAvailability: false,
+    });
+    const restedPlayers = leagueData.LEAGUE_PLAYER_DATA[team].slice(0, 6);
+    const restedIds = new Set(restedPlayers.map(player => player.id));
+    const promotedRestPlayers = restRotation.players.filter(player => restedIds.has(player && player.id));
+    const restProfiles = restedPlayers.map(player => state.season._npcSeasonProfiles[team + ':' + player.id]);
+    const restCancellationValid = restRotation.players.length >= 5
+      && promotedRestPlayers.length === 1
+      && restRotation.players.every(player => !player._emergencyReplacement)
+      && restProfiles.filter(profile => profile.gamesMissed === 0).length === 1
+      && restProfiles.filter(profile => profile.gamesMissed === 1).length === 5;
+    return hardshipReplacementValid && restCancellationValid;
   } finally {
     state.careerTeam = originalCareerTeam;
     state.finalOVR = originalFinalOVR;
@@ -663,7 +691,10 @@ try {
     && sum(fivePlayerRows, 'mins') === 240
     && fivePlayerRows.every(row => Number(row.mins) >= 0 && Number(row.mins) <= 48)
     && fivePlayerUser
-    && Number(fivePlayerUser.mins) === 48;
+    && Number(fivePlayerUser.mins) === 48
+    && fivePlayerResult.marginComponents.requestedUserMinutesFactor === 0.86
+    && fivePlayerResult.marginComponents.appliedUserMinutesFactor === 1
+    && fivePlayerResult.marginComponents.userMinutesFactor === 1;
 } catch (error) {
   fivePlayerInjuryMinutesSafe = false;
 }
@@ -696,9 +727,9 @@ function modifierProbe(mods, seed) {
     },
   }));
   const userRow = (result.boxScore[ovrHigh] || []).find(row => row.playerId === 'OVR-ISO-0');
-  return userRow ? JSON.stringify({ pts: userRow.pts, fga: userRow.fga, fgm: userRow.fgm, mins: userRow.mins }) : '';
+  return userRow ? { pts: userRow.pts, fga: userRow.fga } : null;
 }
-const modifierProbeResults = Array.from({ length: 240 }, (_, index) => {
+const modifierProbeResults = Array.from({ length: 800 }, (_, index) => {
   const seed = 28000 + index;
   return {
     baseline: modifierProbe({ formVariance: 0, mediaPressure: 0 }, seed),
@@ -707,12 +738,29 @@ const modifierProbeResults = Array.from({ length: 240 }, (_, index) => {
     media: modifierProbe({ formVariance: 0, mediaPressure: 3 }, seed),
   };
 });
-const v2ModifierFunctionalPath = modifierProbeResults.some(row =>
-  row.baseline && row.lowForm && row.highForm && row.media
-  && row.lowForm !== row.baseline
-  && row.highForm !== row.baseline
-  && row.media !== row.baseline,
+function modifierDistribution(key) {
+  const rows = modifierProbeResults.map(row => row[key]).filter(Boolean);
+  const pts = rows.map(row => row.pts);
+  const fga = rows.map(row => row.fga);
+  return { games: rows.length, ptsMean: average(pts), ptsSd: standardDeviation(pts), fgaMean: average(fga), fgaSd: standardDeviation(fga) };
+}
+const modifierDistributions = {
+  lowForm: modifierDistribution('lowForm'),
+  baseline: modifierDistribution('baseline'),
+  highForm: modifierDistribution('highForm'),
+  media: modifierDistribution('media'),
+};
+const modifierMeanDrift = ['lowForm', 'highForm', 'media'].every(key =>
+  Math.abs(modifierDistributions[key].ptsMean - modifierDistributions.baseline.ptsMean) < 1
+  && Math.abs(modifierDistributions[key].fgaMean - modifierDistributions.baseline.fgaMean) < 0.75,
 );
+const v2ModifierFunctionalPath = modifierDistributions.lowForm.games === 800
+  && modifierDistributions.lowForm.fgaSd < modifierDistributions.baseline.fgaSd
+  && modifierDistributions.highForm.fgaSd > modifierDistributions.baseline.fgaSd
+  && modifierDistributions.media.fgaSd > modifierDistributions.baseline.fgaSd
+  && modifierDistributions.highForm.ptsSd > modifierDistributions.lowForm.ptsSd
+  && modifierDistributions.media.ptsSd > modifierDistributions.lowForm.ptsSd
+  && modifierMeanDrift;
 
 function runNpcAvailabilityStress() {
   const originalCareerTeam = state.careerTeam;
@@ -721,6 +769,7 @@ function runNpcAvailabilityStress() {
   let games = 0;
   let simulationErrors = 0;
   let invariantErrors = 0;
+  let availabilityContradictions = 0;
   try {
     state.careerTeam = null;
     for (let season = 0; season < 10; season++) {
@@ -738,6 +787,13 @@ function runNpcAvailabilityStress() {
         const teamA = allTeams[(slot + round + season) % allTeams.length];
         const teamB = allTeams[(allTeams.length - 1 - slot + round + season) % allTeams.length];
         try {
+          const missedBefore = {};
+          [teamA, teamB].forEach(team => {
+            (leagueData.LEAGUE_PLAYER_DATA[team] || []).forEach(player => {
+              const profile = state.season._npcSeasonProfiles[team + ':' + player.id];
+              missedBefore[team + ':' + player.id] = Number(profile && profile.gamesMissed) || 0;
+            });
+          });
           const result = seeded(310000 + season * gamesPerSeason + game, () => runtime(teamA, teamB, 0, null, {
             isHomeA: game % 2 === 0,
             isB2BA: game % 9 === 0,
@@ -757,6 +813,13 @@ function runNpcAvailabilityStress() {
             || rowsA.concat(rowsB).some(row => Number(row.mins) > 48 + (Number(result.ot) || 0) * 5)) {
             invariantErrors++;
           }
+          [[teamA, rowsA], [teamB, rowsB]].forEach(([team, rows]) => {
+            rows.forEach(row => {
+              const key = team + ':' + row.playerId;
+              const profile = state.season._npcSeasonProfiles[key];
+              if (profile && Number(profile.gamesMissed) > (missedBefore[key] || 0)) availabilityContradictions++;
+            });
+          });
         } catch (error) {
           simulationErrors++;
         }
@@ -768,7 +831,7 @@ function runNpcAvailabilityStress() {
     state.season = originalSeason;
     state._lineupCache = originalCache;
   }
-  return { seasons: 10, games, simulationErrors, invariantErrors };
+  return { seasons: 10, games, simulationErrors, invariantErrors, availabilityContradictions };
 }
 
 const npcAvailabilityStress = runNpcAvailabilityStress();
@@ -787,6 +850,7 @@ const specialistStats = {
   teamBAvailabilityIntegration,
   v2ModifierPath,
   v2ModifierFunctionalPath,
+  modifierDistributions,
   npcAvailabilityStress,
   ovrIsolation,
   npcFormOvrIsolation,
@@ -913,6 +977,7 @@ if (result.full99PlayerPpg - result.partial99PlayerPpg < 1.5
   || !specialistStats.v2ModifierFunctionalPath
   || specialistStats.npcAvailabilityStress.simulationErrors > 0
   || specialistStats.npcAvailabilityStress.invariantErrors > 0
+  || specialistStats.npcAvailabilityStress.availabilityContradictions > 0
   || !specialistStats.teamBAvailabilityIntegration
   || !specialistStats.emptyRotationThrows
   || !specialistStats.shortRotationThrows

@@ -1136,12 +1136,14 @@ return { calcTeamLineup, calcTeamPowerWithPlayer };`,
   const forcedUser = { _isUser: true, cname: '测试用户' };
   const rotationPlayers = [forcedUser].concat(Array.from({ length: 10 }, (_, index) => ({ id: `rotation-${index}` })));
   const rotationFns = new Function(
-    'STATE', 'calcTeamLineup', 'shouldNpcPlayLeagueGame',
+    'STATE', 'calcTeamLineup', 'getNpcLeagueGameAvailability', 'commitNpcLeagueGameAbsence', 'createEmergencyReplacementPlayer',
     `${indexSource.slice(rotationStart, rotationEnd)}\nreturn { buildLeagueGameRotation };`,
   )(
     rotationState,
     () => ({ starters: { PG: forcedUser, SG: rotationPlayers[1], SF: rotationPlayers[2], PF: rotationPlayers[3], C: rotationPlayers[4] }, bench: rotationPlayers.slice(5) }),
-    () => true,
+    () => ({ available: true, reason: 'available', profile: null }),
+    () => {},
+    (team, slot) => ({ id: team + '-HARDSHIP-' + slot, _emergencyReplacement: true }),
   );
   if (rotationFns.buildLeagueGameRotation('HOME', { userAvailable: false }).players.some(player => player._isUser)) {
     failures.push('伤停用户仍被强制塞回比赛轮换与 BoxScore');

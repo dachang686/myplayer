@@ -131,13 +131,17 @@
       || Math.round(regulationMinutes) !== 240) {
       throw new Error('[V2] 无法生成有效轮换：' + team + '（常规赛分钟必须总计240且单人不超过48）');
     }
+    var requestedUserMinutesFactor = options.userMinutesFactor == null ? 1 : Number(options.userMinutesFactor);
+    if (!Number.isFinite(requestedUserMinutesFactor)) requestedUserMinutesFactor = 1;
+    requestedUserMinutesFactor = clamp(requestedUserMinutesFactor, 0.55, 1);
+    var appliedUserMinutesFactor = 1;
     // 仅剩五名可用球员时，带伤出战只能保留必要分钟；伤病仍通过属性因子生效。
     // 不能把五人全部压到48分钟以下后再强行补回，否则必然突破硬上限。
     if (options.userMinutesFactor != null && players.length > 5) {
       var userIndex = players.findIndex(function(player) { return !!player._isUser; });
       if (userIndex >= 0) {
         var originalUserMinutes = minutes[userIndex];
-        var adjustedUserMinutes = Math.min(originalUserMinutes, Math.max(4, Math.round(originalUserMinutes * clamp(Number(options.userMinutesFactor), 0.55, 1))));
+        var adjustedUserMinutes = Math.min(originalUserMinutes, Math.max(4, Math.round(originalUserMinutes * requestedUserMinutesFactor)));
         var minutesToRedistribute = Math.max(0, originalUserMinutes - adjustedUserMinutes);
         minutes[userIndex] = adjustedUserMinutes;
         if (minutesToRedistribute > 0) {
@@ -158,6 +162,7 @@
           }
           redistributed.forEach(function(value, index) { minutes[index] += value; });
         }
+        appliedUserMinutesFactor = originalUserMinutes > 0 ? minutes[userIndex] / originalUserMinutes : 1;
       }
     }
 
@@ -333,6 +338,8 @@
       clutch: weightedMean(clu, weights),
       fatigue: 0,
       userAttributeSnapshot: userAttributeSnapshot,
+      requestedUserMinutesFactor: requestedUserMinutesFactor,
+      appliedUserMinutesFactor: appliedUserMinutesFactor,
     };
   }
 
@@ -830,7 +837,15 @@
         seedBonusEdge: seedBonusEdge,
         userAttributeFactorA: STATE && STATE.careerTeam === teamA ? Number(options.userAttributeFactor) || 1 : 1,
         userAttributeFactorB: STATE && STATE.careerTeam === teamB ? Number(options.userAttributeFactor) || 1 : 1,
-        userMinutesFactor: Number(options.userMinutesFactor) || 1,
+        requestedUserMinutesFactor: first.players.some(function(player) { return !!player._isUser; })
+          ? first.requestedUserMinutesFactor
+          : second.requestedUserMinutesFactor,
+        appliedUserMinutesFactor: first.players.some(function(player) { return !!player._isUser; })
+          ? first.appliedUserMinutesFactor
+          : second.appliedUserMinutesFactor,
+        userMinutesFactor: first.players.some(function(player) { return !!player._isUser; })
+          ? first.appliedUserMinutesFactor
+          : second.appliedUserMinutesFactor,
         fatigueEdge: fatigueEdge,
         eventTeamEdge: eventTeamMarginEdge,
         seasonModifierTeamEdge: seasonModifierMarginEdge,

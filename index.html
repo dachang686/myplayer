@@ -5320,16 +5320,14 @@ function refreshNpcShortTermForm(profile, player) {
 }
 
 /** NPC 伤病以连续缺阵呈现，另有小概率轮休；季后赛/附加赛只取消轮休，不会清除已有伤病。 */
-function shouldNpcPlayLeagueGame(team, player, roleRank, careerTeamGameNumber, gameOptions) {
+function getNpcLeagueGameAvailability(team, player, roleRank, careerTeamGameNumber, gameOptions) {
   var profile = getNpcSeasonProfile(team, player);
   var options = gameOptions || {};
   careerTeamGameNumber = Number(careerTeamGameNumber) || 0;
   refreshNpcShortTermForm(profile, player);
   if (profile.injuryGamesLeft > 0) {
     profile.injuryGamesLeft--;
-    profile.gamesMissed++;
-    if (careerTeamGameNumber) profile.lastMissedCareerTeamGame = careerTeamGameNumber;
-    return false;
+    return { available: false, reason: 'injury', profile: profile };
   }
   if (Math.random() < profile.injuryRisk) {
     var roll = Math.random();
@@ -5339,9 +5337,7 @@ function shouldNpcPlayLeagueGame(team, player, roleRank, careerTeamGameNumber, g
         ? 4 + Math.floor(Math.random() * 6)
         : (roll < 0.98 ? 10 + Math.floor(Math.random() * 11) : 25 + Math.floor(Math.random() * 21)));
     profile.injuryGamesLeft = duration - 1;
-    profile.gamesMissed++;
-    if (careerTeamGameNumber) profile.lastMissedCareerTeamGame = careerTeamGameNumber;
-    return false;
+    return { available: false, reason: 'injury', profile: profile };
   }
   var isPlayoffs = typeof options.isPlayoffs === 'boolean'
     ? options.isPlayoffs
@@ -5349,10 +5345,37 @@ function shouldNpcPlayLeagueGame(team, player, roleRank, careerTeamGameNumber, g
   var isPostseasonRotation = isPlayoffs || options.isPlayIn === true;
   var roleRest = roleRank < 5 ? profile.restChance : profile.restChance * 0.55;
   if (!isPostseasonRotation && Math.random() < roleRest) {
-    profile.gamesMissed++;
-    return false;
+    return { available: false, reason: 'rest', profile: profile };
   }
-  return true;
+  return { available: true, reason: 'available', profile: profile };
+}
+
+function commitNpcLeagueGameAbsence(availability, careerTeamGameNumber) {
+  if (!availability || availability.available || !availability.profile) return;
+  availability.profile.gamesMissed = (Number(availability.profile.gamesMissed) || 0) + 1;
+  if (careerTeamGameNumber) availability.profile.lastMissedCareerTeamGame = careerTeamGameNumber;
+}
+
+function shouldNpcPlayLeagueGame(team, player, roleRank, careerTeamGameNumber, gameOptions) {
+  var availability = getNpcLeagueGameAvailability(team, player, roleRank, careerTeamGameNumber, gameOptions);
+  if (!availability.available) commitNpcLeagueGameAbsence(availability, careerTeamGameNumber);
+  return availability.available;
+}
+
+/** 伤员不足以组成五人阵容时使用低能力临时球员，不复活已记伤停的正式球员。 */
+function createEmergencyReplacementPlayer(team, slot) {
+  var suffix = String(Math.max(1, Number(slot) || 1));
+  return {
+    id: String(team || 'TEAM') + '-HARDSHIP-' + suffix,
+    cname: '紧急递补球员' + suffix,
+    pos: ['PG', 'SG', 'SF', 'PF', 'C'][(Math.max(1, Number(slot) || 1) - 1) % 5],
+    height: '',
+    type: 'Emergency Replacement',
+    ovr: 62,
+    threePT: 58, MID: 58, FIN: 62, DNK: 58, HAN: 60, PAS: 58,
+    PDEF: 60, STL: 58, IDEF: 60, BLK: 58, REB: 60, ATH: 62, STR: 62, CLU: 55,
+    _emergencyReplacement: true,
+  };
 }
 
 /** 把球队总量按权重分配，先给稳定期望值，再随机分配余量，避免每场完全模板化。 */
@@ -5718,20 +5741,37 @@ function buildLeagueGameRotation(team, gameOptions) {
   var available = [];
   var unavailable = [];
   unique.forEach(function(player, roleRank) {
-    var canPlay = (player._isUser && options.userAvailable !== false)
-      || (!player._isUser && (options.ignoreNpcAvailability
-        || shouldNpcPlayLeagueGame(team, player, roleRank, careerTeamGameNumber, options)));
-    if (canPlay) available.push(player);
-    else unavailable.push({ player: player, roleRank: roleRank });
+    if (player._isUser) {
+      if (options.userAvailable !== false) available.push(player);
+      else unavailable.push({ player: player, roleRank: roleRank, availability: { available: false, reason: 'user' } });
+      return;
+    }
+    var availability = options.ignoreNpcAvailability
+      ? { available: true, reason: 'ignored', profile: null }
+      : getNpcLeagueGameAvailability(team, player, roleRank, careerTeamGameNumber, options);
+    if (availability.available) available.push(player);
+    else unavailable.push({ player: player, roleRank: roleRank, availability: availability });
   });
-  // 伤病/轮休叠加时，优先从完整名单中启用紧急递补，保证正式比赛永远至少有5人。
-  // 玩家明确休战时不把玩家本人重新塞回场上；若完整名单本身不足5人，仍由核心引擎 fail-closed。
+  // 人数不足时先取消健康球员的轮休；伤员仍保持缺阵，不会被满属性重新放回轮换。
   if (available.length < 5 && options.allowEmergencyAvailability !== false) {
-    unavailable.slice().sort(function(a, b) { return a.roleRank - b.roleRank; }).forEach(function(entry) {
+    unavailable.filter(function(entry) { return entry.availability && entry.availability.reason === 'rest'; })
+      .sort(function(a, b) { return a.roleRank - b.roleRank; }).forEach(function(entry) {
       if (available.length >= 5) return;
-      if (entry.player && entry.player._isUser && options.userAvailable === false) return;
-      available.push(Object.assign({}, entry.player, { _emergencyAvailability: true }));
+      entry.availability.available = true;
+      entry.availability.reason = 'rest-cancelled';
+      available.push(entry.player);
     });
+  }
+  unavailable.forEach(function(entry) {
+    if (entry.availability && !entry.availability.available && entry.availability.reason !== 'user') {
+      commitNpcLeagueGameAbsence(entry.availability, careerTeamGameNumber);
+    }
+  });
+  // 完整名单至少有5人但健康球员仍不足时，使用真正的 hardship replacement。
+  // 完整名单本身不足5人或明确关闭紧急递补时，继续交给核心引擎 fail-closed。
+  if (available.length < 5 && unique.length >= 5 && options.allowEmergencyAvailability !== false) {
+    var replacementSlot = 1;
+    while (available.length < 5) available.push(createEmergencyReplacementPlayer(team, replacementSlot++));
   }
   var targetSize = 9 + (Math.random() < 0.68 ? 1 : (Math.random() < 0.70 ? 2 : 0));
   var selected = available.slice(0, targetSize);
@@ -18034,7 +18074,6 @@ function watchAdToReroll() {
 
 </body>
 </html>
-
 
 
 
