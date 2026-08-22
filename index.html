@@ -4022,6 +4022,8 @@ function getConferenceSorted(conf) {
 function startSeason() {
   clearLineupCache();
   var currentStarterStatus = STATE.careerTeam && STATE.finalOVR ? !!calcTeamLineup(STATE.careerTeam).isUserStarter : true;
+  var simulationEngine = (STATE.season && STATE.season.simulationEngine) || STATE.simulationEngine || null;
+  if (simulationEngine) STATE.simulationEngine = simulationEngine;
   var seasonMods = consumeNextSeasonMods();
   if (STATE.career && STATE.career.flags && STATE.career.flags.startBench) currentStarterStatus = false;
   STATE.season = {
@@ -4048,6 +4050,7 @@ function startSeason() {
     _leagueGameLog: [],
     rankings: null,
     mods: seasonMods,
+    simulationEngine: simulationEngine,
     events: createSeasonEventState(seasonMods.injuryRiskBonus || 0),
   };
   

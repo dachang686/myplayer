@@ -562,13 +562,6 @@
     var seasonEdge = typeof getSeasonModifierTeamEdge === 'function' ? getSeasonModifierTeamEdge(teamA, teamB) : 0;
     var homeA = isHomeA === true ? 0.014 : (isHomeA === false ? -0.014 : 0);
     var homeB = isHomeA === false ? 0.014 : (isHomeA === true ? -0.014 : 0);
-    var availabilityPenalty = probMultiplier == null ? 0 : (Number(probMultiplier) - 1) * 0.045;
-    var availabilityA = 0;
-    var availabilityB = 0;
-    if (probMultiplier != null) {
-      if (STATE && STATE.careerTeam === teamB) availabilityB = availabilityPenalty;
-      else availabilityA = availabilityPenalty;
-    }
     var biasA = homeA + Number(seedBonus || 0) * 0.003 + activeEventEdge * 0.004 + seasonEdge * 0.004 - first.fatigue * 0.012;
     var biasB = homeB - activeEventEdge * 0.004 - seasonEdge * 0.004 - second.fatigue * 0.012;
     var basePace = clamp(Math.round(
@@ -684,9 +677,9 @@
         starEdge: 0,
         seasonFormEdge: 0,
         homeCourtEdge: homeA * 100,
-        availabilityEdge: availabilityA * 100,
-        availabilityEdgeA: availabilityA * 100,
-        availabilityEdgeB: availabilityB * 100,
+        userAttributeFactorA: STATE && STATE.careerTeam === teamA ? Number(options.userAttributeFactor) || 1 : 1,
+        userAttributeFactorB: STATE && STATE.careerTeam === teamB ? Number(options.userAttributeFactor) || 1 : 1,
+        userMinutesFactor: Number(options.userMinutesFactor) || 1,
         fatigueEdge: (second.fatigue - first.fatigue),
         eventTeamEdge: activeEventEdge,
         seasonModifierTeamEdge: seasonEdge,

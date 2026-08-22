@@ -4,6 +4,7 @@ const path = require('path');
 const root = path.resolve(__dirname, '..');
 const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const v2Source = fs.readFileSync(path.join(root, 'js', 'simulation_v2.js'), 'utf8');
+const offseasonSource = fs.readFileSync(path.join(root, 'js', 'offseason.js'), 'utf8');
 const leagueSource = fs.readFileSync(path.join(root, 'js', 'data', 'league_players.js'), 'utf8');
 const configSource = fs.readFileSync(path.join(root, 'js', 'data', 'simulation_config.js'), 'utf8');
 const leagueData = new Function(leagueSource + '\nreturn { LEAGUE_PLAYER_DATA, LEAGUE_TEAM_IDS };')();
@@ -330,6 +331,9 @@ const teamBAvailabilityResult = seeded(25000, () => runtime(ovrHigh, ovrOpponent
   _preparedRotations: { [ovrHigh]: fixedRotation(ovrHigh), [ovrOpponent]: fixedRotation(ovrOpponent, 0, [6, 34, 32, 30, 28, 28, 24, 20, 20, 18]) },
 }));
 const healthyUserRow = (healthyTeamBResult.boxScore[ovrOpponent] || []).find(row => row.playerId === 'OVR-ISO-0');
+const enginePersistencePath = indexSource.includes('var simulationEngine = (STATE.season && STATE.season.simulationEngine) || STATE.simulationEngine || null;')
+  && indexSource.includes('simulationEngine: simulationEngine')
+  && offseasonSource.includes('simulationEngine: simulationEngine');
 const injuredUserRow = (teamBAvailabilityResult.boxScore[ovrOpponent] || []).find(row => row.playerId === 'OVR-ISO-0');
 const healthySnapshot = healthyTeamBResult.engineDiagnostics.userAttributeSnapshotB['OVR-ISO-0'] || {};
 const injuredSnapshot = teamBAvailabilityResult.engineDiagnostics.userAttributeSnapshotB['OVR-ISO-0'] || {};
@@ -337,8 +341,8 @@ const injuryAttributesMonotonic = Object.keys(healthySnapshot)
   .filter(key => !key.endsWith('_after'))
   .every(key => Number(injuredSnapshot[key + '_after']) <= Number(healthySnapshot[key]));
 const teamBAvailabilityIntegration = teamBAvailabilityResult
-  && teamBAvailabilityResult.marginComponents.availabilityEdgeA === 0
-  && teamBAvailabilityResult.marginComponents.availabilityEdgeB < 0
+  && teamBAvailabilityResult.marginComponents.userAttributeFactorA === 1
+  && teamBAvailabilityResult.marginComponents.userAttributeFactorB < 1
   && (injuredUserRow && healthyUserRow && injuredUserRow.mins <= healthyUserRow.mins)
   && (injuredUserRow && healthyUserRow && (sum(teamBAvailabilityResult.boxScore[ovrOpponent], 'mins') === 240 + (teamBAvailabilityResult.ot || 0) * 25))
   && injuryAttributesMonotonic;
@@ -362,6 +366,7 @@ const specialistStats = {
   teamBAvailabilityIntegration,
   v2ModifierPath,
   ovrIsolation,
+  enginePersistencePath,
 };
 
 const result = {
@@ -413,6 +418,7 @@ if (result.full99PlayerPpg - result.partial99PlayerPpg < 1.5
   || result.full99PlayerFga - result.partial99PlayerFga < 0.8
   || specialistStats.pas99.ast <= specialistStats.pas50.ast + 2
   || specialistStats.pas99.tov > specialistStats.pas50.tov
+  || !specialistStats.enginePersistencePath
   || specialistStats.han99.fga <= specialistStats.han50.fga + 0.5
   || specialistStats.han99.tov >= specialistStats.han50.tov
   || specialistStats.anchorTwo.rim >= specialistStats.anchorOne.rim

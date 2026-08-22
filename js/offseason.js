@@ -951,6 +951,8 @@ function resetForNewSeason() {
   saveCurrentSeasonToCareer();
   _rngState = null;
   var oldTeam = STATE.careerTeam;
+  var simulationEngine = (STATE.season && STATE.season.simulationEngine) || STATE.simulationEngine || null;
+  if (simulationEngine) STATE.simulationEngine = simulationEngine;
   var seasonMods = typeof consumeNextSeasonMods === 'function'
     ? consumeNextSeasonMods()
     : getNextSeasonMods();
@@ -968,6 +970,7 @@ function resetForNewSeason() {
     _viewConf: null, _gamesPlayed: {}, _leagueGameLog: [], rankings: null,
     _simulationStarted: false,
     mods: typeof createSeasonModifierState === 'function' ? createSeasonModifierState(seasonMods) : seasonMods,
+    simulationEngine: simulationEngine,
     events: typeof createSeasonEventState === 'function'
       ? createSeasonEventState(seasonMods.injuryRiskBonus || 0)
       : { suspensionGamesLeft:0, suspensionReason:'', injuryGamesLeft:0, injuryReason:'', triggeredIds:[], storyTimeline:[], lastTriggerGameNum:null, playoffEventCount:0, injuryRiskBonus: seasonMods.injuryRiskBonus || 0, majorInjuryThisSeason:false, playThroughPrompted:{}, regularPlayThroughPromptCount:0 },
