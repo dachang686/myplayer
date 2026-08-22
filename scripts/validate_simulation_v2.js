@@ -884,6 +884,7 @@ const specialistStats = {
 };
 
 const result = {
+  nba2025_26LeaderTargets: { ppg: 33.5, rpg: 12.9, apg: 10.7, bpg: 3.1 },
   games: validationGames,
   invariantErrors,
   averageTotal: (totalA + totalB) / validationGames,
@@ -939,7 +940,7 @@ if (result.teamsCovered !== allTeams.length
   || result.distribution.reb < 40 || result.distribution.reb > 56
   || result.distribution.ast < 20 || result.distribution.ast > 34
   || result.distribution.stl < 2.5 || result.distribution.stl > 7
-  || result.distribution.blk < 1.5 || result.distribution.blk > 5
+  || result.distribution.blk < 4 || result.distribution.blk > 5.8
   || result.distribution.fgPct < 0.43 || result.distribution.fgPct > 0.55
   || result.distribution.ftPct < 0.68 || result.distribution.ftPct > 0.92) {
   throw new Error('V2 联盟覆盖或基础分布越界：' + JSON.stringify(result));
@@ -949,11 +950,11 @@ if (result.full99PlayerPpg <= result.partial99PlayerPpg || result.full99PlayerFg
 }
 const leaderAverages = result.ecology.leaderAverages;
 // 10 个 82 场周期的尾部只允许保留稀有高分，同时防止 burst 参数回归到泛滥。
-if (leaderAverages.ppg < 27 || leaderAverages.ppg > 36
-  || leaderAverages.apg < 7.5 || leaderAverages.apg > 13
+if (leaderAverages.ppg < 31 || leaderAverages.ppg > 36
+  || leaderAverages.apg < 9.8 || leaderAverages.apg > 11.8
   || leaderAverages.spg < 1.5 || leaderAverages.spg > 3
-  || leaderAverages.rpg < 9 || leaderAverages.rpg > 16
-  || leaderAverages.bpg < 1 || leaderAverages.bpg > 4
+  || leaderAverages.rpg < 11.8 || leaderAverages.rpg > 14
+  || leaderAverages.bpg < 2.5 || leaderAverages.bpg > 3.6
   || result.ecology.teamTurnoverSd < 1.5 || result.ecology.teamTurnoverSd > 5
   || result.ecology.teamStealSd < 0.8 || result.ecology.teamStealSd > 4
   || result.ecology.teamFtaSd < 2 || result.ecology.teamFtaSd > 8
@@ -964,13 +965,13 @@ if (leaderAverages.ppg < 27 || leaderAverages.ppg > 36
   || result.ecology.scoringTails.sixty > 100
   || result.ecology.scoringTails.seventy < 1
   || result.ecology.scoringTails.seventy > 20
-  || result.ecology.scoringTails.eighty < 1
   || result.ecology.scoringTails.eighty > 5
   || result.ecology.scoringTails.max > 90
   || result.full99Tail.fifty < 1
   || result.full99Tail.fifty > 200
   || result.full99Tail.sixty > 80
   || result.full99Tail.seventy > 20
+  || result.full99Tail.eighty < 1
   || result.full99Tail.eighty > 10
   || result.full99Tail.max > 90
   || result.full99Tail.max < 60) {
