@@ -5617,6 +5617,12 @@ function getLeaguePlayerImpactRatings(player) {
 
 function allocateLeagueRotationMinutes(players, roleRanks, rotationOptions) {
   var options = rotationOptions || {};
+  if (!Array.isArray(players) || players.length < 5) {
+    throw new RangeError('轮换至少需要5名可用球员');
+  }
+  if (!Array.isArray(roleRanks) || roleRanks.length !== players.length) {
+    throw new RangeError('轮换角色顺序必须与球员一一对应');
+  }
   var isPlayoffs = typeof options.isPlayoffs === 'boolean'
     ? options.isPlayoffs
     : !!(STATE.season && STATE.season.isPlayoffs);
@@ -5652,8 +5658,11 @@ function allocateLeagueRotationMinutes(players, roleRanks, rotationOptions) {
     return Math.max(4, base + (noiseDeviation ? leagueStatNormal(0, noiseDeviation) : 0));
   });
   var minuteCaps = roles.map(function(role) {
-    return Number.isFinite(role.maxMinutes) ? role.maxMinutes : Infinity;
+    return Number.isFinite(role.maxMinutes) ? Math.min(48, role.maxMinutes) : 48;
   });
+  if (minuteCaps.reduce(function(sum, cap) { return sum + cap; }, 0) < 240) {
+    throw new RangeError('轮换分钟无法在每人48分钟上限内分配到240分钟');
+  }
   var rawTotal = raw.reduce(function(sum, value) { return sum + value; }, 0) || 1;
   var minutes = raw.map(function(value) { return Math.max(4, Math.round(value * 240 / rawTotal)); });
   var difference = 240 - minutes.reduce(function(sum, value) { return sum + value; }, 0);
@@ -5752,6 +5761,9 @@ function buildExpectedLeagueGameRotation(team, gameOptions) {
 function prepareLeagueGameRotation(team, gameOptions) {
   var options = gameOptions || {};
   var rotation = buildLeagueGameRotation(team, options);
+  if (!rotation || !Array.isArray(rotation.players) || rotation.players.length < 5) {
+    throw new Error('[Simulation] 可用球员不足5人：' + team);
+  }
   rotation.minutes = allocateLeagueRotationMinutes(rotation.players, rotation.roleRanks, {
     isPlayoffs: typeof options.isPlayoffs === 'boolean'
       ? options.isPlayoffs
@@ -18010,7 +18022,6 @@ function watchAdToReroll() {
 
 </body>
 </html>
-
 
 
 

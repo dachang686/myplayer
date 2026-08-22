@@ -85,6 +85,19 @@ function checkResult(result, teamA, teamB) {
   if (result.scoreA !== sum(rowsA, 'pts') || result.scoreB !== sum(rowsB, 'pts')) errors.push('score-boxscore');
   const expectedMinutes = 240 + (Number(result.ot) || 0) * 25;
   if (sum(rowsA, 'mins') !== expectedMinutes || sum(rowsB, 'mins') !== expectedMinutes) errors.push('minutes');
+  const rotationA = result.teamA?.power?.rotationMinutes;
+  const rotationB = result.teamB?.power?.rotationMinutes;
+  const maxPlayerMinutes = 48 + (Number(result.ot) || 0) * 5;
+  const rotationMatchesBoxScore = [
+    [rotationA, rowsA],
+    [rotationB, rowsB],
+  ].every(([rotation, rows]) => Array.isArray(rotation)
+    && rotation.length === rows.length
+    && rotation.every((minutes, index) => Number(minutes) === Number(rows[index].mins)));
+  if (!rotationMatchesBoxScore) errors.push('rotation-minutes-contract');
+  if (rowsA.concat(rowsB).some(row => Number(row.mins) < 0 || Number(row.mins) > maxPlayerMinutes)) {
+    errors.push('minute-cap');
+  }
   if (result.marginComponents.rosterEdge !== 0 || result.marginComponents.starEdge !== 0) errors.push('ovr-margin');
   if (Object.prototype.hasOwnProperty.call(result, 'reconciliation')) errors.push('reconciliation');
   rowsA.concat(rowsB).forEach(row => {
@@ -545,11 +558,56 @@ try {
 } catch (error) {
   emptyRotationThrows = /\[V2\] 无法生成有效轮换/.test(String(error && error.message));
 }
+let shortRotationThrows = false;
+try {
+  const shortRotation = fixedRotation(ovrOpponent);
+  runtime('V2_SHORT_ROTATION', ovrOpponent, 0, null, {
+    isHomeA: null,
+    ignoreNpcAvailability: true,
+    _preparedRotations: {
+      V2_SHORT_ROTATION: {
+        players: shortRotation.players.slice(0, 4),
+        roleRanks: [0, 1, 2, 3],
+        minutes: [60, 60, 60, 60],
+      },
+      [ovrOpponent]: fixedRotation(ovrOpponent),
+    },
+  });
+} catch (error) {
+  shortRotationThrows = /\[V2\] 无法生成有效轮换/.test(String(error && error.message));
+}
+let overCapRotationThrows = false;
+try {
+  const overCapRotation = fixedRotation(ovrOpponent);
+  runtime('V2_OVER_CAP_ROTATION', ovrOpponent, 0, null, {
+    isHomeA: null,
+    ignoreNpcAvailability: true,
+    _preparedRotations: {
+      V2_OVER_CAP_ROTATION: {
+        players: overCapRotation.players.slice(0, 5),
+        roleRanks: [0, 1, 2, 3, 4],
+        minutes: [49, 49, 48, 48, 46],
+      },
+      [ovrOpponent]: fixedRotation(ovrOpponent),
+    },
+  });
+} catch (error) {
+  overCapRotationThrows = /\[V2\] 无法生成有效轮换/.test(String(error && error.message));
+}
+const diagnosticComponents = dispatcherResult && dispatcherResult.marginComponents;
+const diagnosticReconstructedMargin = diagnosticComponents
+  ? ['rosterEdge', 'matchupEdge', 'starEdge', 'seasonFormEdge', 'homeCourtEdge', 'seedBonusEdge', 'fatigueEdge', 'eventTeamEdge', 'seasonModifierTeamEdge']
+    .reduce((total, key) => total + (Number(diagnosticComponents[key]) || 0), 0)
+  : NaN;
 const diagnosticFieldSemantics = !!(dispatcherResult
   && dispatcherResult.actualMargin === dispatcherResult.scoreA - dispatcherResult.scoreB
   && dispatcherResult.engineDiagnostics
   && dispatcherResult.engineDiagnostics.pregameExpectedMargin === dispatcherResult.expectedMargin
-  && Number.isFinite(dispatcherResult.estimatedWinProb));
+  && Number.isFinite(dispatcherResult.estimatedWinProb)
+  && dispatcherResult.estimatedWinProb > 0
+  && dispatcherResult.estimatedWinProb < 1
+  && Math.abs(dispatcherResult.expectedMargin - Math.max(-18, Math.min(18, diagnosticReconstructedMargin))) < 1e-9
+  && Math.abs(dispatcherResult.estimatedWinProb - (1 / (1 + Math.exp(-dispatcherResult.expectedMargin / 6.5)))) < 1e-12);
 
 const v2ModifierPath = v2Source.includes('formVariance') && v2Source.includes('mediaPressure');
 
@@ -572,6 +630,8 @@ const specialistStats = {
   enginePersistencePath,
   diagnosticsFailClosed,
   emptyRotationThrows,
+  shortRotationThrows,
+  overCapRotationThrows,
   diagnosticFieldSemantics,
 };
 
@@ -685,6 +745,8 @@ if (result.full99PlayerPpg - result.partial99PlayerPpg < 1.5
   || !specialistStats.v2ModifierPath
   || !specialistStats.teamBAvailabilityIntegration
   || !specialistStats.emptyRotationThrows
+  || !specialistStats.shortRotationThrows
+  || !specialistStats.overCapRotationThrows
   || !specialistStats.diagnosticFieldSemantics
   || specialistStats.v2HasDirectOvrEventPath) {
   throw new Error('V2 专项因果隔离失败：' + JSON.stringify(result));

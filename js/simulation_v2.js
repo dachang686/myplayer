@@ -116,12 +116,21 @@
   function contextForTeam(team, options) {
     var prepared = options._preparedRotations && options._preparedRotations[team];
     var rotation = prepared || prepareLeagueGameRotation(team, options);
-    var players = rotation && rotation.players ? rotation.players : [];
+    var players = rotation && Array.isArray(rotation.players) ? rotation.players : [];
+    if (players.length < 5) {
+      throw new Error('[V2] 无法生成有效轮换：' + team + '（可用球员不足5人）');
+    }
     var minutes = rotation && rotation.minutes
       ? rotation.minutes.slice()
       : (rotation
         ? allocateLeagueRotationMinutes(players, rotation.roleRanks || [], { randomize: true })
         : []);
+    var regulationMinutes = minutes.reduce(function(sum, value) { return sum + (Number(value) || 0); }, 0);
+    if (minutes.length !== players.length
+      || minutes.some(function(value) { return !Number.isFinite(Number(value)) || Number(value) < 0 || Number(value) > 48; })
+      || Math.round(regulationMinutes) !== 240) {
+      throw new Error('[V2] 无法生成有效轮换：' + team + '（常规赛分钟必须总计240且单人不超过48）');
+    }
     if (options.userMinutesFactor != null) {
       var userIndex = players.findIndex(function(player) { return !!player._isUser; });
       if (userIndex >= 0) {
@@ -760,13 +769,18 @@
       delete line._missedField; delete line._missedFt;
     });
     var directEdge = (first.attack - second.attack) * 4 + (first.defense - second.defense) * 3;
+    var homeCourtEdge = (homeA - homeB) * 100;
+    var seedBonusEdge = Number(seedBonus || 0) * 0.5;
+    var eventTeamMarginEdge = activeEventEdge * 0.4;
+    var seasonModifierMarginEdge = seasonEdge * 0.4;
+    var fatigueEdge = second.fatigue - first.fatigue;
     var pregameExpectedMargin = clamp(
       directEdge
-        + (homeA - homeB) * 100
-        + Number(seedBonus || 0) * 0.5
-        + activeEventEdge * 0.4
-        + seasonEdge * 0.4
-        + (second.fatigue - first.fatigue) * 1.0,
+        + homeCourtEdge
+        + seedBonusEdge
+        + eventTeamMarginEdge
+        + seasonModifierMarginEdge
+        + fatigueEdge * 1.0,
       -18, 18,
     );
     return {
@@ -778,8 +792,8 @@
       highlight: highlight,
       keyEvents: keyEvents,
       ot: overtime,
-      teamA: { power: { overall: null, offense: first.attack * 100, defense: first.defense * 100, rotationMinutes: first.minutes } },
-      teamB: { power: { overall: null, offense: second.attack * 100, defense: second.defense * 100, rotationMinutes: second.minutes } },
+      teamA: { power: { overall: null, offense: first.attack * 100, defense: first.defense * 100, rotationMinutes: totalLinesA.map(function(line) { return line.mins; }) } },
+      teamB: { power: { overall: null, offense: second.attack * 100, defense: second.defense * 100, rotationMinutes: totalLinesB.map(function(line) { return line.mins; }) } },
       pace: basePace,
       possPerQ: Math.round(basePace / 4),
       isHomeA: isHomeA,
@@ -794,16 +808,17 @@
         rawStarEdge: 0,
         starEdge: 0,
         seasonFormEdge: 0,
-        homeCourtEdge: homeA * 100,
+        homeCourtEdge: homeCourtEdge,
+        seedBonusEdge: seedBonusEdge,
         userAttributeFactorA: STATE && STATE.careerTeam === teamA ? Number(options.userAttributeFactor) || 1 : 1,
         userAttributeFactorB: STATE && STATE.careerTeam === teamB ? Number(options.userAttributeFactor) || 1 : 1,
         userMinutesFactor: Number(options.userMinutesFactor) || 1,
-        fatigueEdge: (second.fatigue - first.fatigue),
-        eventTeamEdge: activeEventEdge,
-        seasonModifierTeamEdge: seasonEdge,
+        fatigueEdge: fatigueEdge,
+        eventTeamEdge: eventTeamMarginEdge,
+        seasonModifierTeamEdge: seasonModifierMarginEdge,
       },
       eventTeamEdge: activeEventEdge,
-      estimatedWinProb: 1 / (1 + Math.exp(-pregameExpectedMargin / 3.2)),
+      estimatedWinProb: 1 / (1 + Math.exp(-pregameExpectedMargin / 6.5)),
       boxScore: { [teamA]: totalLinesA, [teamB]: totalLinesB },
       _celebrationGameId: 'v2:' + Date.now() + ':' + Math.random().toString(36).slice(2),
       engineVersion: 'v2',

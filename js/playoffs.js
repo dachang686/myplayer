@@ -170,41 +170,83 @@ function autoSimNonUserPlayInGames() {
   }
 }
 
-function simulatePlayInMatch(teamA, teamB, gameId) {
+function simulatePlayInMatch(teamA, teamB, gameId, onAsyncComplete) {
   const myTeam = STATE.careerTeam;
   const involvesCareerTeam = teamA === myTeam || teamB === myTeam;
+  const events = involvesCareerTeam
+    ? (typeof ensureSeasonEventState === 'function' ? ensureSeasonEventState() : (STATE.season.events || {}))
+    : null;
   let absenceType = null;
   if (involvesCareerTeam) {
-    const events = typeof ensureSeasonEventState === 'function' ? ensureSeasonEventState() : (STATE.season.events || {});
     if ((Number(events.suspensionGamesLeft) || 0) > 0) absenceType = 'suspension';
     else if ((Number(events.injuryGamesLeft) || 0) > 0) absenceType = 'injury';
-    if (absenceType === 'suspension') events.suspensionGamesLeft--;
-    if (absenceType === 'injury') events.injuryGamesLeft--;
   }
 
-  const careerIsA = teamA === myTeam;
-  const simulated = simulateGameNew(teamA, teamB, 0, null, {
-    isHomeA: true,
-    isB2BA: false,
-    isB2BB: false,
-    // 附加赛仍属于常规赛统计阶段，但轮换和出场可用性必须采用季后赛规则。
-    isPlayoffs: true,
-    isPlayIn: true,
-    userAvailable: !absenceType,
-  });
-  const careerWon = careerIsA ? !!simulated.won : !simulated.won;
-  if (involvesCareerTeam && typeof afterCareerTeamGame === 'function') {
-    afterCareerTeamGame({
-      game: { opponent: careerIsA ? teamB : teamA, isPlayIn: true, simulated: true },
-      result: { won: careerWon, scoreA: simulated.scoreA, scoreB: simulated.scoreB },
-      stats: null,
-      unavailable: !!absenceType,
-      absenceType,
-      gameKey: 'play-in:' + ((STATE.career && STATE.career.seasonCount) || 0) + ':' + gameId,
-      allowPopup: false,
+  function finishSimulation(injurySeverity) {
+    const playedThroughInjury = absenceType === 'injury' && !!injurySeverity;
+    const unavailable = !!absenceType && !playedThroughInjury;
+    if (events && absenceType === 'suspension') events.suspensionGamesLeft = Math.max(0, (events.suspensionGamesLeft || 0) - 1);
+    if (events && absenceType === 'injury') events.injuryGamesLeft = Math.max(0, (events.injuryGamesLeft || 0) - 1);
+
+    const injuryMultiplier = playedThroughInjury && typeof getInjuryPlayWinMultiplier === 'function'
+      ? getInjuryPlayWinMultiplier(injurySeverity)
+      : null;
+    const simulated = simulateGameNew(teamA, teamB, 0, injuryMultiplier, {
+      isHomeA: true,
+      isB2BA: false,
+      isB2BB: false,
+      // 附加赛仍属于常规赛统计阶段，但轮换和出场可用性必须采用季后赛规则。
+      isPlayoffs: true,
+      isPlayIn: true,
+      userAvailable: !unavailable,
     });
+    const careerIsA = teamA === myTeam;
+    const careerWon = careerIsA ? !!simulated.won : !simulated.won;
+    if (involvesCareerTeam && typeof afterCareerTeamGame === 'function') {
+      afterCareerTeamGame({
+        game: { opponent: careerIsA ? teamB : teamA, isPlayIn: true, simulated: true },
+        result: { won: careerWon, scoreA: simulated.scoreA, scoreB: simulated.scoreB },
+        stats: null,
+        unavailable,
+        absenceType: unavailable ? absenceType : null,
+        playedThroughInjury,
+        injurySeverity: playedThroughInjury ? injurySeverity : null,
+        gameKey: 'play-in:' + ((STATE.career && STATE.career.seasonCount) || 0) + ':' + gameId,
+        allowPopup: false,
+      });
+    }
+    if (playedThroughInjury && events && typeof maybeWorsenInjuryAfterPlaying === 'function') {
+      maybeWorsenInjuryAfterPlaying(events, injurySeverity);
+    }
+    return {
+      aWins: !!simulated.won,
+      scoreA: simulated.scoreA,
+      scoreB: simulated.scoreB,
+      absenceType: unavailable ? absenceType : null,
+      playedThroughInjury,
+      injurySeverity: playedThroughInjury ? injurySeverity : null,
+    };
   }
-  return { aWins: !!simulated.won, scoreA: simulated.scoreA, scoreB: simulated.scoreB, absenceType };
+
+  // 附加赛同样允许玩家在伤病状态下作出“休战/带伤出战”选择；禁赛没有该选项。
+  if (involvesCareerTeam && absenceType === 'injury'
+    && typeof shouldOfferPlayThroughInjury === 'function'
+    && typeof showPlayThroughInjuryModal === 'function'
+    && shouldOfferPlayThroughInjury(
+      'play-in:' + ((STATE.career && STATE.career.seasonCount) || 0) + ':' + gameId,
+      false,
+    )) {
+    showPlayThroughInjuryModal({
+      desc: '附加赛 ' + gameId + ' 是决定赛季去向的关键场次，你仍在伤病名单里。教练组把最终决定交给你。',
+    }, function() {
+      if (onAsyncComplete) onAsyncComplete(finishSimulation(null));
+    }, function(severity) {
+      if (onAsyncComplete) onAsyncComplete(finishSimulation(severity));
+    });
+    return null;
+  }
+
+  return finishSimulation(null);
 }
 
 function simPlayInGame(gameId) {
@@ -231,40 +273,45 @@ function simPlayInGame(gameId) {
     label = '败者组决赛';
   }
   
-  const playInResult = simulatePlayInMatch(teamA, teamB, gameId);
-  const aWins = playInResult.aWins;
-  
-  const winner = aWins ? teamA : teamB;
-  const loser = aWins ? teamB : teamA;
-  
-  const result = {
-    winner, loser,
-    teamAScore: playInResult.scoreA,
-    teamBScore: playInResult.scoreB,
-    label,
-    absenceType: playInResult.absenceType || null,
-  };
-  
-  pi[resultKey] = result;
-  
-  // 检测是否涉及玩家
-  const myTeam = STATE.careerTeam;
-  if (winner === myTeam) {
-    if (gameId === 'A') {
-      pi.playoffSeed = 7;
-    } else if (gameId === 'C') {
-      pi.playoffSeed = 8;
+  function completePlayInGame(playInResult) {
+    if (!playInResult) return;
+    const aWins = playInResult.aWins;
+    const winner = aWins ? teamA : teamB;
+    const loser = aWins ? teamB : teamA;
+    const result = {
+      winner, loser,
+      teamAScore: playInResult.scoreA,
+      teamBScore: playInResult.scoreB,
+      label,
+      absenceType: playInResult.absenceType || null,
+      playedThroughInjury: !!playInResult.playedThroughInjury,
+      injurySeverity: playInResult.injurySeverity || null,
+    };
+
+    pi[resultKey] = result;
+
+    // 检测是否涉及玩家
+    const myTeam = STATE.careerTeam;
+    if (winner === myTeam) {
+      if (gameId === 'A') {
+        pi.playoffSeed = 7;
+      } else if (gameId === 'C') {
+        pi.playoffSeed = 8;
+      }
     }
+    if (loser === myTeam && gameId === 'B') {
+      pi.isEliminated = true;
+    }
+    if (loser === myTeam && gameId === 'C') {
+      pi.isEliminated = true;
+    }
+
+    renderPlayInUI();
+    if (typeof queueSeasonAutoSave === 'function') queueSeasonAutoSave();
   }
-  if (loser === myTeam && gameId === 'B') {
-    pi.isEliminated = true;
-  }
-  if (loser === myTeam && gameId === 'C') {
-    pi.isEliminated = true;
-  }
-  
-  renderPlayInUI();
-  if (typeof queueSeasonAutoSave === 'function') queueSeasonAutoSave();
+
+  const playInResult = simulatePlayInMatch(teamA, teamB, gameId, completePlayInGame);
+  if (playInResult) completePlayInGame(playInResult);
 }
 
 function checkPlayInComplete() {

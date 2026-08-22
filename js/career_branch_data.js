@@ -2520,7 +2520,7 @@ const STAGED_BRANCH_EVENTS = [
         setBranchNode('family_children', 'pregnancy', { plan: 'present' });
         addProfileDelta('fanSupport', 1);
         addSeasonMod('injuryRiskBonus', -1, -4, 8, 'next');
-        return '你告诉团队：那几天不要给我排任何行程。教练第一次看到你主动请假，愣了一下，然后点头。<br><br>效果：球迷支持+1；伤病风险-1。';
+        return '你告诉团队：那几天不要给我排任何行程。教练第一次看到你主动请假，愣了一下，然后点头。<br><br>效果：球迷支持+1；下赛季伤病风险-1。';
       }},
       { label: '事业照旧', hint: '短期专注，但关系压力上升', apply: function() {
         setBranchNode('family_children', 'pregnancy', { plan: 'career' });

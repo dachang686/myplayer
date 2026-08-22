@@ -81,6 +81,112 @@ const playInRotationFlags = {
 if (Object.values(playInRotationFlags).some(flag => !flag)) {
   throw new Error('附加赛没有完整透传季后赛轮换模式：' + JSON.stringify(playInRotationFlags));
 }
+
+function validatePlayInFunctionalRules() {
+  const matchStart = playoffsSource.indexOf('function simulatePlayInMatch');
+  const matchEnd = playoffsSource.indexOf('function simPlayInGame', matchStart);
+  if (matchStart < 0 || matchEnd < 0) throw new Error('无法定位附加赛比赛模拟函数');
+
+  const state = {
+    careerTeam: 'N1',
+    career: { seasonCount: 3 },
+    season: { events: { injuryGamesLeft: 1, suspensionGamesLeft: 0 } },
+  };
+  const calls = { modal: null, simulations: [], after: [], worsened: 0 };
+  const simulate = new Function(
+    'STATE',
+    'ensureSeasonEventState',
+    'simulateGameNew',
+    'afterCareerTeamGame',
+    'shouldOfferPlayThroughInjury',
+    'showPlayThroughInjuryModal',
+    'getInjuryPlayWinMultiplier',
+    'maybeWorsenInjuryAfterPlaying',
+    `${playoffsSource.slice(matchStart, matchEnd)}\nreturn simulatePlayInMatch;`,
+  )(
+    state,
+    () => state.season.events,
+    (...args) => {
+      calls.simulations.push(args);
+      return { won: true, scoreA: 100, scoreB: 90 };
+    },
+    options => calls.after.push(options),
+    () => true,
+    (ctx, onRest, onPlay) => { calls.modal = { ctx, onRest, onPlay }; },
+    () => 0.86,
+    () => { calls.worsened++; },
+  );
+
+  const pending = simulate('N1', 'N2', 'A', result => { calls.restResult = result; });
+  const modalOpened = pending === null && !!calls.modal && calls.simulations.length === 0;
+  if (calls.modal) calls.modal.onRest();
+  const restPath = !!calls.restResult
+    && calls.restResult.absenceType === 'injury'
+    && !calls.restResult.playedThroughInjury
+    && calls.simulations[0]?.[3] === null
+    && calls.simulations[0]?.[4]?.isPlayoffs === true
+    && calls.simulations[0]?.[4]?.isPlayIn === true
+    && calls.simulations[0]?.[4]?.userAvailable === false
+    && calls.after[0]?.unavailable === true;
+
+  state.season.events.injuryGamesLeft = 1;
+  calls.modal = null;
+  calls.restResult = null;
+  calls.simulations.length = 0;
+  calls.after.length = 0;
+  const playPending = simulate('N1', 'N2', 'B', result => { calls.playResult = result; });
+  const playModalOpened = playPending === null && !!calls.modal && calls.simulations.length === 0;
+  if (calls.modal) calls.modal.onPlay('major');
+  const playPath = !!calls.playResult
+    && calls.playResult.absenceType === null
+    && calls.playResult.playedThroughInjury === true
+    && calls.simulations[0]?.[3] === 0.86
+    && calls.simulations[0]?.[4]?.userAvailable === true
+    && calls.after[0]?.unavailable === false
+    && calls.after[0]?.playedThroughInjury === true
+    && calls.worsened === 1;
+
+  const npcStart = indexSource.indexOf('function shouldNpcPlayLeagueGame');
+  const npcEnd = indexSource.indexOf('/** 把球队总量', npcStart);
+  if (npcStart < 0 || npcEnd < 0) throw new Error('无法定位 NPC 出场判断函数');
+  const profile = {
+    scoring: 1, rebounding: 1, playmaking: 1, defense: 1, formGamesLeft: 1,
+    injuryGamesLeft: 0, gamesMissed: 0, restChance: 1, injuryRisk: 0,
+  };
+  const npcState = { season: { isPlayoffs: false } };
+  const npcPlay = new Function(
+    'STATE',
+    'getNpcSeasonProfile',
+    'refreshNpcShortTermForm',
+    `${indexSource.slice(npcStart, npcEnd)}\nreturn shouldNpcPlayLeagueGame;`,
+  )(npcState, () => profile, () => {});
+  const regularRest = npcPlay('N1', { id: 'NPC-1' }, 0, 1, { isPlayoffs: false });
+  const playInHealthy = npcPlay('N1', { id: 'NPC-1' }, 0, 1, { isPlayoffs: true, isPlayIn: true });
+  profile.injuryGamesLeft = 1;
+  const playInInjured = npcPlay('N1', { id: 'NPC-1' }, 0, 1, { isPlayoffs: true, isPlayIn: true });
+
+  const allocationStart = indexSource.indexOf('function allocateLeagueRotationMinutes');
+  const allocationEnd = indexSource.indexOf('/** 动态选择', allocationStart);
+  if (allocationStart < 0 || allocationEnd < 0) throw new Error('无法定位联盟轮换分钟分配函数');
+  const allocateMinutes = new Function(
+    'STATE',
+    'getPlayerGameImpact',
+    `${indexSource.slice(allocationStart, allocationEnd)}\nreturn allocateLeagueRotationMinutes;`,
+  )(npcState, () => ({ overall: 90 }));
+  const rotationPlayers = Array.from({ length: 10 }, (_, index) => ({ id: 'ROT-' + index }));
+  const roleRanks = rotationPlayers.map((_, index) => index);
+  const regularMinutes = allocateMinutes(rotationPlayers, roleRanks, { isPlayoffs: false, randomize: false });
+  const playInMinutes = allocateMinutes(rotationPlayers, roleRanks, { isPlayoffs: true, isPlayIn: true, randomize: false });
+
+  return {
+    injuryChoice: modalOpened && playModalOpened && restPath && playPath,
+    npcAvailability: regularRest === false && playInHealthy === true && playInInjured === false,
+    postseasonMinutes: playInMinutes.slice(0, 5).reduce((sum, value) => sum + value, 0)
+      > regularMinutes.slice(0, 5).reduce((sum, value) => sum + value, 0),
+  };
+}
+
+const playInFunctionalRules = validatePlayInFunctionalRules();
 const renderPlayoffsStart = playoffsSource.indexOf('function renderPlayoffs');
 const resumePlayoffsStart = playoffsSource.indexOf('function resumePlayoffs', renderPlayoffsStart);
 const renderPlayoffsSource = playoffsSource.slice(renderPlayoffsStart, resumePlayoffsStart);
@@ -1151,6 +1257,7 @@ const realRosterSmoke = runRealRosterSmoke();
 
 const report = {
   playInRotationFlags,
+  playInFunctionalRules,
   playInRouting,
   playInCompletion,
   standingsTiebreakers,
@@ -1266,6 +1373,9 @@ if (!Object.values(playInRouting.freshEntry).every(Boolean)) {
 }
 if (!Object.values(playInRotationFlags).every(Boolean)) {
   failures.push(`附加赛轮换模式错误：${JSON.stringify(playInRotationFlags)}`);
+}
+if (!Object.values(playInFunctionalRules).every(Boolean)) {
+  failures.push(`附加赛功能规则错误：${JSON.stringify(playInFunctionalRules)}`);
 }
 if (!Object.values(playInRouting.legacyResume).every(Boolean)) {
   failures.push(`附加赛旧存档恢复错误：${JSON.stringify(playInRouting.legacyResume)}`);
