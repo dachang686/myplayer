@@ -48,6 +48,24 @@ const competitiveRatingMonotonicity = validateCompetitiveRatingMonotonicity();
 if (!/\[true, true, false, false, true, false, true\]/.test(playoffsSource)) {
   throw new Error('季后赛主场顺序不是 2-2-1-1-1');
 }
+const seedBonusStart = playoffsSource.indexOf('function getPlayoffSeriesSeedBonus');
+const seedBonusEnd = playoffsSource.indexOf('function isPlayInResolved', seedBonusStart);
+if (seedBonusStart < 0 || seedBonusEnd < 0) throw new Error('无法定位统一的季后赛 seedBonus 规则');
+const getPlayoffSeriesSeedBonus = new Function(
+  'getConference',
+  'getConferenceSeed',
+  playoffsSource.slice(seedBonusStart, seedBonusEnd) + '\nreturn getPlayoffSeriesSeedBonus;',
+)(
+  team => team === 'N1' || team === 'N8' ? 'NORTH' : 'SOUTH',
+  team => ({ N1: 1, N8: 8, S1: 1 })[team] || 99,
+);
+const seedBracket = { teams: [{ team: 'N1' }, null, null, null, null, null, null, { team: 'N8' }] };
+if (Math.abs(getPlayoffSeriesSeedBonus('N1', 'N8', 0) - 2.8) > 1e-9
+  || Math.abs(getPlayoffSeriesSeedBonus('N1', 'N8', 0, seedBracket) - 2.8) > 1e-9
+  || getPlayoffSeriesSeedBonus('N1', 'N8', 1) !== 0
+  || getPlayoffSeriesSeedBonus('N1', 'S1', 0) !== 0) {
+  throw new Error('玩家与 NPC 系列赛的 seedBonus 规则不一致或未限制在首轮');
+}
 const renderPlayoffsStart = playoffsSource.indexOf('function renderPlayoffs');
 const resumePlayoffsStart = playoffsSource.indexOf('function resumePlayoffs', renderPlayoffsStart);
 const renderPlayoffsSource = playoffsSource.slice(renderPlayoffsStart, resumePlayoffsStart);
@@ -509,11 +527,13 @@ function validateConferenceBracketMapping() {
   for (let seed = 1; seed <= 8; seed++) standings[`T${seed}`] = { wins: 70 - seed, losses: 12 + seed };
   const playoffBracketFns = new Function(
     'STATE',
+    'getConference',
     'getConferenceSeed',
     'simulateGameNew',
     `${playoffsSource.slice(helperStart, helperEnd)}\n${playoffsSource.slice(autoStart, autoEnd)}\nreturn { autoSimConferenceBracket, autoSimConferenceBracketRound };`,
   )(
     { season: { standings } },
+    () => 'NORTH',
     team => Number(team.slice(1)),
     (teamA, teamB, seedBonus, probMultiplier, options) => ({
       won: true,
@@ -599,6 +619,7 @@ function validateLegacyBracketRepair() {
   const playoffFns = new Function(
     'STATE',
     'SIM_CONFIG',
+    'getConference',
     'getConferenceSeed',
     'getConferenceSorted',
     'calcTeamPowerWithPlayer',
@@ -607,6 +628,7 @@ function validateLegacyBracketRepair() {
   )(
     repairState,
     { CONFERENCE: conference },
+    team => team.startsWith('N') ? 'NORTH' : 'SOUTH',
     team => Number(team.slice(1)),
     conf => conference[conf].map(team => ({ team, wins: standings[team].wins, losses: standings[team].losses })),
     () => ({ offense: 80, defense: 80, depth: 80 }),

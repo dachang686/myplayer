@@ -42,7 +42,7 @@ const runtimeBundle = new Function(
   'getLeaguePlayerAge',
   'af',
   'ensureSeasonEventState',
-  indexSource.slice(engineStart, engineEnd) + '\n' + v2Source + '\nreturn { v2: globalThis.simulateGameAggregateV2, dispatcher: simulateGameNew };',
+  indexSource.slice(engineStart, engineEnd) + '\n' + v2Source + '\nreturn { v2: globalThis.simulateGameAggregateV2, dispatcher: simulateGameNew, getNpcSeasonProfile, refreshNpcShortTermForm };',
 )(
   leagueData.LEAGUE_PLAYER_DATA,
   simConfig,
@@ -116,6 +116,35 @@ let totalB = 0;
 const leagueTotals = {
   fga: 0, fgm: 0, fta: 0, ftm: 0, reb: 0, ast: 0, tov: 0, stl: 0, blk: 0,
 };
+const teamGameTurnovers = [];
+const teamGameSteals = [];
+const seasonLeaders = [];
+const scoringTails = { max: 0, fifty: 0, sixty: 0, seventy: 0, eighty: 0 };
+let seasonPlayerTotals = {};
+function recordPlayerRows(team, rows) {
+  rows.forEach(row => {
+    const key = team + ':' + row.playerId;
+    const total = seasonPlayerTotals[key] || (seasonPlayerTotals[key] = {
+      games: 0, pts: 0, ast: 0, stl: 0, reb: 0, blk: 0,
+    });
+    total.games++;
+    ['pts', 'ast', 'stl', 'reb', 'blk'].forEach(field => { total[field] += Number(row[field]) || 0; });
+    const points = Number(row.pts) || 0;
+    scoringTails.max = Math.max(scoringTails.max, points);
+    if (points >= 50) scoringTails.fifty++;
+    if (points >= 60) scoringTails.sixty++;
+    if (points >= 70) scoringTails.seventy++;
+    if (points >= 80) scoringTails.eighty++;
+  });
+}
+function finishEcologySeason() {
+  const qualified = Object.values(seasonPlayerTotals).filter(row => row.games >= 58);
+  const leader = field => qualified.reduce((best, row) => Math.max(best, row[field] / row.games), 0);
+  seasonLeaders.push({
+    ppg: leader('pts'), apg: leader('ast'), spg: leader('stl'), rpg: leader('reb'), bpg: leader('blk'),
+  });
+  seasonPlayerTotals = {};
+}
 for (let game = 0; game < validationGames; game++) {
   const seasonGame = game % gamesPerSeason;
   if (seasonGame === 0) state.season._npcSeasonProfiles = {};
@@ -135,11 +164,27 @@ for (let game = 0; game < validationGames; game++) {
   errors.forEach(error => { invariantKinds[error] = (invariantKinds[error] || 0) + 1; });
   totalA += result.scoreA;
   totalB += result.scoreB;
-  [result.boxScore[teamA] || [], result.boxScore[teamB] || []].forEach(rows => {
+  const rowsA = result.boxScore[teamA] || [];
+  const rowsB = result.boxScore[teamB] || [];
+  recordPlayerRows(teamA, rowsA);
+  recordPlayerRows(teamB, rowsB);
+  [rowsA, rowsB].forEach(rows => {
     ['fga', 'fgm', 'fta', 'ftm', 'reb', 'ast', 'tov', 'stl', 'blk'].forEach(field => {
       leagueTotals[field] += sum(rows, field);
     });
+    teamGameTurnovers.push(sum(rows, 'tov'));
+    teamGameSteals.push(sum(rows, 'stl'));
   });
+  if (seasonGame === gamesPerSeason - 1) finishEcologySeason();
+}
+
+function standardDeviation(values) {
+  const average = values.reduce((total, value) => total + value, 0) / Math.max(1, values.length);
+  return Math.sqrt(values.reduce((total, value) => total + Math.pow(value - average, 2), 0) / Math.max(1, values.length));
+}
+
+function average(values) {
+  return values.reduce((total, value) => total + value, 0) / Math.max(1, values.length);
 }
 function makeSyntheticTeam(id, firstPlayer) {
   const base = JSON.parse(JSON.stringify(leagueData.LEAGUE_PLAYER_DATA[teams[0]].slice(0, 10)));
@@ -170,7 +215,9 @@ let fullPlayerPoints = 0;
 let partialPlayerPoints = 0;
 let fullPlayerFga = 0;
 let partialPlayerFga = 0;
-for (let game = 0; game < 800; game++) {
+const archetypeGames = 5000;
+const full99Tail = { max: 0, fifty: 0, sixty: 0, seventy: 0, eighty: 0 };
+for (let game = 0; game < archetypeGames; game++) {
   const fullResult = seeded(12000 + game, () => runtime(full99, teams[1], 0, null, {
     isHomeA: null, ignoreNpcAvailability: true,
   }));
@@ -181,10 +228,17 @@ for (let game = 0; game < 800; game++) {
   partialPoints += partialResult.scoreA;
   fullFga += sum(fullResult.boxScore[full99], 'fga');
   partialFga += sum(partialResult.boxScore[partial99], 'fga');
-  fullPlayerPoints += (fullResult.boxScore[full99] || []).find(row => row.playerId === 'V2_FULL99-0')?.pts || 0;
-  fullPlayerFga += (fullResult.boxScore[full99] || []).find(row => row.playerId === 'V2_FULL99-0')?.fga || 0;
+  const fullPlayerRow = (fullResult.boxScore[full99] || []).find(row => row.playerId === 'V2_FULL99-0');
+  const fullGamePoints = fullPlayerRow?.pts || 0;
+  fullPlayerPoints += fullGamePoints;
+  fullPlayerFga += fullPlayerRow?.fga || 0;
   partialPlayerFga += (partialResult.boxScore[partial99] || []).find(row => row.playerId === 'V2_PARTIAL99-0')?.fga || 0;
   partialPlayerPoints += (partialResult.boxScore[partial99] || []).find(row => row.playerId === 'V2_PARTIAL99-0')?.pts || 0;
+  full99Tail.max = Math.max(full99Tail.max, fullGamePoints);
+  if (fullGamePoints >= 50) full99Tail.fifty++;
+  if (fullGamePoints >= 60) full99Tail.sixty++;
+  if (fullGamePoints >= 70) full99Tail.seventy++;
+  if (fullGamePoints >= 80) full99Tail.eighty++;
 }
 
 function patchPlayers(team, count, patch) {
@@ -299,6 +353,44 @@ Object.assign(leagueData.LEAGUE_PLAYER_DATA[ovrOpponent][0], {
 });
 const ovrIsolation = fingerprint(ovrHighResult) === fingerprint(ovrLowResult);
 
+function npcFormFingerprint(ovr) {
+  const profile = {
+    scoring: 1, rebounding: 1, playmaking: 1, defense: 1, formGamesLeft: 0,
+  };
+  const player = {
+    ovr, HAN: 82, PAS: 86, CLU: 84, _age: 28,
+  };
+  seeded(23500, () => runtimeBundle.refreshNpcShortTermForm(profile, player));
+  return JSON.stringify(profile);
+}
+const npcFormOvrIsolation = npcFormFingerprint(99) === npcFormFingerprint(70);
+
+function mutableSimulationStateFingerprint() {
+  return JSON.stringify({
+    lineupCache: state._lineupCache,
+    npcSeasonProfiles: state.season._npcSeasonProfiles,
+    usageBiasExists: Object.prototype.hasOwnProperty.call(state.season, '_usageBias'),
+    usageBias: state.season._usageBias,
+    careerTeamAvailabilityGame: state.season._careerTeamAvailabilityGame,
+    historicCelebrationSequence: state.season._historicCelebrationSequence,
+    events: state.season.events,
+  });
+}
+state.careerTeam = ovrHigh;
+state.season.events = { activeEffects: [] };
+delete state.season._usageBias;
+const seededStateBefore = mutableSimulationStateFingerprint();
+dispatcher(ovrHigh, ovrOpponent, 0, null, {
+  engineVersion: 'v2',
+  randomSeed: 'state-restore',
+  ignoreNpcAvailability: true,
+  _preparedRotations: {
+    [ovrHigh]: fixedRotation(ovrHigh, 0),
+    [ovrOpponent]: fixedRotation(ovrOpponent),
+  },
+});
+const seededStateRestored = seededStateBefore === mutableSimulationStateFingerprint();
+
 
 state.season._npcSeasonProfiles = {};
 state.careerTeam = teams[1];
@@ -335,9 +427,6 @@ const teamBAvailabilityResult = seeded(25000, () => runtime(ovrHigh, ovrOpponent
   _preparedRotations: { [ovrHigh]: fixedRotation(ovrHigh), [ovrOpponent]: fixedRotation(ovrOpponent, 0, [6, 34, 32, 30, 28, 28, 24, 20, 20, 18]) },
 }));
 const healthyUserRow = (healthyTeamBResult.boxScore[ovrOpponent] || []).find(row => row.playerId === 'OVR-ISO-0');
-const enginePersistencePath = indexSource.includes('var simulationEngine = (STATE.season && STATE.season.simulationEngine) || STATE.simulationEngine || null;')
-  && indexSource.includes('simulationEngine: simulationEngine')
-  && offseasonSource.includes('simulationEngine: simulationEngine');
 const injuredUserRow = (teamBAvailabilityResult.boxScore[ovrOpponent] || []).find(row => row.playerId === 'OVR-ISO-0');
 const healthySnapshot = healthyTeamBResult.engineDiagnostics.userAttributeSnapshotB['OVR-ISO-0'] || {};
 const injuredSnapshot = teamBAvailabilityResult.engineDiagnostics.userAttributeSnapshotB['OVR-ISO-0'] || {};
@@ -353,6 +442,46 @@ const teamBAvailabilityIntegration = teamBAvailabilityResult
 state.careerTeam = null;
 state.season.schedule = [];
 delete state.season._dayMap;
+
+const resetStart = offseasonSource.indexOf('function resetForNewSeason');
+const resetEnd = offseasonSource.indexOf('function renderSeasonScreenDOM', resetStart);
+if (resetStart < 0 || resetEnd < 0) throw new Error('无法定位 resetForNewSeason');
+const resetForNewSeason = new Function(
+  'STATE',
+  'saveCurrentSeasonToCareer',
+  'consumeNextSeasonMods',
+  'createSeasonModifierState',
+  'createSeasonEventState',
+  'syncUserStarterStatus',
+  'initStandings',
+  'buildRealSchedule',
+  'renderSeasonScreenDOM',
+  offseasonSource.slice(resetStart, resetEnd) + '\nreturn resetForNewSeason;',
+)(
+  state,
+  () => {},
+  () => ({}),
+  source => Object.assign({ injuryRiskBonus: 0, formVariance: 0, teamChemistry: 0, moraleBonus: 0, mediaPressure: 0 }, source || {}),
+  () => ({ activeEffects: [] }),
+  () => {},
+  () => {},
+  () => {},
+  () => {},
+);
+state.career = { flags: {}, nextSeasonMods: {} };
+state.careerTeam = ovrHigh;
+state.simulationEngine = null;
+state.season = { simulationEngine: 'v2' };
+resetForNewSeason();
+const persistenceResult = seeded(26000, () => dispatcher(ovrHigh, ovrOpponent, 0, null, {
+  ignoreNpcAvailability: true,
+  _preparedRotations: {
+    [ovrHigh]: fixedRotation(ovrHigh, 0),
+    [ovrOpponent]: fixedRotation(ovrOpponent),
+  },
+}));
+const enginePersistencePath = state.season.simulationEngine === 'v2'
+  && persistenceResult && persistenceResult.engineVersion === 'v2';
 
 const v2ModifierPath = v2Source.includes('formVariance') && v2Source.includes('mediaPressure');
 
@@ -370,6 +499,8 @@ const specialistStats = {
   teamBAvailabilityIntegration,
   v2ModifierPath,
   ovrIsolation,
+  npcFormOvrIsolation,
+  seededStateRestored,
   enginePersistencePath,
 };
 
@@ -388,16 +519,30 @@ const result = {
     fgPct: leagueTotals.fgm / Math.max(1, leagueTotals.fga),
     ftPct: leagueTotals.ftm / Math.max(1, leagueTotals.fta),
   },
-  archetypeGames: 800,
-  full99Ppg: fullPoints / 800,
-  partial99Ppg: partialPoints / 800,
-  full99Fga: fullFga / 800,
-  partial99Fga: partialFga / 800,
-  full99PlayerPpg: fullPlayerPoints / 800,
-  partial99PlayerPpg: partialPlayerPoints / 800,
-  full99PlayerFga: fullPlayerFga / 800,
-  partial99PlayerFga: partialPlayerFga / 800,
+  archetypeGames,
+  full99Ppg: fullPoints / archetypeGames,
+  partial99Ppg: partialPoints / archetypeGames,
+  full99Fga: fullFga / archetypeGames,
+  partial99Fga: partialFga / archetypeGames,
+  full99PlayerPpg: fullPlayerPoints / archetypeGames,
+  partial99PlayerPpg: partialPlayerPoints / archetypeGames,
+  full99PlayerFga: fullPlayerFga / archetypeGames,
+  partial99PlayerFga: partialPlayerFga / archetypeGames,
+  full99Tail,
   teamsCovered: coveredTeams.size,
+  ecology: {
+    leaderAverages: {
+      ppg: average(seasonLeaders.map(row => row.ppg)),
+      apg: average(seasonLeaders.map(row => row.apg)),
+      spg: average(seasonLeaders.map(row => row.spg)),
+      rpg: average(seasonLeaders.map(row => row.rpg)),
+      bpg: average(seasonLeaders.map(row => row.bpg)),
+    },
+    seasonLeaders,
+    teamTurnoverSd: standardDeviation(teamGameTurnovers),
+    teamStealSd: standardDeviation(teamGameSteals),
+    scoringTails,
+  },
   specialistStats,
   invariantKinds,
 };
@@ -418,6 +563,22 @@ if (result.teamsCovered !== allTeams.length
 if (result.full99PlayerPpg <= result.partial99PlayerPpg || result.full99PlayerFga <= result.partial99PlayerFga) {
   throw new Error('V2 没有体现完整技能包的机会/得分增益：' + JSON.stringify(result));
 }
+const leaderAverages = result.ecology.leaderAverages;
+if (leaderAverages.ppg < 27 || leaderAverages.ppg > 36
+  || leaderAverages.apg < 7.5 || leaderAverages.apg > 13
+  || leaderAverages.spg < 1.5 || leaderAverages.spg > 3
+  || leaderAverages.rpg < 9 || leaderAverages.rpg > 16
+  || leaderAverages.bpg < 1 || leaderAverages.bpg > 4
+  || result.ecology.teamTurnoverSd < 1.5 || result.ecology.teamTurnoverSd > 5
+  || result.ecology.teamStealSd < 0.8 || result.ecology.teamStealSd > 4
+  || result.ecology.scoringTails.fifty < 1
+  || result.ecology.scoringTails.sixty < 1
+  || result.ecology.scoringTails.seventy < 1
+  || result.ecology.scoringTails.eighty < 1
+  || result.full99Tail.fifty < 1
+  || result.full99Tail.max < 60) {
+  throw new Error('V2 球员生态或单场尾部越界：' + JSON.stringify(result));
+}
 if (result.full99PlayerPpg - result.partial99PlayerPpg < 1.5
   || result.full99PlayerFga - result.partial99PlayerFga < 0.8
   || specialistStats.pas99.ast <= specialistStats.pas50.ast + 2
@@ -428,6 +589,8 @@ if (result.full99PlayerPpg - result.partial99PlayerPpg < 1.5
   || specialistStats.anchorTwo.rim >= specialistStats.anchorOne.rim
   || !specialistStats.deterministicV2
   || !specialistStats.ovrIsolation
+  || !specialistStats.npcFormOvrIsolation
+  || !specialistStats.seededStateRestored
   || !specialistStats.dispatcherIntegration
   || !specialistStats.v2ModifierPath
   || !specialistStats.teamBAvailabilityIntegration

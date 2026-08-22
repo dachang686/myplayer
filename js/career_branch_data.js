@@ -1403,8 +1403,7 @@ const STAGED_BRANCH_EVENTS = [
       { label: '学习如何教会队友', hint: '传球和队友线提升', apply: function() {
         setBranchNode('training', 'mentor_deep', { lesson: 'teaching' });
         addAttrDelta('PAS', 1); STATE.finalOVR = calcOVR(STATE.attrs);
-        STATE.career.flags.teachingSkill = true;
-        return '导师让你把刚学会的东西讲给年轻球员听。你第一次发现，教一遍比自己练十遍更能暴露理解的漏洞。<br><br>效果：传球+1；flag teachingSkill = true。';
+        return '导师让你把刚学会的东西讲给年轻球员听。你第一次发现，教一遍比自己练十遍更能暴露理解的漏洞。<br><br>效果：传球+1。';
       }},
       { label: '身体管理', hint: '伤病风险下降，晚年技术维持', apply: function() {
         setBranchNode('training', 'mentor_deep', { lesson: 'body' });
@@ -1860,7 +1859,7 @@ const STAGED_BRANCH_EVENTS = [
       }},
       { label: '拒绝评价', hint: '降低热度，专注比赛', apply: function() {
         setBranchNode('media', 'press_silent', { tone: 'silent' });
-        addSeasonMod('formVariance', -1, -10, 10);
+        addActiveSeasonMod('formVariance', -1, -10, 10);
         addProfileDelta('fame', -1);
         return '你只说了一句“下一场见”，然后起身离开。没有漂亮话，但训练师说你那晚投篮特别安静。<br><br>效果：状态波动-1；人气-1。';
       }},
@@ -1957,11 +1956,11 @@ const STAGED_BRANCH_EVENTS = [
         var t = getBranchState('training');
         return getBranchNode('training') === 'training_identity' && t.identity === 'balanced_player';
       }, bonus: function() {
-        addSeasonMod('formVariance', -1, -10, 10);
+        addActiveSeasonMod('formVariance', -1, -10, 10);
         return { text: '全面打法让沉默更有说服力，状态更稳。' };
       }, apply: function() {
         setBranchNode('media', 'persona_silent', { persona: 'silent' });
-        addSeasonMod('formVariance', -1, -10, 10);
+        addActiveSeasonMod('formVariance', -1, -10, 10);
         return '你几乎不开口，只用表现说话。记者抱怨采访不到你，但你的比赛集锦越传越广。<br><br>效果：状态波动-1。';
       }},
       { label: '商业偶像型', hint: '商业价值上升，媒体压力上升', lockHint: '需要人脉或中国市场结果', requires: function() {
@@ -1972,7 +1971,7 @@ const STAGED_BRANCH_EVENTS = [
       }, apply: function() {
         setBranchNode('media', 'persona_business', { persona: 'business' });
         addProfileDelta('businessValue', 3);
-        addSeasonMod('mediaPressure', 1, -10, 10);
+        addActiveSeasonMod('mediaPressure', 1, -10, 10);
         return '你开始出现在广告牌、综艺和商业活动里。镜头喜欢你，但每个镜头后面都有一份合同在提醒你微笑。<br><br>效果：商业价值+3；媒体压力+1。';
       }},
       { label: '国家队英雄型', hint: '中国球迷支持与历史评价上升', lockHint: '需要你在国家队扛过核心位置', requires: function() {
@@ -2006,7 +2005,7 @@ const STAGED_BRANCH_EVENTS = [
       { label: '自由发声', hint: '不固定人设，按本心说话', apply: function() {
         setBranchNode('media', 'persona_independent', { persona: 'independent' });
         addProfileDelta('mediaTrust', 1);
-        addSeasonMod('formVariance', -1, -10, 10);
+        addActiveSeasonMod('formVariance', -1, -10, 10);
         return '你没有固定人设，每句话都按当时的心情来。媒体觉得你难以预测，但球迷喜欢这种真实。<br><br>效果：媒体好感+1；状态波动-1。';
       }}
     ]
@@ -2047,7 +2046,7 @@ const STAGED_BRANCH_EVENTS = [
       }},
       { label: '不回应', hint: '热度自然消退，专注比赛', apply: function() {
         setBranchNode('fan_culture', 'fan_lowkey', { tone: 'lowkey' });
-        addSeasonMod('formVariance', -1, -10, 10);
+        addActiveSeasonMod('formVariance', -1, -10, 10);
         addProfileDelta('fanSupport', 1);
         return '你没有登录账号。帖子慢慢沉下去，但有人记住了：那个被黑的人一句话没说。<br><br>效果：状态波动-1；球迷支持+1。';
       }}
@@ -2069,8 +2068,8 @@ const STAGED_BRANCH_EVENTS = [
     choices: [
       { label: '把评分当成镜子', hint: '关掉手机，把这一晚变成训练素材', apply: function() {
         setBranchNode('fan_culture', 'score_mirror', { score: 'mirror' });
-        addSeasonMod('formVariance', -2, -10, 10);
-        addSeasonMod('injuryRiskBonus', -1, -4, 8);
+        addActiveSeasonMod('formVariance', -2, -10, 10);
+        addActiveSeasonMod('injuryRiskBonus', -1, -4, 8);
         return '你关掉手机，回训练馆把录像从头看到尾。评分不会变，但你决定下一场不一样。<br><br>效果：状态波动-2；伤病风险-1。';
       }},
       { label: '回热评自嘲', hint: '用幽默接住争议', apply: function() {
@@ -2128,7 +2127,7 @@ const STAGED_BRANCH_EVENTS = [
       { label: '潜水围观', hint: '保持神秘，热度可控', apply: function() {
         setBranchNode('fan_culture', 'community_lurk', { action: 'lurk' });
         addProfileDelta('fanSupport', 1);
-        addSeasonMod('formVariance', -1, -10, 10);
+        addActiveSeasonMod('formVariance', -1, -10, 10);
         return '你注册了账号，但只点赞不发言。老粉发现后开始找你点过赞的帖子。<br><br>效果：球迷支持+1；状态波动-1。';
       }}
     ]
@@ -2181,7 +2180,7 @@ const STAGED_BRANCH_EVENTS = [
         setBranchNode('fan_culture', 'fan_lowjr', { persona: 'fan_lowjr' });
         STATE.career.flags.fanCulturePersona = 'fan_lowjr';
         addProfileDelta('mediaTrust', 2);
-        addSeasonMod('formVariance', -1, -10, 10);
+        addActiveSeasonMod('formVariance', -1, -10, 10);
         return '你很少发言，但每条都很真诚。球迷社区给你的标签是：被黑得最多，却从不黑别人。<br><br>效果：媒体好感+2；状态波动-1。';
       }},
       { label: '争议区常客', hint: '流量稳定，争议稳定', lockHint: '需要媒体已经被你的争议话题围绕', requires: function() {
@@ -2219,13 +2218,13 @@ const STAGED_BRANCH_EVENTS = [
     choices: [
       { label: '找心理医生', hint: '最专业的路径，恢复最稳', apply: function() {
         setBranchNode('mental_health', 'mh_pro', { help: 'pro' });
-        addSeasonMod('formVariance', -2, -10, 10);
-        addSeasonMod('injuryRiskBonus', -1, -4, 8);
+        addActiveSeasonMod('formVariance', -2, -10, 10);
+        addActiveSeasonMod('injuryRiskBonus', -1, -4, 8);
         return '你约了球队推荐的心理医生。前两次你几乎不说话，第三次你开始讲童年、压力和那些“必须赢”的夜晚。她没有评价，只是听。<br><br>效果：状态波动-2；伤病风险-1。';
       }},
       { label: '找家人倾诉', hint: '最温暖的路径，关系更深', apply: function() {
         setBranchNode('mental_health', 'mh_family', { help: 'family' });
-        addSeasonMod('formVariance', -1, -10, 10);
+        addActiveSeasonMod('formVariance', -1, -10, 10);
         addProfileDelta('fanSupport', 1);
         return '你给家里打了电话。妈妈听你说完，只说了一句：累了就回来吃饭，别自己扛。那天晚上你睡得很沉。<br><br>效果：状态波动-1；球迷支持+1；你和家人更近了一点。';
       }},
@@ -2236,8 +2235,8 @@ const STAGED_BRANCH_EVENTS = [
       }},
       { label: '硬扛', hint: '表面没事，风险累积', apply: function() {
         setBranchNode('mental_health', 'mh_tough', { help: 'tough' });
-        addSeasonMod('formVariance', -1, -10, 10);
-        addSeasonMod('injuryRiskBonus', 2, -4, 8);
+        addActiveSeasonMod('formVariance', -1, -10, 10);
+        addActiveSeasonMod('injuryRiskBonus', 2, -4, 8);
         return '你告诉所有人没事。笑容、训练、采访，一样都没落下。但你知道，有些东西没有消失，只是在排队。<br><br>效果：短期状态波动-1；长期伤病风险+2。';
       }}
     ]
@@ -2258,8 +2257,8 @@ const STAGED_BRANCH_EVENTS = [
       { label: '建立恢复习惯', hint: '最稳定，形成长期韧性', apply: function() {
         setBranchNode('mental_health', 'mh_resilient', { resolve: 'resilient' });
         STATE.career.flags.mentalResilient = true;
-        addSeasonMod('formVariance', -2, -10, 10);
-        addSeasonMod('injuryRiskBonus', -1, -4, 8);
+        addActiveSeasonMod('formVariance', -2, -10, 10);
+        addActiveSeasonMod('injuryRiskBonus', -1, -4, 8);
         return '你把心理恢复写进训练表，像练力量一样认真。队医说：你的恢复指标回来了，你的眼神也回来了。<br><br>效果：状态波动-2；伤病风险-1；获得“心理韧性”标签。';
       }},
       { label: '公开分享经历', hint: '影响最大，也最勇敢', apply: function() {
@@ -2273,8 +2272,8 @@ const STAGED_BRANCH_EVENTS = [
       { label: '保持低调恢复', hint: '安静修复，不被聚光灯打扰', apply: function() {
         setBranchNode('mental_health', 'mh_quiet', { resolve: 'quiet' });
         STATE.career.flags.mentalQuiet = true;
-        addSeasonMod('formVariance', -1, -10, 10);
-        addSeasonMod('mediaPressure', -1, -10, 10);
+        addActiveSeasonMod('formVariance', -1, -10, 10);
+        addActiveSeasonMod('mediaPressure', -1, -10, 10);
         return '你没有公开任何东西，只是让身边几个人知道。几个月后，状态悄悄回到正轨。<br><br>效果：状态波动-1；媒体关注下降。';
       }}
     ]
@@ -2324,14 +2323,14 @@ const STAGED_BRANCH_EVENTS = [
         var md = getBranchNode('media');
         var fc = getBranchNode('fan_culture');
         if (md === 'persona_silent' || fc === 'fan_lowjr') {
-          addSeasonMod('formVariance', -1, -10, 10);
+          addActiveSeasonMod('formVariance', -1, -10, 10);
           return { text: '沉默杀手/低调球迷人设加成，安静收束更有分量。' };
         }
         return { text: '你选择把低谷留在身后。' };
       }, apply: function() {
         setBranchNode('mental_health', 'mental_quiet_resolve', { final: 'quiet' });
         STATE.career.flags.mentalQuietResolve = true;
-        addSeasonMod('formVariance', -2, -10, 10);
+        addActiveSeasonMod('formVariance', -2, -10, 10);
         addProfileDelta('legacyBonus', 1);
         return '你没有把低谷变成故事，只是把它留在了那年夏天。你继续打球，偶尔想起，心里没有重量。<br><br>效果：状态波动-2；历史评价+1。';
       }}
@@ -3672,7 +3671,7 @@ const STAGED_BRANCH_EVENTS = [
         bindBondedTeammate();
         setBranchNode('teammate_bond', 'bond_extra', { status: 'extra_work' });
         addProfileDelta('lockerRoomTrust', 2);
-        addSeasonMod('teamChemistry', 1, -10, 10);
+        addActiveSeasonMod('teamChemistry', 1, -10, 10);
         return '你们没有聊太多，只是一遍遍跑同一个战术。后来比赛里，{队友}提前半步移动，你甚至不用看就把球传了出去。<br><br>重点：你和{队友}开始形成真正的场上默契。<br><br>影响：球队默契上升；更衣室信任上升。';
       }},
       { label: '提醒他别过度', hint: '关系温和提升，风险更低', apply: function() {
@@ -3686,7 +3685,7 @@ const STAGED_BRANCH_EVENTS = [
         bindBondedTeammate();
         setBranchNode('teammate_bond', 'bond_planned', { status: 'planned' });
         addProfileDelta('lockerRoomTrust', 1);
-        addSeasonMod('formVariance', -1, -10, 10);
+        addActiveSeasonMod('formVariance', -1, -10, 10);
         return '你拉上助教把十组改成一整套计划：热身、对抗、录像、恢复。{队友}笑着说，跟你练比打比赛还累。<br><br>重点：你让加练变得可持续。<br><br>影响：更衣室信任上升；状态波动略降。';
       }}
     ]
@@ -3707,12 +3706,12 @@ const STAGED_BRANCH_EVENTS = [
       { label: '增加双人战术', hint: '助攻和球队配合提升', apply: function() {
         setBranchNode('teammate_bond', 'bond_duo', { bondType: 'duo' });
         addAttrDelta('PAS', 1); STATE.finalOVR = calcOVR(STATE.attrs);
-        addSeasonMod('teamChemistry', 1, -10, 10);
+        addActiveSeasonMod('teamChemistry', 1, -10, 10);
         return '教练把你们俩单独拉去战术室，画了七套双人配合。从那以后，你和{队友}的名字开始被写在同一行。<br><br>效果：传球+1；球队默契+1。';
       }},
       { label: '让他承担更多球权', hint: '共享球权，关系更信任', apply: function() {
         setBranchNode('teammate_bond', 'bond_share', { bondType: 'share' });
-        addSeasonMod('teamChemistry', 1, -10, 10);
+        addActiveSeasonMod('teamChemistry', 1, -10, 10);
         return '你主动把一些回合让给{队友}发起。他第一次打出生涯新高时，赛后第一件事是找你撞胸。<br><br>效果：球队默契+1；队友信任加深。';
       }},
       { label: '关键时刻自己接管', hint: '关键球提升，关系偏依赖', apply: function() {
@@ -3749,12 +3748,12 @@ const STAGED_BRANCH_EVENTS = [
       { label: '用比赛给他找手感', hint: '传球和球队配合提升', apply: function() {
         setBranchNode('teammate_bond', 'bond_feel', { status: 'feel' });
         addAttrDelta('PAS', 1); STATE.finalOVR = calcOVR(STATE.attrs);
-        addSeasonMod('teamChemistry', 1, -10, 10);
+        addActiveEventEffect('teammate_slump_feel', '帮助队友找回手感', 0.8, 3);
         return '接下来的三场，你不断把球送到{队友}最舒服的位置。他找回手感那天，冲你点了点头，什么都没说。<br><br>效果：传球+1；球队默契+1。';
       }},
       { label: '不介入', hint: '专注自己，关系保持距离', apply: function() {
         setBranchNode('teammate_bond', 'bond_passive', { status: 'passive' });
-        addSeasonMod('formVariance', -1, -10, 10);
+        addActiveSeasonMod('formVariance', -1, -10, 10);
         return '你相信职业球员能自己走出来。{队友}没有怪你，但那天之后，你们的对话少了一些。<br><br>效果：状态波动-1；关系温度下降。';
       }}
     ]

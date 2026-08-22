@@ -6,6 +6,7 @@ const root = path.resolve(__dirname, '..');
 const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const playoffsSource = fs.readFileSync(path.join(root, 'js', 'playoffs.js'), 'utf8');
 const offseasonSource = fs.readFileSync(path.join(root, 'js', 'offseason.js'), 'utf8');
+const branchSource = fs.readFileSync(path.join(root, 'js', 'career_branch_data.js'), 'utf8');
 
 const failures = [];
 const inlineScripts = [...indexSource.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
@@ -1203,6 +1204,59 @@ return { consumeNextSeasonMods, getActiveSeasonMods };`,
   }
 }
 
+const branchDataEnd = branchSource.indexOf('const OFFSEASON_EVENTS');
+if (branchDataEnd < 0) {
+  failures.push('无法定位生涯分支事件数据');
+} else {
+  const activeModCalls = [];
+  const nextModCalls = [];
+  const activeEffects = [];
+  const branchState = { career: { flags: {} }, attrs: {}, finalOVR: 80 };
+  const branchEvents = new Function(
+    'STATE',
+    'setBranchNode',
+    'addActiveSeasonMod',
+    'addSeasonMod',
+    'addProfileDelta',
+    'addAttrDelta',
+    'calcOVR',
+    'addActiveEventEffect',
+    branchSource.slice(0, branchDataEnd) + '\nreturn STAGED_BRANCH_EVENTS.concat(BRANCH_EVENTS);',
+  )(
+    branchState,
+    () => {},
+    (...args) => activeModCalls.push(args),
+    (...args) => nextModCalls.push(args),
+    () => {},
+    () => {},
+    () => 80,
+    (...args) => activeEffects.push(args),
+  );
+  const mediaEvent = branchEvents.find(event => event.id === 'media_first_press');
+  const silentChoice = mediaEvent && mediaEvent.choices.find(choice => choice.label === '拒绝评价');
+  if (!silentChoice) {
+    failures.push('无法定位赛季内媒体事件即时效果');
+  } else {
+    silentChoice.apply();
+    if (!activeModCalls.some(call => call[0] === 'formVariance' && call[1] === -1) || nextModCalls.length) {
+      failures.push('赛季内媒体事件仍未写入当前赛季 modifier');
+    }
+  }
+  const slumpEvent = branchEvents.find(event => event.id === 'teammate_slump');
+  const feelChoice = slumpEvent && slumpEvent.choices.find(choice => choice.label === '用比赛给他找手感');
+  if (!feelChoice) {
+    failures.push('无法定位队友低谷短期效果');
+  } else {
+    feelChoice.apply();
+    if (!activeEffects.some(call => call[0] === 'teammate_slump_feel' && call[2] === 0.8 && call[3] === 3)) {
+      failures.push('队友低谷“接下来三场”没有进入 activeEffects');
+    }
+  }
+  if (branchSource.includes('flags.teachingSkill') || branchSource.includes('flag teachingSkill')) {
+    failures.push('teachingSkill 死标志或玩家可见调试文案仍存在');
+  }
+}
+
 if (failures.length) {
   console.error(failures.join('\n'));
   process.exitCode = 1;
@@ -1253,6 +1307,8 @@ if (failures.length) {
     themeVariantCursor: true,
     directorLaneThrottle: true,
     seasonModifierTransfer: true,
+    currentSeasonBranchModifiers: true,
+    shortTermBranchEffects: true,
     injuryInstanceRecovery: true,
   }));
 }

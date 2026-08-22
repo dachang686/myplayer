@@ -81,6 +81,38 @@
     return output;
   }
 
+  function weightedRandomAllocation(total, weights, caps) {
+    total = Math.max(0, Math.round(Number(total) || 0));
+    var safeWeights = weights.map(function(weight) { return Math.max(0, Number(weight) || 0); });
+    var safeCaps = (caps || safeWeights.map(function() { return total; })).map(function(cap) {
+      return Math.max(0, Math.floor(Number(cap) || 0));
+    });
+    var output = safeWeights.map(function() { return 0; });
+    for (var event = 0; event < total; event++) {
+      var weightSum = 0;
+      safeWeights.forEach(function(weight, index) {
+        if (output[index] < safeCaps[index]) weightSum += weight;
+      });
+      if (weightSum <= 0) break;
+      var roll = Math.random() * weightSum;
+      var selected = -1;
+      for (var index = 0; index < safeWeights.length; index++) {
+        if (output[index] >= safeCaps[index]) continue;
+        roll -= safeWeights[index];
+        if (roll <= 0) {
+          selected = index;
+          break;
+        }
+      }
+      if (selected < 0) {
+        selected = safeWeights.findIndex(function(_, index) { return output[index] < safeCaps[index]; });
+      }
+      if (selected < 0) break;
+      output[selected]++;
+    }
+    return output;
+  }
+
   function contextForTeam(team, options) {
     var prepared = options._preparedRotations && options._preparedRotations[team];
     var rotation = prepared || prepareLeagueGameRotation(team, options);
@@ -180,10 +212,29 @@
       return 1;
     });
     var opportunity = players.map(function(player, index) {
-      var roleFactor = roleRanks[index] < 5 ? 1.10 : (roleRanks[index] === 5 ? 1.01 : 0.87);
-      var creationFactor = 0.72 + creation[index] * 0.55;
-      var threatFactor = 0.68 + threat[index] * 0.62;
-      return Math.max(0.1, weights[index] * roleFactor * creationFactor * threatFactor * form[index]);
+      var roleFactor = roleRanks[index] === 0
+        ? 1.18
+        : (roleRanks[index] === 1 ? 1.14 : (roleRanks[index] < 5 ? 1.06 : (roleRanks[index] === 5 ? 1.01 : 0.87)));
+      var creationFactor = 0.58 + creation[index] * 0.85;
+      var threatFactor = 0.54 + threat[index] * 0.90;
+      var baseOpportunity = Math.max(0.1, weights[index] * roleFactor * creationFactor * threatFactor * form[index]);
+      var scoringLoad = threat[index] * 0.62 + creation[index] * 0.38;
+      var isCoreScorer = roleRanks[index] < 2 || (weights[index] >= 30 && scoringLoad >= 0.78);
+      var gameMultiplier = roleRanks[index] < 5
+        ? clamp(normal(1, 0.11), 0.72, 1.32)
+        : clamp(normal(1, 0.06), 0.82, 1.18);
+      var burstChance = isCoreScorer
+        ? clamp(0.01 + Math.max(0, scoringLoad - 0.60) * 0.10, 0.01, 0.055)
+        : 0;
+      var legendaryBurst = weights[index] >= 32
+        && scoringLoad >= 0.84
+        && Math.random() < 0.002;
+      if (legendaryBurst) {
+        gameMultiplier = 2.50 + Math.random() * 0.40;
+      } else if (burstChance > 0 && Math.random() < burstChance) {
+        gameMultiplier *= 1.35 + Math.random() * 0.40;
+      }
+      return baseOpportunity * gameMultiplier;
     });
 
     return {
@@ -279,7 +330,7 @@
         + context.fatigue * 0.012,
       0.080, 0.190,
     );
-    var turnovers = Math.round(possessions * turnoverRate);
+    var turnovers = sampleMakes(possessions, turnoverRate);
     var effectivePossessions = Math.max(1, possessions - turnovers);
     var rimAttack = clamp(weightedRim / Math.max(0.01, weightedRim + weightedMid + weightedThree), 0.20, 0.65);
     var freeThrowRate = clamp(
@@ -292,7 +343,7 @@
       0.065 + context.offensiveRebound * 0.055 - opponent.defensiveRebound * 0.025,
       0.050, 0.120,
     );
-    var offensiveRebounds = Math.round(effectivePossessions * offensiveReboundRate);
+    var offensiveRebounds = sampleMakes(effectivePossessions, offensiveReboundRate);
     var rawFga = Math.round(effectivePossessions - fta * 0.44 + offensiveRebounds);
     var fga = clamp(
       rawFga,
@@ -387,9 +438,11 @@
       var assistedMakes = sampleMakes(shooter.fgm, probability);
       if (!assistedMakes) return;
       var passWeights = context.players.map(function(_, index) {
-        return index === shooterIndex ? 0 : context.weights[index] * (0.35 + context.pas[index] * 1.25 + context.han[index] * 0.25);
+        if (index === shooterIndex) return 0;
+        var passSkill = context.pas[index] * 0.78 + context.han[index] * 0.22;
+        return context.weights[index] * (0.04 + Math.pow(passSkill, 3.6) * 3.8);
       });
-      var assists = allocateTotal(assistedMakes, passWeights, context.players.map(function() { return 17; }));
+      var assists = weightedRandomAllocation(assistedMakes, passWeights, context.players.map(function() { return 17; }));
       assists.forEach(function(value, index) { quarter.lines[index].ast += value; });
     });
   }
@@ -398,29 +451,28 @@
     var weights = context.players.map(function(_, index) {
       return context.opportunity[index] * (0.30 + (1 - context.han[index]) * 1.05 + context.usagePressure * 0.20);
     });
-    var turnovers = allocateTotal(quarter.turnovers, weights, context.players.map(function() { return 9; }));
+    var turnovers = weightedRandomAllocation(quarter.turnovers, weights, context.players.map(function() { return 9; }));
     turnovers.forEach(function(value, index) { quarter.lines[index].tov += value; });
   }
 
   function addDefensiveEvents(defender, offense) {
-    var steals = Math.min(
-      offense.turnovers,
-      Math.max(0, Math.round(offense.turnovers * (0.30 + defender.stealing * 0.24))),
-    );
-    var stealsByPlayer = allocateTotal(
+    var steals = sampleMakes(offense.turnovers, clamp(0.30 + defender.stealing * 0.24, 0, 1));
+    var stealsByPlayer = weightedRandomAllocation(
       steals,
       defender.players.map(function(_, index) {
-        return defender.weights[index] * (0.22 + defender.stl[index] * 1.20 + defender.pdef[index] * 0.25);
+        var stealSkill = defender.stl[index] * 0.72 + defender.pdef[index] * 0.18 + defender.ath[index] * 0.10;
+        return defender.weights[index] * (0.06 + Math.pow(stealSkill, 2.4) * 3.0);
       }),
       defender.players.map(function() { return 7; }),
     );
     stealsByPlayer.forEach(function(value, index) { defender._quarterLines[index].stl += value; });
 
     var blocked = offense.lines.reduce(function(sum, line) { return sum + line._blocked; }, 0);
-    var blocksByPlayer = allocateTotal(
+    var blocksByPlayer = weightedRandomAllocation(
       blocked,
       defender.players.map(function(_, index) {
-        return defender.weights[index] * (0.20 + defender.blk[index] * 1.35 + defender.idef[index] * 0.25);
+        var blockSkill = defender.blk[index] * 0.72 + defender.idef[index] * 0.18 + defender.str[index] * 0.10;
+        return defender.weights[index] * (0.02 + Math.pow(blockSkill, 3.4) * 3.6);
       }),
       defender.players.map(function() { return 8; }),
     );
@@ -432,12 +484,12 @@
     var secondReboundable = firstQuarter.missedField + Math.floor(firstQuarter.missedFt * 0.45);
     var firstTotal = firstQuarter.offensiveRebounds + Math.max(0, firstReboundable - secondQuarter.offensiveRebounds);
     var secondTotal = secondQuarter.offensiveRebounds + Math.max(0, secondReboundable - firstQuarter.offensiveRebounds);
-    var firstByPlayer = allocateTotal(
+    var firstByPlayer = weightedRandomAllocation(
       firstTotal,
       firstContext.players.map(function(_, index) { return firstContext.weights[index] * (0.30 + firstContext.reb[index] * 1.45); }),
       firstContext.players.map(function() { return 24; }),
     );
-    var secondByPlayer = allocateTotal(
+    var secondByPlayer = weightedRandomAllocation(
       secondTotal,
       secondContext.players.map(function(_, index) { return secondContext.weights[index] * (0.30 + secondContext.reb[index] * 1.45); }),
       secondContext.players.map(function() { return 24; }),

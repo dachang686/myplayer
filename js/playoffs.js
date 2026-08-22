@@ -339,6 +339,19 @@ function createPlayInState(conf) {
   };
 }
 
+function getPlayoffSeriesSeedBonus(teamA, teamB, round, confBracket) {
+  if (round !== 0 || getConference(teamA) !== getConference(teamB)) return 0;
+  var rankA = confBracket && Array.isArray(confBracket.teams)
+    ? confBracket.teams.findIndex(function(team) { return team && team.team === teamA; }) + 1
+    : getConferenceSeed(teamA);
+  var rankB = confBracket && Array.isArray(confBracket.teams)
+    ? confBracket.teams.findIndex(function(team) { return team && team.team === teamB; }) + 1
+    : getConferenceSeed(teamB);
+  if (rankA <= 0 || rankB <= 0 || rankA >= 99 || rankB >= 99) return 0;
+  var gap = Math.max(1, Math.min(8, Math.abs(rankA - rankB)));
+  return 0.4 * gap * (rankA < rankB ? 1 : -1);
+}
+
 function isPlayInResolved(playInState) {
   return !!(playInState?.gameAResult?.winner
     && playInState?.gameBResult?.winner
@@ -424,15 +437,7 @@ function autoSimConferenceBracketRound(confBracket, round) {
     let winsA = 0, winsB = 0;
     const seriesGames = [];
     const teamAIsHigherSeed = isTeamAHigherPlayoffSeed(teamA, teamB);
-    let seedBonus = 0;
-    if (round === 0) {
-      const seedIdxA = confBracket.teams.findIndex(t => t.team === teamA);
-      const seedIdxB = confBracket.teams.findIndex(t => t.team === teamB);
-      if (seedIdxA >= 0 && seedIdxB >= 0) {
-        seedBonus = 0.4 * Math.abs(seedIdxA - seedIdxB);
-        seedBonus = seedIdxA < seedIdxB ? seedBonus : -seedBonus;
-      }
-    }
+    const seedBonus = getPlayoffSeriesSeedBonus(teamA, teamB, round, confBracket);
 
     for (let game = 0; game < 7 && winsA < 4 && winsB < 4; game++) {
       const isHomeA = isPlayoffTeamAHome(game, teamAIsHigherSeed);
@@ -942,16 +947,8 @@ function simOnePlayoffGame(round, seriesIdx, teamA, teamB, isMySeries, gameNum, 
   const teamAIsHigherSeed = isTeamAHigherPlayoffSeed(teamA, teamB);
   const isHomeA = isPlayoffTeamAHome(gameNum, teamAIsHigherSeed);
   
-  let seedBonus = 0;
-  // 同分区保留很小的赛季表现修正；主要高种子优势由真实主场顺序提供。
-  if (getConference(teamA) === getConference(teamB)) {
-    const rankA = getConferenceSeed(teamA);
-    const rankB = getConferenceSeed(teamB);
-    if (rankA < 99 && rankB < 99) {
-      const gap = Math.max(1, Math.min(8, Math.abs(rankA - rankB)));
-      seedBonus = 0.4 * gap * (rankA < rankB ? 1 : -1);
-    }
-  }
+  // 同分区仅首轮保留很小的赛季表现修正；主要高种子优势由真实主场顺序提供。
+  const seedBonus = getPlayoffSeriesSeedBonus(teamA, teamB, round);
   
   const userDebuff = 1.0;
   

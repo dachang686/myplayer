@@ -5025,6 +5025,7 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
     const stateSnapshots = [
       captureProperty(STATE, '_lineupCache', true),
       captureProperty(season, '_npcSeasonProfiles', false),
+      captureProperty(season, '_usageBias', false),
       captureProperty(season, '_careerTeamAvailabilityGame', false),
       captureProperty(season, '_historicCelebrationSequence', false),
       captureProperty(season, 'events', false),
@@ -5296,11 +5297,18 @@ function getNpcSeasonProfile(team, player) {
 /** 状态只持续 4-8 场；球星波动更小，避免一次低迷影响整个赛季。 */
 function refreshNpcShortTermForm(profile, player) {
   if ((Number(profile.formGamesLeft) || 0) <= 0) {
-    var ovr = parseInt(player.ovr) || 70;
-    var elite = ovr >= 90;
-    var spread = elite ? 0.06 : 0.09;
-    var floor = elite ? 0.92 : 0.88;
-    var ceiling = elite ? 1.08 : 1.12;
+    var handle = af(parseInt(player.HAN) || 50);
+    var passing = af(parseInt(player.PAS) || 50);
+    var clutch = af(parseInt(player.CLU) || 50);
+    var age = Number(player._age) || 27;
+    if (typeof getLeaguePlayerAge === 'function') {
+      try { age = getLeaguePlayerAge(player) || age; } catch (e) {}
+    }
+    var control = handle * 0.45 + passing * 0.30 + clutch * 0.25;
+    var ageVolatility = age <= 22 ? 0.012 : (age >= 34 ? 0.008 : 0);
+    var spread = leagueStatClamp(0.095 - control * 0.040 + ageVolatility, 0.050, 0.105);
+    var floor = 1 - spread * 1.35;
+    var ceiling = 1 + spread * 1.35;
     var baseForm = leagueStatClamp(leagueStatNormal(1, spread), floor, ceiling);
     profile.scoring = leagueStatClamp(baseForm * leagueStatNormal(1, spread * 0.55), floor, ceiling);
     profile.rebounding = leagueStatClamp(baseForm * leagueStatNormal(1, spread * 0.55), floor, ceiling);
@@ -8920,6 +8928,15 @@ function addProfileDelta(key, delta) {
 
 function addSeasonMod(key, delta, minVal, maxVal) {
   var mods = getNextSeasonMods();
+  if (mods[key] == null) mods[key] = 0;
+  var min = minVal == null ? -10 : minVal;
+  var max = maxVal == null ? 10 : maxVal;
+  mods[key] = Math.max(min, Math.min(max, mods[key] + (delta || 0)));
+  return mods[key];
+}
+
+function addActiveSeasonMod(key, delta, minVal, maxVal) {
+  var mods = getActiveSeasonMods();
   if (mods[key] == null) mods[key] = 0;
   var min = minVal == null ? -10 : minVal;
   var max = maxVal == null ? 10 : maxVal;
@@ -17947,7 +17964,6 @@ function watchAdToReroll() {
 
 </body>
 </html>
-
 
 
 
