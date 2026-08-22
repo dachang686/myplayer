@@ -91,7 +91,33 @@ function checkResult(result, teamA, teamB) {
     if (row.fgm > row.fga || row.threeM > row.threeA || row.threeA > row.fga || row.ftm > row.fta) errors.push('shot-invariant');
   });
   if (sum(rowsA, 'ast') > sum(rowsA, 'fgm') || sum(rowsB, 'ast') > sum(rowsB, 'fgm')) errors.push('assist-invariant');
-  (result.engineDiagnostics && result.engineDiagnostics.periods || []).forEach(period => {
+  const periods = result.engineDiagnostics && result.engineDiagnostics.periods;
+  if (!Number.isInteger(result.ot) || result.ot < 0) errors.push('ot-field');
+  if (!Array.isArray(periods)) {
+    errors.push('period-diagnostics-missing');
+  } else if (Number.isInteger(result.ot) && periods.length !== 4 + result.ot) {
+    errors.push('period-count');
+  }
+  ['expectedMargin', 'actualMargin', 'estimatedWinProb'].forEach(field => {
+    if (!Number.isFinite(result[field])) errors.push('diagnostic-field');
+  });
+  (Array.isArray(periods) ? periods : []).forEach(period => {
+    const requiredFields = [
+      'possessionsA', 'possessionsB', 'fgaA', 'fgaB', 'ftaA', 'ftaB',
+      'freeThrowTripsA', 'freeThrowTripsB', 'tovA', 'tovB',
+      'offensiveReboundsA', 'offensiveReboundsB', 'missedFieldA', 'missedFieldB',
+      'missedFtA', 'missedFtB',
+    ];
+    if (requiredFields.some(field => !Number.isFinite(period[field]))) {
+      errors.push('period-field');
+      return;
+    }
+    if (period.freeThrowTripsA < 0 || period.ftaA < period.freeThrowTripsA
+      || period.ftaA > period.freeThrowTripsA * 3
+      || period.freeThrowTripsB < 0 || period.ftaB < period.freeThrowTripsB
+      || period.ftaB > period.freeThrowTripsB * 3) {
+      errors.push('free-throw-trip-invariant');
+    }
     if (Math.abs(period.possessionsA - period.possessionsB) > 1) errors.push('period-possession-balance');
     const identityA = period.fgaA - period.offensiveReboundsA + period.tovA + period.ftaA * 0.44;
     const identityB = period.fgaB - period.offensiveReboundsB + period.tovB + period.ftaB * 0.44;
@@ -111,6 +137,7 @@ const validationGames = validationSeasons * gamesPerSeason;
 const invariantKinds = {};
 const coveredTeams = new Set();
 let invariantErrors = 0;
+let diagnosticsFailClosed = false;
 let totalA = 0;
 let totalB = 0;
 const leagueTotals = {
@@ -120,6 +147,7 @@ const teamGameTurnovers = [];
 const teamGameSteals = [];
 const teamGameFta = [];
 const teamGameOffensiveRebounds = [];
+const teamPeriodOffensiveRebounds = [];
 const seasonLeaders = [];
 const scoringTails = { max: 0, fifty: 0, sixty: 0, seventy: 0, eighty: 0 };
 let seasonPlayerTotals = {};
@@ -162,6 +190,11 @@ for (let game = 0; game < validationGames; game++) {
     ignoreNpcAvailability: true,
   }));
   const errors = checkResult(result, teamA, teamB);
+  if (game === 0) {
+    const tampered = JSON.parse(JSON.stringify(result));
+    tampered.engineDiagnostics.periods[0].fgaA = undefined;
+    diagnosticsFailClosed = checkResult(tampered, teamA, teamB).includes('period-field');
+  }
   invariantErrors += errors.length;
   errors.forEach(error => { invariantKinds[error] = (invariantKinds[error] || 0) + 1; });
   totalA += result.scoreA;
@@ -178,14 +211,19 @@ for (let game = 0; game < validationGames; game++) {
     teamGameSteals.push(sum(rows, 'stl'));
     teamGameFta.push(sum(rows, 'fta'));
   });
+  let gameOffensiveReboundsA = 0;
+  let gameOffensiveReboundsB = 0;
   (result.engineDiagnostics && result.engineDiagnostics.periods || []).forEach(period => {
-    teamGameOffensiveRebounds.push(period.offensiveReboundsA, period.offensiveReboundsB);
+    teamPeriodOffensiveRebounds.push(period.offensiveReboundsA, period.offensiveReboundsB);
+    gameOffensiveReboundsA += Number(period.offensiveReboundsA) || 0;
+    gameOffensiveReboundsB += Number(period.offensiveReboundsB) || 0;
     if (period.offensiveReboundsA > period.missedFieldA + Math.floor(period.missedFtA * 0.45)
       || period.offensiveReboundsB > period.missedFieldB + Math.floor(period.missedFtB * 0.45)) {
       invariantErrors++;
       invariantKinds.orebCausality = (invariantKinds.orebCausality || 0) + 1;
     }
   });
+  teamGameOffensiveRebounds.push(gameOffensiveReboundsA, gameOffensiveReboundsB);
   if (seasonGame === gamesPerSeason - 1) finishEcologySeason();
 }
 
@@ -532,6 +570,7 @@ const specialistStats = {
   npcFormOvrIsolation,
   seededStateRestored,
   enginePersistencePath,
+  diagnosticsFailClosed,
   emptyRotationThrows,
   diagnosticFieldSemantics,
 };
@@ -577,6 +616,7 @@ const result = {
     teamFtaAverage: average(teamGameFta),
     teamOffensiveReboundSd: standardDeviation(teamGameOffensiveRebounds),
     teamOffensiveReboundAverage: average(teamGameOffensiveRebounds),
+    teamOffensiveReboundPeriodAverage: average(teamPeriodOffensiveRebounds),
     scoringTails,
   },
   specialistStats,
@@ -600,6 +640,7 @@ if (result.full99PlayerPpg <= result.partial99PlayerPpg || result.full99PlayerFg
   throw new Error('V2 没有体现完整技能包的机会/得分增益：' + JSON.stringify(result));
 }
 const leaderAverages = result.ecology.leaderAverages;
+// 10 个 82 场周期的尾部只允许保留稀有高分，同时防止 burst 参数回归到泛滥。
 if (leaderAverages.ppg < 27 || leaderAverages.ppg > 36
   || leaderAverages.apg < 7.5 || leaderAverages.apg > 13
   || leaderAverages.spg < 1.5 || leaderAverages.spg > 3
@@ -608,11 +649,22 @@ if (leaderAverages.ppg < 27 || leaderAverages.ppg > 36
   || result.ecology.teamTurnoverSd < 1.5 || result.ecology.teamTurnoverSd > 5
   || result.ecology.teamStealSd < 0.8 || result.ecology.teamStealSd > 4
   || result.ecology.teamFtaSd < 2 || result.ecology.teamFtaSd > 8
+  || result.ecology.teamOffensiveReboundAverage < 5 || result.ecology.teamOffensiveReboundAverage > 9
   || result.ecology.scoringTails.fifty < 1
+  || result.ecology.scoringTails.fifty > 500
   || result.ecology.scoringTails.sixty < 1
+  || result.ecology.scoringTails.sixty > 100
   || result.ecology.scoringTails.seventy < 1
+  || result.ecology.scoringTails.seventy > 20
   || result.ecology.scoringTails.eighty < 1
+  || result.ecology.scoringTails.eighty > 5
+  || result.ecology.scoringTails.max > 90
   || result.full99Tail.fifty < 1
+  || result.full99Tail.fifty > 200
+  || result.full99Tail.sixty > 80
+  || result.full99Tail.seventy > 20
+  || result.full99Tail.eighty > 10
+  || result.full99Tail.max > 90
   || result.full99Tail.max < 60) {
   throw new Error('V2 球员生态或单场尾部越界：' + JSON.stringify(result));
 }
@@ -628,6 +680,7 @@ if (result.full99PlayerPpg - result.partial99PlayerPpg < 1.5
   || !specialistStats.ovrIsolation
   || !specialistStats.npcFormOvrIsolation
   || !specialistStats.seededStateRestored
+  || !specialistStats.diagnosticsFailClosed
   || !specialistStats.dispatcherIntegration
   || !specialistStats.v2ModifierPath
   || !specialistStats.teamBAvailabilityIntegration

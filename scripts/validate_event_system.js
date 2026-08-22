@@ -1206,13 +1206,14 @@ return { consumeNextSeasonMods, getActiveSeasonMods };`,
 
 const branchDataEnd = branchSource.indexOf('const OFFSEASON_EVENTS');
 let seasonBranchModifierRouting = false;
+let phaseAwareBranchData = false;
 if (branchDataEnd < 0) {
   failures.push('无法定位生涯分支事件数据');
 } else {
   const activeModCalls = [];
   const nextModCalls = [];
   const activeEffects = [];
-  const branchState = { career: { flags: {} }, attrs: {}, finalOVR: 80 };
+  const branchState = { career: { flags: {}, relationships: {} }, attrs: {}, finalOVR: 80 };
   const branchEvents = new Function(
     'STATE',
     'setBranchNode',
@@ -1259,7 +1260,7 @@ if (branchDataEnd < 0) {
     failures.push('缺少赛季剧情 modifier 的当前赛季路由');
   } else {
     const modifierState = {
-      career: { nextSeasonMods: {} },
+      career: { nextSeasonMods: {}, relationships: {} },
       season: { mods: {} },
     };
     const modifierFns = new Function(
@@ -1313,6 +1314,27 @@ return STAGED_BRANCH_EVENTS.concat(BRANCH_EVENTS);`,
     if (!cityFirstApplied || !citySignatureApplied) {
       failures.push('城市文化赛季事件仍把即时状态效果写入下赛季');
     }
+
+    modifierState.season.mods = { injuryRiskBonus: 0, formVariance: 0, teamChemistry: 0, moraleBonus: 0, mediaPressure: 0 };
+    modifierState.career.nextSeasonMods = { injuryRiskBonus: 0, formVariance: 0, teamChemistry: 0, moraleBonus: 0, mediaPressure: 0 };
+    modifierState._branchChoicePhase = 'season';
+    const relationshipChoice = cityEvents.find(event => event.id === 'relationship_public_or_crisis')
+      ?.choices.find(choice => choice.label === '处理失控风波');
+    if (relationshipChoice) relationshipChoice.apply();
+    const relationshipImmediate = modifierState.season.mods.formVariance === 3
+      && modifierState.season.mods.injuryRiskBonus === 1
+      && (modifierState.career.nextSeasonMods.formVariance || 0) === 0;
+
+    modifierState.season.mods = { injuryRiskBonus: 0, formVariance: 0, teamChemistry: 0, moraleBonus: 0, mediaPressure: 0 };
+    modifierState.career.nextSeasonMods = { injuryRiskBonus: 0, formVariance: 0, teamChemistry: 0, moraleBonus: 0, mediaPressure: 0 };
+    modifierState._branchChoicePhase = 'season';
+    const childChoice = cityEvents.find(event => event.id === 'child_pregnancy')
+      ?.choices.find(choice => choice.label === '一起规划');
+    if (childChoice) childChoice.apply();
+    const childExplicitNext = modifierState.season.mods.formVariance === 0
+      && modifierState.career.nextSeasonMods.formVariance === -1;
+    phaseAwareBranchData = !!relationshipChoice && !!childChoice && relationshipImmediate && childExplicitNext;
+    if (!phaseAwareBranchData) failures.push('双阶段剧情 modifier 的即时/下一赛季语义未锁定');
   }
   if (branchSource.includes('flags.teachingSkill') || branchSource.includes('flag teachingSkill')) {
     failures.push('teachingSkill 死标志或玩家可见调试文案仍存在');
@@ -1373,5 +1395,6 @@ if (failures.length) {
     shortTermBranchEffects: true,
     injuryInstanceRecovery: true,
     seasonBranchModifierRouting,
+    phaseAwareBranchData,
   }));
 }

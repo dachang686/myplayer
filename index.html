@@ -5319,9 +5319,10 @@ function refreshNpcShortTermForm(profile, player) {
   profile.formGamesLeft--;
 }
 
-/** NPC 伤病以连续缺阵呈现，另有小概率轮休；季后赛只取消轮休，不会清除已有伤病。 */
-function shouldNpcPlayLeagueGame(team, player, roleRank, careerTeamGameNumber) {
+/** NPC 伤病以连续缺阵呈现，另有小概率轮休；季后赛/附加赛只取消轮休，不会清除已有伤病。 */
+function shouldNpcPlayLeagueGame(team, player, roleRank, careerTeamGameNumber, gameOptions) {
   var profile = getNpcSeasonProfile(team, player);
+  var options = gameOptions || {};
   careerTeamGameNumber = Number(careerTeamGameNumber) || 0;
   refreshNpcShortTermForm(profile, player);
   if (profile.injuryGamesLeft > 0) {
@@ -5342,9 +5343,12 @@ function shouldNpcPlayLeagueGame(team, player, roleRank, careerTeamGameNumber) {
     if (careerTeamGameNumber) profile.lastMissedCareerTeamGame = careerTeamGameNumber;
     return false;
   }
-  var isPlayoffs = !!(STATE.season && STATE.season.isPlayoffs);
+  var isPlayoffs = typeof options.isPlayoffs === 'boolean'
+    ? options.isPlayoffs
+    : !!(STATE.season && STATE.season.isPlayoffs);
+  var isPostseasonRotation = isPlayoffs || options.isPlayIn === true;
   var roleRest = roleRank < 5 ? profile.restChance : profile.restChance * 0.55;
-  if (!isPlayoffs && Math.random() < roleRest) {
+  if (!isPostseasonRotation && Math.random() < roleRest) {
     profile.gamesMissed++;
     return false;
   }
@@ -5706,7 +5710,7 @@ function buildLeagueGameRotation(team, gameOptions) {
   unique.forEach(function(player, roleRank) {
     if ((player._isUser && options.userAvailable !== false)
       || (!player._isUser && (options.ignoreNpcAvailability
-        || shouldNpcPlayLeagueGame(team, player, roleRank, careerTeamGameNumber)))) available.push(player);
+        || shouldNpcPlayLeagueGame(team, player, roleRank, careerTeamGameNumber, options)))) available.push(player);
   });
   var targetSize = 9 + (Math.random() < 0.68 ? 1 : (Math.random() < 0.70 ? 2 : 0));
   var selected = available.slice(0, targetSize);
@@ -5749,7 +5753,9 @@ function prepareLeagueGameRotation(team, gameOptions) {
   var options = gameOptions || {};
   var rotation = buildLeagueGameRotation(team, options);
   rotation.minutes = allocateLeagueRotationMinutes(rotation.players, rotation.roleRanks, {
-    isPlayoffs: !!(STATE.season && STATE.season.isPlayoffs),
+    isPlayoffs: typeof options.isPlayoffs === 'boolean'
+      ? options.isPlayoffs
+      : !!(STATE.season && STATE.season.isPlayoffs),
     randomize: true,
   });
   return rotation;
@@ -18004,8 +18010,6 @@ function watchAdToReroll() {
 
 </body>
 </html>
-
-
 
 
 

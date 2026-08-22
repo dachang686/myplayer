@@ -771,28 +771,28 @@ const STAGED_BRANCH_EVENTS = [
     },
     choices: [
       { label: '公开关系', hint: '商业热度上升，但舆论风险增加', apply: function() {
-        var mods = getNextSeasonMods();
+        var timing = STATE._branchChoicePhase === 'season' ? '本赛季' : '下赛季';
         setBranchNode('relationship', 'public', { status: 'public' });
         STATE.career.flags.businessBuzz = true;
         if (STATE.career.relationships.partner) STATE.career.relationships.partner.status = 'public';
-        mods.formVariance = Math.min(4, (mods.formVariance || 0) + 1);
-        return '你们一起发了一张没有任何品牌露出的合照。评论区爆了，赞助商也开始打电话。<br><br>结果：关系公开；商业热度上升；下赛季状态波动略升。';
+        addSeasonMod('formVariance', 1, -10, 4);
+        return '你们一起发了一张没有任何品牌露出的合照。评论区爆了，赞助商也开始打电话。<br><br>结果：关系公开；商业热度上升；' + timing + '状态波动略升。';
       }},
       { label: '共同冷处理', hint: '稳定优先，商业收益较低', apply: function() {
-        var mods = getNextSeasonMods();
+        var timing = STATE._branchChoicePhase === 'season' ? '本赛季' : '下赛季';
         setBranchNode('relationship', 'private', { status: 'private' });
         if (STATE.career.relationships.partner) STATE.career.relationships.partner.status = 'private';
-        mods.formVariance = Math.max(-3, (mods.formVariance || 0) - 1);
-        return '你们没有回应任何传闻。几天后，新的新闻盖过旧的新闻，生活慢慢回到训练和比赛。<br><br>结果：关系保持低调；下赛季状态波动略降。';
+        addSeasonMod('formVariance', -1, -3, 10);
+        return '你们没有回应任何传闻。几天后，新的新闻盖过旧的新闻，生活慢慢回到训练和比赛。<br><br>结果：关系保持低调；' + timing + '状态波动略降。';
       }},
       { label: '处理失控风波', hint: '高风险，可能影响身体和状态', apply: function() {
-        var mods = getNextSeasonMods();
+        var timing = STATE._branchChoicePhase === 'season' ? '本赛季' : '下赛季';
         setBranchNode('relationship', 'crisis', { status: 'crisis' });
         if (STATE.career.relationships.partner) STATE.career.relationships.partner.status = 'crisis';
         addProfileDelta('controversy', 1);
-        mods.formVariance = Math.min(5, (mods.formVariance || 0) + 3);
-        mods.injuryRiskBonus = Math.min(8, (mods.injuryRiskBonus || 0) + 1);
-        return '几张模糊照片被放大解读，争吵和声明迅速发酵。你训练后还要处理电话，身体也没有恢复得那么干净。<br><br>结果：感情纠纷；状态波动明显上升；伤病风险略升。';
+        addSeasonMod('formVariance', 3, -10, 5);
+        addSeasonMod('injuryRiskBonus', 1, -4, 8);
+        return '几张模糊照片被放大解读，争吵和声明迅速发酵。你训练后还要处理电话，身体也没有恢复得那么干净。<br><br>结果：感情纠纷；' + timing + '状态波动明显上升；伤病风险略升。';
       }}
     ]
   },
@@ -2513,13 +2513,13 @@ const STAGED_BRANCH_EVENTS = [
     choices: [
       { label: '一起规划', hint: '家人之间会更近', apply: function() {
         setBranchNode('family_children', 'pregnancy', { plan: 'together' });
-        addSeasonMod('formVariance', -1, -10, 10);
+        addSeasonMod('formVariance', -1, -10, 10, 'next');
         return '你们把下赛季的赛程摊在桌上，认真圈出几个日子。她笑你比画战术还认真。<br><br>效果：状态波动-1；你们之间，又多了一份默契。';
       }},
       { label: '全程陪伴', hint: '球迷支持上升，伤病风险下降', apply: function() {
         setBranchNode('family_children', 'pregnancy', { plan: 'present' });
         addProfileDelta('fanSupport', 1);
-        addSeasonMod('injuryRiskBonus', -1, -4, 8);
+        addSeasonMod('injuryRiskBonus', -1, -4, 8, 'next');
         return '你告诉团队：那几天不要给我排任何行程。教练第一次看到你主动请假，愣了一下，然后点头。<br><br>效果：球迷支持+1；伤病风险-1。';
       }},
       { label: '事业照旧', hint: '短期专注，但关系压力上升', apply: function() {

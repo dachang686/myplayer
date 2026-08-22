@@ -187,6 +187,9 @@ function simulatePlayInMatch(teamA, teamB, gameId) {
     isHomeA: true,
     isB2BA: false,
     isB2BB: false,
+    // 附加赛仍属于常规赛统计阶段，但轮换和出场可用性必须采用季后赛规则。
+    isPlayoffs: true,
+    isPlayIn: true,
     userAvailable: !absenceType,
   });
   const careerWon = careerIsA ? !!simulated.won : !simulated.won;

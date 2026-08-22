@@ -222,19 +222,20 @@
       var baseOpportunity = Math.max(0.1, weights[index] * roleFactor * creationFactor * threatFactor * form[index]);
       var scoringLoad = threat[index] * 0.62 + creation[index] * 0.38;
       var isCoreScorer = roleRanks[index] < 2 || (weights[index] >= 30 && scoringLoad >= 0.78);
+      // 爆发保留稀有长尾；上限和 legendary 档位避免 50+/60+ 在联盟生态中泛滥。
       var gameMultiplier = roleRanks[index] < 5
         ? clamp(normal(1, 0.11), 0.72, 1.32)
         : clamp(normal(1, 0.06), 0.82, 1.18);
       var burstChance = isCoreScorer
-        ? clamp(0.014 + Math.max(0, scoringLoad - 0.60) * 0.15, 0.014, 0.080)
+        ? clamp(0.014 + Math.max(0, scoringLoad - 0.60) * 0.15, 0.014, 0.060)
         : 0;
       var legendaryBurst = weights[index] >= 30
         && scoringLoad >= 0.70
-        && Math.random() < 0.010;
+        && Math.random() < 0.005;
       if (legendaryBurst) {
-        gameMultiplier = 4.50 + Math.random() * 0.80;
+        gameMultiplier = 3.80 + Math.random() * 0.70;
       } else if (burstChance > 0 && Math.random() < burstChance) {
-        gameMultiplier *= 1.55 + Math.random() * 0.65;
+        gameMultiplier *= 1.45 + Math.random() * 0.45;
       }
       return baseOpportunity * gameMultiplier;
     });
@@ -349,9 +350,10 @@
       freeThrowTripSizes.push(tripRoll < 0.08 ? 3 : (tripRoll < 0.28 ? 1 : 2));
     }
     var fta = freeThrowTripSizes.reduce(function(sum, value) { return sum + value; }, 0);
+    // OREB 只从真实投丢产生；率区间校准到约 5-9 个/队/场，避免二次进攻消失或泛滥。
     var offensiveReboundRate = clamp(
-      0.065 + context.offensiveRebound * 0.055 - opponent.defensiveRebound * 0.025,
-      0.050, 0.120,
+      0.095 + context.offensiveRebound * 0.100 - opponent.defensiveRebound * 0.035,
+      0.085, 0.180,
     );
     // 先生成基础投篮，等真实 miss 出现后再生成二次进攻；OREB 不再凭空创造可抢篮板。
     var rawFga = Math.round(effectivePossessions - fta * 0.44);

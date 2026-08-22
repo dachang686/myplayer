@@ -73,6 +73,14 @@ if (!/getPlayoffSeriesSeedBonus\(teamA, teamB, round, STATE\.season && STATE\.se
   || /let sb = 0;[\s\S]*gapSeed/.test(playoffsSource)) {
   throw new Error('玩家季后赛路径没有使用实际 bracket 的统一 seedBonus');
 }
+const playInRotationFlags = {
+  simulationUsesPostseason: /function simulatePlayInMatch[\s\S]*?isPlayoffs:\s*true,[\s\S]*?isPlayIn:\s*true/.test(playoffsSource),
+  npcReadsGameOptions: /function shouldNpcPlayLeagueGame\([^)]*gameOptions[\s\S]*?typeof options\.isPlayoffs === 'boolean'[\s\S]*?isPostseasonRotation/.test(indexSource),
+  prepareReadsGameOptions: /function prepareLeagueGameRotation\([^)]*[\s\S]*?typeof options\.isPlayoffs === 'boolean'/.test(indexSource),
+};
+if (Object.values(playInRotationFlags).some(flag => !flag)) {
+  throw new Error('附加赛没有完整透传季后赛轮换模式：' + JSON.stringify(playInRotationFlags));
+}
 const renderPlayoffsStart = playoffsSource.indexOf('function renderPlayoffs');
 const resumePlayoffsStart = playoffsSource.indexOf('function resumePlayoffs', renderPlayoffsStart);
 const renderPlayoffsSource = playoffsSource.slice(renderPlayoffsStart, resumePlayoffsStart);
@@ -1142,6 +1150,7 @@ function runRealRosterSmoke() {
 const realRosterSmoke = runRealRosterSmoke();
 
 const report = {
+  playInRotationFlags,
   playInRouting,
   playInCompletion,
   standingsTiebreakers,
@@ -1254,6 +1263,9 @@ if (JSON.stringify(bracketMapping.homePattern) !== JSON.stringify([true, true, f
 }
 if (!Object.values(playInRouting.freshEntry).every(Boolean)) {
   failures.push(`附加赛新入口路由错误：${JSON.stringify(playInRouting.freshEntry)}`);
+}
+if (!Object.values(playInRotationFlags).every(Boolean)) {
+  failures.push(`附加赛轮换模式错误：${JSON.stringify(playInRotationFlags)}`);
 }
 if (!Object.values(playInRouting.legacyResume).every(Boolean)) {
   failures.push(`附加赛旧存档恢复错误：${JSON.stringify(playInRouting.legacyResume)}`);
