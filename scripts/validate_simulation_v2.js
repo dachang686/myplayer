@@ -91,7 +91,7 @@ function checkResult(result, teamA, teamB) {
   });
   if (sum(rowsA, 'ast') > sum(rowsA, 'fgm') || sum(rowsB, 'ast') > sum(rowsB, 'fgm')) errors.push('assist-invariant');
   (result.engineDiagnostics && result.engineDiagnostics.periods || []).forEach(period => {
-    if (!period.isOvertime) return;
+    if (Math.abs(period.possessionsA - period.possessionsB) > 1) errors.push('period-possession-balance');
     const identityA = period.fgaA - period.offensiveReboundsA + period.tovA + period.ftaA * 0.44;
     const identityB = period.fgaB - period.offensiveReboundsB + period.tovB + period.ftaB * 0.44;
     if (Math.abs(identityA - period.possessionsA) > 2 || Math.abs(identityB - period.possessionsB) > 2) {

@@ -4205,8 +4205,10 @@ function quickSimAllGames(targetDay) {
           var oppH = STATE.season.standings[g.opponent];
           if (oppH) { if (hurtResult.won) oppH.losses++; else oppH.wins++; updateStreak(g.opponent, !hurtResult.won); }
           updateStreak(STATE.careerTeam, hurtResult.won);
-          var hurtStats = scaleHurtStats(generatePlayerStatsNew(buildHurtAttrs(STATE.attrs, severity), hurtResult, false), severity);
-          syncUserStatsToBoxScore(hurtResult, hurtStats);
+          var hurtStats = hurtResult && hurtResult.engineVersion === 'v2'
+            ? generatePlayerStatsNew(STATE.attrs, hurtResult, false)
+            : scaleHurtStats(generatePlayerStatsNew(buildHurtAttrs(STATE.attrs, severity), hurtResult, false), severity);
+          if (!hurtResult || hurtResult.engineVersion !== 'v2') syncUserStatsToBoxScore(hurtResult, hurtStats);
           queueUserHistoricStatCelebration(hurtResult);
           var psH = STATE.season.playerStats;
           psH.pts += hurtStats.pts; psH.reb += hurtStats.reb; psH.ast += hurtStats.ast;

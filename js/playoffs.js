@@ -1003,8 +1003,10 @@ function simOnePlayoffGame(round, seriesIdx, teamA, teamB, isMySeries, gameNum, 
       const hurtWon = hurtResult.won;
       const hurtNewWinsA = winsA + (hurtWon ? 1 : 0);
       const hurtNewWinsB = winsB + (hurtWon ? 0 : 1);
-      const hurtStats = scaleHurtStats(generatePlayerStatsNew(buildHurtAttrs(STATE.attrs, severity), hurtResult, true), severity);
-      syncUserStatsToBoxScore(hurtResult, hurtStats);
+      const hurtStats = hurtResult && hurtResult.engineVersion === 'v2'
+        ? generatePlayerStatsNew(STATE.attrs, hurtResult, true)
+        : scaleHurtStats(generatePlayerStatsNew(buildHurtAttrs(STATE.attrs, severity), hurtResult, true), severity);
+      if (!hurtResult || hurtResult.engineVersion !== 'v2') syncUserStatsToBoxScore(hurtResult, hurtStats);
       queueUserHistoricStatCelebration(hurtResult);
       userGameStats.push(hurtStats);
       const poH = STATE.season.playoffStats;

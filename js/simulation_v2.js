@@ -88,24 +88,50 @@
     var minutes = rotation && rotation.minutes
       ? rotation.minutes.slice()
       : allocateLeagueRotationMinutes(players, rotation.roleRanks, { randomize: true });
+    if (options.userMinutesFactor != null) {
+      var userIndex = players.findIndex(function(player) { return !!player._isUser; });
+      if (userIndex >= 0) {
+        var originalUserMinutes = minutes[userIndex];
+        var adjustedUserMinutes = Math.max(8, Math.round(originalUserMinutes * clamp(Number(options.userMinutesFactor), 0.55, 1)));
+        var minutesToRedistribute = Math.max(0, originalUserMinutes - adjustedUserMinutes);
+        minutes[userIndex] = adjustedUserMinutes;
+        if (minutesToRedistribute > 0) {
+          var redistributed = allocateTotal(
+            minutesToRedistribute,
+            minutes.map(function(value, index) { return index === userIndex ? 0 : Math.max(0.1, value); }),
+            minutes.map(function(value, index) { return index === userIndex ? 0 : Math.max(0, 48 - value); }),
+          );
+          redistributed.forEach(function(value, index) { minutes[index] += value; });
+        }
+      }
+    }
+
     var roleRanks = rotation.roleRanks || players.map(function(_, index) { return index; });
     if (!players.length) return null;
 
+    function playerNorm(player, key) {
+      var value = norm(player, key);
+      if (player && player._isUser && options.userAttributeFactor != null) {
+        var factor = clamp(Number(options.userAttributeFactor), 0.55, 1);
+        value = clamp(0.50 + (value - 0.50) * factor, 0, 1);
+      }
+      return value;
+    }
     var weights = minutes.map(function(value) { return Math.max(0, Number(value) || 0); });
-    var three = players.map(function(player) { return norm(player, 'threePT'); });
-    var mid = players.map(function(player) { return norm(player, 'MID'); });
-    var fin = players.map(function(player) { return norm(player, 'FIN'); });
-    var dnk = players.map(function(player) { return norm(player, 'DNK'); });
-    var han = players.map(function(player) { return norm(player, 'HAN'); });
-    var pas = players.map(function(player) { return norm(player, 'PAS'); });
-    var ath = players.map(function(player) { return norm(player, 'ATH'); });
-    var str = players.map(function(player) { return norm(player, 'STR'); });
-    var reb = players.map(function(player) { return norm(player, 'REB'); });
-    var pdef = players.map(function(player) { return norm(player, 'PDEF'); });
-    var idef = players.map(function(player) { return norm(player, 'IDEF'); });
-    var stl = players.map(function(player) { return norm(player, 'STL'); });
-    var blk = players.map(function(player) { return norm(player, 'BLK'); });
-    var clu = players.map(function(player) { return norm(player, 'CLU'); });
+    var three = players.map(function(player) { return playerNorm(player, 'threePT'); });
+    var mid = players.map(function(player) { return playerNorm(player, 'MID'); });
+    var fin = players.map(function(player) { return playerNorm(player, 'FIN'); });
+    var dnk = players.map(function(player) { return playerNorm(player, 'DNK'); });
+    var han = players.map(function(player) { return playerNorm(player, 'HAN'); });
+    var pas = players.map(function(player) { return playerNorm(player, 'PAS'); });
+    var ath = players.map(function(player) { return playerNorm(player, 'ATH'); });
+    var str = players.map(function(player) { return playerNorm(player, 'STR'); });
+    var reb = players.map(function(player) { return playerNorm(player, 'REB'); });
+    var pdef = players.map(function(player) { return playerNorm(player, 'PDEF'); });
+    var idef = players.map(function(player) { return playerNorm(player, 'IDEF'); });
+    var stl = players.map(function(player) { return playerNorm(player, 'STL'); });
+    var blk = players.map(function(player) { return playerNorm(player, 'BLK'); });
+    var clu = players.map(function(player) { return playerNorm(player, 'CLU'); });
     var positions = players.map(function(player) { return String(player.pos || 'SF').split('/')[0].trim(); });
 
     var volumeThree = players.map(function(_, index) { return 0.18 + three[index] * 0.52; });
@@ -489,6 +515,13 @@
       if (STATE.careerTeam === teamA) options.isHomeA = !!currentGame.home;
       else if (STATE.careerTeam === teamB) options.isHomeA = !currentGame.home;
     }
+    if (probMultiplier != null && STATE && STATE.careerTeam
+      && (STATE.careerTeam === teamA || STATE.careerTeam === teamB)) {
+      var userAvailabilityFactor = clamp(Number(probMultiplier), 0.55, 1);
+      if (options.userAttributeFactor == null) options.userAttributeFactor = userAvailabilityFactor;
+      if (options.userMinutesFactor == null) options.userMinutesFactor = userAvailabilityFactor;
+    }
+
     var legacyB2B = !!(currentGame && previousGame
       && Number(currentGame.day) - Number(previousGame.day) === 1);
     var legacyB2BA = legacyB2B && (!STATE || !STATE.careerTeam || STATE.careerTeam === teamA);
@@ -552,8 +585,9 @@
       }
       contextA.usagePressure = clamp((contextA.attack - 0.50) * 0.50, 0, 0.25);
       contextB.usagePressure = clamp((contextB.attack - 0.50) * 0.50, 0, 0.25);
-      var quarterA = makeQuarter(contextA, contextB, Math.max(1, possessions + Math.round(normal(0, 0.7))), biasA, clutch);
-      var quarterB = makeQuarter(contextB, contextA, Math.max(1, possessions + Math.round(normal(0, 0.7))), biasB, clutch);
+      var periodPossessions = Math.max(1, possessions + Math.round(normal(0, 0.7)));
+      var quarterA = makeQuarter(contextA, contextB, periodPossessions, biasA, clutch);
+      var quarterB = makeQuarter(contextB, contextA, periodPossessions, biasB, clutch);
       rimAttemptsA += quarterA.rimAttempts;
       rimAttemptsB += quarterB.rimAttempts;
       contextA._quarterLines = quarterA.lines;
