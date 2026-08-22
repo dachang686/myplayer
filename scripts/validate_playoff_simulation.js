@@ -56,15 +56,22 @@ const getPlayoffSeriesSeedBonus = new Function(
   'getConferenceSeed',
   playoffsSource.slice(seedBonusStart, seedBonusEnd) + '\nreturn getPlayoffSeriesSeedBonus;',
 )(
-  team => team === 'N1' || team === 'N8' ? 'NORTH' : 'SOUTH',
-  team => ({ N1: 1, N8: 8, S1: 1 })[team] || 99,
+  team => /^N/.test(team) ? 'NORTH' : 'SOUTH',
+  team => ({ N1: 1, N8: 8, N10: 10, S1: 1 })[team] || 99,
 );
 const seedBracket = { teams: [{ team: 'N1' }, null, null, null, null, null, null, { team: 'N8' }] };
+const playInSeedBracket = { teams: [{ team: 'N1' }, { team: 'N2' }, { team: 'N3' }, { team: 'N4' }, { team: 'N5' }, { team: 'N6' }, { team: 'N7' }, { team: 'N10' }] };
 if (Math.abs(getPlayoffSeriesSeedBonus('N1', 'N8', 0) - 2.8) > 1e-9
   || Math.abs(getPlayoffSeriesSeedBonus('N1', 'N8', 0, seedBracket) - 2.8) > 1e-9
+  || Math.abs(getPlayoffSeriesSeedBonus('N1', 'N10', 0) - 3.2) > 1e-9
+  || Math.abs(getPlayoffSeriesSeedBonus('N1', 'N10', 0, playInSeedBracket) - 2.8) > 1e-9
   || getPlayoffSeriesSeedBonus('N1', 'N8', 1) !== 0
   || getPlayoffSeriesSeedBonus('N1', 'S1', 0) !== 0) {
   throw new Error('玩家与 NPC 系列赛的 seedBonus 规则不一致或未限制在首轮');
+}
+if (!/getPlayoffSeriesSeedBonus\(teamA, teamB, round, STATE\.season && STATE\.season\.playoffBracket\)/.test(playoffsSource)
+  || /let sb = 0;[\s\S]*gapSeed/.test(playoffsSource)) {
+  throw new Error('玩家季后赛路径没有使用实际 bracket 的统一 seedBonus');
 }
 const renderPlayoffsStart = playoffsSource.indexOf('function renderPlayoffs');
 const resumePlayoffsStart = playoffsSource.indexOf('function resumePlayoffs', renderPlayoffsStart);

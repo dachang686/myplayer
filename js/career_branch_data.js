@@ -848,7 +848,7 @@ const STAGED_BRANCH_EVENTS = [
     requires: function() { return getBranchNode('relationship') === 'distant'; },
     choices: [
       { label: '重新建立节奏', hint: '关系回暖，球队默契略升', apply: function() {
-        var mods = getNextSeasonMods();
+        var mods = getBranchSeasonMods();
         setBranchNode('relationship', 'stable', { status: 'rekindled' });
         if (STATE.career.relationships.partner) STATE.career.relationships.partner.status = 'stable';
         mods.teamChemistry = Math.min(5, (mods.teamChemistry || 0) + 1);
@@ -912,7 +912,7 @@ const STAGED_BRANCH_EVENTS = [
         return '你们没有立刻回应媒体，而是先关掉手机谈了一整晚。最后你只发了一句简短的话，把故事从猜测拉回事实。<br><br>重点：风波被修复，关系进入长期稳定。<br><br>影响：争议下降；下赛季状态波动明显回落。';
       }},
       { label: '转为低调陪伴', hint: '关系降温但保留，避开聚光灯', apply: function() {
-        var mods = getNextSeasonMods();
+        var mods = getBranchSeasonMods();
         setBranchNode('relationship', 'private', { status: 'private_after_storm' });
         if (STATE.career.relationships.partner) STATE.career.relationships.partner.status = 'private';
         addProfileDelta('controversy', -1);
@@ -1599,7 +1599,7 @@ const STAGED_BRANCH_EVENTS = [
         setBranchNode('family', 'family_settled', { status: 'settled' });
         STATE.career.flags.familyPriority = true;
         mods.formVariance = Math.max(-3, (mods.formVariance || 0) - 1);
-        addSeasonMod('moraleBonus', 1, -10, 10);
+        addSeasonMod('moraleBonus', 1, -10, 10, 'next');
         addProfileDelta('fanSupport', 1);
         return '孩子第一次跟你坐球队包机，全程盯着窗外。你忽然明白，你不在家的每一晚，她们都在用另一种方式等你。<br><br>重点：家庭进入长期稳定。<br><br>影响：下赛季状态波动略降；士气+1；球迷支持+1。';
       }}
@@ -3678,7 +3678,7 @@ const STAGED_BRANCH_EVENTS = [
         bindBondedTeammate();
         setBranchNode('teammate_bond', 'bond_protected', { status: 'protected' });
         addProfileDelta('lockerRoomTrust', 1);
-        addSeasonMod('injuryRiskBonus', -1, -4, 8);
+        addSeasonMod('injuryRiskBonus', -1, -4, 8, 'next');
         return '你把球收起来，说今天够了。{队友}愣了一下，最后点点头。第二天，他还是第一个到，但不再硬撑。<br><br>重点：你不是只想赢下一场训练，你开始照顾队友的长赛季。<br><br>影响：更衣室信任上升；下赛季伤病风险略降。';
       }},
       { label: '让助教安排计划', hint: '把加练变得可持续', apply: function() {

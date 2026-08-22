@@ -1205,6 +1205,7 @@ return { consumeNextSeasonMods, getActiveSeasonMods };`,
 }
 
 const branchDataEnd = branchSource.indexOf('const OFFSEASON_EVENTS');
+let seasonBranchModifierRouting = false;
 if (branchDataEnd < 0) {
   failures.push('无法定位生涯分支事件数据');
 } else {
@@ -1250,6 +1251,67 @@ if (branchDataEnd < 0) {
     feelChoice.apply();
     if (!activeEffects.some(call => call[0] === 'teammate_slump_feel' && call[2] === 0.8 && call[3] === 3)) {
       failures.push('队友低谷“接下来三场”没有进入 activeEffects');
+    }
+  }
+  const branchModifierStart = indexSource.indexOf('function getBranchSeasonMods');
+  const branchModifierEnd = indexSource.indexOf('function getBranchStage', branchModifierStart);
+  if (branchModifierStart < 0 || branchModifierEnd < 0) {
+    failures.push('缺少赛季剧情 modifier 的当前赛季路由');
+  } else {
+    const modifierState = {
+      career: { nextSeasonMods: {} },
+      season: { mods: {} },
+    };
+    const modifierFns = new Function(
+      'STATE',
+      `${indexSource.slice(seasonModStart, seasonModEnd)}
+${indexSource.slice(branchModifierStart, branchModifierEnd)}
+return { addSeasonMod, getBranchSeasonMods };`,
+    )(modifierState);
+    modifierState._branchChoicePhase = 'season';
+    modifierFns.addSeasonMod('formVariance', -1, -10, 10);
+    const activeSeasonApplied = modifierState.season.mods.formVariance === -1
+      && (modifierState.career.nextSeasonMods.formVariance || 0) === 0;
+    modifierState._branchChoicePhase = 'offseason';
+    modifierFns.addSeasonMod('formVariance', 1, -10, 10);
+    const offseasonQueued = modifierState.career.nextSeasonMods.formVariance === 1;
+    modifierState._branchChoicePhase = 'season';
+    modifierFns.addSeasonMod('injuryRiskBonus', -1, -4, 8, 'next');
+    const explicitNextQueued = modifierState.career.nextSeasonMods.injuryRiskBonus === -1;
+    seasonBranchModifierRouting = activeSeasonApplied && offseasonQueued && explicitNextQueued;
+    if (!seasonBranchModifierRouting) failures.push('赛季剧情 modifier 没有按当前/下赛季语义正确路由');
+
+    const cityEvents = new Function(
+      'STATE',
+      'getBranchState',
+      'setBranchNode',
+      'addProfileDelta',
+      'addSeasonMod',
+      `${branchSource.slice(0, branchDataEnd)}
+return STAGED_BRANCH_EVENTS.concat(BRANCH_EVENTS);`,
+    )(
+      modifierState,
+      () => ({}),
+      () => {},
+      () => {},
+      modifierFns.addSeasonMod,
+    );
+    modifierState.season.mods = { injuryRiskBonus: 0, formVariance: 0, teamChemistry: 0, moraleBonus: 0, mediaPressure: 0 };
+    modifierState.career.nextSeasonMods = { injuryRiskBonus: 0, formVariance: 0, teamChemistry: 0, moraleBonus: 0, mediaPressure: 0 };
+    modifierState._branchChoicePhase = 'season';
+    const cityFirstChoice = cityEvents.find(event => event.id === 'city_first_impression')
+      ?.choices.find(choice => choice.label === '专注篮球，暂不融入');
+    const citySignatureChoice = cityEvents.find(event => event.id === 'city_signature')
+      ?.choices.find(choice => choice.label === '保持低调');
+    if (cityFirstChoice) cityFirstChoice.apply();
+    const cityFirstApplied = modifierState.season.mods.formVariance === -1
+      && (modifierState.career.nextSeasonMods.formVariance || 0) === 0;
+    modifierState.season.mods.formVariance = 0;
+    if (citySignatureChoice) citySignatureChoice.apply();
+    const citySignatureApplied = modifierState.season.mods.formVariance === -1
+      && (modifierState.career.nextSeasonMods.formVariance || 0) === 0;
+    if (!cityFirstApplied || !citySignatureApplied) {
+      failures.push('城市文化赛季事件仍把即时状态效果写入下赛季');
     }
   }
   if (branchSource.includes('flags.teachingSkill') || branchSource.includes('flag teachingSkill')) {
@@ -1310,5 +1372,6 @@ if (failures.length) {
     currentSeasonBranchModifiers: true,
     shortTermBranchEffects: true,
     injuryInstanceRecovery: true,
+    seasonBranchModifierRouting,
   }));
 }

@@ -118,6 +118,8 @@ const leagueTotals = {
 };
 const teamGameTurnovers = [];
 const teamGameSteals = [];
+const teamGameFta = [];
+const teamGameOffensiveRebounds = [];
 const seasonLeaders = [];
 const scoringTails = { max: 0, fifty: 0, sixty: 0, seventy: 0, eighty: 0 };
 let seasonPlayerTotals = {};
@@ -174,6 +176,15 @@ for (let game = 0; game < validationGames; game++) {
     });
     teamGameTurnovers.push(sum(rows, 'tov'));
     teamGameSteals.push(sum(rows, 'stl'));
+    teamGameFta.push(sum(rows, 'fta'));
+  });
+  (result.engineDiagnostics && result.engineDiagnostics.periods || []).forEach(period => {
+    teamGameOffensiveRebounds.push(period.offensiveReboundsA, period.offensiveReboundsB);
+    if (period.offensiveReboundsA > period.missedFieldA + Math.floor(period.missedFtA * 0.45)
+      || period.offensiveReboundsB > period.missedFieldB + Math.floor(period.missedFtB * 0.45)) {
+      invariantErrors++;
+      invariantKinds.orebCausality = (invariantKinds.orebCausality || 0) + 1;
+    }
   });
   if (seasonGame === gamesPerSeason - 1) finishEcologySeason();
 }
@@ -483,6 +494,25 @@ const persistenceResult = seeded(26000, () => dispatcher(ovrHigh, ovrOpponent, 0
 const enginePersistencePath = state.season.simulationEngine === 'v2'
   && persistenceResult && persistenceResult.engineVersion === 'v2';
 
+let emptyRotationThrows = false;
+try {
+  runtime('V2_EMPTY_ROTATION', ovrOpponent, 0, null, {
+    isHomeA: null,
+    ignoreNpcAvailability: true,
+    _preparedRotations: {
+      V2_EMPTY_ROTATION: { players: [], roleRanks: [], minutes: [] },
+      [ovrOpponent]: fixedRotation(ovrOpponent),
+    },
+  });
+} catch (error) {
+  emptyRotationThrows = /\[V2\] 无法生成有效轮换/.test(String(error && error.message));
+}
+const diagnosticFieldSemantics = !!(dispatcherResult
+  && dispatcherResult.actualMargin === dispatcherResult.scoreA - dispatcherResult.scoreB
+  && dispatcherResult.engineDiagnostics
+  && dispatcherResult.engineDiagnostics.pregameExpectedMargin === dispatcherResult.expectedMargin
+  && Number.isFinite(dispatcherResult.estimatedWinProb));
+
 const v2ModifierPath = v2Source.includes('formVariance') && v2Source.includes('mediaPressure');
 
 const specialistStats = {
@@ -502,6 +532,8 @@ const specialistStats = {
   npcFormOvrIsolation,
   seededStateRestored,
   enginePersistencePath,
+  emptyRotationThrows,
+  diagnosticFieldSemantics,
 };
 
 const result = {
@@ -541,6 +573,10 @@ const result = {
     seasonLeaders,
     teamTurnoverSd: standardDeviation(teamGameTurnovers),
     teamStealSd: standardDeviation(teamGameSteals),
+    teamFtaSd: standardDeviation(teamGameFta),
+    teamFtaAverage: average(teamGameFta),
+    teamOffensiveReboundSd: standardDeviation(teamGameOffensiveRebounds),
+    teamOffensiveReboundAverage: average(teamGameOffensiveRebounds),
     scoringTails,
   },
   specialistStats,
@@ -571,6 +607,7 @@ if (leaderAverages.ppg < 27 || leaderAverages.ppg > 36
   || leaderAverages.bpg < 1 || leaderAverages.bpg > 4
   || result.ecology.teamTurnoverSd < 1.5 || result.ecology.teamTurnoverSd > 5
   || result.ecology.teamStealSd < 0.8 || result.ecology.teamStealSd > 4
+  || result.ecology.teamFtaSd < 2 || result.ecology.teamFtaSd > 8
   || result.ecology.scoringTails.fifty < 1
   || result.ecology.scoringTails.sixty < 1
   || result.ecology.scoringTails.seventy < 1
@@ -594,6 +631,8 @@ if (result.full99PlayerPpg - result.partial99PlayerPpg < 1.5
   || !specialistStats.dispatcherIntegration
   || !specialistStats.v2ModifierPath
   || !specialistStats.teamBAvailabilityIntegration
+  || !specialistStats.emptyRotationThrows
+  || !specialistStats.diagnosticFieldSemantics
   || specialistStats.v2HasDirectOvrEventPath) {
   throw new Error('V2 专项因果隔离失败：' + JSON.stringify(result));
 }

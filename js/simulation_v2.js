@@ -119,7 +119,9 @@
     var players = rotation && rotation.players ? rotation.players : [];
     var minutes = rotation && rotation.minutes
       ? rotation.minutes.slice()
-      : allocateLeagueRotationMinutes(players, rotation.roleRanks, { randomize: true });
+      : (rotation
+        ? allocateLeagueRotationMinutes(players, rotation.roleRanks || [], { randomize: true })
+        : []);
     if (options.userMinutesFactor != null) {
       var userIndex = players.findIndex(function(player) { return !!player._isUser; });
       if (userIndex >= 0) {
@@ -213,8 +215,8 @@
     });
     var opportunity = players.map(function(player, index) {
       var roleFactor = roleRanks[index] === 0
-        ? 1.18
-        : (roleRanks[index] === 1 ? 1.14 : (roleRanks[index] < 5 ? 1.06 : (roleRanks[index] === 5 ? 1.01 : 0.87)));
+        ? 1.24
+        : (roleRanks[index] === 1 ? 1.19 : (roleRanks[index] < 5 ? 1.05 : (roleRanks[index] === 5 ? 1.00 : 0.85)));
       var creationFactor = 0.58 + creation[index] * 0.85;
       var threatFactor = 0.54 + threat[index] * 0.90;
       var baseOpportunity = Math.max(0.1, weights[index] * roleFactor * creationFactor * threatFactor * form[index]);
@@ -224,15 +226,15 @@
         ? clamp(normal(1, 0.11), 0.72, 1.32)
         : clamp(normal(1, 0.06), 0.82, 1.18);
       var burstChance = isCoreScorer
-        ? clamp(0.01 + Math.max(0, scoringLoad - 0.60) * 0.10, 0.01, 0.055)
+        ? clamp(0.014 + Math.max(0, scoringLoad - 0.60) * 0.15, 0.014, 0.080)
         : 0;
-      var legendaryBurst = weights[index] >= 32
-        && scoringLoad >= 0.84
-        && Math.random() < 0.002;
+      var legendaryBurst = weights[index] >= 30
+        && scoringLoad >= 0.70
+        && Math.random() < 0.010;
       if (legendaryBurst) {
-        gameMultiplier = 2.50 + Math.random() * 0.40;
+        gameMultiplier = 4.50 + Math.random() * 0.80;
       } else if (burstChance > 0 && Math.random() < burstChance) {
-        gameMultiplier *= 1.35 + Math.random() * 0.40;
+        gameMultiplier *= 1.55 + Math.random() * 0.65;
       }
       return baseOpportunity * gameMultiplier;
     });
@@ -338,17 +340,22 @@
         - opponent.rimProtection * 0.015,
       0.075, 0.185,
     );
-    var fta = Math.max(1, Math.round(effectivePossessions * freeThrowRate * 1.10));
+    // 罚球先按“造犯规回合”抽样，再按 1/2/3 罚决定实际 FTA；这样单节可以自然出现 0 次或较高罚球量。
+    var freeThrowTripRate = clamp(freeThrowRate * 0.56, 0.030, 0.14);
+    var freeThrowTrips = sampleMakes(effectivePossessions, freeThrowTripRate);
+    var freeThrowTripSizes = [];
+    for (var trip = 0; trip < freeThrowTrips; trip++) {
+      var tripRoll = Math.random();
+      freeThrowTripSizes.push(tripRoll < 0.08 ? 3 : (tripRoll < 0.28 ? 1 : 2));
+    }
+    var fta = freeThrowTripSizes.reduce(function(sum, value) { return sum + value; }, 0);
     var offensiveReboundRate = clamp(
       0.065 + context.offensiveRebound * 0.055 - opponent.defensiveRebound * 0.025,
       0.050, 0.120,
     );
-    var offensiveRebounds = sampleMakes(effectivePossessions, offensiveReboundRate);
-    var rawFga = Math.round(effectivePossessions - fta * 0.44 + offensiveRebounds);
-    var fga = clamp(
-      rawFga,
-      1, Math.max(1, effectivePossessions + offensiveRebounds),
-    );
+    // 先生成基础投篮，等真实 miss 出现后再生成二次进攻；OREB 不再凭空创造可抢篮板。
+    var rawFga = Math.round(effectivePossessions - fta * 0.44);
+    var fga = Math.max(1, rawFga);
     var threeRate = clamp(
       weightedThree / Math.max(0.01, weightedThree + weightedMid + weightedRim)
         - (opponent.perimeterDefense - 0.50) * 0.055,
@@ -366,13 +373,19 @@
     var ftaWeights = context.players.map(function(_, index) {
       return context.opportunity[index] * (0.28 + context.volumeRim[index] * 1.55 + context.creation[index] * 0.25);
     });
-    var ftaByPlayer = allocateTotal(fta, ftaWeights, fgaByPlayer.map(function(value) {
-      return Math.max(2, Math.round(value * 0.75) + 2);
+    var ftaTripsByPlayer = weightedRandomAllocation(freeThrowTrips, ftaWeights, fgaByPlayer.map(function(value) {
+      return Math.max(1, Math.round(value * 0.50) + 2);
     }));
-    var lines = context.players.map(function(player, index) {
-      var line = emptyLine(player, context, index);
-      var threeAttempts = threeByPlayer[index];
-      var twoAttempts = Math.max(0, fgaByPlayer[index] - threeAttempts);
+    var tripCursor = 0;
+    var ftaByPlayer = ftaTripsByPlayer.map(function(tripCount) {
+      var attempts = 0;
+      for (var tripIndex = 0; tripIndex < tripCount; tripIndex++) {
+        attempts += freeThrowTripSizes[tripCursor++] || 2;
+      }
+      return attempts;
+    });
+
+    function addFieldGoalAttempts(line, index, threeAttempts, twoAttempts) {
       var rimShareBase = context.volumeRim[index] / Math.max(0.01, context.volumeRim[index] + context.volumeMid[index]);
       var rimDeterrence = clamp((opponent.rimProtection - 0.50) * 0.75, -0.15, 0.30);
       var rimShare = clamp(rimShareBase * (1 - rimDeterrence), 0.15, 0.75);
@@ -394,23 +407,57 @@
       var rimMakes = sampleMakes(Math.max(0, rimAttempts - blocked), rimPct);
       var midMakes = sampleMakes(midAttempts, midPct);
       var threeMakes = sampleMakes(threeAttempts, threePct);
+      line.fga += threeAttempts + twoAttempts;
+      line.threeA += threeAttempts;
+      line.threeM += threeMakes;
+      line.fgm += threeMakes + rimMakes + midMakes;
+      line.pts += threeMakes * 3 + rimMakes * 2 + midMakes * 2;
+      line._twoA += twoAttempts;
+      line._twoM += rimMakes + midMakes;
+      line._rimA += rimAttempts;
+      line._blocked += blocked;
+    }
+
+    var lines = context.players.map(function(player, index) {
+      var line = emptyLine(player, context, index);
+      var threeAttempts = threeByPlayer[index];
+      var twoAttempts = Math.max(0, fgaByPlayer[index] - threeAttempts);
+      line._twoA = 0;
+      line._twoM = 0;
+      line._rimA = 0;
+      line._blocked = 0;
+      addFieldGoalAttempts(line, index, threeAttempts, twoAttempts);
       var ftSkill = context.three[index] * 0.52 + context.mid[index] * 0.48;
+      var qualityBias = bias + (context.passing - 0.50) * 0.014 - context.fatigue * 0.004;
       var ftPct = clamp(0.60 + ftSkill * 0.30 + qualityBias * 0.35, 0.56, 0.94);
       var ftMakes = sampleMakes(ftaByPlayer[index], ftPct);
-      line.fga = fgaByPlayer[index];
-      line.threeA = threeAttempts;
-      line.threeM = threeMakes;
       line.fta = ftaByPlayer[index];
       line.ftm = ftMakes;
-      line.fgm = threeMakes + rimMakes + midMakes;
-      line.pts = threeMakes * 3 + rimMakes * 2 + midMakes * 2 + ftMakes;
-      line._twoA = twoAttempts;
-      line._twoM = rimMakes + midMakes;
-      line._rimA = rimAttempts;
-      line._blocked = blocked;
+      line.pts += ftMakes;
       line._missedField = Math.max(0, line.fga - line.fgm);
       line._missedFt = Math.max(0, line.fta - line.ftm);
       return line;
+    });
+
+    var reboundableMisses = lines.reduce(function(sum, line) {
+      return sum + Math.max(0, line._missedField) + Math.floor(Math.max(0, line._missedFt) * 0.45);
+    }, 0);
+    var offensiveRebounds = sampleMakes(reboundableMisses, offensiveReboundRate);
+    var extraFgaByPlayer = weightedRandomAllocation(
+      offensiveRebounds,
+      context.players.map(function(_, index) { return context.opportunity[index] * (0.72 + context.volumeRim[index] * 0.60); }),
+      context.players.map(function() { return 24; }),
+    );
+    var extraThree = sampleMakes(offensiveRebounds, clamp(threeRate * 0.72, 0.16, 0.44));
+    var extraThreeByPlayer = weightedRandomAllocation(
+      extraThree,
+      context.players.map(function(_, index) { return context.opportunity[index] * (0.35 + context.volumeThree[index] * 1.45); }),
+      extraFgaByPlayer,
+    );
+    extraFgaByPlayer.forEach(function(extraAttempts, index) {
+      var extraThreeAttempts = extraThreeByPlayer[index] || 0;
+      addFieldGoalAttempts(lines[index], index, extraThreeAttempts, Math.max(0, extraAttempts - extraThreeAttempts));
+      lines[index]._missedField = Math.max(0, lines[index].fga - lines[index].fgm);
     });
     return {
       lines: lines,
@@ -421,6 +468,7 @@
       offensiveRebounds: offensiveRebounds,
       fga: lines.reduce(function(sum, line) { return sum + line.fga; }, 0),
       fta: lines.reduce(function(sum, line) { return sum + line.fta; }, 0),
+      freeThrowTrips: freeThrowTrips,
       missedField: lines.reduce(function(sum, line) { return sum + line._missedField; }, 0),
       missedFt: lines.reduce(function(sum, line) { return sum + line._missedFt; }, 0),
       rimAttempts: lines.reduce(function(sum, line) { return sum + line._rimA; }, 0),
@@ -603,7 +651,7 @@
     var first = contextForTeam(teamA, options);
     var second = contextForTeam(teamB, options);
     if (!first || !second) {
-      return { won: false, scoreA: 0, scoreB: 0, qScoresA: [0, 0, 0, 0], qScoresB: [0, 0, 0, 0], boxScore: { [teamA]: [], [teamB]: [] } };
+      throw new Error('[V2] 无法生成有效轮换：' + String(!first ? teamA : teamB));
     }
     first.fatigue = options.isB2BA === true || options.isB2B === true ? 1 : 0;
     second.fatigue = options.isB2BB === true ? 1 : 0;
@@ -617,7 +665,7 @@
     var biasA = homeA + Number(seedBonus || 0) * 0.003 + activeEventEdge * 0.004 + seasonEdge * 0.004 - first.fatigue * 0.012;
     var biasB = homeB - activeEventEdge * 0.004 - seasonEdge * 0.004 - second.fatigue * 0.012;
     var basePace = clamp(Math.round(
-      100 + ((first.pace + second.pace) / 2 - 0.50) * 7
+      105 + ((first.pace + second.pace) / 2 - 0.50) * 7
         - (first.fatigue + second.fatigue) * 1.5 + normal(0, 1.8),
     ), 88, 108);
     var totalLinesA = first.players.map(function(player, index) { return emptyLine(player, first, index); });
@@ -671,10 +719,16 @@
         fgaB: quarterB.fga,
         ftaA: quarterA.fta,
         ftaB: quarterB.fta,
+        freeThrowTripsA: quarterA.freeThrowTrips,
+        freeThrowTripsB: quarterB.freeThrowTrips,
         tovA: quarterA.turnovers,
         tovB: quarterB.turnovers,
         offensiveReboundsA: quarterA.offensiveRebounds,
         offensiveReboundsB: quarterB.offensiveRebounds,
+        missedFieldA: quarterA.missedField,
+        missedFieldB: quarterB.missedField,
+        missedFtA: quarterA.missedFt,
+        missedFtB: quarterB.missedFt,
         isOvertime: !!isOvertime,
       };
     }
@@ -704,6 +758,15 @@
       delete line._missedField; delete line._missedFt;
     });
     var directEdge = (first.attack - second.attack) * 4 + (first.defense - second.defense) * 3;
+    var pregameExpectedMargin = clamp(
+      directEdge
+        + (homeA - homeB) * 100
+        + Number(seedBonus || 0) * 0.5
+        + activeEventEdge * 0.4
+        + seasonEdge * 0.4
+        + (second.fatigue - first.fatigue) * 1.0,
+      -18, 18,
+    );
     return {
       won: scoreA > scoreB,
       scoreA: scoreA,
@@ -720,7 +783,8 @@
       isHomeA: isHomeA,
       isB2BA: first.fatigue > 0,
       isB2BB: second.fatigue > 0,
-      expectedMargin: scoreA - scoreB,
+      expectedMargin: pregameExpectedMargin,
+      actualMargin: scoreA - scoreB,
       marginComponents: {
         rosterEdge: 0,
         rawMatchupEdge: directEdge,
@@ -737,7 +801,7 @@
         seasonModifierTeamEdge: seasonEdge,
       },
       eventTeamEdge: activeEventEdge,
-      estimatedWinProb: 1 / (1 + Math.exp(-directEdge / 3.2)),
+      estimatedWinProb: 1 / (1 + Math.exp(-pregameExpectedMargin / 3.2)),
       boxScore: { [teamA]: totalLinesA, [teamB]: totalLinesB },
       _celebrationGameId: 'v2:' + Date.now() + ':' + Math.random().toString(36).slice(2),
       engineVersion: 'v2',
@@ -747,6 +811,8 @@
         userAttributeSnapshotA: first.userAttributeSnapshot,
         userAttributeSnapshotB: second.userAttributeSnapshot,
         periods: periodDiagnostics,
+        pregameExpectedMargin: pregameExpectedMargin,
+        actualMargin: scoreA - scoreB,
       },
     };
   }

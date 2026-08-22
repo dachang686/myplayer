@@ -948,7 +948,7 @@ function simOnePlayoffGame(round, seriesIdx, teamA, teamB, isMySeries, gameNum, 
   const isHomeA = isPlayoffTeamAHome(gameNum, teamAIsHigherSeed);
   
   // 同分区仅首轮保留很小的赛季表现修正；主要高种子优势由真实主场顺序提供。
-  const seedBonus = getPlayoffSeriesSeedBonus(teamA, teamB, round);
+  const seedBonus = getPlayoffSeriesSeedBonus(teamA, teamB, round, STATE.season && STATE.season.playoffBracket);
   
   const userDebuff = 1.0;
   
@@ -1196,17 +1196,8 @@ function simPlayoffSeries(round, seriesIdx) {
       const sTeamB = s.low?.team;
       if (!sTeamA || !sTeamB) continue;
       
-      // ★ 首轮根据种子排名计算 seedBonus
-      let sb = 0;
-      if (round === 0) {
-        const highIdx = bracket.teams.findIndex(t => t.team === sTeamA);
-        const lowIdx = bracket.teams.findIndex(t => t.team === sTeamB);
-        if (highIdx >= 0 && lowIdx >= 0) {
-          const gapSeed = Math.abs(highIdx - lowIdx);
-          sb = 0.4 * gapSeed;
-          sb = highIdx < lowIdx ? sb : -sb;
-        }
-      }
+      // ★ 所有系列赛统一按实际 bracket 身份计算首轮 seedBonus。
+      const sb = getPlayoffSeriesSeedBonus(sTeamA, sTeamB, round, bracket);
       
       let sWA = 0, sWB = 0;
       const sGames = [];
@@ -1312,18 +1303,20 @@ function simOtherConference(conf) {
   const sorted = getConferenceSorted(conf);
   const teams = sorted.slice(0, 8).map(t => t.team);
   if (teams.length < 8) return teams[0] || '';
+  const confBracket = { teams: teams.map(team => ({ team })) };
   
   // 让首轮胜者自然进入正确半区：1/8 vs 4/5、2/7 vs 3/6。
   const bracketOrder = [0, 7, 3, 4, 1, 6, 2, 5];
   let roundTeams = bracketOrder.map(i => teams[i]);
   
   // 3轮7场4胜
-  const simSeries = (tA, tB) => {
+  const simSeries = (tA, tB, round) => {
     const teamAIsHigherSeed = isTeamAHigherPlayoffSeed(tA, tB);
+    const seedBonus = getPlayoffSeriesSeedBonus(tA, tB, round, confBracket);
     let wA = 0, wB = 0;
     for (let g = 0; g < 7 && wA < 4 && wB < 4; g++) {
       const isHomeA = isPlayoffTeamAHome(g, teamAIsHigherSeed);
-      const result = simulateGameNew(tA, tB, 0, null, { isHomeA: isHomeA, isB2B: false });
+      const result = simulateGameNew(tA, tB, seedBonus, null, { isHomeA: isHomeA, isB2B: false });
       if (result.won) wA++;
       else wB++;
     }
@@ -1334,7 +1327,7 @@ function simOtherConference(conf) {
     const winners = [];
     for (let i = 0; i < roundTeams.length; i += 2) {
       if (i + 1 >= roundTeams.length) { winners.push(roundTeams[i]); break; }
-      winners.push(simSeries(roundTeams[i], roundTeams[i + 1]));
+      winners.push(simSeries(roundTeams[i], roundTeams[i + 1], r));
     }
     roundTeams = winners;
   }

@@ -8926,7 +8926,23 @@ function addProfileDelta(key, delta) {
   return p[key];
 }
 
-function addSeasonMod(key, delta, minVal, maxVal) {
+function getBranchSeasonMods() {
+  return STATE && STATE._branchChoicePhase === 'season' ? getActiveSeasonMods() : getNextSeasonMods();
+}
+
+function addSeasonMod(key, delta, minVal, maxVal, target) {
+  if (target !== 'next' && STATE && STATE._branchChoicePhase === 'season') {
+    return addActiveSeasonMod(key, delta, minVal, maxVal);
+  }
+  var mods = getNextSeasonMods();
+  if (mods[key] == null) mods[key] = 0;
+  var min = minVal == null ? -10 : minVal;
+  var max = maxVal == null ? 10 : maxVal;
+  mods[key] = Math.max(min, Math.min(max, mods[key] + (delta || 0)));
+  return mods[key];
+}
+
+function addNextSeasonMod(key, delta, minVal, maxVal) {
   var mods = getNextSeasonMods();
   if (mods[key] == null) mods[key] = 0;
   var min = minVal == null ? -10 : minVal;
@@ -9306,7 +9322,15 @@ function chooseSeasonBranchEvent(choiceIdx) {
   if (!ev) return;
   var ch = ev.choices[choiceIdx];
   if (!ch || isBranchChoiceLocked(ch)) return;
-  var msg = ch && ch.apply ? ch.apply() : '';
+  var previousBranchChoicePhase = STATE._branchChoicePhase;
+  STATE._branchChoicePhase = 'season';
+  var msg = '';
+  try {
+    msg = ch && ch.apply ? ch.apply() : '';
+  } finally {
+    if (previousBranchChoicePhase == null) delete STATE._branchChoicePhase;
+    else STATE._branchChoicePhase = previousBranchChoicePhase;
+  }
   msg = applyChoiceBonus(ch, msg);
   recordBranchChoice(ev, ch, msg, 'season');
   var modal = document.getElementById('season-branch-modal');
@@ -9397,7 +9421,15 @@ function chooseOffseasonEvent(choiceIdx) {
   if (!ev) return;
   var ch = ev.choices[choiceIdx];
   if (!ch || isBranchChoiceLocked(ch)) return;
-  var msg = ch && ch.apply ? ch.apply() : '';
+  var previousBranchChoicePhase = STATE._branchChoicePhase;
+  STATE._branchChoicePhase = 'offseason';
+  var msg = '';
+  try {
+    msg = ch && ch.apply ? ch.apply() : '';
+  } finally {
+    if (previousBranchChoicePhase == null) delete STATE._branchChoicePhase;
+    else STATE._branchChoicePhase = previousBranchChoicePhase;
+  }
   msg = applyChoiceBonus(ch, msg);
   msg = fillBranchEventText(msg);
   recordBranchChoice(ev, ch, msg, 'offseason');
@@ -9614,7 +9646,15 @@ function chooseCityFarewell(choiceIdx) {
   if (!ev) return;
   var ch = ev.choices[choiceIdx];
   if (!ch || isBranchChoiceLocked(ch)) return;
-  var msg = ch && ch.apply ? ch.apply() : '';
+  var previousBranchChoicePhase = STATE._branchChoicePhase;
+  STATE._branchChoicePhase = 'offseason';
+  var msg = '';
+  try {
+    msg = ch && ch.apply ? ch.apply() : '';
+  } finally {
+    if (previousBranchChoicePhase == null) delete STATE._branchChoicePhase;
+    else STATE._branchChoicePhase = previousBranchChoicePhase;
+  }
   msg = applyChoiceBonus(ch, msg);
   recordBranchChoice(ev, ch, msg, 'offseason');
   var modal = document.getElementById('city-farewell-modal');
