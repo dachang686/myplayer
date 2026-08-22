@@ -949,6 +949,8 @@ function startNewSeason() {
 
 function resetForNewSeason() {
   saveCurrentSeasonToCareer();
+  // 本届选秀已经结算并写入 draftHistory；新赛季不能携带旧的流程状态。
+  delete STATE.offseasonDraft;
   _rngState = null;
   var oldTeam = STATE.careerTeam;
   var simulationEngine = (STATE.season && STATE.season.simulationEngine) || STATE.simulationEngine || null;
@@ -1126,6 +1128,7 @@ function applyDraftClass2026() {
       } else {
         applyRookieAttributeProfile(rookie, ovr, Math.random);
       }
+      rookie._rookieSeason = getCurrentLeagueSeasonNumber();
       roster.push(rookie);
     });
   });

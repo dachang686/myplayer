@@ -109,12 +109,36 @@ if (!blocks || !blocks.isUser) failures.push('验证球员未成为盖帽王');
 if (!dpoy || dpoy.userRank === '未进入前五') failures.push('篮板王+盖帽王仍未进入 DPOY 前五');
 if (!allDef1 || !allDef1.isUser) failures.push('DPOY 前五与最佳防守一阵排名不一致');
 
+// 审计回归：低 OVR 的统计王、非分区头名替补的第六人，以及后续届 ROTY 必须进入对应候选池。
+const auditTeam = LEAGUE_TEAM_IDS[7];
+const auditVeteran = { id: 'audit-low-ovr', cname: '低评统计王', pos: 'SG', ovr: 60 };
+const auditRookie = { id: 'audit-rookie', cname: '后续届新秀', pos: 'PG', ovr: 65, _rookieSeason: 2 };
+LEAGUE_PLAYER_DATA[auditTeam].push(auditVeteran, auditRookie);
+state.season.leaguePlayerSeasonStats[`${auditTeam}:${auditVeteran.id}`] = {
+  gp: 82, pts: 40 * 82, reb: 4 * 82, ast: 5 * 82, stl: 1.2 * 82, blk: 0.2 * 82,
+};
+state.season.leaguePlayerSeasonStats[`${auditTeam}:${auditRookie.id}`] = {
+  gp: 82, pts: 36 * 82, reb: 5 * 82, ast: 6 * 82, stl: 1.4 * 82, blk: 0.3 * 82,
+};
+state.season.awards = [];
+delete state._awardStreakSeason;
+calcSeasonAwards();
+const auditScoring = state.season.awards.find(award => award.act === 'scoring');
+const auditSixth = state.season.awards.find(award => award.act === 'sixthman');
+const auditRoty = state.season.awards.find(award => award.act === 'roty');
+if (!auditScoring || auditScoring.winnerId !== auditVeteran.id) failures.push('OVR < 72 的统计王仍被排除');
+if (!auditSixth || auditSixth.winnerId !== auditVeteran.id) failures.push('最佳第六人没有从全联盟替补统一比较');
+if (!auditRoty || auditRoty.winnerId !== auditRookie.id) failures.push('后续赛季没有生成基于 _rookieSeason 的 ROTY');
+
 console.log(JSON.stringify({
   dpoyUserRank: dpoy && dpoy.userRank,
   dpoyWinner: dpoy && dpoy.winner,
   allDef1IncludesUser: !!(allDef1 && allDef1.isUser),
   reboundLeader: rebounds && rebounds.winner,
   blockLeader: blocks && blocks.winner,
+  auditScoringLeader: auditScoring && auditScoring.winner,
+  auditSixthMan: auditSixth && auditSixth.winner,
+  auditRoty: auditRoty && auditRoty.winner,
 }, null, 2));
 
 if (failures.length) {

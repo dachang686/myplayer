@@ -173,14 +173,23 @@ function build2026RookieAwards() {
     };
   });
 
-  rookieCandidates.push({
+  rookieCandidates.push(createUserRookieCandidate());
+  return buildRookieAwardsFromCandidates(rookieCandidates);
+}
+
+function createUserRookieCandidate() {
+  return {
     id: '',
     cname: getMyPlayerDisplayName(),
     team: STATE.careerTeam,
     stats: getUserSeasonAverageStats(),
     isUser: true,
     teamBonus: getRookieAwardTeamBonus(STATE.careerTeam)
-  });
+  };
+}
+
+function buildRookieAwardsFromCandidates(rookieCandidates) {
+  if (!rookieCandidates || !rookieCandidates.length) return null;
   rookieCandidates.forEach(function(candidate) {
     candidate.awardScore = calcRookieAwardScore(candidate);
   });
@@ -234,6 +243,34 @@ function build2026RookieAwards() {
       isList: true
     }
   ];
+}
+
+/** 后续届新秀以选秀写入的 _rookieSeason 为准；玩家只在首个职业赛季具备资格。 */
+function buildCurrentSeasonRookieAwards() {
+  if (!STATE.season || !STATE.season.playerStats || typeof LEAGUE_TEAM_IDS === 'undefined') return null;
+  var currentSeason = typeof getCurrentLeagueSeasonNumber === 'function'
+    ? getCurrentLeagueSeasonNumber()
+    : Math.max(1, ((STATE.career && STATE.career.seasonCount) || 0) + 1);
+  var seen = {};
+  var rookieCandidates = [];
+  LEAGUE_TEAM_IDS.forEach(function(team) {
+    (LEAGUE_PLAYER_DATA[team] || []).forEach(function(player) {
+      if (!player || Number(player._rookieSeason) !== currentSeason) return;
+      var key = String(player.id || player.cname || '');
+      if (!key || seen[key]) return;
+      seen[key] = true;
+      rookieCandidates.push({
+        id: player.id || '',
+        cname: player.cname || '球员',
+        team: team,
+        stats: getLeaguePlayerSeasonStats(player, team),
+        isUser: false,
+        teamBonus: getRookieAwardTeamBonus(team)
+      });
+    });
+  });
+  if (!STATE.career || STATE.career.seasonCount === 0) rookieCandidates.push(createUserRookieCandidate());
+  return buildRookieAwardsFromCandidates(rookieCandidates);
 }
 
 function computeSixthManRank(avgPts) {
@@ -363,7 +400,6 @@ function calcSeasonAwards() {
         if (p._isUser) continue;
         var pos = (p.pos || 'SF').split('/')[0].trim();
         var ovr = parseInt(p.ovr) || 50;
-        if (ovr < 72) continue;
         var st = getLeaguePlayerSeasonStats(p, team);
         if (!st) continue;
         candidates.push({
@@ -401,6 +437,8 @@ function calcSeasonAwards() {
       }
     };
     candidates.push(userCandidate);
+    // 统计王不接受 OVR 门槛；保留独立池以防后续奖项条件变化影响统计归属。
+    var statCandidates = candidates.slice();
 
     // 防守数据榜名次用于 DPOY 加成；并列数据共享同一名次。
     ['reb', 'stl', 'blk'].forEach(function(statKey) {
@@ -650,7 +688,7 @@ function calcSeasonAwards() {
     // ---------- 7. 得分王 / 篮板王 / 助攻王 ----------
     function pickStatLeader(statKey, act, label, minGp) {
       minGp = minGp || 58;
-      var eligible = candidates.filter(function(c) {
+      var eligible = statCandidates.filter(function(c) {
         return c.stats.gp >= minGp;
       });
       eligible.sort(function(a, b) {
@@ -760,57 +798,49 @@ function calcSeasonAwards() {
     })();
 
     var isFirstCareerSeason = !STATE.career || STATE.career.seasonCount === 0;
-    if (isFirstCareerSeason) {
-      var rookieAwards = build2026RookieAwards();
-      if (rookieAwards) STATE.season.awards.push.apply(STATE.season.awards, rookieAwards);
-    }
+    var rookieAwards = isFirstCareerSeason ? build2026RookieAwards() : buildCurrentSeasonRookieAwards();
+    if (rookieAwards) STATE.season.awards.push.apply(STATE.season.awards, rookieAwards);
 
     (function() {
-      var bestBench = null, bestBOvr = 0, bestBTeam = '';
-      var confs2 = ['SOUTH', 'NORTH'];
-      for (var _ci2 = 0; _ci2 < confs2.length; _ci2++) {
-        var sorted2 = getConferenceSorted(confs2[_ci2]);
-        if (!sorted2.length) continue;
-        var topT2 = sorted2[0].team;
-        var lineup2 = calcTeamLineup(topT2);
-        var bench2 = lineup2.bench || [];
-        for (var _bi2 = 0; _bi2 < bench2.length; _bi2++) {
-          var p2 = bench2[_bi2];
-          if (p2._isUser) continue;
-          if (getPlayerAwardStreak(p2, 'sixthman') >= 2) continue;
-          var ovr2 = parseInt(p2.ovr) || 0;
-          if (ovr2 > bestBOvr) { bestBOvr = ovr2; bestBench = p2; bestBTeam = topT2; }
-        }
-      }
-      var bCN2 = '未知';
-      if (bestBench) {
-        bCN2 = bestBench.cname || '球员';
-      }
       syncUserStarterStatus();
       var userIsBench = !STATE.season.isUserStarter;
+      var sixthCandidates = [];
+      LEAGUE_TEAM_IDS.forEach(function(team) {
+        var lineup = calcTeamLineup(team);
+        (lineup.bench || []).forEach(function(player) {
+          if (!player || player._isUser) return;
+          var stats = getLeaguePlayerSeasonStats(player, team);
+          if (!stats || stats.gp < 40) return;
+          sixthCandidates.push({ id: player.id || '', cname: player.cname || '球员', team: team, stats: stats,
+            ovr: Number(player.ovr) || 0, isUser: false });
+        });
+      });
+      if (userIsBench && g >= 40) {
+        sixthCandidates.push({ id: '', cname: getMyPlayerDisplayName(), team: STATE.careerTeam,
+          stats: getUserSeasonAverageStats(), ovr: Number(STATE.finalOVR) || 0, isUser: true });
+      }
+      function sixthScore(candidate) {
+        var stats = candidate.stats || {};
+        return (stats.pts || 0) + (stats.reb || 0) * 0.55 + (stats.ast || 0) * 0.75
+          + (stats.stl || 0) * 1.2 + (stats.blk || 0) * 1.2 + (candidate.ovr || 0) * 0.001;
+      }
+      sixthCandidates.sort(function(a, b) {
+        return sixthScore(b) - sixthScore(a) || (b.stats.gp || 0) - (a.stats.gp || 0);
+      });
+      var userIdx = sixthCandidates.findIndex(function(candidate) { return candidate.isUser; });
+      var winner = sixthCandidates[0];
       var userSixthRank = '首发球员不参与评选';
-      var sixthUserObj = getUserPlayerObject();
-      var sixthThreshold = (sixthUserObj && getPlayerAwardStreak(sixthUserObj, 'sixthman') >= 2) ? 22 : 18;
-      if (userIsBench && avg.pts >= sixthThreshold) {
-        userSixthRank = '🥇 第一名';
-      } else if (userIsBench) {
-        var sr = computeSixthManRank(avg.pts);
-        if (sr === 1) userSixthRank = '进入评选';
-        else if (sr === 2) userSixthRank = '🥈 第二名';
-        else if (sr === 3) userSixthRank = '🥉 第三名';
-        else if (sr === 4) userSixthRank = '第四名';
-        else if (sr === 5) userSixthRank = '第五名';
+      if (userIsBench) {
+        if (g < 40) userSixthRank = '出勤不足';
+        else if (userIdx === 0) userSixthRank = '🥇 第一名';
+        else if (userIdx === 1) userSixthRank = '🥈 第二名';
+        else if (userIdx === 2) userSixthRank = '🥉 第三名';
+        else if (userIdx === 3) userSixthRank = '第四名';
+        else if (userIdx === 4) userSixthRank = '第五名';
         else userSixthRank = '未进入前五';
       }
-      var sixthWin = userIsBench && avg.pts >= sixthThreshold;
-      if (!sixthWin && userSixthRank !== '未进入前五' && userSixthRank !== '首发球员不参与评选' && getUserRankStreak('sixthman', userSixthRank) >= 2) {
-        userSixthRank = '未进入前五';
-      }
-      if (sixthWin) {
-        STATE.season.awards.push({ act: 'sixthman', label: '最佳第六人', winner: getMyPlayerDisplayName(), winnerId: '', team: STATE.careerTeam, isUser: true, userRank: '🥇 第一名' });
-      } else {
-        STATE.season.awards.push({ act: 'sixthman', label: '最佳第六人', winner: bCN2, winnerId: bestBench?.id || '', team: bestBTeam, isUser: false, userRank: userSixthRank });
-      }
+      if (winner) STATE.season.awards.push({ act: 'sixthman', label: '最佳第六人', winner: winner.cname,
+        winnerId: winner.isUser ? '' : winner.id, team: winner.team, isUser: winner.isUser, userRank: userSixthRank });
     })();
 
     updateAwardStreaks();

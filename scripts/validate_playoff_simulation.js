@@ -6,6 +6,24 @@ const root = path.resolve(__dirname, '..');
 const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const playoffsSource = fs.readFileSync(path.join(root, 'js/playoffs.js'), 'utf8');
 
+function validateFinalsMvpSelection() {
+  const start = playoffsSource.indexOf('function pickFinalsMvp');
+  const end = playoffsSource.indexOf('function renderPlayoffAvailabilityNotices', start);
+  if (start < 0 || end < 0) throw new Error('无法定位总决赛 MVP 评选逻辑');
+  const pickFinalsMvp = new Function(`${playoffsSource.slice(start, end)}\nreturn pickFinalsMvp;`)();
+  const mvp = pickFinalsMvp({
+    winner: 'T1',
+    seriesGames: [
+      { boxScore: { T1: [{ playerId: 'user', name: '玩家', isUser: true, pts: 15, reb: 4, ast: 3 }, { playerId: 'mate', name: '队友', pts: 33, reb: 8, ast: 6 }] } },
+      { boxScore: { T1: [{ playerId: 'user', name: '玩家', isUser: true, pts: 16, reb: 5, ast: 2 }, { playerId: 'mate', name: '队友', pts: 30, reb: 7, ast: 5 }] } },
+    ],
+  });
+  return !!mvp && mvp.id === 'mate' && !mvp.isUser;
+}
+
+const finalsMvpSelection = validateFinalsMvpSelection();
+if (!finalsMvpSelection) throw new Error('FMVP 没有按总决赛冠军队 box score 评选');
+
 function extractSimulation(source, label) {
   const start = source.indexOf('function getTeamCompetitiveRating');
   const end = source.indexOf('function leagueStatClamp', start);

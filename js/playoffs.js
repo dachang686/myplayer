@@ -746,6 +746,34 @@ function renderPlayoffTreeSeries(confBracket, round, seriesIdx) {
   '</div>';
 }
 
+/** 仅使用总决赛 seriesGames 的 boxScore，在冠军队内统一评选 FMVP。 */
+function pickFinalsMvp(finalsResult) {
+  if (!finalsResult || !finalsResult.winner || !Array.isArray(finalsResult.seriesGames)) return null;
+  var totals = {};
+  finalsResult.seriesGames.forEach(function(game) {
+    var rows = game && game.boxScore && game.boxScore[finalsResult.winner] || [];
+    rows.forEach(function(row) {
+      if (!row) return;
+      var key = String(row.playerId || row.name || '');
+      if (!key) return;
+      var total = totals[key] || (totals[key] = {
+        id: row.playerId || '', name: row.name || '球员', isUser: !!(row._isUser || row.isUser),
+        pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, games: 0
+      });
+      ['pts', 'reb', 'ast', 'stl', 'blk'].forEach(function(field) { total[field] += Number(row[field]) || 0; });
+      total.games++;
+    });
+  });
+  var candidates = Object.keys(totals).map(function(key) { return totals[key]; });
+  candidates.sort(function(a, b) {
+    var score = function(player) {
+      return player.pts + player.reb * 0.7 + player.ast * 0.85 + player.stl * 1.5 + player.blk * 1.5;
+    };
+    return score(b) - score(a) || b.pts - a.pts || b.games - a.games || a.name.localeCompare(b.name);
+  });
+  return candidates[0] || null;
+}
+
 function renderPlayoffAvailabilityNotices() {
   var escapeText = typeof escapeCalendarText === 'function'
     ? escapeCalendarText
@@ -1335,9 +1363,13 @@ function simPlayoffSeries(round, seriesIdx) {
           STATE.season.playoffsDone = true;
           STATE.season.awards = STATE.season.awards || [];
           STATE.season.awards.push({ act: 'champion', label: '🏆 总冠军', winner: getMyPlayerDisplayName(), winnerId: '', team: STATE.careerTeam, isUser: true });
-          var poStats = STATE.season.playoffStats || {};
-          if (poStats.games > 0 && (poStats.pts || 0) / poStats.games >= 20) {
-            STATE.season.awards.push({ act: 'fmvp', label: '👑 总决赛MVP', winner: getMyPlayerDisplayName(), winnerId: '', team: STATE.careerTeam, isUser: true });
+          var finalsResult = (STATE.season.playoffBracket && STATE.season.playoffBracket.results || []).find(function(result) {
+            return result && result.round === 3 && result.winner === STATE.careerTeam;
+          });
+          var finalsMvp = pickFinalsMvp(finalsResult);
+          if (finalsMvp) {
+            STATE.season.awards.push({ act: 'fmvp', label: '👑 总决赛MVP', winner: finalsMvp.isUser ? getMyPlayerDisplayName() : finalsMvp.name,
+              winnerId: finalsMvp.isUser ? '' : finalsMvp.id, team: STATE.careerTeam, isUser: finalsMvp.isUser });
           }
           // ★ 成就系统：记录夺冠
           if (window.CONQUEST_API) {

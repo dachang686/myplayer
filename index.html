@@ -1978,7 +1978,7 @@ function renderModeSelect() {
   };
   var continueButton = document.getElementById('continue-activity-btn');
   continueButton.onclick = function() {
-    manualLoadGame(1, { destination: 'player' });
+    manualLoadGame(1);
   };
   var legacyButton = document.getElementById('legacy-builder-btn');
   legacyButton.onclick = function() {
@@ -10252,6 +10252,8 @@ function manualLoadGame(slot, options) {
           normalizeLegacyGeneratedRookieLabels();
           if (typeof syncLeaguePlayerOvrs === 'function') syncLeaguePlayerOvrs();
         }
+        // 阵容由联盟名单派生，不能沿用存档中的缓存引用或过期排序。
+        STATE._lineupCache = {};
         _playerAges = snap.ages || {};
         _playerGenes = {};
         Object.keys(snap.genes || {}).forEach(function(playerId) {
@@ -10288,12 +10290,8 @@ function manualLoadGame(slot, options) {
           var el = document.getElementById(id);
           if (el) el.remove();
         });
-        if (options.destination === 'player' && STATE.season && STATE.careerTeam) {
-          if (hasActiveSeasonPlayoffs() && typeof resumePlayoffs === 'function') resumePlayoffs();
-          else showMyCard();
-        } else {
-          renderAfterSaveLoad(snap.screen);
-        }
+        // 存档页面只是展示快照，不能作为生涯流程真源。恢复必须只由持久状态判定。
+        resumeLoadedCareer(snap.screen);
         renderMenuSavePanel();
         showManualSaveToast('已恢复上局游戏');
       } catch(e) {
@@ -10341,18 +10339,41 @@ function manualClearSave(slot) {
   });
 }
 
-function renderAfterSaveLoad(targetScreen) {
-  if (targetScreen === 'screen-draft-lottery' && typeof showOffseasonDraftLottery === 'function') {
+function resumeLoadedCareer(targetScreen) {
+  var season = STATE.season || {};
+  var draft = STATE.offseasonDraft || {};
+  var phase = draft.phase;
+  var schedule = Array.isArray(season.schedule) ? season.schedule : [];
+  var regularSeasonPending = schedule.length > 0 && schedule.some(function(game) { return !game.simulated; });
+  var postseasonComplete = !!(season.playoffsDone || season.playoffEliminated || season.isChampion
+    || (season.playInState && season.playInState.isEliminated));
+
+  // 新赛季赛程优先于残留的上届选秀快照，防止完成选秀后读档回到选秀页。
+  if (regularSeasonPending) {
+    showMyCard();
+  } else if (phase === 'lottery' && typeof showOffseasonDraftLottery === 'function') {
     showOffseasonDraftLottery();
-  } else if (targetScreen === 'screen-draft-trades' && typeof showDraftPickTradeScreen === 'function') {
+  } else if (phase === 'pick_trades' && typeof showDraftPickTradeScreen === 'function') {
     showDraftPickTradeScreen();
-  } else if (targetScreen === 'screen-draft' && typeof showOffseasonDraftScreen === 'function') {
+  } else if ((phase === 'draft' || phase === 'complete') && typeof showOffseasonDraftScreen === 'function') {
     showOffseasonDraftScreen();
+  } else if (hasActiveSeasonPlayoffs() && typeof resumePlayoffs === 'function') {
+    resumePlayoffs();
+  } else if (postseasonComplete && !season._resultsViewed) {
+    showSeasonResults();
   } else if (targetScreen === 'screen-roster-review' && typeof showRosterReview === 'function') {
+    // 阵容复盘没有独立生命周期状态；仅在所有业务状态都不匹配时使用页面提示。
     showRosterReview();
-  } else {
+  } else if (STATE.career && STATE.career.offseasonEventSeason === STATE.career.seasonCount) {
     renderTrainingCamp();
+  } else {
+    showMyCard();
   }
+}
+
+// 旧调用点保留兼容，但同样按状态恢复，避免 screen 字段重新成为业务真源。
+function renderAfterSaveLoad(targetScreen) {
+  resumeLoadedCareer(targetScreen);
 }
 
 function showManualSaveToast(msg) {
@@ -10557,6 +10578,11 @@ function resetTraining() {
 }
 
 function confirmTraining() {
+  var career = STATE.career || {};
+  var seasonKey = Number(career.seasonCount) || 0;
+  if (career.trainingCompletedSeason === seasonKey) {
+    throw new Error('本休赛期训练已经结算');
+  }
   var pending = STATE._tpPending || {};
   for (var k in pending) {
     if (pending.hasOwnProperty(k)) STATE.attrs[k] = (STATE.attrs[k] || 50) + pending[k];
@@ -10564,12 +10590,13 @@ function confirmTraining() {
   STATE.finalOVR = calcOVR(STATE.attrs);
 
   // 合同扣减
-  STATE.career.contract--;
+  career.contract--;
 
   // 如果生涯还没保存（赛季结束未进生涯页面），这里补保存
   saveCurrentSeasonToCareer();
 
-  STATE.career.currentAge++;
+  career.currentAge++;
+  career.trainingCompletedSeason = seasonKey;
   STATE._tpPending = {};
 
   if (shouldOfferPlayerRetirement()) {
@@ -18124,7 +18151,5 @@ function watchAdToReroll() {
 
 </body>
 </html>
-
-
 
 
