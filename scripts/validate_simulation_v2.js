@@ -434,6 +434,43 @@ const focusedAttributeGradients = {
   blocking: runFocusedAttributeGradient('BLOCKING', ['BLK'], ['blk']),
 };
 
+function rotationForTargetMinutes(team, targetMinutes) {
+  const minutes = [targetMinutes];
+  let remaining = 240 - targetMinutes;
+  for (let index = 1; index < 10; index++) {
+    const allocation = Math.floor(remaining / (10 - index));
+    minutes.push(allocation);
+    remaining -= allocation;
+  }
+  return fixedRotation(team, undefined, minutes);
+}
+
+function runMinutesGradient(name, patch) {
+  return [4, 8, 12, 16, 24, 36, 48].map(minutes => {
+    const team = makeSyntheticTeam('V2_MINUTES_' + name + '_' + minutes, {});
+    Object.assign(leagueData.LEAGUE_PLAYER_DATA[team][0], patch);
+    const totals = { pts: 0, fga: 0 };
+    const games = 600;
+    for (let game = 0; game < games; game++) {
+      const gameResult = seeded(225000 + game, () => runtime(team, teams[1], 0, null, {
+        isHomeA: null,
+        ignoreNpcAvailability: true,
+        _preparedRotations: { [team]: rotationForTargetMinutes(team, minutes) },
+      }));
+      const row = (gameResult.boxScore[team] || []).find(player => player.playerId === team + '-0');
+      totals.pts += Number(row && row.pts) || 0;
+      totals.fga += Number(row && row.fga) || 0;
+    }
+    const fga = totals.fga / games;
+    return { minutes, games, pts: totals.pts / games, fga, fgaPer36: fga / minutes * 36 };
+  });
+}
+
+const minutesGradients = {
+  balanced80: runMinutesGradient('BALANCED80', {}),
+  scoring99: runMinutesGradient('SCORING99', { threePT: 99, MID: 99, FIN: 99, DNK: 99, HAN: 99, ATH: 99 }),
+};
+
 const roleIsolationTeam = makeSyntheticTeam('V2_ROLE_ISOLATION', {});
 const roleIsolationBase = fixedRotation(roleIsolationTeam);
 const roleIsolationPermuted = Object.assign({}, roleIsolationBase, { roleRanks: [4, 3, 2, 1, 0, 9, 8, 7, 6, 5] });
@@ -951,6 +988,7 @@ const specialistStats = {
   attributeGradient,
   teamAttributeGradient,
   focusedAttributeGradients,
+  minutesGradients,
   roleIsolation,
   deterministicV2,
   dispatcherSummary: dispatcherResult && { engineVersion: dispatcherResult.engineVersion, isHomeA: dispatcherResult.isHomeA, isB2BA: dispatcherResult.isB2BA, isB2BB: dispatcherResult.isB2BB },
@@ -1052,6 +1090,23 @@ const lowStealer = focusedAttributeGradients.stealing.find(row => row.level === 
 const eliteStealer = focusedAttributeGradients.stealing.find(row => row.level === 99);
 const lowBlocker = focusedAttributeGradients.blocking.find(row => row.level === 25);
 const eliteBlocker = focusedAttributeGradients.blocking.find(row => row.level === 99);
+function minutesGradientHealthy(rows) {
+  if (!Array.isArray(rows) || rows.length !== 7) return false;
+  return rows.every((row, index) => {
+    if (!Number.isFinite(row.fgaPer36) || row.fgaPer36 < 0) return false;
+    if (index === 0) return row.fga >= 0.1 && row.pts >= 0;
+    const previous = rows[index - 1];
+    if (row.fga < previous.fga || row.pts < previous.pts) return false;
+    const usageRatio = (row.fga / row.minutes) / Math.max(0.001, previous.fga / previous.minutes);
+    // 4→8 分钟仍允许低样本离散性；其余相邻档位不得再出现逐节取整式的跳跃。
+    const usageLimit = index === 1 ? 6 : 2;
+    return usageRatio <= usageLimit;
+  });
+}
+const minutesGradientPass = minutesGradientHealthy(minutesGradients.balanced80)
+  && minutesGradientHealthy(minutesGradients.scoring99)
+  && minutesGradients.balanced80[1].fga >= 1
+  && minutesGradients.balanced80[3].fga / minutesGradients.balanced80[1].fga <= 4;
 if (invariantErrors > 0) throw new Error('V2 守恒错误：' + JSON.stringify(result));
 if (result.teamsCovered !== allTeams.length
   || result.averageTotal < 210 || result.averageTotal > 240
@@ -1110,6 +1165,7 @@ if (result.full99PlayerPpg - result.partial99PlayerPpg < 1.5
   || !teamAttributeMonotonic
   || !focusedAttributeMonotonic
   || !scoringGradientSmooth
+  || !minutesGradientPass
   || !floorPlayer || floorPlayer.pts < 0.4 || floorPlayer.pts > 2 || floorPlayer.fga < 0.5 || floorPlayer.fga > 2
   || !lowPlayer || lowPlayer.pts < 2.5 || lowPlayer.pts > 5 || lowPlayer.fga < 3 || lowPlayer.fga > 6 || lowPlayer.ast > 1
   || lowPlayer.reb > 4 || lowPlayer.stl > 0.5 || lowPlayer.blk > 0.35

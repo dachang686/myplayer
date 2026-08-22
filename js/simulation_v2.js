@@ -81,6 +81,77 @@
     return output;
   }
 
+  // 跨节累计的确定性 FGA 配额。每节仍只分配已生成的出手数，但此前小数份额
+  // 不会因逐节整数化而清零，深度替补可在后续节自然兑现累计机会。
+  function allocatePeriodFga(total, weights, caps, ledger) {
+    total = Math.max(0, Math.round(Number(total) || 0));
+    var safeWeights = weights.map(function(weight) { return Math.max(0.0001, Number(weight) || 0); });
+    var safeCaps = caps.map(function(cap) { return Math.max(0, Math.floor(Number(cap) || 0)); });
+    var state = ledger && typeof ledger === 'object' ? ledger : {};
+    var quotaCarry = Array.isArray(state.quotaCarry) ? state.quotaCarry : safeWeights.map(function() { return 0; });
+    var weightSum = safeWeights.reduce(function(sum, weight) { return sum + weight; }, 0);
+    var capacity = safeCaps.reduce(function(sum, cap) { return sum + cap; }, 0);
+    if (safeCaps.length !== safeWeights.length || quotaCarry.length !== safeWeights.length
+      || !Number.isFinite(weightSum) || weightSum <= 0 || capacity < total
+      || quotaCarry.some(function(value) { return !Number.isFinite(Number(value)) || Number(value) < 0; })) {
+      throw new Error('[V2] FGA 配额账本无效或容量不足');
+    }
+    // 60% 比例配额跨节结转，剩余 40% 保留原核心优先的残余竞争规则。
+    // 这样小权重替补会累计到一次出手，而核心球员原有的残余竞争逻辑不被平均化。
+    var quotas = safeWeights.map(function(weight, index) {
+      var quota = total * weight / weightSum * 0.60 + Number(quotaCarry[index]);
+      if (!Number.isFinite(quota) || quota < 0) throw new Error('[V2] FGA 配额账本计算无效');
+      return quota;
+    });
+    var output = quotas.map(function(quota, index) {
+      return Math.min(safeCaps[index], Math.floor(quota));
+    });
+    // 多名球员的跨节余量可能在同一节同时达到整数。超出本节 FGA 时，
+    // 回退最小的未兑现余量，并把该份额留在账本中等待后续节结算。
+    var baseTotal = output.reduce(function(sum, value) { return sum + value; }, 0);
+    while (baseTotal > total) {
+      var rollbackIndex = -1;
+      var smallestRemainder = Infinity;
+      output.forEach(function(value, index) {
+        if (value <= 0) return;
+        var remainder = quotas[index] - (value - 1);
+        if (remainder < smallestRemainder) {
+          smallestRemainder = remainder;
+          rollbackIndex = index;
+        }
+      });
+      if (rollbackIndex < 0) throw new Error('[V2] FGA 配额账本无法回退');
+      output[rollbackIndex]--;
+      baseTotal--;
+    }
+    quotaCarry = quotas.map(function(quota, index) { return quota - output[index]; });
+    var remaining = total - output.reduce(function(sum, value) { return sum + value; }, 0);
+    var guard = 0;
+    while (remaining > 0 && guard++ < 10000) {
+      var best = -1;
+      var bestScore = -Infinity;
+      safeWeights.forEach(function(weight, index) {
+        if (output[index] >= safeCaps[index]) return;
+        var score = weight / (output[index] + 1);
+        if (score > bestScore) {
+          bestScore = score;
+          best = index;
+        }
+      });
+      if (best < 0) break;
+      output[best]++;
+      remaining--;
+    }
+    var allocatedTotal = output.reduce(function(sum, value) { return sum + value; }, 0);
+    if (allocatedTotal !== total
+      || output.some(function(value, index) { return !Number.isFinite(value) || value < 0 || value > safeCaps[index]; })
+      || quotaCarry.some(function(value) { return !Number.isFinite(value) || value < 0; })) {
+      throw new Error('[V2] FGA 配额无法完整分配');
+    }
+    state.quotaCarry = quotaCarry;
+    return output;
+  }
+
   function weightedRandomAllocation(total, weights, caps) {
     total = Math.max(0, Math.round(Number(total) || 0));
     var safeWeights = weights.map(function(weight) { return Math.max(0, Number(weight) || 0); });
@@ -373,7 +444,7 @@
     };
   }
 
-  function makeQuarter(context, opponent, possessions, bias, isClutch) {
+  function makeQuarter(context, opponent, possessions, bias, isClutch, fgaLedger) {
     var weightedThree = weightedMean(context.volumeThree, context.opportunity);
     var weightedMid = weightedMean(context.volumeMid, context.opportunity);
     var weightedRim = weightedMean(context.volumeRim, context.opportunity);
@@ -418,7 +489,7 @@
     var fgaCaps = context.players.map(function(_, index) {
       return Math.max(4, Math.round(fga * (0.30 + context.threat[index] * 0.13)));
     });
-    var fgaByPlayer = allocateTotal(fga, context.opportunity, fgaCaps);
+    var fgaByPlayer = allocatePeriodFga(fga, context.opportunity, fgaCaps, fgaLedger);
     var threeWeights = context.players.map(function(_, index) {
       return context.opportunity[index] * (0.35 + context.volumeThree[index] * 1.45);
     });
@@ -737,6 +808,8 @@
     var highlight = false;
     var keyEvents = [];
     var periodDiagnostics = [];
+    var fgaLedgerA = { quotaCarry: first.players.map(function() { return 0; }) };
+    var fgaLedgerB = { quotaCarry: second.players.map(function() { return 0; }) };
 
     function runQuarter(possessions, quarterIndex, isOvertime) {
       var clutch = (quarterIndex === 3 && Math.abs(scoreA - scoreB) <= 8)
@@ -750,8 +823,8 @@
       contextA.usagePressure = clamp((contextA.attack - 0.50) * 0.50, 0, 0.25);
       contextB.usagePressure = clamp((contextB.attack - 0.50) * 0.50, 0, 0.25);
       var periodPossessions = Math.max(1, possessions + Math.round(normal(0, 0.7)));
-      var quarterA = makeQuarter(contextA, contextB, periodPossessions, biasA, clutch);
-      var quarterB = makeQuarter(contextB, contextA, periodPossessions, biasB, clutch);
+      var quarterA = makeQuarter(contextA, contextB, periodPossessions, biasA, clutch, fgaLedgerA);
+      var quarterB = makeQuarter(contextB, contextA, periodPossessions, biasB, clutch, fgaLedgerB);
       rimAttemptsA += quarterA.rimAttempts;
       rimAttemptsB += quarterB.rimAttempts;
       contextA._quarterLines = quarterA.lines;
