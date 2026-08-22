@@ -293,6 +293,10 @@ const ovrLowResult = seeded(23000, () => runtime(ovrLow, ovrOpponent, 0, null, {
   ignoreNpcAvailability: true,
   _preparedRotations: { [ovrLow]: fixedRotation(ovrLow), [ovrOpponent]: fixedRotation(ovrOpponent) },
 }));
+Object.assign(leagueData.LEAGUE_PLAYER_DATA[ovrOpponent][0], {
+  threePT: 25, MID: 40, FIN: 50, DNK: 60, HAN: 80, ATH: 99,
+  PAS: 25, STR: 40, REB: 50, PDEF: 60, IDEF: 80, STL: 99, BLK: 25, CLU: 50,
+});
 const ovrIsolation = fingerprint(ovrHighResult) === fingerprint(ovrLowResult);
 
 
