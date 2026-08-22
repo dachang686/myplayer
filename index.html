@@ -1787,6 +1787,7 @@ function initGame() {
   _rookieNameSeq = 0;
   // 重置状态（保留 gameId 持久不变，直到下一次显式重置）
   Object.assign(STATE, {
+    simulationEngine: null,
     mode: null, position: null, playerName: '',
     attrs: {}, attrSlots: {}, lockedCount: 0,
     buildPointsTotal: 0, buildPointsRemaining: 0,
