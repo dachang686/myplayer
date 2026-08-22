@@ -388,7 +388,7 @@ const attributeGradient = attributeLevels.map(level => {
   return Object.assign({ level, games }, Object.fromEntries(Object.entries(totals).map(([field, value]) => [field, value / games])));
 });
 
-const teamAttributeGradient = [25, 50, 80].map(level => {
+const teamAttributeGradient = [25, 50, 80, 99].map(level => {
   const team = makeSyntheticTeam('V2_TEAM_ATTRIBUTE_' + level, {});
   leagueData.LEAGUE_PLAYER_DATA[team].forEach(player => {
     Object.assign(player, Object.fromEntries(allSimulationAttributes.map(key => [key, level])));
@@ -407,6 +407,32 @@ const teamAttributeGradient = [25, 50, 80].map(level => {
   }
   return Object.assign({ level, games }, Object.fromEntries(Object.entries(totals).map(([field, value]) => [field, value / games])));
 });
+
+function runFocusedAttributeGradient(name, attributes, fields) {
+  return attributeLevels.map(level => {
+    const team = makeSyntheticTeam('V2_' + name + '_' + level, {});
+    Object.assign(leagueData.LEAGUE_PLAYER_DATA[team][0], Object.fromEntries(attributes.map(key => [key, level])));
+    const totals = Object.fromEntries(fields.map(field => [field, 0]));
+    const games = 400;
+    for (let game = 0; game < games; game++) {
+      const gameResult = seeded(218000 + game, () => runtime(team, teams[1], 0, null, {
+        isHomeA: null,
+        ignoreNpcAvailability: true,
+        _preparedRotations: { [team]: fixedRotation(team) },
+      }));
+      const playerRow = (gameResult.boxScore[team] || []).find(row => row.playerId === team + '-0');
+      fields.forEach(field => { totals[field] += Number(playerRow && playerRow[field]) || 0; });
+    }
+    return Object.assign({ level, games }, Object.fromEntries(Object.entries(totals).map(([field, value]) => [field, value / games])));
+  });
+}
+
+const focusedAttributeGradients = {
+  scoring: runFocusedAttributeGradient('SCORING', ['threePT', 'MID', 'FIN', 'DNK', 'HAN', 'ATH'], ['pts', 'fga']),
+  rebounding: runFocusedAttributeGradient('REBOUNDING', ['REB'], ['reb']),
+  stealing: runFocusedAttributeGradient('STEALING', ['STL'], ['stl']),
+  blocking: runFocusedAttributeGradient('BLOCKING', ['BLK'], ['blk']),
+};
 
 const roleIsolationTeam = makeSyntheticTeam('V2_ROLE_ISOLATION', {});
 const roleIsolationBase = fixedRotation(roleIsolationTeam);
@@ -924,6 +950,7 @@ const specialistStats = {
   anchorTwo: anchorTwoStats,
   attributeGradient,
   teamAttributeGradient,
+  focusedAttributeGradients,
   roleIsolation,
   deterministicV2,
   dispatcherSummary: dispatcherResult && { engineVersion: dispatcherResult.engineVersion, isHomeA: dispatcherResult.isHomeA, isB2BA: dispatcherResult.isB2BA, isB2BB: dispatcherResult.isB2BB },
@@ -1000,13 +1027,31 @@ const gradientFields = ['pts', 'ast', 'reb', 'stl', 'blk', 'fga'];
 const playerAttributeMonotonic = gradientFields.every(field => attributeGradient.every((row, index) =>
   index === 0 || row[field] >= attributeGradient[index - 1][field],
 ));
-const teamAttributeMonotonic = ['pts', 'ast', 'stl', 'blk'].every(field => teamAttributeGradient.every((row, index) =>
+const teamAttributeMonotonic = ['pts', 'ast', 'stl'].every(field => teamAttributeGradient.every((row, index) =>
   index === 0 || row[field] >= teamAttributeGradient[index - 1][field],
-));
+)) && teamAttributeGradient.slice(0, 3).every((row, index, rows) => index === 0 || row.blk >= rows[index - 1].blk);
+const focusedAttributeMonotonic = Object.values(focusedAttributeGradients).every(rows => {
+  const fields = Object.keys(rows[0]).filter(key => !['level', 'games'].includes(key));
+  return fields.every(field => rows.every((row, index) => index === 0 || row[field] >= rows[index - 1][field]));
+});
+const scoringGradient = focusedAttributeGradients.scoring;
+const scoringGradientSmooth = scoringGradient.every((row, index) => {
+  if (index === 0) return true;
+  const previous = scoringGradient[index - 1];
+  return row.pts - previous.pts <= 16 && row.fga - previous.fga <= 11;
+});
+const floorPlayer = attributeGradient.find(row => row.level === 25);
 const lowPlayer = attributeGradient.find(row => row.level === 40);
 const elitePlayer = attributeGradient.find(row => row.level === 99);
 const lowTeam = teamAttributeGradient.find(row => row.level === 25);
 const midTeam = teamAttributeGradient.find(row => row.level === 50);
+const lowScorer = scoringGradient.find(row => row.level === 25);
+const lowRebounder = focusedAttributeGradients.rebounding.find(row => row.level === 25);
+const eliteRebounder = focusedAttributeGradients.rebounding.find(row => row.level === 99);
+const lowStealer = focusedAttributeGradients.stealing.find(row => row.level === 25);
+const eliteStealer = focusedAttributeGradients.stealing.find(row => row.level === 99);
+const lowBlocker = focusedAttributeGradients.blocking.find(row => row.level === 25);
+const eliteBlocker = focusedAttributeGradients.blocking.find(row => row.level === 99);
 if (invariantErrors > 0) throw new Error('V2 守恒错误：' + JSON.stringify(result));
 if (result.teamsCovered !== allTeams.length
   || result.averageTotal < 210 || result.averageTotal > 240
@@ -1063,9 +1108,16 @@ if (result.full99PlayerPpg - result.partial99PlayerPpg < 1.5
   || !specialistStats.roleIsolation
   || !playerAttributeMonotonic
   || !teamAttributeMonotonic
-  || !lowPlayer || lowPlayer.pts > 5 || lowPlayer.fga > 6 || lowPlayer.ast > 1
+  || !focusedAttributeMonotonic
+  || !scoringGradientSmooth
+  || !floorPlayer || floorPlayer.pts < 0.4 || floorPlayer.pts > 2 || floorPlayer.fga < 0.5 || floorPlayer.fga > 2
+  || !lowPlayer || lowPlayer.pts < 2.5 || lowPlayer.pts > 5 || lowPlayer.fga < 3 || lowPlayer.fga > 6 || lowPlayer.ast > 1
   || lowPlayer.reb > 4 || lowPlayer.stl > 0.5 || lowPlayer.blk > 0.35
   || !elitePlayer || elitePlayer.pts < 30 || elitePlayer.pts > 45 || elitePlayer.blk < 1.5
+  || !lowScorer || lowScorer.fga < 0.75 || lowScorer.fga > 2.5 || lowScorer.pts < 0.5 || lowScorer.pts > 3
+  || !lowRebounder || !eliteRebounder || lowRebounder.reb > 2 || eliteRebounder.reb < 8
+  || !lowStealer || !eliteStealer || lowStealer.stl > 0.15 || eliteStealer.stl < 1.2
+  || !lowBlocker || !eliteBlocker || lowBlocker.blk > 0.15 || eliteBlocker.blk < 1.4
   || !lowTeam || lowTeam.ast > 10 || lowTeam.stl > 3 || lowTeam.blk > 1.5
   || !midTeam || midTeam.blk >= 4
   || !specialistStats.deterministicV2

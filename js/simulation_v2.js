@@ -259,8 +259,12 @@
       var roleFactor = clamp(1 + (scoringLoads[index] - teamScoringLoad) * 1.95, 0.72, 1.32);
       var creationFactor = 0.58 + creation[index] * 0.85;
       var threatFactor = 0.54 + threat[index] * 0.90;
-      var baseOpportunity = Math.max(0.1, weights[index] * roleFactor * creationFactor * threatFactor * form[index]);
       var scoringLoad = scoringLoads[index];
+      // 低技术球员仍需参与半场进攻；软底座避免 creation/threat 相乘后把长时间上场者压到几乎零出手。
+      // 补偿随 scoringLoad 平方衰减，中高端球员基本保持原有机会分配。
+      var participationFactor = creationFactor * threatFactor
+        + 0.18 * Math.pow(1 - scoringLoad, 2);
+      var baseOpportunity = Math.max(0.1, weights[index] * roleFactor * participationFactor * form[index]);
       var isCoreScorer = offensiveRoleRank < 2 && weights[index] >= 28 && scoringLoad >= 0.62;
       // 爆发保留稀有长尾；上限和 legendary 档位避免 50+/60+ 在联盟生态中泛滥。
       var gameMultiplier = weights[index] >= 28
