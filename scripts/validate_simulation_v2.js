@@ -59,6 +59,23 @@ const dispatcher = runtimeBundle.dispatcher;
 if (typeof runtime !== 'function') throw new Error('V2 引擎没有暴露 simulateGameAggregateV2');
 if (typeof dispatcher !== 'function') throw new Error('V2 dispatcher 没有暴露 simulateGameNew');
 
+const engineChoiceStart = indexSource.indexOf('function applyNewCareerSimulationEngineChoice');
+const engineChoiceEnd = indexSource.indexOf('function renderModeSelect', engineChoiceStart);
+if (engineChoiceStart < 0 || engineChoiceEnd < 0) throw new Error('无法定位新生涯引擎选择逻辑');
+const buildApplyEngineChoice = new Function(
+  'STATE',
+  'document',
+  indexSource.slice(engineChoiceStart, engineChoiceEnd) + '\nreturn applyNewCareerSimulationEngineChoice;',
+);
+const engineChoiceState = {};
+const selectV2 = buildApplyEngineChoice(engineChoiceState, { querySelector: () => ({ value: 'v2' }) })();
+const selectV1 = buildApplyEngineChoice(engineChoiceState, { querySelector: () => ({ value: 'v1' }) })();
+const engineChoiceUiPath = selectV2 === 'v2'
+  && selectV1 === null
+  && engineChoiceState.simulationEngine === null
+  && /name="new-career-engine" value="v1" checked/.test(indexSource)
+  && /name="new-career-engine" value="v2"/.test(indexSource);
+
 function seeded(seed, callback) {
   const originalRandom = Math.random;
   let value = seed >>> 0;
@@ -856,6 +873,7 @@ const specialistStats = {
   npcFormOvrIsolation,
   emergencyReplacementPath,
   seededStateRestored,
+  engineChoiceUiPath,
   enginePersistencePath,
   diagnosticsFailClosed,
   emptyRotationThrows,
@@ -971,6 +989,7 @@ if (result.full99PlayerPpg - result.partial99PlayerPpg < 1.5
   || !specialistStats.npcFormOvrIsolation
   || !specialistStats.emergencyReplacementPath
   || !specialistStats.seededStateRestored
+  || !specialistStats.engineChoiceUiPath
   || !specialistStats.diagnosticsFailClosed
   || !specialistStats.dispatcherIntegration
   || !specialistStats.v2ModifierPath
