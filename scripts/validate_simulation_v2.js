@@ -296,20 +296,39 @@ const ovrIsolation = fingerprint(ovrHighResult) === fingerprint(ovrLowResult);
 
 
 state.season._npcSeasonProfiles = {};
+state.careerTeam = teams[1];
+state.season.schedule = [
+  { day: 20, home: false, simulated: true },
+  { day: 21, home: false, simulated: false },
+];
+state.season._dayMap = {
+  20: [{ home: teams[1], away: 'V2_OTHER' }],
+  21: [{ home: teams[0], away: teams[1] }],
+};
 const dispatcherResult = seeded(24000, () => dispatcher(teams[0], teams[1], 0, null, {
   engineVersion: 'v2',
-  isHomeA: true,
-  isB2BA: true,
-  isB2BB: false,
   ignoreNpcAvailability: true,
 }));
 const dispatcherIntegration = dispatcherResult
   && dispatcherResult.engineVersion === 'v2'
   && dispatcherResult.isHomeA === true
-  && dispatcherResult.isB2BA === true
-  && dispatcherResult.isB2BB === false
+  && dispatcherResult.isB2BA === false
+  && dispatcherResult.isB2BB === true
   && dispatcherResult.scoreA === sum(dispatcherResult.boxScore[teams[0]] || [], 'pts')
   && dispatcherResult.scoreB === sum(dispatcherResult.boxScore[teams[1]] || [], 'pts');
+state.careerTeam = ovrOpponent;
+const teamBAvailabilityResult = seeded(25000, () => runtime(ovrHigh, ovrOpponent, 0, 0.86, {
+  isHomeA: null,
+  ignoreNpcAvailability: true,
+  _preparedRotations: { [ovrHigh]: fixedRotation(ovrHigh), [ovrOpponent]: fixedRotation(ovrOpponent) },
+}));
+const teamBAvailabilityIntegration = teamBAvailabilityResult
+  && teamBAvailabilityResult.marginComponents.availabilityEdgeA === 0
+  && teamBAvailabilityResult.marginComponents.availabilityEdgeB < 0;
+state.careerTeam = null;
+state.season.schedule = [];
+delete state.season._dayMap;
+
 const v2ModifierPath = v2Source.includes('formVariance') && v2Source.includes('mediaPressure');
 
 const specialistStats = {
@@ -320,8 +339,10 @@ const specialistStats = {
   anchorOne: anchorOneStats,
   anchorTwo: anchorTwoStats,
   deterministicV2,
+  dispatcherSummary: dispatcherResult && { engineVersion: dispatcherResult.engineVersion, isHomeA: dispatcherResult.isHomeA, isB2BA: dispatcherResult.isB2BA, isB2BB: dispatcherResult.isB2BB },
   v2HasDirectOvrEventPath,
   dispatcherIntegration,
+  teamBAvailabilityIntegration,
   v2ModifierPath,
   ovrIsolation,
 };
@@ -382,6 +403,7 @@ if (result.full99PlayerPpg - result.partial99PlayerPpg < 1.5
   || !specialistStats.ovrIsolation
   || !specialistStats.dispatcherIntegration
   || !specialistStats.v2ModifierPath
+  || !specialistStats.teamBAvailabilityIntegration
   || specialistStats.v2HasDirectOvrEventPath) {
   throw new Error('V2 专项因果隔离失败：' + JSON.stringify(result));
 }

@@ -416,13 +416,55 @@
       if (includeMinutes) target.mins += Number(line.mins) || 0;
     });
   }
+  function recomputeTeamAggregates(context, weights) {
+    return Object.assign({}, context, {
+      weights: weights,
+      teamCreation: weightedMean(context.creation, weights),
+      attack: weightedMean(context.threat.map(function(value, index) {
+        return value * 0.58 + context.creation[index] * 0.27 + context.ath[index] * 0.15;
+      }), weights),
+      defense: weightedMean(context.players.map(function(_, index) {
+        return context.pdef[index] * 0.32 + context.idef[index] * 0.28 + context.reb[index] * 0.14
+          + context.blk[index] * 0.16 + context.str[index] * 0.10;
+      }), weights),
+      perimeterDefense: weightedMean(context.players.map(function(_, index) {
+        return context.pdef[index] * 0.55 + context.stl[index] * 0.20 + context.ath[index] * 0.25;
+      }), weights),
+      rimProtection: weightedMean(context.players.map(function(_, index) {
+        return context.idef[index] * 0.42 + context.blk[index] * 0.34 + context.str[index] * 0.16 + context.reb[index] * 0.08;
+      }), weights),
+      offensiveRebound: weightedMean(context.players.map(function(_, index) {
+        return context.reb[index] * 0.55 + context.str[index] * 0.25 + context.ath[index] * 0.20;
+      }), weights),
+      defensiveRebound: weightedMean(context.players.map(function(_, index) {
+        return context.reb[index] * 0.56 + context.idef[index] * 0.22 + context.str[index] * 0.22;
+      }), weights),
+      stealing: weightedMean(context.players.map(function(_, index) {
+        return context.stl[index] * 0.58 + context.pdef[index] * 0.24 + context.ath[index] * 0.18;
+      }), weights),
+      blocking: weightedMean(context.players.map(function(_, index) {
+        return context.blk[index] * 0.58 + context.idef[index] * 0.24 + context.str[index] * 0.18;
+      }), weights),
+      passing: weightedMean(context.players.map(function(_, index) {
+        return context.pas[index] * 0.72 + context.han[index] * 0.28;
+      }), weights),
+      handling: weightedMean(context.players.map(function(_, index) {
+        return context.han[index] * 0.68 + context.pas[index] * 0.20 + context.ath[index] * 0.12;
+      }), weights),
+      pace: weightedMean(context.players.map(function(_, index) {
+        return context.ath[index] * 0.50 + context.han[index] * 0.25 + context.creation[index] * 0.25;
+      }), weights),
+      clutch: weightedMean(context.clu, weights),
+    });
+  }
+
   function makePeriodContext(context, periodMinutes) {
     var opportunity = context.opportunity.map(function(value, index) {
       return value * (Number(periodMinutes[index]) || 0) / Math.max(1, Number(context.minutes[index]) || 0);
     });
-    return Object.assign({}, context, {
+    var periodContext = recomputeTeamAggregates(context, periodMinutes);
+    return Object.assign(periodContext, {
       minutes: periodMinutes,
-      weights: periodMinutes,
       opportunity: opportunity,
     });
   }
@@ -430,6 +472,33 @@
 
   function simulateGameAggregateV2(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
     var options = Object.assign({}, gameOptions || {});
+    var schedule = STATE && STATE.season && STATE.season.schedule || [];
+    var gameIndex = schedule.findIndex(function(game) { return !game.simulated; });
+    var currentGame = gameIndex >= 0 ? schedule[gameIndex] : null;
+    var previousGame = gameIndex > 0 ? schedule[gameIndex - 1] : null;
+    var currentDay = Number.isFinite(Number(options.gameDay))
+      ? Number(options.gameDay)
+      : (currentGame ? Number(currentGame.day) : null);
+    function playedPreviousDay(team) {
+      if (!Number.isFinite(currentDay) || !STATE || !STATE.season || !STATE.season._dayMap) return false;
+      return (STATE.season._dayMap[currentDay - 1] || []).some(function(game) {
+        return game && (game.home === team || game.away === team);
+      });
+    }
+    if (typeof options.isHomeA !== 'boolean' && currentGame && STATE && STATE.careerTeam) {
+      if (STATE.careerTeam === teamA) options.isHomeA = !!currentGame.home;
+      else if (STATE.careerTeam === teamB) options.isHomeA = !currentGame.home;
+    }
+    var legacyB2B = !!(currentGame && previousGame
+      && Number(currentGame.day) - Number(previousGame.day) === 1);
+    var legacyB2BA = legacyB2B && (!STATE || !STATE.careerTeam || STATE.careerTeam === teamA);
+    var legacyB2BB = legacyB2B && STATE && STATE.careerTeam === teamB;
+    if (typeof options.isB2BA !== 'boolean') {
+      options.isB2BA = typeof options.isB2B === 'boolean'
+        ? options.isB2B
+        : (playedPreviousDay(teamA) || legacyB2BA);
+    }
+    if (typeof options.isB2BB !== 'boolean') options.isB2BB = playedPreviousDay(teamB) || legacyB2BB;
     options._preparedRotations = Object.assign({}, options._preparedRotations || {});
     if (!options._preparedRotations[teamA]) options._preparedRotations[teamA] = prepareLeagueGameRotation(teamA, options);
     if (!options._preparedRotations[teamB]) options._preparedRotations[teamB] = prepareLeagueGameRotation(teamB, options);
@@ -447,8 +516,13 @@
     var seasonEdge = typeof getSeasonModifierTeamEdge === 'function' ? getSeasonModifierTeamEdge(teamA, teamB) : 0;
     var homeA = isHomeA === true ? 0.014 : (isHomeA === false ? -0.014 : 0);
     var homeB = isHomeA === false ? 0.014 : (isHomeA === true ? -0.014 : 0);
-    var availabilityA = probMultiplier == null ? 0 : (Number(probMultiplier) - 1) * 0.045;
+    var availabilityPenalty = probMultiplier == null ? 0 : (Number(probMultiplier) - 1) * 0.045;
+    var availabilityA = 0;
     var availabilityB = 0;
+    if (probMultiplier != null) {
+      if (STATE && STATE.careerTeam === teamB) availabilityB = availabilityPenalty;
+      else availabilityA = availabilityPenalty;
+    }
     var biasA = homeA + availabilityA + Number(seedBonus || 0) * 0.003 + activeEventEdge * 0.004 + seasonEdge * 0.004 - first.fatigue * 0.012;
     var biasB = homeB + availabilityB - activeEventEdge * 0.004 - seasonEdge * 0.004 - second.fatigue * 0.012;
     var basePace = clamp(Math.round(
@@ -564,6 +638,8 @@
         seasonFormEdge: 0,
         homeCourtEdge: homeA * 100,
         availabilityEdge: availabilityA * 100,
+        availabilityEdgeA: availabilityA * 100,
+        availabilityEdgeB: availabilityB * 100,
         fatigueEdge: (second.fatigue - first.fatigue),
         eventTeamEdge: activeEventEdge,
         seasonModifierTeamEdge: seasonEdge,
