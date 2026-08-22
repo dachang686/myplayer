@@ -594,6 +594,26 @@ try {
 } catch (error) {
   overCapRotationThrows = /\[V2\] 无法生成有效轮换/.test(String(error && error.message));
 }
+let fivePlayerInjuryThrows = false;
+try {
+  const fivePlayerRotation = fixedRotation(ovrOpponent, 0, [48, 48, 48, 48, 48]);
+  runtime('V2_FIVE_PLAYER_INJURY', ovrOpponent, 0, null, {
+    isHomeA: null,
+    ignoreNpcAvailability: true,
+    userAttributeFactor: 0.86,
+    userMinutesFactor: 0.86,
+    _preparedRotations: {
+      V2_FIVE_PLAYER_INJURY: {
+        players: fivePlayerRotation.players.slice(0, 5),
+        roleRanks: [0, 1, 2, 3, 4],
+        minutes: [48, 48, 48, 48, 48],
+      },
+      [ovrOpponent]: fixedRotation(ovrOpponent),
+    },
+  });
+} catch (error) {
+  fivePlayerInjuryThrows = /\[V2\] 无法生成有效轮换/.test(String(error && error.message));
+}
 const diagnosticComponents = dispatcherResult && dispatcherResult.marginComponents;
 const diagnosticReconstructedMargin = diagnosticComponents
   ? ['rosterEdge', 'matchupEdge', 'starEdge', 'seasonFormEdge', 'homeCourtEdge', 'seedBonusEdge', 'fatigueEdge', 'eventTeamEdge', 'seasonModifierTeamEdge']
@@ -632,6 +652,7 @@ const specialistStats = {
   emptyRotationThrows,
   shortRotationThrows,
   overCapRotationThrows,
+  fivePlayerInjuryThrows,
   diagnosticFieldSemantics,
 };
 
@@ -747,6 +768,7 @@ if (result.full99PlayerPpg - result.partial99PlayerPpg < 1.5
   || !specialistStats.emptyRotationThrows
   || !specialistStats.shortRotationThrows
   || !specialistStats.overCapRotationThrows
+  || !specialistStats.fivePlayerInjuryThrows
   || !specialistStats.diagnosticFieldSemantics
   || specialistStats.v2HasDirectOvrEventPath) {
   throw new Error('V2 专项因果隔离失败：' + JSON.stringify(result));

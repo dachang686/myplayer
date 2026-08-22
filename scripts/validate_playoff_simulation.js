@@ -187,6 +187,44 @@ function validatePlayInFunctionalRules() {
 }
 
 const playInFunctionalRules = validatePlayInFunctionalRules();
+
+function validateBracketSeedOrdering() {
+  const seedStart = playoffsSource.indexOf('function isTeamAHigherPlayoffSeed');
+  const seedEnd = playoffsSource.indexOf('function isPlayoffTeamAHome', seedStart);
+  if (seedStart < 0 || seedEnd < 0) throw new Error('无法定位正式季后赛高种子判定函数');
+  const state = {
+    season: {
+      standings: {
+        N7: { wins: 50, losses: 32 },
+        N8: { wins: 48, losses: 34 },
+      },
+    },
+  };
+  const higherSeed = new Function(
+    'STATE',
+    'getConference',
+    'getConferenceSeed',
+    `${playoffsSource.slice(seedStart, seedEnd)}\nreturn isTeamAHigherPlayoffSeed;`,
+  )(
+    state,
+    team => team.startsWith('N') ? 'NORTH' : 'SOUTH',
+    team => ({ N7: 7, N8: 8 }[team] || 99),
+  );
+  const swappedBracket = {
+    teams: [
+      { team: 'N1' }, { team: 'N2' }, { team: 'N3' }, { team: 'N4' },
+      { team: 'N5' }, { team: 'N6' }, { team: 'N8' }, { team: 'N7' },
+    ],
+  };
+  return {
+    playInSeedOverridesRegularRecord:
+      higherSeed('N8', 'N7', 0, swappedBracket) === true
+      && higherSeed('N7', 'N8', 0, swappedBracket) === false,
+    finalsFallBackToStandings: higherSeed('N7', 'N8', 3, swappedBracket) === true,
+  };
+}
+
+const bracketSeedOrdering = validateBracketSeedOrdering();
 const renderPlayoffsStart = playoffsSource.indexOf('function renderPlayoffs');
 const resumePlayoffsStart = playoffsSource.indexOf('function resumePlayoffs', renderPlayoffsStart);
 const renderPlayoffsSource = playoffsSource.slice(renderPlayoffsStart, resumePlayoffsStart);
@@ -1258,6 +1296,7 @@ const realRosterSmoke = runRealRosterSmoke();
 const report = {
   playInRotationFlags,
   playInFunctionalRules,
+  bracketSeedOrdering,
   playInRouting,
   playInCompletion,
   standingsTiebreakers,
@@ -1376,6 +1415,9 @@ if (!Object.values(playInRotationFlags).every(Boolean)) {
 }
 if (!Object.values(playInFunctionalRules).every(Boolean)) {
   failures.push(`附加赛功能规则错误：${JSON.stringify(playInFunctionalRules)}`);
+}
+if (!Object.values(bracketSeedOrdering).every(Boolean)) {
+  failures.push(`正式季后赛 seed 主场身份错误：${JSON.stringify(bracketSeedOrdering)}`);
 }
 if (!Object.values(playInRouting.legacyResume).every(Boolean)) {
   failures.push(`附加赛旧存档恢复错误：${JSON.stringify(playInRouting.legacyResume)}`);

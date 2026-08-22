@@ -120,7 +120,7 @@
     if (players.length < 5) {
       throw new Error('[V2] 无法生成有效轮换：' + team + '（可用球员不足5人）');
     }
-    var minutes = rotation && rotation.minutes
+    var minutes = rotation && Array.isArray(rotation.minutes)
       ? rotation.minutes.slice()
       : (rotation
         ? allocateLeagueRotationMinutes(players, rotation.roleRanks || [], { randomize: true })
@@ -139,14 +139,30 @@
         var minutesToRedistribute = Math.max(0, originalUserMinutes - adjustedUserMinutes);
         minutes[userIndex] = adjustedUserMinutes;
         if (minutesToRedistribute > 0) {
+          var redistributionCaps = minutes.map(function(value, index) {
+            return index === userIndex ? 0 : Math.max(0, 48 - value);
+          });
+          var redistributionCapacity = redistributionCaps.reduce(function(sum, cap) { return sum + cap; }, 0);
+          if (redistributionCapacity < minutesToRedistribute) {
+            throw new Error('[V2] 无法生成有效轮换：' + team + '（伤病分钟无法在48分钟上限内重分配）');
+          }
           var redistributed = allocateTotal(
             minutesToRedistribute,
             minutes.map(function(value, index) { return index === userIndex ? 0 : Math.max(0.1, value); }),
-            minutes.map(function(value, index) { return index === userIndex ? 0 : Math.max(0, 48 - value); }),
+            redistributionCaps,
           );
+          if (redistributed.reduce(function(sum, value) { return sum + value; }, 0) !== minutesToRedistribute) {
+            throw new Error('[V2] 无法生成有效轮换：' + team + '（伤病分钟重分配未完成）');
+          }
           redistributed.forEach(function(value, index) { minutes[index] += value; });
         }
       }
+    }
+
+    var adjustedMinutesTotal = minutes.reduce(function(sum, value) { return sum + (Number(value) || 0); }, 0);
+    if (minutes.some(function(value) { return !Number.isFinite(Number(value)) || Number(value) < 0 || Number(value) > 48; })
+      || Math.round(adjustedMinutesTotal) !== 240) {
+      throw new Error('[V2] 无法生成有效轮换：' + team + '（伤病调整后常规赛分钟越过硬上限）');
     }
 
     var roleRanks = rotation.roleRanks || players.map(function(_, index) { return index; });

@@ -1332,12 +1332,17 @@ return STAGED_BRANCH_EVENTS.concat(BRANCH_EVENTS);`,
       ?.choices.find(choice => choice.label === '一起规划');
     const childHealthChoice = cityEvents.find(event => event.id === 'child_pregnancy')
       ?.choices.find(choice => choice.label === '全程陪伴');
+    const relationshipWarmthChoice = cityEvents.find(event => event.id === 'relationship_ordinary_warmth')
+      ?.choices.find(choice => choice.label === '带她走进你的世界');
     if (childChoice) childChoice.apply();
     const childHealthChoiceResult = childHealthChoice ? childHealthChoice.apply() : '';
     const childExplicitNext = modifierState.season.mods.formVariance === 0
       && modifierState.career.nextSeasonMods.formVariance === -1
       && /下赛季伤病风险-1/.test(childHealthChoiceResult);
-    phaseAwareBranchData = !!relationshipChoice && !!childChoice && !!childHealthChoice && relationshipImmediate && childExplicitNext;
+    const relationshipWarmthNarrative = !!relationshipWarmthChoice
+      && /下赛季球队默契\+1/.test(String(relationshipWarmthChoice.apply));
+    phaseAwareBranchData = !!relationshipChoice && !!childChoice && !!childHealthChoice
+      && relationshipImmediate && childExplicitNext && relationshipWarmthNarrative;
     if (!phaseAwareBranchData) failures.push('双阶段剧情 modifier 的即时/下一赛季语义未锁定');
   }
   if (branchSource.includes('flags.teachingSkill') || branchSource.includes('flag teachingSkill')) {

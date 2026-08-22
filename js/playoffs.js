@@ -353,7 +353,19 @@ function endSeason() {
 // ==================== 季后赛系统（真实排名版）====================
 const PLAYOFF_HIGH_SEED_HOME_PATTERN = [true, true, false, false, true, false, true];
 
-function isTeamAHigherPlayoffSeed(teamA, teamB) {
+function isTeamAHigherPlayoffSeed(teamA, teamB, round, confBracket) {
+  const numericRound = Number.isInteger(Number(round)) ? Number(round) : null;
+  const sameConference = getConference(teamA) === getConference(teamB);
+  // 分区系列赛的高种子身份必须来自正式 bracket 槽位；Play-In 可能交换原 7/8 号球队，
+  // 不能再用常规赛胜场倒推。总决赛没有分区 bracket，才回退到常规赛战绩。
+  if (sameConference && numericRound != null && numericRound >= 0 && numericRound <= 2
+    && confBracket && Array.isArray(confBracket.teams)) {
+    const bracketIndexA = confBracket.teams.findIndex(function(entry) { return entry && entry.team === teamA; });
+    const bracketIndexB = confBracket.teams.findIndex(function(entry) { return entry && entry.team === teamB; });
+    if (bracketIndexA >= 0 && bracketIndexB >= 0 && bracketIndexA !== bracketIndexB) {
+      return bracketIndexA < bracketIndexB;
+    }
+  }
   const standings = STATE.season?.standings || {};
   const a = standings[teamA] || { wins: 0, losses: 0 };
   const b = standings[teamB] || { wins: 0, losses: 0 };
@@ -486,7 +498,7 @@ function autoSimConferenceBracketRound(confBracket, round) {
     const teamB = series.low.team;
     let winsA = 0, winsB = 0;
     const seriesGames = [];
-    const teamAIsHigherSeed = isTeamAHigherPlayoffSeed(teamA, teamB);
+    const teamAIsHigherSeed = isTeamAHigherPlayoffSeed(teamA, teamB, round, confBracket);
     const seedBonus = getPlayoffSeriesSeedBonus(teamA, teamB, round, confBracket);
 
     for (let game = 0; game < 7 && winsA < 4 && winsB < 4; game++) {
@@ -994,7 +1006,7 @@ function simOnePlayoffGame(round, seriesIdx, teamA, teamB, isMySeries, gameNum, 
   }
   
   // 根据真实常规赛排名确定主场归属，避免爆冷晋级后沿用错误槽位身份。
-  const teamAIsHigherSeed = isTeamAHigherPlayoffSeed(teamA, teamB);
+  const teamAIsHigherSeed = isTeamAHigherPlayoffSeed(teamA, teamB, round, STATE.season && STATE.season.playoffBracket);
   const isHomeA = isPlayoffTeamAHome(gameNum, teamAIsHigherSeed);
   
   // 同分区仅首轮保留很小的赛季表现修正；主要高种子优势由真实主场顺序提供。
@@ -1251,7 +1263,7 @@ function simPlayoffSeries(round, seriesIdx) {
       
       let sWA = 0, sWB = 0;
       const sGames = [];
-      const sTeamAIsHigherSeed = isTeamAHigherPlayoffSeed(sTeamA, sTeamB);
+      const sTeamAIsHigherSeed = isTeamAHigherPlayoffSeed(sTeamA, sTeamB, round, bracket);
       for (let g = 0; g < 7 && sWA < 4 && sWB < 4; g++) {
         const isHomeA = isPlayoffTeamAHome(g, sTeamAIsHigherSeed);
         const gr = simulateGameNew(sTeamA, sTeamB, sb, null, { isHomeA: isHomeA, isB2B: false });
@@ -1361,7 +1373,7 @@ function simOtherConference(conf) {
   
   // 3轮7场4胜
   const simSeries = (tA, tB, round) => {
-    const teamAIsHigherSeed = isTeamAHigherPlayoffSeed(tA, tB);
+    const teamAIsHigherSeed = isTeamAHigherPlayoffSeed(tA, tB, round, confBracket);
     const seedBonus = getPlayoffSeriesSeedBonus(tA, tB, round, confBracket);
     let wA = 0, wB = 0;
     for (let g = 0; g < 7 && wA < 4 && wB < 4; g++) {

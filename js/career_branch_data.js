@@ -816,7 +816,7 @@ const STAGED_BRANCH_EVENTS = [
         mods.formVariance = Math.max(-3, (mods.formVariance || 0) - 1);
         mods.teamChemistry = Math.min(5, (mods.teamChemistry || 0) + 1);
         addProfileDelta('fanSupport', 1);
-        return '她第一次坐在你主场的家属席，球馆灯光打下来，她比你还紧张。赛后你说这是你打过最想赢的一场。队友起哄，她脸红，你却觉得这比任何头条都值。<br><br>重点：恋爱线进入长期稳定，家庭线解锁。<br><br>影响：球队默契+1；球迷支持+1；下赛季状态波动略降。';
+        return '她第一次坐在你主场的家属席，球馆灯光打下来，她比你还紧张。赛后你说这是你打过最想赢的一场。队友起哄，她脸红，你却觉得这比任何头条都值。<br><br>重点：恋爱线进入长期稳定，家庭线解锁。<br><br>影响：下赛季球队默契+1；球迷支持+1；下赛季状态波动略降。';
       }},
       { label: '走进她的世界', hint: '陪她过普通人的生活，见她的家人和朋友', apply: function() {
         var mods = getNextSeasonMods();
