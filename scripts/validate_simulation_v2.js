@@ -269,12 +269,12 @@ function makeFixedOvrTeam(id, firstOvr) {
   return id;
 }
 
-function fixedRotation(team) {
+function fixedRotation(team, userIndex, customMinutes) {
   const players = leagueData.LEAGUE_PLAYER_DATA[team].map(player => Object.assign({}, player, { _isUser: true }));
   return {
-    players,
+    players: players.map((player, index) => Object.assign({}, player, { _isUser: userIndex != null && index === userIndex })),
     roleRanks: players.map((_, index) => index),
-    minutes: [36, 34, 32, 30, 28, 24, 20, 16, 12, 8],
+    minutes: customMinutes || [36, 34, 32, 30, 28, 24, 20, 16, 12, 8],
   };
 }
 const ovrHigh = makeFixedOvrTeam('V2_OVR_HIGH', 99);
@@ -317,14 +317,31 @@ const dispatcherIntegration = dispatcherResult
   && dispatcherResult.scoreA === sum(dispatcherResult.boxScore[teams[0]] || [], 'pts')
   && dispatcherResult.scoreB === sum(dispatcherResult.boxScore[teams[1]] || [], 'pts');
 state.careerTeam = ovrOpponent;
+const healthyTeamBResult = seeded(25000, () => runtime(ovrHigh, ovrOpponent, 0, null, {
+  isHomeA: null,
+  ignoreNpcAvailability: true,
+  _collectContext: true,
+  _preparedRotations: { [ovrHigh]: fixedRotation(ovrHigh), [ovrOpponent]: fixedRotation(ovrOpponent, 0, [6, 34, 32, 30, 28, 28, 24, 20, 20, 18]) },
+}));
 const teamBAvailabilityResult = seeded(25000, () => runtime(ovrHigh, ovrOpponent, 0, 0.86, {
   isHomeA: null,
   ignoreNpcAvailability: true,
-  _preparedRotations: { [ovrHigh]: fixedRotation(ovrHigh), [ovrOpponent]: fixedRotation(ovrOpponent) },
+  _collectContext: true,
+  _preparedRotations: { [ovrHigh]: fixedRotation(ovrHigh), [ovrOpponent]: fixedRotation(ovrOpponent, 0, [6, 34, 32, 30, 28, 28, 24, 20, 20, 18]) },
 }));
+const healthyUserRow = (healthyTeamBResult.boxScore[ovrOpponent] || []).find(row => row.playerId === 'OVR-ISO-0');
+const injuredUserRow = (teamBAvailabilityResult.boxScore[ovrOpponent] || []).find(row => row.playerId === 'OVR-ISO-0');
+const healthySnapshot = healthyTeamBResult.engineDiagnostics.userAttributeSnapshotB['OVR-ISO-0'] || {};
+const injuredSnapshot = teamBAvailabilityResult.engineDiagnostics.userAttributeSnapshotB['OVR-ISO-0'] || {};
+const injuryAttributesMonotonic = Object.keys(healthySnapshot)
+  .filter(key => !key.endsWith('_after'))
+  .every(key => Number(injuredSnapshot[key + '_after']) <= Number(healthySnapshot[key]));
 const teamBAvailabilityIntegration = teamBAvailabilityResult
   && teamBAvailabilityResult.marginComponents.availabilityEdgeA === 0
-  && teamBAvailabilityResult.marginComponents.availabilityEdgeB < 0;
+  && teamBAvailabilityResult.marginComponents.availabilityEdgeB < 0
+  && (injuredUserRow && healthyUserRow && injuredUserRow.mins <= healthyUserRow.mins)
+  && (injuredUserRow && healthyUserRow && (sum(teamBAvailabilityResult.boxScore[ovrOpponent], 'mins') === 240 + (teamBAvailabilityResult.ot || 0) * 25))
+  && injuryAttributesMonotonic;
 state.careerTeam = null;
 state.season.schedule = [];
 delete state.season._dayMap;

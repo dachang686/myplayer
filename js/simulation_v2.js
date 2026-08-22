@@ -92,7 +92,7 @@
       var userIndex = players.findIndex(function(player) { return !!player._isUser; });
       if (userIndex >= 0) {
         var originalUserMinutes = minutes[userIndex];
-        var adjustedUserMinutes = Math.max(8, Math.round(originalUserMinutes * clamp(Number(options.userMinutesFactor), 0.55, 1)));
+        var adjustedUserMinutes = Math.min(originalUserMinutes, Math.max(4, Math.round(originalUserMinutes * clamp(Number(options.userMinutesFactor), 0.55, 1))));
         var minutesToRedistribute = Math.max(0, originalUserMinutes - adjustedUserMinutes);
         minutes[userIndex] = adjustedUserMinutes;
         if (minutesToRedistribute > 0) {
@@ -108,12 +108,24 @@
 
     var roleRanks = rotation.roleRanks || players.map(function(_, index) { return index; });
     if (!players.length) return null;
+    var userAttributeSnapshot = {};
 
     function playerNorm(player, key) {
-      var value = norm(player, key);
+      var rawValue = parseInt(player && player[key], 10);
+      if (!Number.isFinite(rawValue)) rawValue = 50;
+      var snapshotKey = player && player.id || 'user';
+      if (options._collectContext && player && player._isUser) {
+        if (!userAttributeSnapshot[snapshotKey]) userAttributeSnapshot[snapshotKey] = {};
+        userAttributeSnapshot[snapshotKey][key] = rawValue;
+      }
+      var value = norm({ [key]: rawValue }, key);
       if (player && player._isUser && options.userAttributeFactor != null) {
         var factor = clamp(Number(options.userAttributeFactor), 0.55, 1);
-        value = clamp(0.50 + (value - 0.50) * factor, 0, 1);
+        rawValue = Math.max(25, rawValue * factor);
+        value = clamp((rawValue - 25) / 74, 0, 1);
+        if (options._collectContext && player && player._isUser) {
+          userAttributeSnapshot[snapshotKey][key + '_after'] = rawValue;
+        }
       }
       return value;
     }
@@ -239,6 +251,7 @@
       }), weights),
       clutch: weightedMean(clu, weights),
       fatigue: 0,
+      userAttributeSnapshot: userAttributeSnapshot,
     };
   }
 
@@ -556,8 +569,8 @@
       if (STATE && STATE.careerTeam === teamB) availabilityB = availabilityPenalty;
       else availabilityA = availabilityPenalty;
     }
-    var biasA = homeA + availabilityA + Number(seedBonus || 0) * 0.003 + activeEventEdge * 0.004 + seasonEdge * 0.004 - first.fatigue * 0.012;
-    var biasB = homeB + availabilityB - activeEventEdge * 0.004 - seasonEdge * 0.004 - second.fatigue * 0.012;
+    var biasA = homeA + Number(seedBonus || 0) * 0.003 + activeEventEdge * 0.004 + seasonEdge * 0.004 - first.fatigue * 0.012;
+    var biasB = homeB - activeEventEdge * 0.004 - seasonEdge * 0.004 - second.fatigue * 0.012;
     var basePace = clamp(Math.round(
       100 + ((first.pace + second.pace) / 2 - 0.50) * 7
         - (first.fatigue + second.fatigue) * 1.5 + normal(0, 1.8),
@@ -686,6 +699,8 @@
       engineDiagnostics: {
         rimAttemptsA: rimAttemptsA,
         rimAttemptsB: rimAttemptsB,
+        userAttributeSnapshotA: first.userAttributeSnapshot,
+        userAttributeSnapshotB: second.userAttributeSnapshot,
         periods: periodDiagnostics,
       },
     };
