@@ -369,6 +369,65 @@ patchPlayers(anchorTwo, 2, anchorAttrs);
 const anchorOneStats = runPairStats(attackTeam, anchorOne, 500, 20000);
 const anchorTwoStats = runPairStats(attackTeam, anchorTwo, 500, 20000);
 
+const attributeLevels = [25, 40, 55, 70, 85, 99];
+const allSimulationAttributes = ['threePT', 'MID', 'FIN', 'DNK', 'HAN', 'ATH', 'PAS', 'STR', 'REB', 'PDEF', 'IDEF', 'STL', 'BLK', 'CLU'];
+const attributeGradient = attributeLevels.map(level => {
+  const team = makeSyntheticTeam('V2_ATTRIBUTE_' + level, {});
+  Object.assign(leagueData.LEAGUE_PLAYER_DATA[team][0], Object.fromEntries(allSimulationAttributes.map(key => [key, level])));
+  const totals = { pts: 0, ast: 0, reb: 0, stl: 0, blk: 0, fga: 0 };
+  const games = 600;
+  for (let game = 0; game < games; game++) {
+    const gameResult = seeded(210000 + game, () => runtime(team, teams[1], 0, null, {
+      isHomeA: null,
+      ignoreNpcAvailability: true,
+      _preparedRotations: { [team]: fixedRotation(team) },
+    }));
+    const playerRow = (gameResult.boxScore[team] || []).find(row => row.playerId === team + '-0');
+    Object.keys(totals).forEach(field => { totals[field] += Number(playerRow && playerRow[field]) || 0; });
+  }
+  return Object.assign({ level, games }, Object.fromEntries(Object.entries(totals).map(([field, value]) => [field, value / games])));
+});
+
+const teamAttributeGradient = [25, 50, 80].map(level => {
+  const team = makeSyntheticTeam('V2_TEAM_ATTRIBUTE_' + level, {});
+  leagueData.LEAGUE_PLAYER_DATA[team].forEach(player => {
+    Object.assign(player, Object.fromEntries(allSimulationAttributes.map(key => [key, level])));
+  });
+  const totals = { pts: 0, ast: 0, stl: 0, blk: 0 };
+  const games = 400;
+  for (let game = 0; game < games; game++) {
+    const gameResult = seeded(215000 + game, () => runtime(team, teams[1], 0, null, {
+      isHomeA: null,
+      ignoreNpcAvailability: true,
+      _preparedRotations: { [team]: fixedRotation(team) },
+    }));
+    const rows = gameResult.boxScore[team] || [];
+    totals.pts += gameResult.scoreA;
+    ['ast', 'stl', 'blk'].forEach(field => { totals[field] += sum(rows, field); });
+  }
+  return Object.assign({ level, games }, Object.fromEntries(Object.entries(totals).map(([field, value]) => [field, value / games])));
+});
+
+const roleIsolationTeam = makeSyntheticTeam('V2_ROLE_ISOLATION', {});
+const roleIsolationBase = fixedRotation(roleIsolationTeam);
+const roleIsolationPermuted = Object.assign({}, roleIsolationBase, { roleRanks: [4, 3, 2, 1, 0, 9, 8, 7, 6, 5] });
+let roleIsolation = true;
+for (let game = 0; game < 300; game++) {
+  const options = rotation => ({
+    isHomeA: null,
+    ignoreNpcAvailability: true,
+    _preparedRotations: { [roleIsolationTeam]: rotation },
+  });
+  state.season._npcSeasonProfiles = {};
+  const baseline = seeded(220000 + game, () => runtime(roleIsolationTeam, teams[1], 0, null, options(roleIsolationBase)));
+  state.season._npcSeasonProfiles = {};
+  const permuted = seeded(220000 + game, () => runtime(roleIsolationTeam, teams[1], 0, null, options(roleIsolationPermuted)));
+  if (fingerprint(baseline) !== fingerprint(permuted)) {
+    roleIsolation = false;
+    break;
+  }
+}
+
 function fingerprint(gameResult) {
   return JSON.stringify({
     scoreA: gameResult.scoreA,
@@ -735,18 +794,21 @@ function modifierProbe(mods, seed) {
   state.season.mods = Object.assign({ formVariance: 0, mediaPressure: 0, teamChemistry: 0, moraleBonus: 0 }, mods);
   state.season._usageBias = 1;
   state.season._npcSeasonProfiles = {};
+  const scoringCoreRotation = fixedRotation(ovrHigh, 0);
+  Object.assign(scoringCoreRotation.players[0], { threePT: 92, MID: 92, FIN: 92, DNK: 92, HAN: 92, ATH: 92 });
   const result = seeded(seed, () => runtime(ovrHigh, ovrOpponent, 0, null, {
     isHomeA: null,
     ignoreNpcAvailability: true,
     _preparedRotations: {
-      [ovrHigh]: fixedRotation(ovrHigh, 0),
+      [ovrHigh]: scoringCoreRotation,
       [ovrOpponent]: fixedRotation(ovrOpponent),
     },
   }));
   const userRow = (result.boxScore[ovrHigh] || []).find(row => row.playerId === 'OVR-ISO-0');
   return userRow ? { pts: userRow.pts, fga: userRow.fga } : null;
 }
-const modifierProbeResults = Array.from({ length: 800 }, (_, index) => {
+const modifierProbeGames = 1600;
+const modifierProbeResults = Array.from({ length: modifierProbeGames }, (_, index) => {
   const seed = 28000 + index;
   return {
     baseline: modifierProbe({ formVariance: 0, mediaPressure: 0 }, seed),
@@ -771,7 +833,7 @@ const modifierMeanDrift = ['lowForm', 'highForm', 'media'].every(key =>
   Math.abs(modifierDistributions[key].ptsMean - modifierDistributions.baseline.ptsMean) < 1
   && Math.abs(modifierDistributions[key].fgaMean - modifierDistributions.baseline.fgaMean) < 0.75,
 );
-const v2ModifierFunctionalPath = modifierDistributions.lowForm.games === 800
+const v2ModifierFunctionalPath = modifierDistributions.lowForm.games === modifierProbeGames
   && modifierDistributions.lowForm.fgaSd < modifierDistributions.baseline.fgaSd
   && modifierDistributions.highForm.fgaSd > modifierDistributions.baseline.fgaSd
   && modifierDistributions.media.fgaSd > modifierDistributions.baseline.fgaSd
@@ -860,6 +922,9 @@ const specialistStats = {
   han50: han50Stats,
   anchorOne: anchorOneStats,
   anchorTwo: anchorTwoStats,
+  attributeGradient,
+  teamAttributeGradient,
+  roleIsolation,
   deterministicV2,
   dispatcherSummary: dispatcherResult && { engineVersion: dispatcherResult.engineVersion, isHomeA: dispatcherResult.isHomeA, isB2BA: dispatcherResult.isB2BA, isB2BB: dispatcherResult.isB2BB },
   v2HasDirectOvrEventPath,
@@ -931,6 +996,17 @@ const result = {
   specialistStats,
   invariantKinds,
 };
+const gradientFields = ['pts', 'ast', 'reb', 'stl', 'blk', 'fga'];
+const playerAttributeMonotonic = gradientFields.every(field => attributeGradient.every((row, index) =>
+  index === 0 || row[field] >= attributeGradient[index - 1][field],
+));
+const teamAttributeMonotonic = ['pts', 'ast', 'stl', 'blk'].every(field => teamAttributeGradient.every((row, index) =>
+  index === 0 || row[field] >= teamAttributeGradient[index - 1][field],
+));
+const lowPlayer = attributeGradient.find(row => row.level === 40);
+const elitePlayer = attributeGradient.find(row => row.level === 99);
+const lowTeam = teamAttributeGradient.find(row => row.level === 25);
+const midTeam = teamAttributeGradient.find(row => row.level === 50);
 if (invariantErrors > 0) throw new Error('V2 守恒错误：' + JSON.stringify(result));
 if (result.teamsCovered !== allTeams.length
   || result.averageTotal < 210 || result.averageTotal > 240
@@ -971,10 +1047,9 @@ if (leaderAverages.ppg < 31 || leaderAverages.ppg > 36
   || result.full99Tail.fifty > 200
   || result.full99Tail.sixty > 80
   || result.full99Tail.seventy > 20
-  || result.full99Tail.eighty < 1
   || result.full99Tail.eighty > 10
   || result.full99Tail.max > 90
-  || result.full99Tail.max < 60) {
+  || result.full99Tail.max < 70) {
   throw new Error('V2 球员生态或单场尾部越界：' + JSON.stringify(result));
 }
 if (result.full99PlayerPpg - result.partial99PlayerPpg < 1.5
@@ -985,6 +1060,14 @@ if (result.full99PlayerPpg - result.partial99PlayerPpg < 1.5
   || specialistStats.han99.fga <= specialistStats.han50.fga + 0.5
   || specialistStats.han99.tov >= specialistStats.han50.tov
   || specialistStats.anchorTwo.rim >= specialistStats.anchorOne.rim
+  || !specialistStats.roleIsolation
+  || !playerAttributeMonotonic
+  || !teamAttributeMonotonic
+  || !lowPlayer || lowPlayer.pts > 5 || lowPlayer.fga > 6 || lowPlayer.ast > 1
+  || lowPlayer.reb > 4 || lowPlayer.stl > 0.5 || lowPlayer.blk > 0.35
+  || !elitePlayer || elitePlayer.pts < 30 || elitePlayer.pts > 45 || elitePlayer.blk < 1.5
+  || !lowTeam || lowTeam.ast > 10 || lowTeam.stl > 3 || lowTeam.blk > 1.5
+  || !midTeam || midTeam.blk >= 4
   || !specialistStats.deterministicV2
   || !specialistStats.ovrIsolation
   || !specialistStats.npcFormOvrIsolation

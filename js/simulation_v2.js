@@ -245,25 +245,37 @@
       }
       return 1;
     });
+    var scoringLoads = players.map(function(_, index) {
+      return threat[index] * 0.62 + creation[index] * 0.38;
+    });
+    // 进攻角色由实际得分/持球能力决定；rotation.roleRanks 只描述轮换顺序，不能把 PG/SG 槽位当成第一、第二得分手。
+    // 相同能力使用相同进攻档位，让阵容数组顺序本身不会制造出手权差异。
+    var offensiveRoleRanks = scoringLoads.map(function(scoringLoad) {
+      return scoringLoads.filter(function(otherLoad) { return otherLoad > scoringLoad + 0.001; }).length;
+    });
+    var teamScoringLoad = weightedMean(scoringLoads, weights);
     var opportunity = players.map(function(player, index) {
-      var roleFactor = roleRanks[index] === 0
-        ? 1.46
-        : (roleRanks[index] === 1 ? 1.23 : (roleRanks[index] < 5 ? 1.02 : (roleRanks[index] === 5 ? 0.96 : 0.82)));
+      var offensiveRoleRank = offensiveRoleRanks[index];
+      var roleFactor = clamp(1 + (scoringLoads[index] - teamScoringLoad) * 1.95, 0.72, 1.32);
       var creationFactor = 0.58 + creation[index] * 0.85;
       var threatFactor = 0.54 + threat[index] * 0.90;
       var baseOpportunity = Math.max(0.1, weights[index] * roleFactor * creationFactor * threatFactor * form[index]);
-      var scoringLoad = threat[index] * 0.62 + creation[index] * 0.38;
-      var isCoreScorer = roleRanks[index] < 2 || (weights[index] >= 30 && scoringLoad >= 0.78);
+      var scoringLoad = scoringLoads[index];
+      var isCoreScorer = offensiveRoleRank < 2 && weights[index] >= 28 && scoringLoad >= 0.62;
       // 爆发保留稀有长尾；上限和 legendary 档位避免 50+/60+ 在联盟生态中泛滥。
-      var gameMultiplier = roleRanks[index] < 5
+      var gameMultiplier = weights[index] >= 28
         ? clamp(normal(1, 0.11), 0.72, 1.32)
         : clamp(normal(1, 0.06), 0.82, 1.18);
+      // 用户赛季状态需要真实改变单场机会波动；仅放在机会分配中会被球队总出手再归一化而大幅抵消。
+      if (player._isUser) gameMultiplier *= form[index];
       var burstChance = isCoreScorer
-        ? clamp(0.014 + Math.max(0, scoringLoad - 0.60) * 0.15, 0.014, 0.060)
+        ? clamp(0.018 + Math.max(0, scoringLoad - 0.60) * 0.18, 0.018, 0.070)
         : 0;
+      // 满技能包已经拥有稳定效率和机会优势，不再叠加同等幅度的爆发概率。
+      if (scoringLoad > 0.985) burstChance *= 0.35;
       var legendaryBurst = weights[index] >= 30
         && scoringLoad >= 0.70
-        && Math.random() < 0.005;
+        && Math.random() < (scoringLoad > 0.985 ? 0.00175 : 0.005);
       if (legendaryBurst) {
         gameMultiplier = 4.00 + Math.random() * 0.70;
       } else if (burstChance > 0 && Math.random() < burstChance) {
@@ -277,6 +289,7 @@
       players: players,
       minutes: minutes,
       roleRanks: roleRanks,
+      offensiveRoleRanks: offensiveRoleRanks,
       positions: positions,
       weights: weights,
       opportunity: opportunity,
@@ -438,7 +451,7 @@
           + context.ath[index] * 0.025 + context.str[index] * 0.035 - defensePenalty + qualityBias + clutchBonus,
         0.28, 0.72,
       );
-      var blockChance = clamp(0.018 + opponent.rimProtection * 0.080, 0.015, 0.115);
+      var blockChance = clamp(0.006 + opponent.rimProtection * 0.092, 0.004, 0.115);
       var preventedBlocks = sampleMakes(rimAttempts, blockChance);
       var rimMakes = sampleMakes(Math.max(0, rimAttempts - preventedBlocks), rimPct);
       var midMakes = sampleMakes(midAttempts, midPct);
@@ -446,7 +459,7 @@
       // 盖帽既包括直接改变出手结果的封盖，也包括原本已落入投失集合的封盖记录。
       // 后一部分只补齐事件归因，不再二次降低命中率，避免校准盖帽时破坏球队得分环境。
       var uncreditedRimMisses = Math.max(0, rimAttempts - preventedBlocks - rimMakes);
-      var creditedMissBlockRate = clamp(0.065 + opponent.rimProtection * 0.19, 0.10, 0.20);
+      var creditedMissBlockRate = clamp(0.020 + opponent.rimProtection * 0.245, 0.015, 0.21);
       var blocked = preventedBlocks + sampleMakes(uncreditedRimMisses, creditedMissBlockRate);
       line.fga += threeAttempts + twoAttempts;
       line.threeA += threeAttempts;
@@ -519,17 +532,17 @@
   function addAssists(context, quarter) {
     quarter.lines.forEach(function(shooter, shooterIndex) {
       var probability = clamp(
-        0.30 + context.passing * 0.34
+        0.12 + context.passing * 0.60
           + (shooter.threeA / Math.max(1, shooter.fga)) * 0.10
           + (shooter._rimA / Math.max(1, shooter.fga)) * 0.06,
-        0.26, 0.78,
+        0.12, 0.78,
       );
       var assistedMakes = sampleMakes(shooter.fgm, probability);
       if (!assistedMakes) return;
       var passWeights = context.players.map(function(_, index) {
         if (index === shooterIndex) return 0;
         var passSkill = context.pas[index] * 0.78 + context.han[index] * 0.22;
-        return context.weights[index] * (0.027 + Math.pow(passSkill, 4.2) * 4.3);
+        return context.weights[index] * (0.005 + Math.pow(passSkill, 4.2) * 4.3);
       });
       var assists = weightedRandomAllocation(assistedMakes, passWeights, context.players.map(function() { return 17; }));
       assists.forEach(function(value, index) { quarter.lines[index].ast += value; });
@@ -545,12 +558,12 @@
   }
 
   function addDefensiveEvents(defender, offense) {
-    var steals = sampleMakes(offense.turnovers, clamp(0.30 + defender.stealing * 0.24, 0, 1));
+    var steals = sampleMakes(offense.turnovers, clamp(0.15 + defender.stealing * 0.48, 0, 1));
     var stealsByPlayer = weightedRandomAllocation(
       steals,
       defender.players.map(function(_, index) {
         var stealSkill = defender.stl[index] * 0.72 + defender.pdef[index] * 0.18 + defender.ath[index] * 0.10;
-        return defender.weights[index] * (0.06 + Math.pow(stealSkill, 2.4) * 3.0);
+        return defender.weights[index] * (0.010 + Math.pow(stealSkill, 2.4) * 3.0);
       }),
       defender.players.map(function() { return 7; }),
     );
@@ -561,7 +574,7 @@
       blocked,
       defender.players.map(function(_, index) {
         var blockSkill = defender.blk[index] * 0.72 + defender.idef[index] * 0.18 + defender.str[index] * 0.10;
-        return defender.weights[index] * (0.035 + Math.pow(blockSkill, 3.3) * 3.5);
+        return defender.weights[index] * (0.004 + Math.pow(blockSkill, 3.3) * 3.5);
       }),
       defender.players.map(function() { return 8; }),
     );
@@ -575,12 +588,12 @@
     var secondTotal = secondQuarter.offensiveRebounds + Math.max(0, secondReboundable - firstQuarter.offensiveRebounds);
     var firstByPlayer = weightedRandomAllocation(
       firstTotal,
-      firstContext.players.map(function(_, index) { return firstContext.weights[index] * (0.26 + Math.pow(firstContext.reb[index], 1.25) * 1.52); }),
+      firstContext.players.map(function(_, index) { return firstContext.weights[index] * (0.20 + Math.pow(firstContext.reb[index], 1.3) * 1.58); }),
       firstContext.players.map(function() { return 24; }),
     );
     var secondByPlayer = weightedRandomAllocation(
       secondTotal,
-      secondContext.players.map(function(_, index) { return secondContext.weights[index] * (0.26 + Math.pow(secondContext.reb[index], 1.25) * 1.52); }),
+      secondContext.players.map(function(_, index) { return secondContext.weights[index] * (0.20 + Math.pow(secondContext.reb[index], 1.3) * 1.58); }),
       secondContext.players.map(function() { return 24; }),
     );
     firstByPlayer.forEach(function(value, index) { firstQuarter.lines[index].reb += value; });
