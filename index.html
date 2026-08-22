@@ -12525,6 +12525,15 @@ function updateSeasonNarrativeSignals(ctx) {
   }
   if (getEventScoreDiff(ctx) <= 6) signals.closeGames = (Number(signals.closeGames) || 0) + 1;
   signals.lastOpponent = ctx && ctx.game ? ctx.game.opponent || null : null;
+  // 连败压力线可能因为导演通道冷却而排队；球队一旦赢球，尚未展开的四连败剧情就已失去事实基础。
+  if ((Number(signals.lossStreak) || 0) < 4) {
+    (events.storyThreads || []).forEach(function(thread) {
+      if (!thread || thread.kind !== 'locker_room' || thread.state !== 'queued') return;
+      thread.state = 'resolved';
+      thread.resolvedAt = getEventGameNumber();
+      thread.cancelledByStreakEnd = true;
+    });
+  }
   return signals;
 }
 
@@ -18115,7 +18124,6 @@ function watchAdToReroll() {
 
 </body>
 </html>
-
 
 
 

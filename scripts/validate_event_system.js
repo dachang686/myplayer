@@ -882,6 +882,17 @@ if (registryStart < 0 || registryEnd < 0) {
     failures.push('伤停比赛没有写入球队剧情信号、拆分缺席原因，或错误弹出了导演事件');
   }
 
+  // 四连败事件若因导演冷却仍在排队，随后一场胜利必须让它失效，不能再用过期战绩弹窗。
+  eventModule.afterCareerTeamGame({
+    game: { opponent: 'AWAY' }, result: { won: true, scoreA: 112, scoreB: 104 }, stats: { pts: 24 },
+    gameKey: 'memory-win:5', allowPopup: false,
+  });
+  const expiredLockerThread = state.season.events.storyThreads.find(thread => thread.kind === 'locker_room');
+  if (!expiredLockerThread || expiredLockerThread.state !== 'resolved' || !expiredLockerThread.cancelledByStreakEnd ||
+      eventModule.getActiveNarrativeThreadCount() !== 0) {
+    failures.push('连败结束后仍保留并可能弹出过期的四连败更衣室剧情');
+  }
+
   // 健康主题只读取伤病缺席，纪律禁赛不能被误判为负荷管理失败。
   const suspensionOnlyHealthThread = {
     kind: 'team', choice: 'foundation', payload: { effectProfile: 'health' },
