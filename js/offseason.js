@@ -1231,6 +1231,25 @@ function getPlayerReinforcementRequest() {
   return m && m.reinforcementRequest ? m.reinforcementRequest : null;
 }
 
+function isPlayerReinforcementOffseasonWindow() {
+  var season = STATE.season;
+  if (!season) return false;
+  var pipelineStage = typeof window !== 'undefined' ? window._offseasonPipelineStage || '' : '';
+  if (pipelineStage === 'trades' || pipelineStage === 'roster_fill' || pipelineStage === 'player_mobility' || pipelineStage === 'new_season') return false;
+  if (typeof hasActiveSeasonPlayoffs === 'function' && hasActiveSeasonPlayoffs()) return false;
+  if (season._resultsViewed || season.playoffsDone || season.playoffEliminated || season.isChampion || (season.playInState && season.playInState.isEliminated)) return true;
+  return false;
+}
+
+function getPlayerReinforcementRequestSeason() {
+  var c = STATE.career || {};
+  if (isPlayerReinforcementOffseasonWindow()) {
+    // 赛季总结页可能还没调用 saveCurrentSeasonToCareer；两种状态都指向同一个休赛期。
+    return STATE._careerSaved ? (c.seasonCount || 0) : (c.seasonCount || 0) + 1;
+  }
+  return (c.seasonCount || 0) + 1;
+}
+
 function getReinforcementPositionLabel(position) {
   var meta = REINFORCEMENT_POSITION_META[position];
   return meta ? meta.label : '阵容短板';
@@ -1255,10 +1274,9 @@ function getReinforcementRequestAvailability() {
   var c = STATE.career;
   var season = STATE.season;
   if (!c || !season || c.retired) return { allowed: false, reason: '当前没有进行中的职业生涯' };
-  if (season.isPlayoffs || season._resultsViewed) return { allowed: false, reason: '季后赛及赛季结束后不能提交要求' };
-  if ((c.contract || 0) <= 1) return { allowed: false, reason: '合同将在本赛季后到期，请通过自由市场选择球队' };
+  var offseasonWindow = isPlayerReinforcementOffseasonWindow();
 
-  var currentSeason = getActiveTradeRequestSeason();
+  var currentSeason = getPlayerReinforcementRequestSeason();
   var request = getPlayerReinforcementRequest();
   if (request && request.season === currentSeason) {
     if (request.status === 'approved') return { allowed: false, reason: '补强要求已获准，将在休赛期优先评估', status: request.status };
@@ -1266,13 +1284,14 @@ function getReinforcementRequestAvailability() {
     return { allowed: false, reason: '本赛季已经提交过补强要求', status: request.status };
   }
 
-  var gamesPlayed = (season.schedule || []).filter(function(game) { return game && game.simulated; }).length;
-  if (gamesPlayed < 10) return { allowed: false, reason: '常规赛至少完成 10 场后开放', gamesNeeded: 10 - gamesPlayed };
-  return { allowed: true, reason: '每赛季限一次；获批后将在休赛期优先处理' };
+  if (!offseasonWindow) {
+    var gamesPlayed = (season.schedule || []).filter(function(game) { return game && game.simulated; }).length;
+    if (gamesPlayed < 10) return { allowed: false, reason: '常规赛至少完成 10 场后开放', gamesNeeded: 10 - gamesPlayed };
+  }
+  return { allowed: true, reason: offseasonWindow ? '休赛期可提交一次；获批后优先处理本次阵容调整' : '每赛季限一次；获批后将在休赛期优先处理' };
 }
 
 function getReinforcementApprovalChance(priority) {
-  var c = STATE.career || {};
   var season = STATE.season || {};
   var profile = typeof getCareerProfile === 'function' ? getCareerProfile() : {};
   var total = (season.wins || 0) + (season.losses || 0);
@@ -1288,7 +1307,6 @@ function getReinforcementApprovalChance(priority) {
 
   var weakest = getPlayerReinforcementWeakestStarter(STATE.careerTeam);
   if (priority === weakest.position) chance += 8;
-  if ((c.contract || 0) === 2) chance += 5;
   return Math.max(30, Math.min(88, Math.round(chance)));
 }
 
@@ -1409,7 +1427,7 @@ function createPlayerReinforcementRequest(priority, source, options) {
   var chance = getReinforcementApprovalChance(priority);
   var approved = Math.random() * 100 < chance;
   var request = {
-    season: getActiveTradeRequestSeason(),
+    season: getPlayerReinforcementRequestSeason(),
     submittedGame: (STATE.season.schedule || []).filter(function(game) { return game && game.simulated; }).length,
     priority: priority,
     source: source || 'manual',
@@ -1500,7 +1518,7 @@ function submitPlayerReinforcementRequest(priority) {
 function renderPlayerReinforcementRequestCard() {
   var availability = getReinforcementRequestAvailability();
   var request = getPlayerReinforcementRequest();
-  var currentSeason = getActiveTradeRequestSeason();
+  var currentSeason = getPlayerReinforcementRequestSeason();
   var title = '🧩 要求补强';
   var body = availability.reason || '';
   var action = '';
@@ -1570,19 +1588,31 @@ function showTradeRequestModal() {
   var cards = '';
   candidates.forEach(function(candidate) {
     var team = candidate.team;
-    cards += '<button class="team-pick-card" style="font:inherit;cursor:pointer;" onclick="showTradeRequestConfirmation(\'' + team + '\')">' +
+    cards += '<button class="team-pick-card" style="font:inherit;cursor:pointer;" onclick="showTradeRequestTeamRoster(\'' + team + '\')" title="点击查看球队名单">' +
       getTeamLogo(team, 36) +
       '<span class="tpc-abbr">' + getTeamName(team) + '</span>' +
-      '<span class="tpc-name">同位置首发 OVR ' + candidate.starterOvr + '</span>' +
+      '<span class="tpc-name">首发 OVR ' + candidate.starterOvr + ' · 查看名单</span>' +
       '</button>';
   });
   var html = '<div class="team-picker-overlay" id="trade-request-modal">';
   html += '<div class="team-picker-modal">';
   html += '<div class="team-picker-header"><span>📨 申请交易</span><button class="team-picker-close" onclick="closeTradeRequestModal()">✕</button></div>';
-  html += '<div style="padding:10px 14px 4px;font-size:12px;line-height:1.6;color:var(--text-dim);">选择一支意向球队。管理层可能拒绝申请；即使获准，意向球队也不保证成为最终下家。</div>';
+  html += '<div style="padding:10px 14px 4px;font-size:12px;line-height:1.6;color:var(--text-dim);">点击球队卡片查看完整名单，再选择一支意向球队。管理层可能拒绝申请；即使获准，意向球队也不保证成为最终下家。</div>';
   html += '<div class="team-picker-grid">' + cards + '</div>';
   html += '</div></div>';
   document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function showTradeRequestTeamRoster(team) {
+  var modal = document.getElementById('trade-request-modal');
+  if (!modal || team === STATE.careerTeam || LEAGUE_TEAM_IDS.indexOf(team) < 0) return;
+  if (typeof previewTeamRosterModal !== 'function') {
+    showTradeRequestConfirmation(team);
+    return;
+  }
+  previewTeamRosterModal(team, function() {
+    showTradeRequestConfirmation(team);
+  }, null, '📨 选择这支球队');
 }
 
 function showTradeRequestConfirmation(team) {

@@ -917,9 +917,6 @@ function renderPlayoffBracketUI() {
   // gamecast（放在 bv-po-stats 上方）
   h += `<div id="playoff-gamecast" style="display:none;padding:0 12px 8px;"></div>`;
 
-  // 人员状态放在个人季后赛数据卡上方，仅展示自己的季后赛页面。
-  if (!isViewingOther) h += renderPlayoffAvailabilityNotices();
-
   // 季后赛场均数据
   if (!isViewingOther) {
     const po = STATE.season.playoffStats;
@@ -955,9 +952,13 @@ function renderPlayoffBracketUI() {
       </div>`;
     }
   }
+
+  // 人员状态紧跟个人季后赛数据，便于先看表现再确认可用阵容。
+  if (!isViewingOther) h += renderPlayoffAvailabilityNotices();
   
   h += `</div>`;
   document.getElementById('playoffs-area').innerHTML = h;
+  if (!isViewingOther) restoreLatestPlayoffGamecast();
   if (!isViewingOther && (STATE.season.playoffEliminated || pi?.isEliminated)) {
     setGlobalNextAction('📊 查看赛季总结', showSeasonResults);
   } else if (isViewingOther) {
@@ -1029,8 +1030,8 @@ function renderPlayoffGameBrief(gameEntry, teamA, teamB, isMySeries, roundName, 
   
   gcContainer.prepend(brief);
   
-  // 最多保留5条简报
-  while (gcContainer.children.length > 5) {
+  // 保留完整七场系列赛简报。
+  while (gcContainer.children.length > 7) {
     gcContainer.removeChild(gcContainer.lastChild);
   }
 }
@@ -1039,6 +1040,32 @@ function renderPlayoffGameBrief(gameEntry, teamA, teamB, isMySeries, roundName, 
 function clearPlayoffGamecast() {
   const gc = document.getElementById('playoff-gamecast');
   if (gc) { gc.innerHTML = ''; gc.style.display = 'none'; }
+}
+
+/** 页面重绘后恢复刚结束的我的系列赛比分；新系列赛开始时再清空。 */
+function restoreLatestPlayoffGamecast() {
+  const gc = document.getElementById('playoff-gamecast');
+  const results = STATE.season?.playoffBracket?.results || [];
+  const latest = results.slice().reverse().find(function(result) {
+    return result && result.isMySeries && result.teamA === STATE.careerTeam && Array.isArray(result.seriesGames) && result.seriesGames.length;
+  });
+  if (!gc || !latest) return;
+
+  gc.style.display = 'block';
+  gc.innerHTML = '';
+  latest.seriesGames.forEach(function(gameEntry) {
+    renderPlayoffGameBrief(
+      gameEntry,
+      latest.teamA,
+      latest.teamB,
+      true,
+      latest.roundName,
+      gameEntry.game,
+      7,
+      latest.round,
+      latest.seriesIdx,
+    );
+  });
 }
 
 /** 单场模拟并更新简报（递归，一场一场模拟） */
@@ -1239,7 +1266,7 @@ function simPlayoffSeries(round, seriesIdx) {
   
   const roundName = ['首轮', '分区半决赛', '分区决赛'][round] || '第'+(round+1)+'轮';
   
-  // 清空旧简报，开始新的系列赛
+  // 仅在开始下一轮系列赛时清空上一轮简报。
   clearPlayoffGamecast();
   
   if (isMySeries) {
@@ -1395,12 +1422,10 @@ function simPlayoffSeries(round, seriesIdx) {
         }
       }
       if (!userWonSeries) {
-        clearPlayoffGamecast();
         renderPlayoffBracketUI();
         if (typeof showManualSaveToast === 'function') showManualSaveToast('季后赛已被淘汰');
         return;
       }
-      clearPlayoffGamecast();
       renderPlayoffBracketUI();
       return;
     }

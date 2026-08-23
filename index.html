@@ -3733,7 +3733,7 @@ function selectCareerTeam(team) {
 }
 
 // ==================== 球队阵容预览与签约弹窗 ====================
-function previewTeamRosterModal(team, onConfirmSign, offerYears) {
+function previewTeamRosterModal(team, onConfirmSign, offerYears, confirmActionText) {
   var old = document.getElementById('team-roster-preview-overlay');
   if (old) old.remove();
 
@@ -3785,7 +3785,12 @@ function previewTeamRosterModal(team, onConfirmSign, offerYears) {
   }
   rosterHtml += '</div>';
 
-  var signBtnText = (typeof offerYears === 'number' && offerYears > 0) ? ('🖊️ 签约加盟 (' + offerYears + '年合同)') : '📝 确认签约加盟';
+  var isRenewal = team === STATE.careerTeam;
+  var contractActionText = isRenewal ? '续约' : '签约加盟';
+  var contractActionIcon = isRenewal ? '📝' : '🖊️';
+  var signBtnText = confirmActionText || ((typeof offerYears === 'number' && offerYears > 0)
+    ? (contractActionIcon + ' ' + contractActionText + ' (' + offerYears + '年合同)')
+    : (contractActionIcon + ' 确认' + contractActionText));
 
   var overlay = document.createElement('div');
   overlay.className = 'team-picker-overlay';
@@ -7132,7 +7137,6 @@ function renderCalendar() {
   }
   
   htmlStr += `<div class="cal-grid">${cells}</div>`;
-  htmlStr += renderCareerTeamInjuryNotices();
   
   // 底部 — 只保留进度文字
   const calendarHint = STATE._calendarAutoSimulating
@@ -7272,6 +7276,7 @@ function renderSeasonInsights() {
         '<div class="season-stats-grid">' + statHtml + '</div>' +
         '<div class="season-shooting-line">投篮 ' + (ps.fgm || 0) + '-' + (ps.fga || 0) + ' (' + pctText(fgPct) + ') · 三分 ' + (ps.threeM || 0) + '-' + (ps.threeA || 0) + ' (' + pctText(threePct) + ') · 罚球 ' + (ps.ftm || 0) + '-' + (ps.fta || 0) + ' (' + pctText(ftPct) + ')</div>' +
       '</div>' +
+      renderCareerTeamInjuryNotices() +
       narrativeHtml +
       bestHtml +
     '</div>'

@@ -109,6 +109,7 @@ if (denied.STATE.careerTeam !== 'AAA') failures.push('已拒绝申请仍然导�
 
 if (!/renderPlayerTradeRequestCard\(\)/.test(indexText)) failures.push('我的球员页面没有渲染申请交易入口');
 if (!/createPlayerTradeRequest\('', 'deadline_event'/.test(indexText)) failures.push('交易截止日剧情没有接入真实申请流程');
+if (!/showTradeRequestTeamRoster/.test(offseasonText) || !/previewTeamRosterModal\(team, function\(\)/.test(offseasonText)) failures.push('申请交易球队卡片没有接入球队名单预览');
 
 const reinforcement = buildContext(0);
 if (!reinforcement.getReinforcementRequestAvailability().allowed) failures.push('完成 10 场且合同有效时仍不能提交补强要求');
@@ -116,10 +117,28 @@ const reinforcementResult = reinforcement.createPlayerReinforcementRequest('PG',
 if (!reinforcementResult || reinforcementResult.request.status !== 'approved') failures.push('批准分支没有生成已批准补强要求');
 if (reinforcement.createPlayerReinforcementRequest('PF', 'manual') !== null) failures.push('同一赛季可以重复提交补强要求');
 
+const contractIndependentReinforcement = buildContext(0);
+contractIndependentReinforcement.STATE.career.contract = 1;
+if (!contractIndependentReinforcement.getReinforcementRequestAvailability().allowed) failures.push('常规赛合同剩 1 年时仍被合同条件错误拦截');
+const contractOneChance = contractIndependentReinforcement.getReinforcementApprovalChance('PG');
+contractIndependentReinforcement.STATE.career.contract = 4;
+if (contractIndependentReinforcement.getReinforcementApprovalChance('PG') !== contractOneChance) failures.push('补强要求批准概率错误依赖合同年限');
+
 const reinforcementDenied = buildContext(0.99);
 const reinforcementDeniedResult = reinforcementDenied.createPlayerReinforcementRequest('PG', 'manual');
 if (!reinforcementDeniedResult || reinforcementDeniedResult.request.status !== 'denied') failures.push('拒绝分支没有生成已拒绝补强要求');
 if (!/renderPlayerReinforcementRequestCard\(\)/.test(indexText)) failures.push('我的球员页面没有渲染补强要求入口');
+
+const offseasonReinforcement = buildContext(0);
+offseasonReinforcement.STATE.season._resultsViewed = true;
+offseasonReinforcement.STATE.season.isPlayoffs = true;
+offseasonReinforcement.STATE.career.contract = 1;
+if (!offseasonReinforcement.getReinforcementRequestAvailability().allowed) failures.push('休赛期仍不能提交补强要求');
+const offseasonResult = offseasonReinforcement.createPlayerReinforcementRequest('PG', 'manual');
+if (!offseasonResult || offseasonResult.request.season !== 1) failures.push('休赛期补强要求没有绑定到当前休赛期');
+offseasonReinforcement.STATE.career.seasonCount = 1;
+offseasonReinforcement.STATE._careerSaved = true;
+if (offseasonReinforcement.getReinforcementRequestAvailability().allowed) failures.push('保存赛季后仍可在同一休赛期重复提交补强要求');
 
 if (failures.length) {
   console.error(failures.join('\n'));
