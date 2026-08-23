@@ -11,11 +11,6 @@ const SIM_CONFIG = {
   BUILD: {
     /** 总属性数 */
     TOTAL_ATTRS: 14,
-    /** 自由建人属性起点 */
-    POINT_BUILD_BASE_ATTR: 50,
-    /** 自由建人随机可分配点数（含端点） */
-    POINT_BUILD_MIN_POINTS: 300,
-    POINT_BUILD_MAX_POINTS: 360,
     /** 新秀创建阶段单项上限；进入生涯后仍可成长到 ATTR_MAX */
     STARTING_ATTR_MAX: 90,
     /** Classic 模式重roll次数 */

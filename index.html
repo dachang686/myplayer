@@ -218,8 +218,6 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .build-header h1{margin:0;color:var(--text);font:800 26px/1.1 var(--font-display);letter-spacing:-.7px}
 .build-identity{max-width:55%;padding:7px 10px;border:1px solid var(--border-light);border-radius:9px;color:var(--text-dim);font-size:11px;font-weight:700;line-height:1.25;text-align:right}
 .build-split{display:grid;grid-template-columns:188px minmax(0,1fr);gap:14px;align-items:start}
-.point-build-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(7,minmax(0,1fr));grid-auto-flow:column;gap:0 14px;padding:0 2px}
-.point-build-row{display:grid;grid-template-columns:minmax(0,1fr) 34px 34px 34px;gap:7px;align-items:center;min-width:0;padding:7px 0;border-bottom:1px solid var(--border-light)}
 .build-left{min-width:0;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
 .bl-header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 12px;border-bottom:1px solid var(--border)}
 .bl-header-copy{min-width:0}
@@ -281,10 +279,6 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .br-slot-actions .slot-btn:hover:not(:disabled),.br-slot-actions .slot-btn:focus-visible:not(:disabled){border-color:var(--orange);outline:none}
 .br-slot-actions .slot-btn:active:not(:disabled){transform:translateY(1px)}
 .br-slot-actions .slot-btn:disabled{opacity:.34;cursor:default}
-#point-build-area .slot-btn-primary{border:1px solid var(--border-light);border-radius:8px;background:var(--bg-elevated);color:var(--text-dim);font:750 14px var(--font-body);cursor:default;transition:background .18s cubic-bezier(.16,1,.3,1),border-color .18s cubic-bezier(.16,1,.3,1),box-shadow .18s cubic-bezier(.16,1,.3,1),transform .18s cubic-bezier(.16,1,.3,1)}
-#point-build-area .slot-btn-primary:not(:disabled){border-color:var(--orange);background:var(--orange);color:var(--on-accent);cursor:pointer;box-shadow:0 5px 14px rgba(255,107,53,.22)}
-#point-build-area .slot-btn-primary:hover:not(:disabled),#point-build-area .slot-btn-primary:focus-visible:not(:disabled){background:var(--orange-light);border-color:var(--orange-light);outline:none}
-#point-build-area .slot-btn-primary:active:not(:disabled){transform:translateY(1px);box-shadow:0 2px 7px rgba(255,107,53,.18)}
 .br-slot-warn{min-height:14px;margin-top:8px;color:var(--orange);font-size:9px;line-height:1.4;text-align:right}
 #br-roster-area:not(:empty){padding:13px 14px 14px;border:1px solid var(--border);border-radius:12px;background:var(--bg-card)}
 .br-roster-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:9px}
@@ -310,7 +304,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 #screen-career .br-slot-label{margin-bottom:10px;color:var(--orange);font:750 13px var(--font-body)}
 #screen-career .br-slot-actions{flex-direction:row;flex-wrap:wrap;justify-content:center}
 #screen-career .br-slot-actions .slot-btn{min-height:38px;padding:8px 12px}
-@media(max-width:480px){#screen-build.screen.active,#screen-build-legacy.screen.active{padding:18px 12px 30px}.build-header{align-items:flex-start;margin-bottom:14px}.build-header h1{font-size:23px}.build-identity{max-width:58%;font-size:10px}.build-split{grid-template-columns:1fr}.build-right{order:1}.build-left{order:2}.bl-attrs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:0 7px 8px}.ba-slot+.ba-slot{border-top-color:transparent}.ba-slot{border-color:var(--border);min-height:40px}.point-build-list{grid-template-columns:1fr;grid-template-rows:none;grid-auto-flow:row;gap:0}.br-slot-layout{grid-template-columns:minmax(0,1fr) 122px}.br-roster-instruction{max-width:110px}.br-player{min-height:54px}.br-player .bp-headshot{width:29px;height:29px}.br-player .bp-name{font-size:10px}}
+@media(max-width:480px){#screen-build.screen.active,#screen-build-legacy.screen.active{padding:18px 12px 30px}.build-header{align-items:flex-start;margin-bottom:14px}.build-header h1{font-size:23px}.build-identity{max-width:58%;font-size:10px}.build-split{grid-template-columns:1fr}.build-right{order:1}.build-left{order:2}.bl-attrs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:0 7px 8px}.ba-slot+.ba-slot{border-top-color:transparent}.ba-slot{border-color:var(--border);min-height:40px}.br-slot-layout{grid-template-columns:minmax(0,1fr) 122px}.br-roster-instruction{max-width:110px}.br-player{min-height:54px}.br-player .bp-headshot{width:29px;height:29px}.br-player .bp-name{font-size:10px}}
 #build-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:100;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
 .build-toast-msg{background:var(--bg-card);border:2px solid var(--orange);border-radius:14px;padding:10px 20px;font-family:var(--font-display);font-size:14px;font-weight:600;color:var(--text);animation:slideUp .25s ease,fadeOut .3s ease 1.2s forwards;box-shadow:var(--shadow-lg)}
 @keyframes fadeOut{to{opacity:0;transform:translateY(-10px)}}
@@ -942,7 +936,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     <button class="btn btn-primary" onclick="trackEvent({act:'click',blk:'BMC098',pos:'TC2',label:'确认位置'});confirmPosition()">进入能力分配</button>
   </div>
 
-  <!-- ====== 自由建人 ====== -->
+  <!-- ====== 14轮建人 ====== -->
   <div class="screen" id="screen-build">
     <div class="build-header">
       <div>
@@ -951,8 +945,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
       </div>
       <div class="build-identity" id="build-pos-indicator"></div>
     </div>
-    <div id="point-build-area"></div>
-    <div id="point-build-note"></div>
+    <div id="player-build-area"></div>
+    <div id="player-build-history"></div>
   </div>
 
   <!-- ====== 经典建人（旧版） ====== -->
@@ -1251,8 +1245,6 @@ const STATE = {
   attrs: {},            // { threePT: 75, ... } 锁定后的值
   attrSlots: {},        // { threePT: { player, team, value }, ... }
   lockedCount: 0,
-  buildPointsTotal: 0,
-  buildPointsRemaining: 0,
   usedPlayers: [],      // 已选球员名列表
   _mustLockAfterSpin: false, // 已展示球员未锁定属性时禁用随机球队
   
@@ -1890,7 +1882,6 @@ function initGame() {
     simulationEngine: null,
     mode: null, position: null, playerName: '',
     attrs: {}, attrSlots: {}, lockedCount: 0,
-    buildPointsTotal: 0, buildPointsRemaining: 0,
     usedPlayers: [], _mustLockAfterSpin: false,
     buildStep: 'select', noPlayerSelected: true, playerBuild: null,
     currentTeam: null, currentRoster: [],
@@ -2177,8 +2168,6 @@ function confirmPosition() {
     STATE._teamsVisited = [];
     STATE._shownThisTeam = [];
     STATE._mustLockAfterSpin = false;
-    STATE.buildPointsTotal = 0;
-    STATE.buildPointsRemaining = 0;
     STATE.selectedPlayer = null;
     STATE.currentTeam = null;
     showScreen('screen-build-legacy');
@@ -2203,37 +2192,8 @@ function renderBuildUI() {
   renderLeftAttrs();
 }
 
-function isPointBuildActive() {
-  return Number(STATE.buildPointsTotal) > 0;
-}
-
-function getPointBuildOvr() {
-  return STATE.position ? calcOVR(STATE.attrs, STATE.position) : 0;
-}
-
 /** Render left attribute sidebar */
 function renderLeftAttrs() {
-  if (isPointBuildActive()) {
-    const ovrEl = document.getElementById('bl-ovr');
-    if (ovrEl) ovrEl.textContent = getPointBuildOvr();
-    const container = document.getElementById('bl-attrs');
-    if (!container) return;
-    container.innerHTML = '';
-    ATTR_KEYS.forEach(key => {
-      const value = Number(STATE.attrs[key]) || SIM_CONFIG.BUILD.POINT_BUILD_BASE_ATTR;
-      const grade = getGrade(value);
-      const div = document.createElement('div');
-      div.className = 'ba-slot locked';
-      div.innerHTML = '<span class="ba-label">' + attrCN(key) + '</span>'
-        + '<span class="ba-grade" style="color:' + grade.color + '">' + grade.letter + '</span>'
-        + '<span class="ba-tail"><span class="ba-value">' + value + '</span><span class="ba-status">已分配</span></span>';
-      container.appendChild(div);
-    });
-    const footer = document.getElementById('bl-footer');
-    if (footer) footer.innerHTML = '<div style="padding:8px 10px;font-size:11px;color:var(--text-dim);">剩余 ' + STATE.buildPointsRemaining + ' / ' + STATE.buildPointsTotal + ' 点</div>';
-    return;
-  }
-
   // OVR
   const ovrEl = document.getElementById('bl-ovr');
   if (ovrEl) {
@@ -2337,10 +2297,6 @@ function renderTeamPicker() {
     renderDraftPlayerBuildUI();
     return;
   }
-  if (isPointBuildActive()) {
-    renderPointBuildAllocator();
-    return;
-  }
   const slotArea = document.getElementById('br-slot-area');
   if (!slotArea) return;
   
@@ -2370,105 +2326,6 @@ function renderTeamPicker() {
   
   const rosterArea = document.getElementById('br-roster-area');
   if (rosterArea) rosterArea.innerHTML = '';
-}
-
-var _pointBuildPressTimer = null;
-var _pointBuildRepeatTimer = null;
-var _pointBuildLongPress = false;
-
-function changePointBuildAttr(key, delta, event) {
-  if (event) event.preventDefault();
-  if (!isPointBuildActive()) return false;
-  const pageScrollTop = window.scrollY;
-  const min = SIM_CONFIG.BUILD.POINT_BUILD_BASE_ATTR;
-  const max = SIM_CONFIG.BUILD.STARTING_ATTR_MAX;
-  const current = Number(STATE.attrs[key]) || min;
-  if (delta > 0) {
-    if (STATE.buildPointsRemaining <= 0 || current >= max) return false;
-    const amount = Math.min(Math.floor(delta), STATE.buildPointsRemaining, max - current);
-    STATE.attrs[key] = current + amount;
-    STATE.buildPointsRemaining -= amount;
-  } else {
-    if (current <= min) return false;
-    STATE.attrs[key] = current - 1;
-    STATE.buildPointsRemaining++;
-  }
-  STATE.finalOVR = 0;
-  renderBuildUI();
-  renderTeamPicker();
-  requestAnimationFrame(() => {
-    window.scrollTo({ top: pageScrollTop, left: 0, behavior: 'instant' });
-  });
-  return true;
-}
-
-function stopPointBuildIncrease() {
-  clearTimeout(_pointBuildPressTimer);
-  clearInterval(_pointBuildRepeatTimer);
-  _pointBuildPressTimer = null;
-  _pointBuildRepeatTimer = null;
-  _pointBuildLongPress = false;
-}
-
-function startPointBuildIncrease(key, event) {
-  event.preventDefault();
-  stopPointBuildIncrease();
-  _pointBuildLongPress = false;
-  _pointBuildPressTimer = setTimeout(function() {
-    _pointBuildLongPress = true;
-    if (!changePointBuildAttr(key, 10)) { stopPointBuildIncrease(); return; }
-    _pointBuildRepeatTimer = setInterval(function() {
-      if (!changePointBuildAttr(key, 10)) stopPointBuildIncrease();
-    }, 130);
-  }, 350);
-}
-
-function endPointBuildIncrease(key, event) {
-  if (event) event.preventDefault();
-  var wasLongPress = _pointBuildLongPress;
-  stopPointBuildIncrease();
-  if (!wasLongPress) changePointBuildAttr(key, 1);
-}
-
-function cancelPointBuildIncrease(event) {
-  if (event) event.preventDefault();
-  stopPointBuildIncrease();
-}
-
-document.addEventListener('pointerup', cancelPointBuildIncrease);
-document.addEventListener('pointercancel', cancelPointBuildIncrease);
-
-function finishPointBuild() {
-  if (!isPointBuildActive() || STATE.buildPointsRemaining !== 0) return;
-  STATE.finalOVR = getPointBuildOvr();
-  revealPlayer();
-}
-
-function renderPointBuildAllocator() {
-  const slotArea = document.getElementById('point-build-area');
-  const rosterArea = document.getElementById('point-build-note');
-  if (!slotArea) return;
-  const baseAttr = SIM_CONFIG.BUILD.POINT_BUILD_BASE_ATTR;
-  const maxAttr = SIM_CONFIG.BUILD.STARTING_ATTR_MAX;
-  const canFinish = STATE.buildPointsRemaining === 0;
-  const rows = ATTR_KEYS.map(key => {
-    const value = Number(STATE.attrs[key]) || baseAttr;
-    const canLower = value > baseAttr;
-    const canRaise = STATE.buildPointsRemaining > 0 && value < maxAttr;
-    return '<div class="point-build-row">'
-      + '<span style="font-size:13px;font-weight:700;">' + attrCN(key) + '</span>'
-      + '<b style="text-align:center;font-family:var(--font-display);font-size:15px;">' + value + '</b>'
-      + '<button type="button" aria-label="降低' + attrCN(key) + '" onmousedown="event.preventDefault()" onclick="changePointBuildAttr(\'' + key + '\', -1, event)" ' + (canLower ? '' : 'disabled') + ' style="height:30px;border:1px solid var(--border);border-radius:7px;background:var(--bg-card);color:var(--text);font-weight:800;cursor:pointer;">−</button>'
-      + '<button type="button" aria-label="提高' + attrCN(key) + '，长按连续加十点" onpointerdown="startPointBuildIncrease(\'' + key + '\', event)" onpointerup="endPointBuildIncrease(\'' + key + '\', event)" onpointercancel="cancelPointBuildIncrease(event)" onclick="if (event.detail === 0) changePointBuildAttr(\'' + key + '\', 1, event)" ' + (canRaise ? '' : 'disabled') + ' style="height:30px;border:0;border-radius:7px;background:var(--orange);color:#fff;font-weight:800;cursor:pointer;">+</button>'
-      + '</div>';
-  }).join('');
-  slotArea.innerHTML = '<div class="br-slot-area">'
-    + '<div class="br-slot-head"><div><span class="br-slot-kicker">ATTRIBUTE POINTS</span><div class="br-slot-label">自由分配能力</div></div><span class="br-slot-rule">单项最高 ' + maxAttr + '</span></div>'
-    + '<div style="display:flex;align-items:baseline;justify-content:space-between;padding:10px 12px;border-radius:10px;background:var(--orange-bg);margin-bottom:8px;"><span style="font-size:12px;color:var(--text-dim);">可分配点数</span><strong style="font-family:var(--font-display);font-size:24px;color:var(--orange);">' + STATE.buildPointsRemaining + ' <small style="font-size:12px;color:var(--text-dim);">/ ' + STATE.buildPointsTotal + '</small></strong></div>'
-    + '<div id="point-build-list" class="point-build-list">' + rows + '</div>'
-    + '<button class="slot-btn slot-btn-primary" type="button" onclick="finishPointBuild()" ' + (canFinish ? '' : 'disabled') + ' style="width:100%;min-height:48px;margin-top:12px;">' + (canFinish ? '确认属性，揭晓球员' : '请用完全部点数') + '</button>'
-    + '</div>';
-  if (rosterArea) rosterArea.innerHTML = '<div class="br-hint" style="padding:10px 4px;">14 项属性均从 ' + baseAttr + ' 开始；短按 +1，长按持续每次 +10；加点将实时更新预计总评。</div>';
 }
 
 /** 只更新按钮状态，不重建老虎机HTML（防止跳动）*/

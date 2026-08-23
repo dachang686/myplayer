@@ -212,8 +212,6 @@ function startDraftPlayerBuild() {
     STATE.attrSlots[key] = null;
   });
   STATE.lockedCount = 0;
-  STATE.buildPointsTotal = 0;
-  STATE.buildPointsRemaining = 0;
   STATE.usedPlayers = [];
   STATE._rerollsLeft = PLAYER_BUILD_MAX_REROLLS;
   STATE._teamsVisited = [];
@@ -464,8 +462,8 @@ function renderPlayerBuildSourceSwitcher(build, sources) {
 }
 
 function renderDraftPlayerBuildUI() {
-  var area = document.getElementById('point-build-area');
-  var history = document.getElementById('point-build-note');
+  var area = document.getElementById('player-build-area');
+  var history = document.getElementById('player-build-history');
   var build = ensurePlayerBuildState();
   if (!area || !build || build.status !== 'in_progress') return;
   var sources = getPlayerBuildSources(build);
