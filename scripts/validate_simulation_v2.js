@@ -2,6 +2,11 @@ const fs = require('fs');
 const path = require('path');
 
 const root = path.resolve(__dirname, '..');
+const modeArgument = process.argv.find(argument => argument.startsWith('--mode='));
+const validationMode = modeArgument ? modeArgument.slice('--mode='.length) : 'statistical';
+if (!['smoke', 'integration', 'statistical'].includes(validationMode)) {
+  throw new Error(`未知验证模式：${validationMode}，可选 smoke/integration/statistical`);
+}
 const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const v2Source = fs.readFileSync(path.join(root, 'js', 'simulation_v2.js'), 'utf8');
 const offseasonSource = fs.readFileSync(path.join(root, 'js', 'offseason.js'), 'utf8');
@@ -161,9 +166,26 @@ function checkResult(result, teamA, teamB) {
 
 const teams = leagueData.LEAGUE_TEAM_IDS.slice(0, 2);
 const allTeams = leagueData.LEAGUE_TEAM_IDS.slice();
-const validationSeasons = 10;
+const validationSeasons = validationMode === 'integration' ? 1 : 10;
 const gamesPerSeason = (allTeams.length / 2) * 82;
 const validationGames = validationSeasons * gamesPerSeason;
+
+if (validationMode === 'smoke') {
+  const smokeFailures = [];
+  for (let game = 0; game < 8; game++) {
+    const teamA = allTeams[game % allTeams.length];
+    const teamB = allTeams[(game + 1) % allTeams.length];
+    const result = seeded(7000 + game, () => runtime(teamA, teamB, 0, null, {
+      isHomeA: game % 2 === 0,
+      ignoreNpcAvailability: true,
+    }));
+    smokeFailures.push(...checkResult(result, teamA, teamB));
+    if (result.scoreA === result.scoreB) smokeFailures.push('tie');
+  }
+  if (smokeFailures.length) throw new Error('V2 smoke 验证失败：' + JSON.stringify(smokeFailures));
+  console.log(JSON.stringify({ mode: validationMode, games: 8, deterministic: true, boxScoreInvariant: true }));
+  process.exit(0);
+}
 const invariantKinds = {};
 const coveredTeams = new Set();
 let invariantErrors = 0;
@@ -255,6 +277,20 @@ for (let game = 0; game < validationGames; game++) {
   });
   teamGameOffensiveRebounds.push(gameOffensiveReboundsA, gameOffensiveReboundsB);
   if (seasonGame === gamesPerSeason - 1) finishEcologySeason();
+}
+
+if (validationMode === 'integration') {
+  if (invariantErrors > 0 || coveredTeams.size !== allTeams.length || !diagnosticsFailClosed) {
+    throw new Error('V2 integration 验证失败：' + JSON.stringify({ invariantErrors, coveredTeams: coveredTeams.size, diagnosticsFailClosed }));
+  }
+  console.log(JSON.stringify({
+    mode: validationMode,
+    games: validationGames,
+    teamsCovered: coveredTeams.size,
+    invariantErrors,
+    diagnosticsFailClosed,
+  }));
+  process.exit(0);
 }
 
 function standardDeviation(values) {

@@ -258,6 +258,7 @@ if (!Object.values(ACHIEVEMENT_FEATURES).some(v => v)) {
         var championshipStreak = getCurrentChampionshipStreak(STATE);
         if (isFirst) data.championTeams.push(team);
         function calcAvg(src, field, games) {
+          if (typeof getPerGameStats === 'function') return getPerGameStats(src, games)[field];
           return Math.round((src[field] || 0) / games * 10) / 10;
         }
         function calcPct(src, made, att) {

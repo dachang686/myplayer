@@ -86,6 +86,17 @@ function toPerGameSeasonStats(raw) {
   if (!raw) return null;
   var gp = Number(raw.gp != null ? raw.gp : raw.games) || 0;
   if (!gp) return null;
+  if (typeof getPerGameStats === 'function') {
+    var shared = getPerGameStats(raw, gp);
+    return {
+      gp: gp,
+      pts: shared.pts,
+      reb: shared.reb,
+      ast: shared.ast,
+      stl: shared.stl,
+      blk: shared.blk
+    };
+  }
   function average(field) {
     return Math.round(((Number(raw[field]) || 0) / gp) * 10) / 10;
   }
@@ -922,6 +933,13 @@ function showAwardsScreen() {
     return s ? s.replace(/width:\d+px;height:\d+px;?/, '') : '';
   }
 
+  function escapeAwardText(value) {
+    if (typeof escapeSeasonUiText === 'function') return escapeSeasonUiText(value);
+    return String(value == null ? '' : value).replace(/[&<>"']/g, function(char) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char];
+    });
+  }
+
   var rowsHtml = '';
   var order = [
     'mvp', 'dpoy',
@@ -994,7 +1012,7 @@ function showAwardsScreen() {
           ? STATE.careerTeam
           : findPlayerTeamByIdentity(playerId, playerNameCN));
         var teamName = playerTeam ? (typeof getTeamName === 'function' ? getTeamName(playerTeam) : playerTeam) : '';
-        var teamHtml = teamName ? '<span class="award-list-team"> · ' + teamName + '</span>' : '';
+        var teamHtml = teamName ? '<span class="award-list-team"> · ' + escapeAwardText(teamName) + '</span>' : '';
         var playerStats = playerInfo.stats;
         if (isMy) {
           playerStats = getUserSeasonAverageStats() || playerStats;
@@ -1014,7 +1032,7 @@ function showAwardsScreen() {
             return '<span>' + item[0] + ' ' + item[1] + '</span>';
           }).join('') + '</div>';
         }
-        leftContent += '<div style="font-size:11px;' + (isMy ? 'color:var(--orange);font-weight:700;' : 'color:var(--text);font-weight:500;') + ';line-height:1.5;">' + (isMy ? '⭐ ' : '') + awardDisplayName + teamHtml + '</div>' + listStatsHtml;
+        leftContent += '<div style="font-size:11px;' + (isMy ? 'color:var(--orange);font-weight:700;' : 'color:var(--text);font-weight:500;') + ';line-height:1.5;">' + (isMy ? '⭐ ' : '') + escapeAwardText(awardDisplayName) + teamHtml + '</div>' + listStatsHtml;
       }
       leftContent += '</div>';
     } else {
@@ -1031,8 +1049,8 @@ function showAwardsScreen() {
         : a.winner.replace(/·/g, '-');
       var statLine = displayStatValue != null ? '<div class="award-stat-line">场均 ' + displayStatValue + ' ' + (a.statLabel || '') + '</div>' : '';
       var teamName = a.team ? (typeof getTeamName === 'function' ? getTeamName(a.team) : a.team) : '';
-      var teamLine = teamName ? '<div class="award-team">球队：' + teamName + '</div>' : '';
-      leftContent = '<div style="font-size:13px;font-weight:600;' + (a.isUser ? 'color:var(--orange);' : 'color:var(--text);') + 'margin:1px 0 1px;">' + (a.isUser ? '⭐ ' : '') + singleAwardDisplayName + '</div>' + teamLine + statLine;
+      var teamLine = teamName ? '<div class="award-team">球队：' + escapeAwardText(teamName) + '</div>' : '';
+      leftContent = '<div style="font-size:13px;font-weight:600;' + (a.isUser ? 'color:var(--orange);' : 'color:var(--text);') + 'margin:1px 0 1px;">' + (a.isUser ? '⭐ ' : '') + escapeAwardText(singleAwardDisplayName) + '</div>' + teamLine + statLine;
     }
 
     rowsHtml +=

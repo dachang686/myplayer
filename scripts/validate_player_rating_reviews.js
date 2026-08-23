@@ -32,11 +32,18 @@ function fail(message) {
 }
 
 const league = loadLeague();
-const baselineLeague = parseLeague(execFileSync(
-  'git', ['show', 'HEAD:js/data/league_players.js'], { cwd: root, encoding: 'utf8' },
-));
+let baselineLeague = null;
+let baselineSkipped = false;
+try {
+  baselineLeague = parseLeague(execFileSync(
+    'git', ['show', 'HEAD:js/data/league_players.js'], { cwd: root, encoding: 'utf8' },
+  ));
+} catch (error) {
+  baselineSkipped = true;
+  console.warn(`跳过 Git 基线比较：${error.message}`);
+}
 const baselinePlayersById = new Map(
-  Object.values(baselineLeague).flat().map(player => [player.id, player]),
+  Object.values(baselineLeague || {}).flat().map(player => [player.id, player]),
 );
 const reviewData = JSON.parse(fs.readFileSync(reviewPath, 'utf8'));
 const ovrAdjustmentData = JSON.parse(fs.readFileSync(ovrAdjustmentPath, 'utf8'));
@@ -162,7 +169,7 @@ for (const adjustment of ovrAdjustments) {
     const baselinePlayer = baselinePlayersById.get(adjustment.localId);
     const leaguePlayer = playersById.get(adjustment.localId)?.player;
     if (!Array.isArray(positionTuple) || positionTuple.length !== 2
-      || !positionTuple.includes(baselinePlayer?.pos) || leaguePlayer?.pos !== positionTuple[1]) {
+      || (baselineLeague && !positionTuple.includes(baselinePlayer?.pos)) || leaguePlayer?.pos !== positionTuple[1]) {
       fail(`${adjustment.localId} invalid OVR adjustment tuple: pos`);
     }
   }
@@ -180,18 +187,20 @@ for (const adjustment of fairOvrAdjustments) {
   }
 }
 
-for (const [team, players] of Object.entries(league)) {
-  const baselineById = new Map((baselineLeague[team] || []).map(player => [player.id, player]));
-  for (const player of players) {
-    if (reviewedIds.has(player.id)) continue;
-    const baseline = baselineById.get(player.id);
-    if (!baseline) {
-      fail(`unreviewed player missing from baseline: ${player.id}`);
-      continue;
-    }
-    const { name: baselineTemporaryName, ...baselineWithoutName } = baseline;
-    if (JSON.stringify(player) !== JSON.stringify(baselineWithoutName)) {
-      fail(`unreviewed player changed: ${player.id}`);
+if (baselineLeague) {
+  for (const [team, players] of Object.entries(league)) {
+    const baselineById = new Map((baselineLeague[team] || []).map(player => [player.id, player]));
+    for (const player of players) {
+      if (reviewedIds.has(player.id)) continue;
+      const baseline = baselineById.get(player.id);
+      if (!baseline) {
+        fail(`unreviewed player missing from baseline: ${player.id}`);
+        continue;
+      }
+      const { name: baselineTemporaryName, ...baselineWithoutName } = baseline;
+      if (JSON.stringify(player) !== JSON.stringify(baselineWithoutName)) {
+        fail(`unreviewed player changed: ${player.id}`);
+      }
     }
   }
 }
@@ -202,6 +211,7 @@ const result = {
   ovrAdjustedPlayers: ovrAdjustments.length,
   fairOvrAdjustedPlayers: fairOvrAdjustments.length,
   lastReviewedId: reviews.at(-1)?.localId || null,
+  gameplayBaselineSkipped: baselineSkipped,
   validationErrors: errors.length,
   errors,
 };

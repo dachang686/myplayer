@@ -20,9 +20,36 @@ assert(indexSource.includes('id="screen-draft"'), '缺少选秀大会页面');
 assert(indexSource.includes('<script src="js/draft.js"></script>'), '缺少选秀脚本入口');
 assert(indexSource.includes('showOffseasonDraftLottery();'), '休赛期未接入抽签页面');
 assert(indexSource.includes('beginOffseasonDraft();'), '训练后未接入选秀大会');
-assert(indexSource.includes("targetScreen === 'screen-draft-lottery'"), '存档恢复未覆盖抽签页面');
-assert(indexSource.includes("targetScreen === 'screen-draft-trades'"), '存档恢复未覆盖选秀签交易页面');
-assert(indexSource.includes("targetScreen === 'screen-draft'"), '存档恢复未覆盖选秀页面');
+assert(indexSource.includes('function resumeLoadedCareer(targetScreen)'), '缺少基于业务状态恢复生涯的入口');
+
+function assertResumePhase(phase, expectedScreen) {
+  const state = { season: { schedule: [] }, offseasonDraft: { phase } };
+  let actualScreen = '';
+  const resumeLoadedCareer = new Function(
+    'STATE', 'showMyCard', 'showOffseasonDraftLottery', 'showDraftPickTradeScreen',
+    'showOffseasonDraftScreen', 'hasActiveSeasonPlayoffs', 'resumePlayoffs',
+    'showSeasonResults', 'showRosterReview', 'renderTrainingCamp',
+    `${indexSource.slice(indexSource.indexOf('function resumeLoadedCareer'), indexSource.indexOf('// 旧调用点保留兼容', indexSource.indexOf('function resumeLoadedCareer')))}\nreturn resumeLoadedCareer;`,
+  )(
+    state,
+    () => { actualScreen = 'screen-my-card'; },
+    () => { actualScreen = 'screen-draft-lottery'; },
+    () => { actualScreen = 'screen-draft-trades'; },
+    () => { actualScreen = 'screen-draft'; },
+    () => false,
+    () => { actualScreen = 'screen-playoffs'; },
+    () => { actualScreen = 'screen-results'; },
+    () => { actualScreen = 'screen-roster-review'; },
+    () => { actualScreen = 'screen-training'; },
+  );
+  resumeLoadedCareer('screen-legacy-page');
+  assert(actualScreen === expectedScreen, `选秀 ${phase} 阶段恢复错误：${actualScreen}`);
+}
+
+assertResumePhase('lottery', 'screen-draft-lottery');
+assertResumePhase('pick_trades', 'screen-draft-trades');
+assertResumePhase('draft', 'screen-draft');
+assertResumePhase('complete', 'screen-draft');
 
 assert(draftSource.includes('var LOTTERY_WEIGHTS = [14, 14, 14, 12.5'), '乐透概率配置缺失');
 assert(draftSource.includes('for (var pick = 1; pick <= 4; pick++)'), '乐透前四顺位抽取缺失');

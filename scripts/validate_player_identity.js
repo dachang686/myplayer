@@ -146,6 +146,7 @@ if (!html.includes('class="season-team-age-cell"') || !html.includes('<th scope=
 }
 
 let baselineCompared = false;
+let baselineSkipped = false;
 try {
   const trackedPlayerFiles = childProcess.execFileSync('git', ['ls-tree', '-r', '--name-only', 'HEAD', 'js/data'], {
     cwd: root,
@@ -189,7 +190,9 @@ try {
     baselineCompared = true;
   }
 } catch (error) {
-  failures.push(`无法读取 Git 基线：${error.message}`);
+  // 压缩包/发布产物通常不带 .git；当前数据完整性检查仍然有效，基线比较仅在 Git 可用时执行。
+  baselineSkipped = true;
+  console.warn(`跳过 Git 基线比较：${error.message}`);
 }
 
 const result = {
@@ -199,7 +202,8 @@ const result = {
   draftPlayers: draftPlayers.length,
   legacyEnglishNameFields: players.filter((player) => player.name || player.nameEN).length,
   nicknameHtmlEscaping: !failures.some((failure) => failure.indexOf('昵称') >= 0),
-  gameplayBaselineCompared: baselineCompared
+  gameplayBaselineCompared: baselineCompared,
+  gameplayBaselineSkipped: baselineSkipped
 };
 
 if (failures.length) {

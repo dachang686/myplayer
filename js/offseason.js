@@ -149,13 +149,13 @@ function showMobilityChoiceModal(title, scene, choices, onDone) {
   if (old) old.remove();
   var html = '<div class="team-picker-overlay" id="mobility-modal">';
   html += '<div class="team-picker-modal">';
-  html += '<div class="team-picker-header"><span>' + title + '</span></div>';
+  html += '<div class="team-picker-header"><span>' + escapeNarrativeText(title) + '</span></div>';
   html += '<div style="padding:14px 14px 8px;">';
   html += '<div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:6px;">剧情</div>';
-  html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.65;margin-bottom:14px;">' + sanitizePlayerFacingText(scene) + '</div>';
+  html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.65;margin-bottom:14px;">' + renderNarrativeText(scene) + '</div>';
   html += '<div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:6px;">选择</div>';
   choices.forEach(function(ch, ci) {
-    html += '<button class="btn btn-secondary btn-sm" style="width:100%;margin-bottom:8px;justify-content:flex-start;text-align:left;" onclick="chooseMobilityChoice(' + ci + ')">' + ch.label + '<span style="display:block;font-size:11px;font-family:var(--font-body);font-weight:400;opacity:.75;margin-left:4px;">' + sanitizePlayerFacingText(ch.hint || '') + '</span></button>';
+    html += '<button class="btn btn-secondary btn-sm" style="width:100%;margin-bottom:8px;justify-content:flex-start;text-align:left;" onclick="chooseMobilityChoice(' + ci + ')">' + escapeNarrativeText(ch.label) + '<span style="display:block;font-size:11px;font-family:var(--font-body);font-weight:400;opacity:.75;margin-left:4px;">' + renderNarrativeText(ch.hint || '') + '</span></button>';
   });
   html += '</div></div></div>';
   document.body.insertAdjacentHTML('beforeend', html);
@@ -650,9 +650,10 @@ function showFreeAgencyTeamChangeModal(oldTeam, newTeam, done) {
   var data = buildTeamCareerReviewData(oldTeam);
   var totals = data.totals;
   var gp = totals.games || 0;
-  var avgPts = gp ? Math.round(totals.pts / gp * 10) / 10 : 0;
-  var avgReb = gp ? Math.round(totals.reb / gp * 10) / 10 : 0;
-  var avgAst = gp ? Math.round(totals.ast / gp * 10) / 10 : 0;
+  var teamReviewAvg = typeof getPerGameStats === 'function' ? getPerGameStats(totals, gp) : null;
+  var avgPts = teamReviewAvg ? teamReviewAvg.pts : (gp ? Math.round(totals.pts / gp * 10) / 10 : 0);
+  var avgReb = teamReviewAvg ? teamReviewAvg.reb : (gp ? Math.round(totals.reb / gp * 10) / 10 : 0);
+  var avgAst = teamReviewAvg ? teamReviewAvg.ast : (gp ? Math.round(totals.ast / gp * 10) / 10 : 0);
   var totalWins = 0, totalLosses = 0;
   data.seasons.forEach(function(s) { totalWins += s.wins || 0; totalLosses += s.losses || 0; });
 

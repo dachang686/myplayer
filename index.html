@@ -25,6 +25,7 @@ window.open = function(){ return null; };
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>篮坛造星局 · Court Forge</title>
+  <link rel="icon" href="media/generated/teams/team-00.png">
   <script src="js/translations.js"></script>
   <script src="js/i18n.js"></script>
   <link rel="stylesheet" href="css/draft.css">
@@ -1149,6 +1150,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 <script>
 // ── Storage 工具 ──
 var Storage = {
+  MAX_VALUE_BYTES: 200 * 1024,
+  MAX_PLAYER_HISTORY: 64,
   _ready: null,
   waitForReady: function(cb) {
     if (!Storage._ready) Storage._ready = Promise.resolve();
@@ -1162,20 +1165,25 @@ var Storage = {
   },
   setValue: function(data) {
     try {
-      if (!window.indexedDB || typeof indexedDbStorageSet !== 'function') return Promise.resolve();
+      if (!window.indexedDB || typeof indexedDbStorageSet !== 'function') return Promise.resolve({ ok: false, reason: 'unavailable' });
       for (var key in data) {
         if (!data.hasOwnProperty(key)) continue;
-        if (!Storage._validateKey(key)) { return Promise.resolve(); }
+        if (!Storage._validateKey(key)) { return Promise.resolve({ ok: false, reason: 'invalid_key' }); }
       }
       var serialized = JSON.stringify(data);
-      if (serialized.length > 200 * 1024) {
-        return Promise.resolve();
+      if (serialized.length > Storage.MAX_VALUE_BYTES) {
+        return Promise.resolve({ ok: false, reason: 'size_limit' });
       }
       return Promise.all(Object.keys(data).map(function(key) {
         return indexedDbStorageSet(key, data[key]);
-      })).catch(function(){});
-    } catch(e) {}
-    return Promise.resolve();
+      })).then(function() {
+        return { ok: true, backend: 'indexedDB' };
+      }, function() {
+        return { ok: false, reason: 'write_failed' };
+      });
+    } catch(e) {
+      return Promise.resolve({ ok: false, reason: 'serialization_failed' });
+    }
   },
   getValue: function(key) {
     try {
@@ -1186,18 +1194,29 @@ var Storage = {
     } catch(e) { return Promise.resolve(null); }
   },
   savePlayer: function(playerData) {
-    if (!window.indexedDB) return;
-    Storage.getValue('players').then(function(raw) {
+    if (!window.indexedDB) return Promise.resolve({ ok: false, reason: 'unavailable' });
+    var record = Object.assign({}, playerData, {
+      id: playerData && playerData.id || ('player-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 7)),
+      name: playerData && playerData.name || playerData && playerData.playerName || '自建球员',
+      mode: playerData && playerData.mode || 'career',
+      timestamp: Date.now(),
+      schemaVersion: 1
+    });
+    return Storage.getValue('players').then(function(raw) {
       var arr = [];
       if (raw != null) {
         if (Array.isArray(raw)) { arr = raw; }
         else if (typeof raw === 'string') { try { arr = JSON.parse(raw); } catch(e) { arr = []; } }
         if (!Array.isArray(arr)) arr = [];
       }
-      arr.push(playerData);
-      Storage.setValue({ players: arr });
+      arr.push(record);
+      arr = arr.slice(-Storage.MAX_PLAYER_HISTORY);
+      return Storage.setValue({ players: arr }).then(function(result) {
+        if (!result || !result.ok) console.error('[Storage] 球员历史保存失败:', result && result.reason);
+        return result;
+      });
     }).catch(function() {
-      Storage.setValue({ players: [playerData] });
+      return Storage.setValue({ players: [record] });
     });
   }
 };
@@ -1285,6 +1304,9 @@ const STATE = {
     offseasonEventSeason: 0,
   },
 };
+
+// 顶层 const 不会自动挂到 window；本地 profile/读档逻辑通过显式访问器读取当前生涯状态。
+window.getCourtForgeState = function getCourtForgeState() { return STATE; };
 
 // ==================== UI 工具 ====================
 function $(sel) { return document.querySelector(sel); }
@@ -1652,6 +1674,55 @@ function attrCN(key) { return ATTR_CN[key] || key; }
 function attrDesc(key) { return ATTR_DESC[key] || ''; }
 function getGrade(val) { return GRADE.getGrade(val); }
 function getOvrGrade(ovr) { return GRADE.getOvrGrade(ovr); }
+
+// ==================== 统计格式化 ====================
+// 所有赛季/生涯/季后赛页面都从这里得到场均值，避免不同页面各自四舍五入。
+function roundPerGameStat(value) {
+  var number = Number(value);
+  return Number.isFinite(number) ? Math.round(number * 10) / 10 : 0;
+}
+
+function getPercentageFromTotals(made, attempts) {
+  var totalAttempts = Number(attempts) || 0;
+  if (totalAttempts <= 0) return '—';
+  return ((Number(made) || 0) / totalAttempts * 100).toFixed(1);
+}
+
+function formatPerGameStat(value) {
+  return roundPerGameStat(value).toFixed(1);
+}
+
+function formatPercentage(value) {
+  return value === '—' ? '—' : String(value) + '%';
+}
+
+function getPerGameStats(totals, games) {
+  var source = totals || {};
+  var gp = Math.max(1, Number(games != null ? games : source.games) || 0);
+  var read = function(primary, fallback) {
+    return Number(source[primary] != null ? source[primary] : source[fallback]) || 0;
+  };
+  var stats = {
+    games: Number(games != null ? games : source.games) || 0,
+    pts: roundPerGameStat(read('pts') / gp),
+    reb: roundPerGameStat(read('reb') / gp),
+    ast: roundPerGameStat(read('ast') / gp),
+    stl: roundPerGameStat(read('stl') / gp),
+    blk: roundPerGameStat(read('blk') / gp),
+    tov: roundPerGameStat(read('tov') / gp),
+    fgm: roundPerGameStat(read('fgm') / gp),
+    fga: roundPerGameStat(read('fga') / gp),
+    ftm: roundPerGameStat(read('ftm') / gp),
+    fta: roundPerGameStat(read('fta') / gp),
+    threeM: roundPerGameStat(read('threeM', 'tpm') / gp),
+    threeA: roundPerGameStat(read('threeA', 'tpa') / gp),
+    mins: Math.round(read('mins', 'min') / gp),
+    fgPct: getPercentageFromTotals(read('fgm'), read('fga')),
+    threePct: getPercentageFromTotals(read('threeM', 'tpm'), read('threeA', 'tpa')),
+    ftPct: getPercentageFromTotals(read('ftm'), read('fta')),
+  };
+  return stats;
+}
 
 // ==================== 跨位置衰减 ====================
 /** 固定跨位置衰减：同位置 100%，相邻位置 90%，其他位置 80%。 */
@@ -2030,6 +2101,8 @@ function syncPlayerName() {
   var input = document.getElementById('player-name-input');
   var name = input ? String(input.value || '').replace(/\s+/g, ' ').trim().slice(0, 20) : '';
   if (input) input.value = name;
+  // 存档状态是身份唯一真源；profile 只负责同步当前加载存档的昵称。
+  STATE.playerName = name;
   setCustomPlayerName(name);
   updatePlayerNameCount(input);
   return name;
@@ -3063,7 +3136,7 @@ function showDraftChoiceModal(stepId, title, scene, choices, onDone) {
   html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.65;margin-bottom:14px;">' + sanitizePlayerFacingText(scene) + '</div>';
   html += '<div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:6px;">选择</div>';
   choices.forEach(function(ch, ci) {
-    html += '<button class="btn btn-secondary btn-sm" style="width:100%;margin-bottom:8px;justify-content:flex-start;text-align:left;" onclick="chooseDraftChoice(' + ci + ')">' + ch.label + '<span style="display:block;font-size:11px;font-family:var(--font-body);font-weight:400;opacity:.75;margin-left:4px;">' + sanitizePlayerFacingText(ch.hint || '') + '</span></button>';
+    html += '<button class="btn btn-secondary btn-sm" style="width:100%;margin-bottom:8px;justify-content:flex-start;text-align:left;" onclick="chooseDraftChoice(' + ci + ')">' + escapeNarrativeText(ch.label) + '<span style="display:block;font-size:11px;font-family:var(--font-body);font-weight:400;opacity:.75;margin-left:4px;">' + renderNarrativeText(ch.hint || '') + '</span></button>';
   });
   html += '</div></div></div>';
   document.body.insertAdjacentHTML('beforeend', html);
@@ -3814,13 +3887,18 @@ function selectCareerTeamFromPicker(team) {
 /** 保存本次建球员数据到 Storage（球队、位置、14项属性、总评） */
 function saveBuildPlayerData(team) {
   var playerData = {
+    name: getMyPlayerDisplayName(),
+    playerName: getMyPlayerDisplayName(),
+    mode: STATE.mode || 'career',
     team: team,
     position: STATE.position,
     finalOVR: STATE.finalOVR,
     attrs: {},
   };
   SIM_CONFIG.ATTR_LIST.forEach(function(k) { playerData.attrs[k] = STATE.attrs[k] || null; });
-  Storage.savePlayer(playerData);
+  Storage.savePlayer(playerData).then(function(result) {
+    if (result && !result.ok) console.warn('[Storage] 球员历史未保存：' + result.reason);
+  });
 }
 
 // ==================== 工具函数 ====================
@@ -3876,16 +3954,9 @@ function getPlayerDisplayName(playerId) {
 }
 
 if (!window.TEAM_LOGOS) {
-  const badgeColors = ['#d85a42','#2d7fc1','#7b5bc7','#268b70','#c48524','#4766b1'];
   window.TEAM_LOGOS = {};
   LEAGUE_TEAM_IDS.forEach(function(team, index) {
-    const color = badgeColors[index % badgeColors.length];
-    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96">' +
-      '<circle cx="48" cy="48" r="44" fill="' + color + '"/>' +
-      '<circle cx="48" cy="48" r="39" fill="none" stroke="#fff" stroke-width="3" opacity=".8"/>' +
-      '<text x="48" y="55" text-anchor="middle" font-family="Arial,sans-serif" font-size="24" font-weight="700" fill="#fff">' + team + '</text>' +
-      '</svg>';
-    window.TEAM_LOGOS[team] = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    window.TEAM_LOGOS[team] = 'media/generated/teams/team-' + String(index).padStart(2, '0') + '.png';
   });
 }
 if (!window.TEAM_CITY) window.TEAM_CITY = {
@@ -4404,7 +4475,7 @@ function estimatePlayerStats(player) {
 function getUserAvg() {
   var ps = STATE.season.playerStats;
   var gp = ps.games || 1;
-  return { pts: Math.round(ps.pts / gp * 10) / 10, reb: Math.round(ps.reb / gp * 10) / 10, ast: Math.round(ps.ast / gp * 10) / 10, stl: Math.round(ps.stl / gp * 10) / 10, blk: Math.round(ps.blk / gp * 10) / 10, pos: STATE.position, ovr: STATE.finalOVR };
+  return Object.assign(getPerGameStats(ps, gp), { pos: STATE.position, ovr: STATE.finalOVR });
 }
 
 // ==================== 联盟排名初始化 ====================
@@ -4780,9 +4851,18 @@ function calcTeamLineup(team, gameOptions) {
   var rosterSig = allPlayers.map(function(p) {
     return [p.id, p.pos, p.ovr, p.contract || ''].join(':');
   }).join('|');
+  var lineupAttrKeys = typeof ATTR_KEYS !== 'undefined'
+    ? ATTR_KEYS
+    : (typeof SIM_CONFIG !== 'undefined' && Array.isArray(SIM_CONFIG.ATTR_LIST) ? SIM_CONFIG.ATTR_LIST : []);
+  var lineupAttrSig = lineupAttrKeys.map(function(key) {
+    return key + ':' + (STATE.attrs && STATE.attrs[key] != null ? STATE.attrs[key] : '');
+  }).join(',');
+  var lineupPlayerName = typeof getMyPlayerDisplayName === 'function' ? getMyPlayerDisplayName() : '';
   var lineupCacheKey = [
     team,
     rosterSig,
+    lineupAttrSig,
+    lineupPlayerName,
     STATE.careerTeam || '',
     STATE.position || '',
     STATE.finalOVR || '',
@@ -6751,12 +6831,10 @@ function renderGameCastNew(game, result, stats) {
   
   // 你的球员表现
   if (stats) {
-    const pct = stats.fga > 0 ? Math.round(stats.fgm / stats.fga * 100) : 0;
-    const threePct = stats.threeA > 0 ? Math.round(stats.threeM / stats.threeA * 100) : 0;
     castHtml += `<div class="gc-player-line">
       <span class="gc-player-name">我的球员</span>
       <span>${stats.pts}分 / ${stats.reb}板 / ${stats.ast}助</span>
-      <span style="color:var(--text-dim);font-size:11px;">${stats.fgm}-${stats.fga} (${pct}%) / ${stats.threeM}-${stats.threeA} (${threePct}%) / ${stats.ftm}-${stats.fta}</span>
+      <span style="color:var(--text-dim);font-size:11px;">${stats.fgm}-${stats.fga} (${formatPercentage(getPercentageFromTotals(stats.fgm, stats.fga))}) / ${stats.threeM}-${stats.threeA} (${formatPercentage(getPercentageFromTotals(stats.threeM, stats.threeA))}) / ${stats.ftm}-${stats.fta}</span>
     </div>`;
   }
   
@@ -7117,19 +7195,11 @@ function renderSeasonInsights() {
 
   var ps = STATE.season.playerStats || {};
   var gamesPlayed = ps.games || (STATE.season.games || []).length || 0;
-  var gp = Math.max(gamesPlayed, 1);
-  var avg = {
-    pts: Math.round((ps.pts || 0) / gp * 10) / 10,
-    reb: Math.round((ps.reb || 0) / gp * 10) / 10,
-    ast: Math.round((ps.ast || 0) / gp * 10) / 10,
-    stl: Math.round((ps.stl || 0) / gp * 10) / 10,
-    blk: Math.round((ps.blk || 0) / gp * 10) / 10,
-    tov: Math.round((ps.tov || 0) / gp * 10) / 10,
-  };
-  var fgPct = ps.fga ? ((ps.fgm || 0) / ps.fga * 100).toFixed(1) : '—';
-  var threePct = ps.threeA ? ((ps.threeM || 0) / ps.threeA * 100).toFixed(1) : '—';
-  var ftPct = ps.fta ? ((ps.ftm || 0) / ps.fta * 100).toFixed(1) : '—';
-  var pctText = function(value) { return value === '—' ? value : value + '%'; };
+  var avg = getPerGameStats(ps, gamesPlayed);
+  var fgPct = avg.fgPct;
+  var threePct = avg.threePct;
+  var ftPct = avg.ftPct;
+  var pctText = formatPercentage;
   var displayName = escapeSeasonUiText(typeof getMyPlayerDisplayName === 'function' ? getMyPlayerDisplayName() : '我的球员');
   var eventState = typeof ensureSeasonEventState === 'function' ? ensureSeasonEventState() : {};
   var seasonTheme = eventState.seasonTheme;
@@ -7153,8 +7223,8 @@ function renderSeasonInsights() {
     '</div>';
   }
   var statItems = [
-    ['得分', avg.pts], ['篮板', avg.reb], ['助攻', avg.ast],
-    ['抢断', avg.stl], ['盖帽', avg.blk], ['失误', avg.tov]
+    ['得分', formatPerGameStat(avg.pts)], ['篮板', formatPerGameStat(avg.reb)], ['助攻', formatPerGameStat(avg.ast)],
+    ['抢断', formatPerGameStat(avg.stl)], ['盖帽', formatPerGameStat(avg.blk)], ['失误', formatPerGameStat(avg.tov)]
   ];
   var statHtml = statItems.map(function(item) {
     return '<div class="season-stat"><span class="season-stat-val">' + item[1] + '</span><span class="season-stat-lbl">' + item[0] + '</span></div>';
@@ -7295,7 +7365,7 @@ function showGamePopup(seasonDay) {
         </div>
         <div style="margin-top:6px;font-family:var(--font-display);font-size:10px;color:var(--text-dim);text-align:center;">
           两分 ${myTwoM}-${myTwoA} · 三分 ${myThreeM}-${myThreeA} · 罚球 ${myFtm}-${myFta}<br>
-          投篮 ${myFgm}-${myFga} (${myFga > 0 ? Math.round(myFgm/myFga*100) : 0}%)
+           投篮 ${myFgm}-${myFga} (${formatPercentage(getPercentageFromTotals(myFgm, myFga))})
         </div>
 
       </div>
@@ -7420,24 +7490,10 @@ function showSeasonResults() {
   showScreen('screen-results');
   const ps = STATE.season.playerStats;
   const gp = Math.max((ps?.games) || 0, 1);
-  const avg = {
-    pts: Math.round(ps.pts / gp * 10) / 10,
-    reb: Math.round(ps.reb / gp * 10) / 10,
-    ast: Math.round(ps.ast / gp * 10) / 10,
-    stl: Math.round(ps.stl / gp),
-    blk: Math.round(ps.blk / gp),
-    tov: Math.round(ps.tov / gp * 10) / 10,
-    fgm: Math.round(ps.fgm / gp * 10) / 10,
-    fga: Math.round(ps.fga / gp * 10) / 10,
-    ftm: Math.round(ps.ftm / gp * 10) / 10,
-    fta: Math.round(ps.fta / gp * 10) / 10,
-    threeM: Math.round(ps.threeM / gp * 10) / 10,
-    threeA: Math.round(ps.threeA / gp * 10) / 10,
-    mins: Math.round(ps.mins / gp),
-  };
-  const pct = avg.fga > 0 ? (avg.fgm / avg.fga * 100).toFixed(1) : '—';
-  const threePct = avg.threeA > 0 ? (avg.threeM / avg.threeA * 100).toFixed(1) : '—';
-  const ftPct = avg.fta > 0 ? (avg.ftm / avg.fta * 100).toFixed(1) : '—';
+  const avg = getPerGameStats(ps, gp);
+  const pct = avg.fgPct;
+  const threePct = avg.threePct;
+  const ftPct = avg.ftPct;
   const ovrGrade = getOvrGrade(STATE.finalOVR);
 
   // 季后赛信息
@@ -7483,34 +7539,21 @@ function showSeasonResults() {
   const po = STATE.season.playoffStats;
   if (po.games > 0) {
     const poG = po.games;
-    const poAvg = {
-      pts: Math.round(po.pts / poG * 10) / 10,
-      reb: Math.round(po.reb / poG * 10) / 10,
-      ast: Math.round(po.ast / poG * 10) / 10,
-      stl: Math.round(po.stl / poG),
-      blk: Math.round(po.blk / poG),
-      tov: Math.round(po.tov / poG * 10) / 10,
-      fgm: Math.round(po.fgm / poG * 10) / 10,
-      fga: Math.round(po.fga / poG * 10) / 10,
-      threeM: Math.round(po.threeM / poG * 10) / 10,
-      threeA: Math.round(po.threeA / poG * 10) / 10,
-      ftm: Math.round(po.ftm / poG * 10) / 10,
-      fta: Math.round(po.fta / poG * 10) / 10,
-    };
-    const poPct = poAvg.fga > 0 ? (poAvg.fgm / poAvg.fga * 100).toFixed(1) : '—';
-    const poThreePct = poAvg.threeA > 0 ? (poAvg.threeM / poAvg.threeA * 100).toFixed(1) : '—';
+    const poAvg = getPerGameStats(po, poG);
+    const poPct = poAvg.fgPct;
+    const poThreePct = poAvg.threePct;
     
     playoffStatsHtml = `<div class="sr-section">
       <div class="sr-section-title">🏀 季后赛数据 · ${poG}场</div>
       <div class="sr-stats-grid">
-        <div class="sr-stat"><span class="sr-stat-val">${poAvg.pts}</span><span class="sr-stat-lbl">得分</span></div>
-        <div class="sr-stat"><span class="sr-stat-val">${poAvg.reb}</span><span class="sr-stat-lbl">篮板</span></div>
-        <div class="sr-stat"><span class="sr-stat-val">${poAvg.ast}</span><span class="sr-stat-lbl">助攻</span></div>
-        <div class="sr-stat"><span class="sr-stat-val">${poAvg.stl}</span><span class="sr-stat-lbl">抢断</span></div>
-        <div class="sr-stat"><span class="sr-stat-val">${poAvg.blk}</span><span class="sr-stat-lbl">盖帽</span></div>
-        <div class="sr-stat"><span class="sr-stat-val">${poAvg.tov}</span><span class="sr-stat-lbl">失误</span></div>
+        <div class="sr-stat"><span class="sr-stat-val">${formatPerGameStat(poAvg.pts)}</span><span class="sr-stat-lbl">得分</span></div>
+        <div class="sr-stat"><span class="sr-stat-val">${formatPerGameStat(poAvg.reb)}</span><span class="sr-stat-lbl">篮板</span></div>
+        <div class="sr-stat"><span class="sr-stat-val">${formatPerGameStat(poAvg.ast)}</span><span class="sr-stat-lbl">助攻</span></div>
+        <div class="sr-stat"><span class="sr-stat-val">${formatPerGameStat(poAvg.stl)}</span><span class="sr-stat-lbl">抢断</span></div>
+        <div class="sr-stat"><span class="sr-stat-val">${formatPerGameStat(poAvg.blk)}</span><span class="sr-stat-lbl">盖帽</span></div>
+        <div class="sr-stat"><span class="sr-stat-val">${formatPerGameStat(poAvg.tov)}</span><span class="sr-stat-lbl">失误</span></div>
       </div>
-      <div class="sr-pct-line">投篮 ${poAvg.fgm}-${poAvg.fga} (${poPct}%) · 三分 ${poAvg.threeM}-${poAvg.threeA} (${poThreePct}%)</div>
+        <div class="sr-pct-line">投篮 ${poAvg.fgm}-${poAvg.fga} (${formatPercentage(poPct)}) · 三分 ${poAvg.threeM}-${poAvg.threeA} (${formatPercentage(poThreePct)})</div>
     </div>`;
   }
   
@@ -7562,7 +7605,7 @@ function showSeasonResults() {
           <div class="sr-stat"><span class="sr-stat-val">${avg.blk}</span><span class="sr-stat-lbl">盖帽</span></div>
           <div class="sr-stat"><span class="sr-stat-val">${avg.tov}</span><span class="sr-stat-lbl">失误</span></div>
         </div>
-        <div class="sr-pct-line">投篮 ${avg.fgm}-${avg.fga} (${pct}%) · 三分 ${avg.threeM}-${avg.threeA} (${threePct}%) · 罚球 ${avg.ftm}-${avg.fta} (${ftPct}%)</div>
+        <div class="sr-pct-line">投篮 ${avg.fgm}-${avg.fga} (${formatPercentage(pct)}) · 三分 ${avg.threeM}-${avg.threeA} (${formatPercentage(threePct)}) · 罚球 ${avg.ftm}-${avg.fta} (${formatPercentage(ftPct)})</div>
       </div>
 
       ${playoffStatsHtml}
@@ -7626,7 +7669,7 @@ function seasonNavTo(section) {
 function seasonAverage(total, games) {
   games = Number(games) || 0;
   if (!games) return 0;
-  return Math.round((Number(total) || 0) / games * 10) / 10;
+  return roundPerGameStat((Number(total) || 0) / games);
 }
 
 function createSeasonPlayerStatRow(raw, meta) {
@@ -7824,6 +7867,18 @@ function escapeSeasonUiText(value) {
   return String(value == null ? '' : value).replace(/[&<>"']/g, function(char) {
     return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char];
   });
+}
+
+// 剧情文本允许系统使用 <br> 换行，但任何动态姓名/变量都只能作为纯文本进入 DOM。
+function escapeNarrativeText(value) {
+  var text = String(value == null ? '' : value).replace(/\r\n?/g, '\n').replace(/\n/g, '<br>');
+  return text.split(/(<br\s*\/?\s*>)/gi).map(function(part) {
+    return /^<br\s*\/?\s*>$/i.test(part) ? '<br>' : escapeSeasonUiText(part);
+  }).join('');
+}
+
+function renderNarrativeText(value) {
+  return escapeNarrativeText(sanitizePlayerFacingText(value));
 }
 
 function bindSeasonRankingInteractions(target) {
@@ -8147,7 +8202,7 @@ function getMyCardCareerStats() {
   });
 
   var games = totals.games || 0;
-  var divisor = Math.max(games, 1);
+  var averages = getPerGameStats(totals, games);
   return {
     games: games,
     totalPts: Math.round(totals.pts),
@@ -8155,18 +8210,11 @@ function getMyCardCareerStats() {
     totalAst: Math.round(totals.ast),
     totalStl: Math.round(totals.stl),
     totalBlk: Math.round(totals.blk),
-    pts: Math.round(totals.pts / divisor * 10) / 10,
-    reb: Math.round(totals.reb / divisor * 10) / 10,
-    ast: Math.round(totals.ast / divisor * 10) / 10,
-    stl: Math.round(totals.stl / divisor),
-    blk: Math.round(totals.blk / divisor),
-    tov: Math.round(totals.tov / divisor * 10) / 10,
-    fgm: Math.round(totals.fgm / divisor * 10) / 10,
-    fga: Math.round(totals.fga / divisor * 10) / 10,
-    ftm: Math.round(totals.ftm / divisor * 10) / 10,
-    fta: Math.round(totals.fta / divisor * 10) / 10,
-    threeM: Math.round(totals.threeM / divisor * 10) / 10,
-    threeA: Math.round(totals.threeA / divisor * 10) / 10,
+    pts: averages.pts, reb: averages.reb, ast: averages.ast,
+    stl: averages.stl, blk: averages.blk, tov: averages.tov,
+    fgm: averages.fgm, fga: averages.fga, ftm: averages.ftm, fta: averages.fta,
+    threeM: averages.threeM, threeA: averages.threeA,
+    fgPct: averages.fgPct, threePct: averages.threePct, ftPct: averages.ftPct,
   };
 }
 
@@ -8181,21 +8229,14 @@ function getMyCardPlayoffStats() {
   });
 
   var games = totals.games || 0;
-  var divisor = Math.max(games, 1);
+  var averages = getPerGameStats(totals, games);
   return {
     games: games,
-    pts: Math.round(totals.pts / divisor * 10) / 10,
-    reb: Math.round(totals.reb / divisor * 10) / 10,
-    ast: Math.round(totals.ast / divisor * 10) / 10,
-    stl: Math.round(totals.stl / divisor * 10) / 10,
-    blk: Math.round(totals.blk / divisor * 10) / 10,
-    tov: Math.round(totals.tov / divisor * 10) / 10,
-    fgm: Math.round(totals.fgm / divisor * 10) / 10,
-    fga: Math.round(totals.fga / divisor * 10) / 10,
-    ftm: Math.round(totals.ftm / divisor * 10) / 10,
-    fta: Math.round(totals.fta / divisor * 10) / 10,
-    threeM: Math.round(totals.threeM / divisor * 10) / 10,
-    threeA: Math.round(totals.threeA / divisor * 10) / 10,
+    pts: averages.pts, reb: averages.reb, ast: averages.ast,
+    stl: averages.stl, blk: averages.blk, tov: averages.tov,
+    fgm: averages.fgm, fga: averages.fga, ftm: averages.ftm, fta: averages.fta,
+    threeM: averages.threeM, threeA: averages.threeA,
+    fgPct: averages.fgPct, threePct: averages.threePct, ftPct: averages.ftPct,
   };
 }
 
@@ -8361,9 +8402,9 @@ function renderMyCardEventsTab(eventItems) {
   html += '<div class="mc-event-list">';
   eventItems.forEach(function(event) {
     html += '<div class="mc-event">';
-    html += '<div class="mc-event-icon">' + event.emoji + '</div>';
-    html += '<div><div class="mc-event-head"><span class="mc-event-title">' + event.title + '</span><span class="mc-event-season">' + event.seasonLabel + '</span></div>';
-    if (event.desc) html += '<div class="mc-event-desc">' + event.desc + '</div>';
+    html += '<div class="mc-event-icon">' + escapeNarrativeText(event.emoji) + '</div>';
+    html += '<div><div class="mc-event-head"><span class="mc-event-title">' + escapeNarrativeText(event.title) + '</span><span class="mc-event-season">' + escapeNarrativeText(event.seasonLabel) + '</span></div>';
+    if (event.desc) html += '<div class="mc-event-desc">' + escapeNarrativeText(event.desc) + '</div>';
     html += '</div></div>';
   });
   html += '</div></div>';
@@ -8374,37 +8415,23 @@ function renderMyCard(isFinal, activeTab) {
   activeTab = activeTab === 'awards' || activeTab === 'events' || activeTab === 'legacy' ? activeTab : 'data';
   const ps = STATE.season.playerStats;
   const gp = ps.games || 1;
-  const avg = {
-    pts: Math.round(ps.pts / gp * 10) / 10,
-    reb: Math.round(ps.reb / gp * 10) / 10,
-    ast: Math.round(ps.ast / gp * 10) / 10,
-    stl: Math.round(ps.stl / gp),
-    blk: Math.round(ps.blk / gp),
-    tov: Math.round(ps.tov / gp * 10) / 10,
-    fgm: Math.round(ps.fgm / gp * 10) / 10,
-    fga: Math.round(ps.fga / gp * 10) / 10,
-    ftm: Math.round(ps.ftm / gp * 10) / 10,
-    fta: Math.round(ps.fta / gp * 10) / 10,
-    threeM: Math.round(ps.threeM / gp * 10) / 10,
-    threeA: Math.round(ps.threeA / gp * 10) / 10,
-    mins: Math.round(ps.mins / gp),
-  };
+  const avg = getPerGameStats(ps, gp);
   const ovrGrade = getOvrGrade(STATE.finalOVR);
   
-  const pct = avg.fga > 0 ? (avg.fgm / avg.fga * 100).toFixed(1) : '—';
-  const threePct = avg.threeA > 0 ? (avg.threeM / avg.threeA * 100).toFixed(1) : '—';
-  const ftPct = avg.fta > 0 ? (avg.ftm / avg.fta * 100).toFixed(1) : '—';
+  const pct = avg.fgPct;
+  const threePct = avg.threePct;
+  const ftPct = avg.ftPct;
   const gamesPlayed = STATE.season.schedule?.filter(g => g.simulated).length || 0;
   const careerAvg = getMyCardCareerStats();
   const careerHighs = getCareerSingleGameHighs();
   const careerHighValue = function(field) { return careerHighs.games > 0 ? careerHighs[field] : '—'; };
-  const careerPct = careerAvg.fga > 0 ? (careerAvg.fgm / careerAvg.fga * 100).toFixed(1) : '—';
-  const careerThreePct = careerAvg.threeA > 0 ? (careerAvg.threeM / careerAvg.threeA * 100).toFixed(1) : '—';
-  const careerFtPct = careerAvg.fta > 0 ? (careerAvg.ftm / careerAvg.fta * 100).toFixed(1) : '—';
+  const careerPct = careerAvg.fgPct;
+  const careerThreePct = careerAvg.threePct;
+  const careerFtPct = careerAvg.ftPct;
   const playoffAvg = getMyCardPlayoffStats();
-  const playoffPct = playoffAvg.fga > 0 ? (playoffAvg.fgm / playoffAvg.fga * 100).toFixed(1) : '—';
-  const playoffThreePct = playoffAvg.threeA > 0 ? (playoffAvg.threeM / playoffAvg.threeA * 100).toFixed(1) : '—';
-  const playoffFtPct = playoffAvg.fta > 0 ? (playoffAvg.ftm / playoffAvg.fta * 100).toFixed(1) : '—';
+  const playoffPct = playoffAvg.fgPct;
+  const playoffThreePct = playoffAvg.threePct;
+  const playoffFtPct = playoffAvg.ftPct;
   
   // 属性紧凑网格
   let attrHtml = '';
@@ -8480,41 +8507,41 @@ function renderMyCard(isFinal, activeTab) {
     <div class="mc-section">
       <div class="mc-section-title">📊 场均数据 · 已赛 ${gamesPlayed}${isFinal ? '' : '/82'} 场</div>
       <div class="mc-stats-grid">
-        <div class="mc-stat"><span class="mc-stat-val">${avg.pts}</span><span class="mc-stat-lbl">得分</span></div>
-        <div class="mc-stat"><span class="mc-stat-val">${avg.reb}</span><span class="mc-stat-lbl">篮板</span></div>
-        <div class="mc-stat"><span class="mc-stat-val">${avg.ast}</span><span class="mc-stat-lbl">助攻</span></div>
-        <div class="mc-stat"><span class="mc-stat-val">${avg.stl}</span><span class="mc-stat-lbl">抢断</span></div>
-        <div class="mc-stat"><span class="mc-stat-val">${avg.blk}</span><span class="mc-stat-lbl">盖帽</span></div>
-        <div class="mc-stat"><span class="mc-stat-val">${avg.tov}</span><span class="mc-stat-lbl">失误</span></div>
+        <div class="mc-stat"><span class="mc-stat-val">${formatPerGameStat(avg.pts)}</span><span class="mc-stat-lbl">得分</span></div>
+        <div class="mc-stat"><span class="mc-stat-val">${formatPerGameStat(avg.reb)}</span><span class="mc-stat-lbl">篮板</span></div>
+        <div class="mc-stat"><span class="mc-stat-val">${formatPerGameStat(avg.ast)}</span><span class="mc-stat-lbl">助攻</span></div>
+        <div class="mc-stat"><span class="mc-stat-val">${formatPerGameStat(avg.stl)}</span><span class="mc-stat-lbl">抢断</span></div>
+        <div class="mc-stat"><span class="mc-stat-val">${formatPerGameStat(avg.blk)}</span><span class="mc-stat-lbl">盖帽</span></div>
+        <div class="mc-stat"><span class="mc-stat-val">${formatPerGameStat(avg.tov)}</span><span class="mc-stat-lbl">失误</span></div>
       </div>
-      <div class="mc-pct-line">投篮 ${avg.fgm}-${avg.fga} (${pct}%) · 三分 ${avg.threeM}-${avg.threeA} (${threePct}%) · 罚球 ${avg.ftm}-${avg.fta} (${ftPct}%)</div>
+      <div class="mc-pct-line">投篮 ${avg.fgm}-${avg.fga} (${formatPercentage(pct)}) · 三分 ${avg.threeM}-${avg.threeA} (${formatPercentage(threePct)}) · 罚球 ${avg.ftm}-${avg.fta} (${formatPercentage(ftPct)})</div>
     </div>
 
     <div class="mc-section">
       <div class="mc-section-title">📈 职业生涯场均 · ${careerAvg.games} 场</div>
       <div class="mc-stats-grid">
-        <div class="mc-stat"><span class="mc-stat-val">${careerAvg.pts}</span><span class="mc-stat-lbl">得分</span></div>
-        <div class="mc-stat"><span class="mc-stat-val">${careerAvg.reb}</span><span class="mc-stat-lbl">篮板</span></div>
-        <div class="mc-stat"><span class="mc-stat-val">${careerAvg.ast}</span><span class="mc-stat-lbl">助攻</span></div>
-        <div class="mc-stat"><span class="mc-stat-val">${careerAvg.stl}</span><span class="mc-stat-lbl">抢断</span></div>
-        <div class="mc-stat"><span class="mc-stat-val">${careerAvg.blk}</span><span class="mc-stat-lbl">盖帽</span></div>
-        <div class="mc-stat"><span class="mc-stat-val">${careerAvg.tov}</span><span class="mc-stat-lbl">失误</span></div>
+        <div class="mc-stat"><span class="mc-stat-val">${formatPerGameStat(careerAvg.pts)}</span><span class="mc-stat-lbl">得分</span></div>
+        <div class="mc-stat"><span class="mc-stat-val">${formatPerGameStat(careerAvg.reb)}</span><span class="mc-stat-lbl">篮板</span></div>
+        <div class="mc-stat"><span class="mc-stat-val">${formatPerGameStat(careerAvg.ast)}</span><span class="mc-stat-lbl">助攻</span></div>
+        <div class="mc-stat"><span class="mc-stat-val">${formatPerGameStat(careerAvg.stl)}</span><span class="mc-stat-lbl">抢断</span></div>
+        <div class="mc-stat"><span class="mc-stat-val">${formatPerGameStat(careerAvg.blk)}</span><span class="mc-stat-lbl">盖帽</span></div>
+        <div class="mc-stat"><span class="mc-stat-val">${formatPerGameStat(careerAvg.tov)}</span><span class="mc-stat-lbl">失误</span></div>
       </div>
-      <div class="mc-pct-line">投篮 ${careerAvg.fgm}-${careerAvg.fga} (${careerPct}%) · 三分 ${careerAvg.threeM}-${careerAvg.threeA} (${careerThreePct}%) · 罚球 ${careerAvg.ftm}-${careerAvg.fta} (${careerFtPct}%)</div>
+      <div class="mc-pct-line">投篮 ${careerAvg.fgm}-${careerAvg.fga} (${formatPercentage(careerPct)}) · 三分 ${careerAvg.threeM}-${careerAvg.threeA} (${formatPercentage(careerThreePct)}) · 罚球 ${careerAvg.ftm}-${careerAvg.fta} (${formatPercentage(careerFtPct)})</div>
     </div>
 
     <div class="mc-section">
       <div class="mc-section-title">🏀 季后赛场均 · 生涯 ${playoffAvg.games} 场</div>
       ${playoffAvg.games > 0 ? `
         <div class="mc-stats-grid">
-          <div class="mc-stat"><span class="mc-stat-val">${playoffAvg.pts}</span><span class="mc-stat-lbl">得分</span></div>
-          <div class="mc-stat"><span class="mc-stat-val">${playoffAvg.reb}</span><span class="mc-stat-lbl">篮板</span></div>
-          <div class="mc-stat"><span class="mc-stat-val">${playoffAvg.ast}</span><span class="mc-stat-lbl">助攻</span></div>
-          <div class="mc-stat"><span class="mc-stat-val">${playoffAvg.stl}</span><span class="mc-stat-lbl">抢断</span></div>
-          <div class="mc-stat"><span class="mc-stat-val">${playoffAvg.blk}</span><span class="mc-stat-lbl">盖帽</span></div>
-          <div class="mc-stat"><span class="mc-stat-val">${playoffAvg.tov}</span><span class="mc-stat-lbl">失误</span></div>
+          <div class="mc-stat"><span class="mc-stat-val">${formatPerGameStat(playoffAvg.pts)}</span><span class="mc-stat-lbl">得分</span></div>
+          <div class="mc-stat"><span class="mc-stat-val">${formatPerGameStat(playoffAvg.reb)}</span><span class="mc-stat-lbl">篮板</span></div>
+          <div class="mc-stat"><span class="mc-stat-val">${formatPerGameStat(playoffAvg.ast)}</span><span class="mc-stat-lbl">助攻</span></div>
+          <div class="mc-stat"><span class="mc-stat-val">${formatPerGameStat(playoffAvg.stl)}</span><span class="mc-stat-lbl">抢断</span></div>
+          <div class="mc-stat"><span class="mc-stat-val">${formatPerGameStat(playoffAvg.blk)}</span><span class="mc-stat-lbl">盖帽</span></div>
+          <div class="mc-stat"><span class="mc-stat-val">${formatPerGameStat(playoffAvg.tov)}</span><span class="mc-stat-lbl">失误</span></div>
         </div>
-        <div class="mc-pct-line">投篮 ${playoffAvg.fgm}-${playoffAvg.fga} (${playoffPct}%) · 三分 ${playoffAvg.threeM}-${playoffAvg.threeA} (${playoffThreePct}%) · 罚球 ${playoffAvg.ftm}-${playoffAvg.fta} (${playoffFtPct}%)</div>
+        <div class="mc-pct-line">投篮 ${playoffAvg.fgm}-${playoffAvg.fga} (${formatPercentage(playoffPct)}) · 三分 ${playoffAvg.threeM}-${playoffAvg.threeA} (${formatPercentage(playoffThreePct)}) · 罚球 ${playoffAvg.ftm}-${playoffAvg.fta} (${formatPercentage(playoffFtPct)})</div>
       ` : '<div class="mc-empty">暂无季后赛出场记录</div>'}
     </div>
 
@@ -9396,28 +9423,28 @@ function showSeasonBranchEventModal() {
   if (existing) existing.remove();
   var scenes = ev.scenes || [];
   var sceneIdx = STATE._seasonBranchScenePage || 0;
-  var title = getPlayerFacingBranchTitle(ev.title);
+  var title = escapeNarrativeText(getPlayerFacingBranchTitle(ev.title));
   var html = '<div class="team-picker-overlay" id="season-branch-modal">';
   html += '<div class="team-picker-modal">';
   html += '<div class="team-picker-header"><span>' + title + '</span></div>';
   html += '<div style="padding:14px 14px 8px;">';
   if (scenes.length && sceneIdx < scenes.length) {
     html += '<div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:6px;">剧情</div>';
-    html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.65;margin-bottom:14px;">' + fillBranchEventText(scenes[sceneIdx]) + '</div>';
+    html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.65;margin-bottom:14px;">' + renderNarrativeText(fillBranchEventText(scenes[sceneIdx])) + '</div>';
     html += '<button class="btn btn-primary btn-sm" style="width:100%;" onclick="continueSeasonBranchScene()">继续</button>';
     html += '</div></div></div>';
     document.body.insertAdjacentHTML('beforeend', html);
     return;
   }
   html += '<div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:6px;">重点</div>';
-  html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.55;margin-bottom:12px;">' + sanitizePlayerFacingText(fillBranchEventText(ev.body)) + '</div>';
+  html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.55;margin-bottom:12px;">' + renderNarrativeText(fillBranchEventText(ev.body)) + '</div>';
   html += '<div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:6px;">选择</div>';
   ev.choices.forEach(function(ch, ci) {
     var locked = isBranchChoiceLocked(ch);
     var lockHint = locked ? (ch.lockHint || '需要其它线路结果') : '';
     var btnStyle = 'width:100%;margin-bottom:8px;justify-content:flex-start;text-align:left;' + (locked ? 'opacity:.45;cursor:not-allowed;' : '');
     var onclick = locked ? '' : 'onclick="chooseSeasonBranchEvent(' + ci + ')"';
-    html += '<button class="btn btn-secondary btn-sm" style="' + btnStyle + '" ' + onclick + (locked ? ' disabled' : '') + '>' + ch.label + '<span style="display:block;font-size:11px;font-family:var(--font-body);font-weight:400;opacity:.75;margin-left:4px;">' + sanitizePlayerFacingText(fillBranchEventText(locked ? lockHint : (ch.hint || ''))) + '</span></button>';
+    html += '<button class="btn btn-secondary btn-sm" style="' + btnStyle + '" ' + onclick + (locked ? ' disabled' : '') + '>' + escapeNarrativeText(ch.label) + '<span style="display:block;font-size:11px;font-family:var(--font-body);font-weight:400;opacity:.75;margin-left:4px;">' + renderNarrativeText(fillBranchEventText(locked ? lockHint : (ch.hint || ''))) + '</span></button>';
   });
   html += '</div></div></div>';
   document.body.insertAdjacentHTML('beforeend', html);
@@ -9457,7 +9484,7 @@ function showSeasonBranchResultModal(title, msg) {
   if (existing) existing.remove();
   var html = '<div class="team-picker-overlay" id="season-branch-result-modal">';
   html += '<div class="team-picker-modal">';
-  html += '<div class="team-picker-header"><span>' + getPlayerFacingBranchTitle(title) + '</span></div>';
+  html += '<div class="team-picker-header"><span>' + escapeNarrativeText(getPlayerFacingBranchTitle(title)) + '</span></div>';
   html += '<div style="padding:14px 14px 8px;">';
   html += formatBranchResultText(fillBranchEventText(msg));
   html += '<button class="btn btn-primary btn-sm" style="width:100%;" onclick="finishSeasonBranchEvent()">继续</button>';
@@ -9489,28 +9516,28 @@ function showOffseasonEventModal(ev, idx, total) {
   if (existing) existing.remove();
   var scenes = ev.scenes || [];
   var sceneIdx = STATE._branchScenePage || 0;
-  var title = getPlayerFacingBranchTitle(ev.title);
+  var title = escapeNarrativeText(getPlayerFacingBranchTitle(ev.title));
   var html = '<div class="team-picker-overlay" id="offseason-event-modal">';
   html += '<div class="team-picker-modal">';
   html += '<div class="team-picker-header"><span>' + title + '</span></div>';
   html += '<div style="padding:14px 14px 8px;">';
   if (scenes.length && sceneIdx < scenes.length) {
     html += '<div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:6px;">剧情</div>';
-    html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.65;margin-bottom:14px;">' + fillBranchEventText(scenes[sceneIdx]) + '</div>';
+    html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.65;margin-bottom:14px;">' + renderNarrativeText(fillBranchEventText(scenes[sceneIdx])) + '</div>';
     html += '<button class="btn btn-primary btn-sm" style="width:100%;" onclick="continueOffseasonScene()">继续</button>';
     html += '</div></div></div>';
     document.body.insertAdjacentHTML('beforeend', html);
     return;
   }
   html += '<div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:6px;">重点</div>';
-  html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.55;margin-bottom:12px;">' + sanitizePlayerFacingText(fillBranchEventText(ev.body)) + '</div>';
+  html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.55;margin-bottom:12px;">' + renderNarrativeText(fillBranchEventText(ev.body)) + '</div>';
   html += '<div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:6px;">选择</div>';
   ev.choices.forEach(function(ch, ci) {
     var locked = isBranchChoiceLocked(ch);
     var lockHint = locked ? (ch.lockHint || '需要其它线路结果') : '';
     var btnStyle = 'width:100%;margin-bottom:8px;justify-content:flex-start;text-align:left;' + (locked ? 'opacity:.45;cursor:not-allowed;' : '');
     var onclick = locked ? '' : 'onclick="chooseOffseasonEvent(' + ci + ')"';
-    html += '<button class="btn btn-secondary btn-sm" style="' + btnStyle + '" ' + onclick + (locked ? ' disabled' : '') + '>' + ch.label + '<span style="display:block;font-size:11px;font-family:var(--font-body);font-weight:400;opacity:.75;margin-left:4px;">' + sanitizePlayerFacingText(fillBranchEventText(locked ? lockHint : (ch.hint || ''))) + '</span></button>';
+    html += '<button class="btn btn-secondary btn-sm" style="' + btnStyle + '" ' + onclick + (locked ? ' disabled' : '') + '>' + escapeNarrativeText(ch.label) + '<span style="display:block;font-size:11px;font-family:var(--font-body);font-weight:400;opacity:.75;margin-left:4px;">' + renderNarrativeText(fillBranchEventText(locked ? lockHint : (ch.hint || ''))) + '</span></button>';
   });
   html += '</div></div></div>';
   document.body.insertAdjacentHTML('beforeend', html);
@@ -9558,7 +9585,7 @@ function showOffseasonResultModal(title, msg, done) {
   STATE._offseasonResultDone = typeof done === 'function' ? done : null;
   var html = '<div class="team-picker-overlay" id="offseason-result-modal">';
   html += '<div class="team-picker-modal">';
-  html += '<div class="team-picker-header"><span>' + getPlayerFacingBranchTitle(title) + '</span></div>';
+  html += '<div class="team-picker-header"><span>' + escapeNarrativeText(getPlayerFacingBranchTitle(title)) + '</span></div>';
   html += '<div style="padding:14px 14px 8px;">';
   html += formatBranchResultText(fillBranchEventText(msg));
   html += '<button class="btn btn-primary btn-sm" style="width:100%;" onclick="' + (STATE._offseasonResultDone ? 'continueOffseasonResultWithCallback()' : 'continueOffseasonEvent()') + '">继续</button>';
@@ -9678,17 +9705,17 @@ function formatBranchResultText(msg) {
   var html = '';
   if (story) {
     html += '<div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:6px;">剧情</div>';
-    html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.65;margin-bottom:12px;">' + story + '</div>';
+    html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.65;margin-bottom:12px;">' + escapeNarrativeText(story) + '</div>';
   }
   if (focus) {
     html += '<div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:6px;">重点</div>';
-    html += '<div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:12px;">' + focus + '</div>';
+    html += '<div style="font-size:13px;color:var(--text);line-height:1.6;margin-bottom:12px;">' + escapeNarrativeText(focus) + '</div>';
   }
   if (effect) {
     html += '<div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:6px;">影响</div>';
-    html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.6;margin-bottom:14px;">' + effect + '</div>';
+    html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.6;margin-bottom:14px;">' + escapeNarrativeText(effect) + '</div>';
   }
-  return html || '<div style="font-size:13px;color:var(--text-dim);line-height:1.65;margin-bottom:14px;">' + clean + '</div>';
+  return html || '<div style="font-size:13px;color:var(--text-dim);line-height:1.65;margin-bottom:14px;">' + escapeNarrativeText(clean) + '</div>';
 }
 
 function continueOffseasonEvent() {
@@ -9720,28 +9747,28 @@ function showCityFarewellModal() {
   if (existing) existing.remove();
   var scenes = ev.scenes || [];
   var sceneIdx = STATE._branchScenePage || 0;
-  var title = getPlayerFacingBranchTitle(ev.title);
+  var title = escapeNarrativeText(getPlayerFacingBranchTitle(ev.title));
   var html = '<div class="team-picker-overlay" id="city-farewell-modal">';
   html += '<div class="team-picker-modal">';
   html += '<div class="team-picker-header"><span>' + title + '</span></div>';
   html += '<div style="padding:14px 14px 8px;">';
   if (scenes.length && sceneIdx < scenes.length) {
     html += '<div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:6px;">剧情</div>';
-    html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.65;margin-bottom:14px;">' + fillBranchEventText(scenes[sceneIdx]) + '</div>';
+    html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.65;margin-bottom:14px;">' + renderNarrativeText(fillBranchEventText(scenes[sceneIdx])) + '</div>';
     html += '<button class="btn btn-primary btn-sm" style="width:100%;" onclick="continueCityFarewellScene()">继续</button>';
     html += '</div></div></div>';
     document.body.insertAdjacentHTML('beforeend', html);
     return;
   }
   html += '<div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:6px;">重点</div>';
-  html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.55;margin-bottom:12px;">' + sanitizePlayerFacingText(fillBranchEventText(ev.body)) + '</div>';
+  html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.55;margin-bottom:12px;">' + renderNarrativeText(fillBranchEventText(ev.body)) + '</div>';
   html += '<div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:6px;">选择</div>';
   ev.choices.forEach(function(ch, ci) {
     var locked = isBranchChoiceLocked(ch);
     var lockHint = locked ? (ch.lockHint || '需要其它线路结果') : '';
     var btnStyle = 'width:100%;margin-bottom:8px;justify-content:flex-start;text-align:left;' + (locked ? 'opacity:.45;cursor:not-allowed;' : '');
     var onclick = locked ? '' : 'onclick="chooseCityFarewell(' + ci + ')"';
-    html += '<button class="btn btn-secondary btn-sm" style="' + btnStyle + '" ' + onclick + (locked ? ' disabled' : '') + '>' + ch.label + '<span style="display:block;font-size:11px;font-family:var(--font-body);font-weight:400;opacity:.75;margin-left:4px;">' + sanitizePlayerFacingText(fillBranchEventText(locked ? lockHint : (ch.hint || ''))) + '</span></button>';
+    html += '<button class="btn btn-secondary btn-sm" style="' + btnStyle + '" ' + onclick + (locked ? ' disabled' : '') + '>' + escapeNarrativeText(ch.label) + '<span style="display:block;font-size:11px;font-family:var(--font-body);font-weight:400;opacity:.75;margin-left:4px;">' + renderNarrativeText(fillBranchEventText(locked ? lockHint : (ch.hint || ''))) + '</span></button>';
   });
   html += '</div></div></div>';
   document.body.insertAdjacentHTML('beforeend', html);
@@ -10040,6 +10067,12 @@ function buildManualFingerprint(s) {
 function buildManualSaveSnapshot() {
   if (typeof loadPlayerAges === 'function') loadPlayerAges();
   if (!_rngState) rngReset();
+  var canonicalPlayerName = String(STATE.playerName || '').replace(/\s+/g, ' ').trim().slice(0, 20);
+  if (!canonicalPlayerName && LOCAL_PLAYER_PROFILE && LOCAL_PLAYER_PROFILE.nickname) {
+    // 兼容旧存档：旧版本可能只把昵称写进本地 profile。
+    canonicalPlayerName = String(LOCAL_PLAYER_PROFILE.nickname).replace(/\s+/g, ' ').trim().slice(0, 20);
+    STATE.playerName = canonicalPlayerName;
+  }
   var rawState = JSON.parse(JSON.stringify(STATE));
   // 自动模拟定时器无法跨刷新恢复；存档按“已暂停、可继续”状态保存。
   rawState._calendarAutoSimulating = false;
@@ -10055,7 +10088,7 @@ function buildManualSaveSnapshot() {
     label: (STATE.career ? '第' + (STATE.career.seasonCount + 1) + '赛季 · ' + STATE.career.currentAge + '岁' : '未开始'),
     screen: (document.querySelector('.screen.active') || {}).id || '',
     localPlayerProfile: {
-      nickname: LOCAL_PLAYER_PROFILE.nickname || '',
+      nickname: canonicalPlayerName,
       avatar: LOCAL_PLAYER_PROFILE.avatar || '',
       isLogin: !!LOCAL_PLAYER_PROFILE.isLogin,
       source: LOCAL_PLAYER_PROFILE.source || ''
@@ -10229,9 +10262,20 @@ function manualLoadGame(slot, options) {
       try { snap = JSON.parse(text); } catch(e) { showManualSaveToast('自动存档损坏'); return; }
       if (!snap || !snap.state) { showManualSaveToast('自动存档损坏'); return; }
       try {
+        if (snap.fingerprint && JSON.stringify(snap.fingerprint) !== JSON.stringify(buildManualFingerprint(snap.state))) {
+          throw new Error('存档完整性校验失败');
+        }
         // STATE 与 LEAGUE_PLAYER_DATA 是 const，只能原地清空后填充，保证所有引用仍然有效
         Object.keys(STATE).forEach(function(k) { delete STATE[k]; });
         Object.assign(STATE, snap.state);
+        var savedProfile = snap.localPlayerProfile && typeof snap.localPlayerProfile === 'object'
+          ? snap.localPlayerProfile
+          : {};
+        var restoredPlayerName = String(STATE.playerName || '').replace(/\s+/g, ' ').trim().slice(0, 20);
+        if (!restoredPlayerName) {
+          restoredPlayerName = String(savedProfile.nickname || '').replace(/\s+/g, ' ').trim().slice(0, 20);
+          if (restoredPlayerName) STATE.playerName = restoredPlayerName;
+        }
         STATE.attrs = STATE.attrs || {};
         STATE.attrSlots = STATE.attrSlots || {};
         if (!Number.isFinite(Number(STATE.attrs.STL))) STATE.attrs.STL = Number(STATE.attrs.PDEF) || 50;
@@ -10280,11 +10324,15 @@ function manualLoadGame(slot, options) {
           restoreUsedRookieCandidatesFromLeague();
         }
         _rngState = snap.rng || null;
-        if (snap.localPlayerProfile) {
-          LOCAL_PLAYER_PROFILE.nickname = snap.localPlayerProfile.nickname || LOCAL_PLAYER_PROFILE.nickname;
-          LOCAL_PLAYER_PROFILE.avatar = snap.localPlayerProfile.avatar || LOCAL_PLAYER_PROFILE.avatar;
-          LOCAL_PLAYER_PROFILE.isLogin = !!snap.localPlayerProfile.isLogin;
-          LOCAL_PLAYER_PROFILE.source = snap.localPlayerProfile.source || LOCAL_PLAYER_PROFILE.source;
+        if (typeof syncLocalPlayerProfile === 'function') {
+          syncLocalPlayerProfile(restoredPlayerName, savedProfile.avatar || '');
+        } else if (typeof LOCAL_PLAYER_PROFILE !== 'undefined') {
+          LOCAL_PLAYER_PROFILE.nickname = restoredPlayerName;
+          if (savedProfile.avatar) LOCAL_PLAYER_PROFILE.avatar = savedProfile.avatar;
+        }
+        if (typeof LOCAL_PLAYER_PROFILE !== 'undefined') {
+          LOCAL_PLAYER_PROFILE.isLogin = !!savedProfile.isLogin;
+          LOCAL_PLAYER_PROFILE.source = savedProfile.source || LOCAL_PLAYER_PROFILE.source;
         }
         ['player-retirement-choice', 'contract-modal', 'contract-retirement-choice', 'legacy-modal', 'offseason-event-modal', 'offseason-result-modal', 'countdown-legacy-modal', 'countdown-legacy-result-modal', 'load-menu-modal'].forEach(function(id) {
           var el = document.getElementById(id);
@@ -11209,7 +11257,7 @@ function showEventModal(data, callback) {
       choicesHtml += '<div style="font-size:11px;color:var(--orange);font-weight:700;margin:14px 0 7px;">你的选择</div>';
       data.choices.forEach(function(choice, index) {
         choicesHtml += '<button class="btn btn-secondary btn-sm event-choice-btn" data-choice="' + index + '" style="width:100%;margin-bottom:8px;justify-content:flex-start;text-align:left;">' +
-          '<span>' + choice.label + (choice.hint ? '<small style="display:block;margin-top:3px;font-family:var(--font-body);font-weight:400;opacity:.72;">' + choice.hint + '</small>' : '') + '</span>' +
+          '<span>' + escapeNarrativeText(choice.label) + (choice.hint ? '<small style="display:block;margin-top:3px;font-family:var(--font-body);font-weight:400;opacity:.72;">' + renderNarrativeText(choice.hint) + '</small>' : '') + '</span>' +
         '</button>';
       });
     }
@@ -11217,14 +11265,14 @@ function showEventModal(data, callback) {
       '<div class="awards-card event-modal-card">' +
         '<div class="awards-card-header" style="padding:32px 24px 24px;">' +
           '<span style="font-size:44px;display:block;margin-bottom:8px;">' + (data.emoji || '📌') + '</span>' +
-          '<div class="awards-badge">' + data.title + '</div>' +
+        '<div class="awards-badge">' + escapeNarrativeText(data.title) + '</div>' +
         '</div>' +
         '<div class="awards-card-body" style="padding:20px 24px 24px;">' +
-          '<div style="font-size:14px;color:var(--text);line-height:1.7;margin-bottom:6px;">' + String(data.body || '').replace(/\n/g, '<br>') + '</div>' +
-          (data.detail && !outcome ? '<div class="awards-divider"></div><div style="font-size:13px;color:var(--text-muted);line-height:1.6;margin:6px 0 8px;">' + data.detail + '</div>' : '') +
+          '<div style="font-size:14px;color:var(--text);line-height:1.7;margin-bottom:6px;">' + renderNarrativeText(data.body || '') + '</div>' +
+          (data.detail && !outcome ? '<div class="awards-divider"></div><div style="font-size:13px;color:var(--text-muted);line-height:1.6;margin:6px 0 8px;">' + renderNarrativeText(data.detail) + '</div>' : '') +
           choicesHtml +
-          (outcome ? '<div class="awards-divider"></div><div style="font-size:11px;color:var(--orange);font-weight:700;margin:10px 0 6px;">结果</div><div style="font-size:13px;color:var(--text);line-height:1.65;margin-bottom:12px;">' + outcome + '</div>' : '') +
-          ((!data.choices || !data.choices.length || outcome) ? '<div class="awards-divider" style="margin-bottom:12px;"></div><button class="awards-next" id="eventCloseBtn">' + (data.btnText || '继续') + '</button>' : '') +
+          (outcome ? '<div class="awards-divider"></div><div style="font-size:11px;color:var(--orange);font-weight:700;margin:10px 0 6px;">结果</div><div style="font-size:13px;color:var(--text);line-height:1.65;margin-bottom:12px;">' + renderNarrativeText(outcome) + '</div>' : '') +
+          ((!data.choices || !data.choices.length || outcome) ? '<div class="awards-divider" style="margin-bottom:12px;"></div><button class="awards-next" id="eventCloseBtn">' + escapeNarrativeText(data.btnText || '继续') + '</button>' : '') +
         '</div>' +
       '</div>';
 
@@ -15230,23 +15278,10 @@ function generateBuildPlayerPoster() {
 
   var ps = s.season.playerStats;
   var gp = Math.max(ps.games, 1);
-  var avg = {
-    pts: Math.round(ps.pts / gp * 10) / 10,
-    reb: Math.round(ps.reb / gp * 10) / 10,
-    ast: Math.round(ps.ast / gp * 10) / 10,
-    stl: Math.round(ps.stl / gp),
-    blk: Math.round(ps.blk / gp),
-    tov: Math.round(ps.tov / gp * 10) / 10,
-    fgm: Math.round(ps.fgm / gp * 10) / 10,
-    fga: Math.round(ps.fga / gp * 10) / 10,
-    ftm: Math.round(ps.ftm / gp * 10) / 10,
-    fta: Math.round(ps.fta / gp * 10) / 10,
-    threeM: Math.round(ps.threeM / gp * 10) / 10,
-    threeA: Math.round(ps.threeA / gp * 10) / 10,
-  };
-  var pct = avg.fga > 0 ? (avg.fgm / avg.fga * 100).toFixed(1) : '—';
-  var threePct = avg.threeA > 0 ? (avg.threeM / avg.threeA * 100).toFixed(1) : '—';
-  var ftPct = avg.fta > 0 ? (avg.ftm / avg.fta * 100).toFixed(1) : '—';
+  var avg = getPerGameStats(ps, gp);
+  var pct = avg.fgPct;
+  var threePct = avg.threePct;
+  var ftPct = avg.ftPct;
   var ovrGrade = getOvrGrade ? getOvrGrade(s.finalOVR) : '';
   var teamName = getTeamName ? getTeamName(s.careerTeam) : s.careerTeam;
   var posName = (SIM_CONFIG && SIM_CONFIG.POSITIONS) ? SIM_CONFIG.POSITIONS[s.position] : s.position;
@@ -15283,14 +15318,7 @@ function generateBuildPlayerPoster() {
   var poAvg = null;
   if (hasPo) {
     var poG = po.games;
-    poAvg = {
-      pts: Math.round(po.pts / poG * 10) / 10,
-      reb: Math.round(po.reb / poG * 10) / 10,
-      ast: Math.round(po.ast / poG * 10) / 10,
-      stl: Math.round(po.stl / poG),
-      blk: Math.round(po.blk / poG),
-      tov: Math.round(po.tov / poG * 10) / 10,
-    };
+    poAvg = getPerGameStats(po, poG);
   }
 
   // ── 模板信息 ──
@@ -15437,7 +15465,7 @@ function generateBuildPlayerPoster() {
   ctx.fillText('📊 常规赛 ' + gp + '场', cardX + 14, y + 8);
 
   var statLabels = ['得分', '篮板', '助攻', '抢断', '盖帽', '失误'];
-  var statVals = [avg.pts, avg.reb, avg.ast, avg.stl, avg.blk, avg.tov];
+  var statVals = [avg.pts, avg.reb, avg.ast, avg.stl, avg.blk, avg.tov].map(formatPerGameStat);
   var sCols = 3, sGap = 5;
   var sW = (cardW - 32 - (sCols - 1) * sGap) / sCols, sH = 34;
   for (var si = 0; si < 6; si++) {
@@ -15458,7 +15486,7 @@ function generateBuildPlayerPoster() {
   ctx.fillStyle = C.textDim;
   ctx.font = '400 10px ' + C.fb;
   var pctY2 = y + 30 + 2 * (sH + sGap) + 3;
-  ctx.fillText(avg.fgm + '-' + avg.fga + ' (' + pct + '%) · 三分 ' + avg.threeM + '-' + avg.threeA + ' (' + threePct + '%)', cx, pctY2);
+  ctx.fillText(avg.fgm + '-' + avg.fga + ' (' + formatPercentage(pct) + ') · 三分 ' + avg.threeM + '-' + avg.threeA + ' (' + formatPercentage(threePct) + ')', cx, pctY2);
   y += cardH + 6;
 
   // ═══ 5. 季后赛 ═══
@@ -15471,7 +15499,7 @@ function generateBuildPlayerPoster() {
     ctx.font = '500 13px ' + C.fd;
     ctx.fillText('🏀 季后赛 ' + po.games + '场', cardX + 14, y + 8);
 
-    var poVals = [poAvg.pts, poAvg.reb, poAvg.ast, poAvg.stl, poAvg.blk, poAvg.tov];
+    var poVals = [poAvg.pts, poAvg.reb, poAvg.ast, poAvg.stl, poAvg.blk, poAvg.tov].map(formatPerGameStat);
     for (var pi2 = 0; pi2 < 6; pi2++) {
       var pcol = pi2 % sCols, prow = Math.floor(pi2 / sCols);
       var psx = cardX + 14 + pcol * (sW + sGap);
@@ -17283,20 +17311,13 @@ function generateCareerPoster() {
 
   var ts = c.totalStats || {};
   var tg = Math.max(ts.games || 0, 1);
-  var avg = {
-    pts: +((ts.pts || 0) / tg).toFixed(1),
-    reb: +((ts.reb || 0) / tg).toFixed(1),
-    ast: +((ts.ast || 0) / tg).toFixed(1),
-    stl: +((ts.stl || 0) / tg).toFixed(1),
-    blk: +((ts.blk || 0) / tg).toFixed(1),
-    tov: +((ts.tov || 0) / tg).toFixed(1)
-  };
+  var avg = getPerGameStats(ts, tg);
   var fga = ts.fga || 0, fgm = ts.fgm || 0;
   var fta = ts.fta || 0, ftm = ts.ftm || 0;
   var t3a = ts.threeA || 0, t3m = ts.threeM || 0;
-  var pct = fga > 0 ? (fgm / fga * 100).toFixed(1) : '—';
-  var ftPct = fta > 0 ? (ftm / fta * 100).toFixed(1) : '—';
-  var threePct = t3a > 0 ? (t3m / t3a * 100).toFixed(1) : '—';
+  var pct = getPercentageFromTotals(fgm, fga);
+  var ftPct = getPercentageFromTotals(ftm, fta);
+  var threePct = getPercentageFromTotals(t3m, t3a);
 
   var honors = c.honors || [];
   function cnt(key) { return honors.filter(function(h) { return (h.label || '').indexOf(key) >= 0 && !isRookieHonorForLaterSeason(h); }).length; }
@@ -17520,7 +17541,7 @@ function generateCareerPoster() {
   ctx.fillText('📊 生涯总数据', cardX + 14, y + 8);
 
   var statLabels = ['总出场', '总得分', '场均得分', '场均篮板', '场均助攻', '场均抢断'];
-  var statVals = [tg, Math.round(ts.pts || 0), avg.pts, avg.reb, avg.ast, avg.stl];
+  var statVals = [tg, Math.round(ts.pts || 0), formatPerGameStat(avg.pts), formatPerGameStat(avg.reb), formatPerGameStat(avg.ast), formatPerGameStat(avg.stl)];
   var sCols = 3, sGap = 5;
   var sW = (cardW - 32 - (sCols - 1) * sGap) / sCols, sH = 34;
   for (var si = 0; si < 6; si++) {
@@ -17539,7 +17560,7 @@ function generateCareerPoster() {
   ctx.textAlign = 'center'; ctx.textBaseline = 'top';
   ctx.fillStyle = C.textDim;
   ctx.font = '400 10px ' + C.fb;
-  ctx.fillText(fgm + '-' + fga + ' (' + pct + '%)、三分 ' + t3m + '-' + t3a + ' (' + threePct + '%)', cx, y + 30 + 2 * (sH + sGap) + 3);
+  ctx.fillText(fgm + '-' + fga + ' (' + formatPercentage(pct) + ')、三分 ' + t3m + '-' + t3a + ' (' + formatPercentage(threePct) + ')', cx, y + 30 + 2 * (sH + sGap) + 3);
   y += cardH + 6;
 
   // 5. 荣誉墙
@@ -17924,25 +17945,25 @@ function showPostCareerEventModal(ev) {
   if (existing) existing.remove();
   var scenes = ev.scenes || [];
   var sceneIdx = STATE._postCareerScenePage || 0;
-  var title = getPlayerFacingBranchTitle(ev.title);
+  var title = escapeNarrativeText(getPlayerFacingBranchTitle(ev.title));
   var html = '<div class="team-picker-overlay" id="post-career-modal">';
   html += '<div class="team-picker-modal">';
   html += '<div class="team-picker-header"><span>' + title + '</span></div>';
   html += '<div style="padding:14px 14px 8px;">';
   if (scenes.length && sceneIdx < scenes.length) {
     html += '<div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:6px;">剧情</div>';
-    html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.65;margin-bottom:14px;">' + fillBranchEventText(scenes[sceneIdx]) + '</div>';
+    html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.65;margin-bottom:14px;">' + renderNarrativeText(fillBranchEventText(scenes[sceneIdx])) + '</div>';
     html += '<button class="btn btn-primary btn-sm" style="width:100%;" onclick="continuePostCareerScene()">继续</button>';
   } else {
     html += '<div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:6px;">重点</div>';
-    html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.55;margin-bottom:12px;">' + sanitizePlayerFacingText(fillBranchEventText(ev.body)) + '</div>';
+    html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.55;margin-bottom:12px;">' + renderNarrativeText(fillBranchEventText(ev.body)) + '</div>';
     html += '<div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:6px;">选择</div>';
     ev.choices.forEach(function(ch, ci) {
       var locked = isBranchChoiceLocked(ch);
       var lockHint = locked ? (ch.lockHint || '需要对应线路结果') : '';
       var btnStyle = 'width:100%;margin-bottom:8px;justify-content:flex-start;text-align:left;' + (locked ? 'opacity:.45;cursor:not-allowed;' : '');
       var onclick = locked ? '' : 'onclick="choosePostCareerEvent(' + ci + ')"';
-      html += '<button class="btn btn-secondary btn-sm" style="' + btnStyle + '" ' + onclick + (locked ? ' disabled' : '') + '>' + ch.label + '<span style="display:block;font-size:11px;font-family:var(--font-body);font-weight:400;opacity:.75;margin-left:4px;">' + sanitizePlayerFacingText(fillBranchEventText(locked ? lockHint : (ch.hint || ''))) + '</span></button>';
+      html += '<button class="btn btn-secondary btn-sm" style="' + btnStyle + '" ' + onclick + (locked ? ' disabled' : '') + '>' + escapeNarrativeText(ch.label) + '<span style="display:block;font-size:11px;font-family:var(--font-body);font-weight:400;opacity:.75;margin-left:4px;">' + renderNarrativeText(fillBranchEventText(locked ? lockHint : (ch.hint || ''))) + '</span></button>';
     });
   }
   html += '</div></div></div>';
@@ -17976,7 +17997,7 @@ function showPostCareerResultModal(title, msg) {
   if (existing) existing.remove();
   var html = '<div class="team-picker-overlay" id="post-career-result-modal">';
   html += '<div class="team-picker-modal">';
-  html += '<div class="team-picker-header"><span>' + getPlayerFacingBranchTitle(title) + '</span></div>';
+  html += '<div class="team-picker-header"><span>' + escapeNarrativeText(getPlayerFacingBranchTitle(title)) + '</span></div>';
   html += '<div style="padding:14px 14px 8px;">';
   html += formatBranchResultText(fillBranchEventText(msg));
   html += '<button class="btn btn-primary btn-sm" style="width:100%;" onclick="finishPostCareerStep()">继续</button>';
@@ -18026,25 +18047,25 @@ function showCountdownLegacyModal() {
   if (existing) existing.remove();
   var scenes = ev.scenes || [];
   var sceneIdx = _countdownLegacyScenePage || 0;
-  var title = getPlayerFacingBranchTitle(ev.title);
+  var title = escapeNarrativeText(getPlayerFacingBranchTitle(ev.title));
   var html = '<div class="team-picker-overlay" id="countdown-legacy-modal">';
   html += '<div class="team-picker-modal">';
   html += '<div class="team-picker-header"><span>' + title + '</span></div>';
   html += '<div style="padding:14px 14px 8px;">';
   if (scenes.length && sceneIdx < scenes.length) {
     html += '<div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:6px;">剧情</div>';
-    html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.65;margin-bottom:14px;">' + fillBranchEventText(scenes[sceneIdx]) + '</div>';
+    html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.65;margin-bottom:14px;">' + renderNarrativeText(fillBranchEventText(scenes[sceneIdx])) + '</div>';
     html += '<button class="btn btn-primary btn-sm" style="width:100%;" onclick="continueCountdownLegacyScene()">继续</button>';
   } else {
     html += '<div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:6px;">重点</div>';
-    html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.55;margin-bottom:12px;">' + sanitizePlayerFacingText(fillBranchEventText(ev.body)) + '</div>';
+    html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.55;margin-bottom:12px;">' + renderNarrativeText(fillBranchEventText(ev.body)) + '</div>';
     html += '<div style="font-size:11px;color:var(--orange);font-weight:700;margin-bottom:6px;">选择</div>';
     ev.choices.forEach(function(ch, ci) {
       var locked = isBranchChoiceLocked(ch);
       var lockHint = locked ? (ch.lockHint || '需要对应线路结果') : '';
       var btnStyle = 'width:100%;margin-bottom:8px;justify-content:flex-start;text-align:left;' + (locked ? 'opacity:.45;cursor:not-allowed;' : '');
       var onclick = locked ? '' : 'onclick="chooseCountdownLegacyEvent(' + ci + ')"';
-      html += '<button class="btn btn-secondary btn-sm" style="' + btnStyle + '" ' + onclick + (locked ? ' disabled' : '') + '>' + ch.label + '<span style="display:block;font-size:11px;font-family:var(--font-body);font-weight:400;opacity:.75;margin-left:4px;">' + sanitizePlayerFacingText(fillBranchEventText(locked ? lockHint : (ch.hint || ''))) + '</span></button>';
+      html += '<button class="btn btn-secondary btn-sm" style="' + btnStyle + '" ' + onclick + (locked ? ' disabled' : '') + '>' + escapeNarrativeText(ch.label) + '<span style="display:block;font-size:11px;font-family:var(--font-body);font-weight:400;opacity:.75;margin-left:4px;">' + renderNarrativeText(fillBranchEventText(locked ? lockHint : (ch.hint || ''))) + '</span></button>';
     });
   }
   html += '</div></div></div>';
@@ -18078,7 +18099,7 @@ function showCountdownLegacyResultModal(title, msg) {
   if (existing) existing.remove();
   var html = '<div class="team-picker-overlay" id="countdown-legacy-result-modal">';
   html += '<div class="team-picker-modal">';
-  html += '<div class="team-picker-header"><span>' + getPlayerFacingBranchTitle(title) + '</span></div>';
+  html += '<div class="team-picker-header"><span>' + escapeNarrativeText(getPlayerFacingBranchTitle(title)) + '</span></div>';
   html += '<div style="padding:14px 14px 8px;">';
   html += formatBranchResultText(fillBranchEventText(msg));
   html += '<button class="btn btn-primary btn-sm" style="width:100%;" onclick="finishCountdownLegacy()">继续</button>';
@@ -18151,5 +18172,3 @@ function watchAdToReroll() {
 
 </body>
 </html>
-
-

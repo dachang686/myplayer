@@ -4,6 +4,16 @@
   var PROFILE_KEY = 'court_forge:profile';
   var DEFAULT_AVATAR = 'media/generated/players/avatar-00.png';
 
+  function getGameState() {
+    return typeof global.getCourtForgeState === 'function'
+      ? global.getCourtForgeState()
+      : null;
+  }
+
+  function normalizeNickname(name) {
+    return String(name == null ? '' : name).replace(/\s+/g, ' ').trim().slice(0, 20);
+  }
+
   function readProfile() {
     try {
       var raw = global.localStorage.getItem(PROFILE_KEY);
@@ -39,23 +49,35 @@
 
   global.getCustomPlayerName = function getCustomPlayerName() {
     try {
-      return global.localStorage.getItem('buildplayer_nickname') || profile.nickname || '';
+      return profile.nickname || global.localStorage.getItem('buildplayer_nickname') || '';
     } catch (error) {
       return profile.nickname || '';
     }
   };
 
   global.setCustomPlayerName = function setCustomPlayerName(name) {
-    var normalized = String(name || '').trim().slice(0, 20);
+    var normalized = normalizeNickname(name);
+    var state = getGameState();
+    if (state) state.playerName = normalized;
     profile.nickname = normalized;
     persistProfile();
     try { global.localStorage.setItem('buildplayer_nickname', normalized); } catch (error) {}
-    if (typeof global.STATE !== 'undefined') global.STATE.playerName = normalized;
+    return normalized;
+  };
+
+  global.syncLocalPlayerProfile = function syncLocalPlayerProfile(name, avatar) {
+    var normalized = normalizeNickname(name);
+    profile.nickname = normalized;
+    if (typeof avatar === 'string' && avatar) profile.avatar = avatar;
+    persistProfile();
+    try { global.localStorage.setItem('buildplayer_nickname', normalized); } catch (error) {}
+    return profile;
   };
 
   global.getMyPlayerDisplayName = function getMyPlayerDisplayName() {
-    var stateName = typeof global.STATE !== 'undefined' && global.STATE.playerName;
-    return stateName || global.getCustomPlayerName() || '自建球员';
+    var state = getGameState();
+    var stateName = state && normalizeNickname(state.playerName);
+    return stateName || normalizeNickname(profile.nickname) || global.getCustomPlayerName() || '自建球员';
   };
 
   global.getPlayerAvatarUrl = function getPlayerAvatarUrl() {
@@ -63,7 +85,7 @@
   };
 
   global.hasLocalPlayerProfile = function hasLocalPlayerProfile() {
-    return !!global.getCustomPlayerName();
+    return !!global.getMyPlayerDisplayName() && global.getMyPlayerDisplayName() !== '自建球员';
   };
 
   global.openEditProfile = function openEditProfile() {

@@ -327,22 +327,23 @@ function checkPlayInComplete() {
 function endSeason() {
   const ps = STATE.season.playerStats;
   const games = ps.games || 1;
-  
-  STATE.season.avgStats = {
-    pts: Math.round(ps.pts / games * 10) / 10,
-    reb: Math.round(ps.reb / games * 10) / 10,
-    ast: Math.round(ps.ast / games * 10) / 10,
-    stl: Math.round(ps.stl / games * 10) / 10,
-    blk: Math.round(ps.blk / games * 10) / 10,
-    tov: Math.round(ps.tov / games * 10) / 10,
-    fgm: Math.round(ps.fgm / games * 10) / 10,
-    fga: Math.round(ps.fga / games * 10) / 10,
-    ftm: Math.round(ps.ftm / games * 10) / 10,
-    fta: Math.round(ps.fta / games * 10) / 10,
-    threeM: Math.round(ps.threeM / games * 10) / 10,
-    threeA: Math.round(ps.threeA / games * 10) / 10,
-    mins: Math.round(ps.mins / games),
-  };
+  STATE.season.avgStats = typeof getPerGameStats === 'function'
+    ? getPerGameStats(ps, games)
+    : {
+      pts: Math.round(ps.pts / games * 10) / 10,
+      reb: Math.round(ps.reb / games * 10) / 10,
+      ast: Math.round(ps.ast / games * 10) / 10,
+      stl: Math.round(ps.stl / games * 10) / 10,
+      blk: Math.round(ps.blk / games * 10) / 10,
+      tov: Math.round(ps.tov / games * 10) / 10,
+      fgm: Math.round(ps.fgm / games * 10) / 10,
+      fga: Math.round(ps.fga / games * 10) / 10,
+      ftm: Math.round(ps.ftm / games * 10) / 10,
+      fta: Math.round(ps.fta / games * 10) / 10,
+      threeM: Math.round(ps.threeM / games * 10) / 10,
+      threeA: Math.round(ps.threeA / games * 10) / 10,
+      mins: Math.round(ps.mins / games),
+    };
   
   calcSeasonAwards();
   
@@ -924,18 +925,32 @@ function renderPlayoffBracketUI() {
     const po = STATE.season.playoffStats;
     if (po.games > 0) {
       const poG = po.games;
+      const poAvg = typeof getPerGameStats === 'function' ? getPerGameStats(po, poG) : {
+        pts: Math.round(po.pts / poG * 10) / 10,
+        reb: Math.round(po.reb / poG * 10) / 10,
+        ast: Math.round(po.ast / poG * 10) / 10,
+        stl: Math.round(po.stl / poG * 10) / 10,
+        blk: Math.round(po.blk / poG * 10) / 10,
+        tov: Math.round(po.tov / poG * 10) / 10,
+        fgm: Math.round(po.fgm / poG * 10) / 10,
+        fga: Math.round(po.fga / poG * 10) / 10,
+      };
+      const format = typeof formatPerGameStat === 'function' ? formatPerGameStat : function(value) { return String(value); };
+      const percentage = typeof getPercentageFromTotals === 'function'
+        ? getPercentageFromTotals(po.fgm, po.fga)
+        : (po.fga > 0 ? (po.fgm / po.fga * 100).toFixed(1) : '—');
       h += `<div class="bv-po-stats">
         <div class="bv-po-title">📊 季后赛场均</div>
         <div class="bv-po-grid">
-          <div class="bv-po-stat"><span class="bv-po-val">${Math.round(po.pts/poG*10)/10}</span><span class="bv-po-lbl">得分</span></div>
-          <div class="bv-po-stat"><span class="bv-po-val">${Math.round(po.reb/poG*10)/10}</span><span class="bv-po-lbl">篮板</span></div>
-          <div class="bv-po-stat"><span class="bv-po-val">${Math.round(po.ast/poG*10)/10}</span><span class="bv-po-lbl">助攻</span></div>
-          <div class="bv-po-stat"><span class="bv-po-val">${Math.round(po.stl/poG*10)/10}</span><span class="bv-po-lbl">抢断</span></div>
-          <div class="bv-po-stat"><span class="bv-po-val">${Math.round(po.blk/poG*10)/10}</span><span class="bv-po-lbl">盖帽</span></div>
-          <div class="bv-po-stat"><span class="bv-po-val">${Math.round(po.tov/poG*10)/10}</span><span class="bv-po-lbl">失误</span></div>
+          <div class="bv-po-stat"><span class="bv-po-val">${format(poAvg.pts)}</span><span class="bv-po-lbl">得分</span></div>
+          <div class="bv-po-stat"><span class="bv-po-val">${format(poAvg.reb)}</span><span class="bv-po-lbl">篮板</span></div>
+          <div class="bv-po-stat"><span class="bv-po-val">${format(poAvg.ast)}</span><span class="bv-po-lbl">助攻</span></div>
+          <div class="bv-po-stat"><span class="bv-po-val">${format(poAvg.stl)}</span><span class="bv-po-lbl">抢断</span></div>
+          <div class="bv-po-stat"><span class="bv-po-val">${format(poAvg.blk)}</span><span class="bv-po-lbl">盖帽</span></div>
+          <div class="bv-po-stat"><span class="bv-po-val">${format(poAvg.tov)}</span><span class="bv-po-lbl">失误</span></div>
         </div>
         <div style="text-align:center;font-size:11px;color:var(--text-dim);margin-top:4px;">
-          出战 ${poG} 场 · 命中 ${Math.round(po.fgm/poG*10)/10}-${Math.round(po.fga/poG*10)/10} (${po.fga>0?Math.round(po.fgm/po.fga*100):0}%)
+          出战 ${poG} 场 · 命中 ${format(poAvg.fgm)}-${format(poAvg.fga)} (${typeof formatPercentage === 'function' ? formatPercentage(percentage) : percentage + '%'})
         </div>
       </div>`;
     }
@@ -991,7 +1006,7 @@ function renderPlayoffGameBrief(gameEntry, teamA, teamB, isMySeries, roundName, 
   let statsLine = '';
   if (stats) {
     const pct = stats.fga > 0 ? Math.round(stats.fgm / stats.fga * 100) : 0;
-    statsLine = `<div style="font-size:9px;color:var(--text-dim);margin-top:2px;">${stats.pts}分 ${stats.reb}板 ${stats.ast}助 · ${stats.fgm}-${stats.fga} (${pct}%)</div>`;
+    statsLine = `<div style="font-size:9px;color:var(--text-dim);margin-top:2px;">${stats.pts}分 ${stats.reb}板 ${stats.ast}助 · ${stats.fgm}-${stats.fga} (${typeof formatPercentage === 'function' ? formatPercentage(pct) : pct + '%'})</div>`;
   }
   
   const brief = document.createElement('div');
@@ -1457,8 +1472,8 @@ function showPlayoffGamePopup(round, seriesIdx, gameIdx) {
   let myStatsHtml = '';
   if (g.myStats) {
     const s = g.myStats;
-    const pct = s.fga > 0 ? Math.round(s.fgm / s.fga * 100) : 0;
-    const threePct = s.threeA > 0 ? Math.round(s.threeM / s.threeA * 100) : 0;
+    const pct = typeof getPercentageFromTotals === 'function' ? getPercentageFromTotals(s.fgm, s.fga) : (s.fga > 0 ? Math.round(s.fgm / s.fga * 100) : 0);
+    const threePct = typeof getPercentageFromTotals === 'function' ? getPercentageFromTotals(s.threeM, s.threeA) : (s.threeA > 0 ? Math.round(s.threeM / s.threeA * 100) : 0);
     myStatsHtml = `
       <div style="padding:8px 14px 4px;">
         <div style="font-size:12px;color:var(--orange);margin-bottom:4px;">📊 我的球员 · 本场数据</div>
@@ -1489,27 +1504,33 @@ function showPlayoffGamePopup(round, seriesIdx, gameIdx) {
           </span>
         </div>
         <div style="margin-top:4px;font-size:10px;color:var(--text-dim);text-align:center;">
-          投篮 ${s.fgm}-${s.fga} (${pct}%) · 三分 ${s.threeM}-${s.threeA} (${threePct}%)
+           投篮 ${s.fgm}-${s.fga} (${typeof formatPercentage === 'function' ? formatPercentage(pct) : pct + '%'}) · 三分 ${s.threeM}-${s.threeA} (${typeof formatPercentage === 'function' ? formatPercentage(threePct) : threePct + '%'})
         </div>
       </div>`;
   } else {
     // 没有本场数据时显示季后赛场均
     const po = STATE.season.playoffStats;
     const poG = po.games || 1;
+    const poAvg = typeof getPerGameStats === 'function' ? getPerGameStats(po, poG) : {
+      pts: Math.round(po.pts / poG * 10) / 10,
+      reb: Math.round(po.reb / poG * 10) / 10,
+      ast: Math.round(po.ast / poG * 10) / 10,
+    };
+    const format = typeof formatPerGameStat === 'function' ? formatPerGameStat : function(value) { return String(value); };
     myStatsHtml = `
       <div style="padding:8px 14px 4px;">
         <div style="font-size:12px;color:var(--orange);margin-bottom:4px;">📊 我的季后赛场均</div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
           <span style="background:var(--orange-bg);padding:4px 10px;border-radius:6px;text-align:center;min-width:50px;">
-            <div style="font-size:16px;font-weight:700;color:var(--orange);">${Math.round(po.pts/poG*10)/10}</div>
+            <div style="font-size:16px;font-weight:700;color:var(--orange);">${format(poAvg.pts)}</div>
             <div style="font-size:9px;color:var(--text-muted);">得分</div>
           </span>
           <span style="background:var(--bg-card);padding:4px 10px;border-radius:6px;text-align:center;min-width:50px;">
-            <div style="font-size:16px;font-weight:700;">${Math.round(po.reb/poG*10)/10}</div>
+            <div style="font-size:16px;font-weight:700;">${format(poAvg.reb)}</div>
             <div style="font-size:9px;color:var(--text-muted);">篮板</div>
           </span>
           <span style="background:var(--bg-card);padding:4px 10px;border-radius:6px;text-align:center;min-width:50px;">
-            <div style="font-size:16px;font-weight:700;">${Math.round(po.ast/poG*10)/10}</div>
+            <div style="font-size:16px;font-weight:700;">${format(poAvg.ast)}</div>
             <div style="font-size:9px;color:var(--text-muted);">助攻</div>
           </span>
         </div>
