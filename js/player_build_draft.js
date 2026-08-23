@@ -395,7 +395,8 @@ function renderPlayerBuildAttributes(build, player) {
   return ATTR_KEYS.map(function(attrKey) {
     var owned = isPlayerBuildAttrOwned(build, attrKey);
     var selected = selectedAttr === attrKey;
-    var value = getPlayerBuildBaseValue(player, attrKey);
+    var lockedValue = Number(STATE.attrs[attrKey]);
+    var value = owned && Number.isFinite(lockedValue) ? lockedValue : getPlayerBuildBaseValue(player, attrKey);
     var stateLabel = owned ? '已拥有' : (selected ? '已选' : '可选择');
     var disabled = owned ? ' disabled' : '';
     return '<button type="button" class="pb-attr-card' + (owned ? ' is-owned' : '') + (selected ? ' is-selected' : '') + '"' +
