@@ -257,7 +257,11 @@ function loadUserStatsReader(source) {
   const start = source.indexOf('function generatePlayerStatsNew');
   const end = source.indexOf('function calcShotPct', start);
   if (start < 0 || end < 0) throw new Error('无法定位用户球员统计读取代码');
-  return new Function(`${source.slice(start, end)}\nreturn generatePlayerStatsNew;`)();
+  const readerSource = source.slice(start, end);
+  if (/const cfg = SIM_CONFIG\.PLAYER_STATS/.test(readerSource)) {
+    throw new Error('用户统计读取函数仍保留正式 Box Score 返回后的旧独立统计模型');
+  }
+  return new Function(`${readerSource}\nreturn generatePlayerStatsNew;`)();
 }
 
 const userStatsReaders = [loadUserStatsReader(indexSource)];
@@ -1088,6 +1092,7 @@ if (handleFgaRatio < 1.045 || handleFgaRatio > 1.12 || handleIsolation.high.apg 
 const clutchIsolation = playmakingIsolation.clutch;
 if (Math.abs(clutchIsolation.high.fga - clutchIsolation.low.fga) / Math.max(0.01, clutchIsolation.low.fga) >= 0.05
   || Math.abs(clutchIsolation.high.ppg - clutchIsolation.low.ppg) / Math.max(0.01, clutchIsolation.low.ppg) >= 0.05
+  || Math.abs(clutchIsolation.high.tov - clutchIsolation.low.tov) >= 0.10
   || Math.abs(clutchIsolation.high.fgPct - clutchIsolation.low.fgPct) >= 0.02
   || Math.abs(clutchIsolation.high.threePct - clutchIsolation.low.threePct) >= 0.02) {
   console.error(`CLU 仍在全场基础投篮中持续加成：${JSON.stringify(clutchIsolation)}`);

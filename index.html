@@ -5857,7 +5857,8 @@ function generateBoxScore(teamA, teamB, totalA, totalB, gameOptions) {
     var passSkill = players.map(function(player) { return af(parseInt(player.PAS) || 50) * 0.72 + af(parseInt(player.HAN) || 50) * 0.28; });
     var stealSkill = players.map(function(player) { return af(parseInt(player.STL) || 50) * 0.72 + af(parseInt(player.PDEF) || 50) * 0.18 + af(parseInt(player.ATH) || 50) * 0.10; });
     var blockSkill = players.map(function(player) { return af(parseInt(player.BLK) || 50) * 0.62 + af(parseInt(player.IDEF) || 50) * 0.38; });
-    var handleSkill = players.map(function(player) { return af(parseInt(player.HAN) || 50) * 0.52 + af(parseInt(player.PAS) || 50) * 0.28 + af(parseInt(player.CLU) || 50) * 0.20; });
+    // 整场失误控制只由持球与传球能力决定；CLU 仅在 V2 的关键时段生效。
+    var handleSkill = players.map(function(player) { return af(parseInt(player.HAN) || 50) * 0.52 + af(parseInt(player.PAS) || 50) * 0.48; });
     var perimeterDefense = players.map(function(player) { return af(parseInt(player.PDEF) || 50) * 0.62 + af(parseInt(player.STL) || 50) * 0.18 + af(parseInt(player.ATH) || 50) * 0.20; });
     var interiorDefense = players.map(function(player) { return af(parseInt(player.IDEF) || 50) * 0.48 + af(parseInt(player.BLK) || 50) * 0.30 + af(parseInt(player.STR) || 50) * 0.22; });
     var averageScoring = offSkill.reduce(function(sum, value) { return sum + value; }, 0) / Math.max(1, offSkill.length);
@@ -6318,123 +6319,6 @@ function generatePlayerStatsNew(attrs, gameResult, isPlayoff) {
     };
   }
   throw new Error('[PlayerStats] 正式比赛缺少用户 Box Score 行，已拒绝启用旧版独立统计模型');
-  const cfg = SIM_CONFIG.PLAYER_STATS;
-  const pos = STATE.position || 'PG';
-  const posScale = cfg.POS_SCALE[pos] || cfg.POS_SCALE.PG;
-  
-  // 节奏和出场时间
-  const totalScore = gameResult.scoreA + gameResult.scoreB;
-  const paceFactor = Math.min(totalScore / 210, 1.4);
-  const seasonUsageBias = getSeasonUsageBias();
-  const isStarter = !!(STATE.season && STATE.season.isUserStarter);
-  const baseMins = isPlayoff
-    ? (isStarter ? 38 : 27)
-    : (isStarter ? (30 + Math.round(Math.random() * 8)) : (18 + Math.round(Math.random() * 10)));
-  const mins = Math.max(8, Math.round(baseMins * Math.sqrt(seasonUsageBias)));
-  const minsFactor = mins / 48;
-  const statMinsFactor = Math.max(0.45, Math.min(1.15, mins / (isPlayoff ? 38 : 34)));
-  
-  // 球队总投篮数
-  const teamFGA = Math.round((totalScore / 2) * 0.85);
-  
-  // ★ 球权/使用率由进攻属性决定 — 按位置选择核心进攻属性
-  const posOffAttrs = {
-    'PG': ['threePT','MID','HAN','PAS'],
-    'SG': ['threePT','MID','FIN','HAN'],
-    'SF': ['threePT','MID','FIN','DNK','ATH'],
-    'PF': ['MID','FIN','DNK','STR','REB'],
-    'C':  ['FIN','DNK','STR','MID'],
-  };
-  const offAttrList = posOffAttrs[pos] || posOffAttrs['SF'];
-  const offAttrs = offAttrList.map(k => parseInt(attrs[k]) || 50);
-  const offAvg = offAttrs.reduce((a, b) => a + b, 0) / offAttrs.length;
-  const offFactor = af(offAvg);
-  const baseUsage = cfg.USAGE[pos] || 0.20;
-  // ★ 根据总评梯度调整使用率：≤75用原系数，>75每多点提升
-  const myOVR = STATE.finalOVR || 75;
-  const usageScale = myOVR > 75 ? 1 + (myOVR - 75) * 0.028 : 1.0;
-  const scaledUsage = baseUsage * Math.min(1.8, usageScale);
-  const starterBoost = (STATE.season && STATE.season.isUserStarter) ? 1.12 : 0.92;
-  
-  // ★ 出手数 = 球队投篮 × 使用率 × (保底+严格天赋) × 时间
-  // ★ 方案A：出手数温和波动 ±55%（0.45~1.55），保留上限封顶
-  let fga = Math.round(teamFGA * scaledUsage * seasonUsageBias * (0.1 + offFactor * 0.9) * minsFactor * starterBoost * (0.45 + Math.random() * 1.1));
-  const maxFga = Math.round((2 + offFactor * 28) * Math.max(0.75, Math.min(1.65, usageScale)));
-  fga = Math.max(2, Math.min(maxFga, fga));
-  
-  // 投篮分布 — 按属性动态调整 (Experimental)
-  const baseDist = SIM_CONFIG.SHOT_DIST[pos] || SIM_CONFIG.SHOT_DIST.PG;
-  const threePtAttr = parseInt(attrs.threePT) || 50;
-  const finAttr = ((parseInt(attrs.FIN)||50) + (parseInt(attrs.DNK)||50)) / 2;
-  const midAttr = parseInt(attrs.MID) || 50;
-  let dynDist = { threePT: baseDist.threePT, MID: baseDist.MID, FIN: baseDist.FIN };
-  // 三分属性每高/低于50 1点，三分占比调整0.3%
-  dynDist.threePT = Math.max(0.05, Math.min(0.55, dynDist.threePT + (threePtAttr - 50) * 0.003));
-  // 终结属性调整内线占比
-  dynDist.FIN = Math.max(0.05, Math.min(0.55, dynDist.FIN + (finAttr - 50) * 0.002));
-  // 中投属性调整中投占比  
-  dynDist.MID = Math.max(0.05, Math.min(0.55, dynDist.MID + (midAttr - 50) * 0.002));
-  const totalDist = dynDist.threePT + dynDist.MID + dynDist.FIN;
-  const threeA = Math.round(fga * (dynDist.threePT / totalDist));
-  const midA = Math.round(fga * (dynDist.MID / totalDist));
-  const finA = fga - threeA - midA;
-  
-  // ★ 命中率由对应属性决定
-  // 三分只看threePT，中投只看MID，终结看FIN+DNK平均
-  const threePct = calcShotPct('threePT', attrs.threePT || 50, totalScore);
-  const midPct = calcShotPct('MID', attrs.MID || 50, totalScore);
-  const finAvg = ((attrs.FIN||50) + (attrs.DNK||50)) / 2;
-  const finPct = calcShotPct('FIN', finAvg, totalScore);
-  
-  const threeM = Math.round(Math.max(0, threeA * threePct));
-  const midM = Math.round(Math.max(0, midA * midPct));
-  const finM = Math.round(Math.max(0, finA * finPct));
-  const fgm = threeM + midM + finM;
-  
-  // ★ 罚球由FIN和CLU决定
-  const ftRate = Math.min(0.30, 0.10 + (attrs.FIN || 50) / 500);
-  const fta = Math.round(fga * ftRate * (0.6 + Math.random() * 0.8));
-  const ftPct = calcShotPct('FT', attrs.CLU || 50, totalScore);
-  const ftm = Math.round(fta * ftPct);
-  
-  const pts = threeM * 3 + midM * 2 + finM * 2 + ftm;
-  
-  // ★ 篮板 = REB属性 × 严格递减曲线
-  const rebScale = posScale.reb || 0.35;
-  const rebVal = af(attrs.REB) * (totalScore / 200) * rebScale * 12 * statMinsFactor;
-  const reb = sampleCountingStat(rebVal);
-  
-  // ★ 助攻 = 手感 + 传球 + 关键 共同决定
-  const astScale = posScale.ast || 0.4;
-  const pasAvg = ((attrs.PAS||50) + (attrs.HAN||50) + (attrs.CLU||50)) / 3;
-  const teamScoreFactor = Math.max(0.75, Math.min(1.25, gameResult.scoreA / 110));
-  const astVal = af(pasAvg) * teamScoreFactor * astScale * 9 * statMinsFactor;
-  const ast = sampleCountingStat(astVal);
-  
-  // ★ 抢断 = STL主导 + PDEF/ATH/HAN辅助（按位置权重）
-  const stlF = SIM_CONFIG.PLAYER_STATS.FACTORS[pos].stl;
-  const stlSum = stlF.STL + (stlF.PDEF || 0) + (stlF.ATH || 0) + (stlF.HAN || 0);
-  const stlAvg = (af(attrs.STL||50) * stlF.STL + af(attrs.PDEF||50) * (stlF.PDEF || 0) + af(attrs.ATH||50) * (stlF.ATH || 0) + af(attrs.HAN||50) * (stlF.HAN || 0)) / stlSum;
-  // ★ 抢断 ±30% 波动 (原±60%)
-  const stlVal = stlAvg * (totalScore / 200) * 2.0 * statMinsFactor * (0.7 + Math.random() * 0.6);
-  const stl = Math.round(Math.max(0, stlVal));
-  
-  // ★ 盖帽 = BLK主导 + IDEF辅助 + ATH微调（按位置权重）
-  const blkF = SIM_CONFIG.PLAYER_STATS.FACTORS[pos].blk;
-  const blkSum = blkF.BLK + (blkF.IDEF || 0) + (blkF.ATH || 0);
-  const blkAvg = (af(attrs.BLK||50) * blkF.BLK + af(attrs.IDEF||50) * (blkF.IDEF || 0) + af(attrs.ATH||50) * (blkF.ATH || 0)) / blkSum;
-  // ★ 盖帽 ±30% 波动 (原±60%)
-  const blkVal = blkAvg * (totalScore / 200) * 2.0 * statMinsFactor * (0.7 + Math.random() * 0.6);
-  const blk = Math.round(Math.max(0, blkVal));
-  
-  // ★ 失误 = (HAN+CLU)/2 × 严格递减曲线（越高失误越少）(Experimental: 上调上限)
-  const hanCluAvg = ((attrs.HAN||50) + (attrs.CLU||50)) / 2;
-  const tovVal = fga * 0.2 * (1.0 - af(hanCluAvg) * 0.4);
-  const tov = Math.round(Math.max(0.5, tovVal));
-  
-  var res = { pts, reb, ast, stl, blk, tov, fgm, fga, ftm, fta, threeM, threeA, mins };
-  syncUserStatsToBoxScore(gameResult, res);
-  return res;
 }
 
 function calcShotPct(type, attrVal, totalScore) {
