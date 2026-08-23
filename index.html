@@ -12223,6 +12223,29 @@ function getNarrativeRivalry() {
   return rivalry;
 }
 
+/** 宿敌剧情只能在宿敌当前实际所在的对手阵容中推进。 */
+function isNarrativeRivalAvailableAgainstTeam(rivalry, team) {
+  if (!rivalry || rivalry.active === false || !rivalry.playerId || !team) return false;
+  var current = findNarrativePlayer(rivalry.playerId);
+  return !!(current && current.team === team);
+}
+
+/** 赛季导演线可能跨比赛排队，开场时必须再次核对本场对手和宿敌身份。 */
+function isNarrativeRivalryThreadInGame(thread, ctx) {
+  if (!thread || ['rivalry', 'rivalry_reckoning'].indexOf(thread.kind) < 0) return true;
+  var opponent = ctx && ctx.game && ctx.game.opponent;
+  var payload = thread.payload || {};
+  var rivalry = getNarrativeRivalry();
+  // 新线程带有球员 ID，宿敌转队后把未开场线程迁移到球员的新球队。
+  if (payload.rivalId && rivalry && payload.rivalId === rivalry.playerId && payload.opponent !== rivalry.team) {
+    payload.opponent = rivalry.team;
+  }
+  if (!opponent || payload.opponent !== opponent) return false;
+  if (!isNarrativeRivalAvailableAgainstTeam(rivalry, opponent)) return false;
+  if (payload.rivalId && payload.rivalId !== rivalry.playerId) return false;
+  return true;
+}
+
 function bindNarrativeRival(player, team, tone, heat) {
   if (!STATE.career) return null;
   STATE.career.flags = STATE.career.flags || {};
@@ -12438,7 +12461,7 @@ function buildSeasonStoryThreads(theme) {
     if (reckoningGame) {
       threads.push(makeSeasonStoryThread(
         'rivalry_reckoning_s' + getNarrativeSeasonNumber(), 'rivalry_reckoning', '宿敌线：季后赛旧债', '🔥', reckoningGame, Math.min(78, reckoningGame + 16),
-        { opponent: rivalry.team, rivalName: rivalry.playerName || '对方核心', playoffLosses: rivalry.playoffLosses, debtState: rivalry.debtState }
+        { opponent: rivalry.team, rivalId: rivalry.playerId || null, rivalName: rivalry.playerName || '对方核心', playoffLosses: rivalry.playoffLosses, debtState: rivalry.debtState }
       ));
     }
   }
@@ -12678,9 +12701,10 @@ function updateSeasonNarrativeSignals(ctx) {
 }
 
 /** 非角色线会优先等待比赛给出导火索；到保底场次仍会推进，避免长线被赛程完全饿死。 */
-function isNarrativeThreadReadyToOpen(thread, gameNum, signals) {
+function isNarrativeThreadReadyToOpen(thread, gameNum, signals, ctx) {
   if (!thread || gameNum < (Number(thread.openingGame) || 99)) return false;
-  if (thread.kind === 'role' || thread.kind === 'rivalry' || thread.kind === 'rivalry_reckoning' || thread.kind === 'former_teammate' || thread.kind === 'reunited_teammate' || thread.kind === 'media' || thread.kind === 'locker_room') return true;
+  if (thread.kind === 'rivalry' || thread.kind === 'rivalry_reckoning') return isNarrativeRivalryThreadInGame(thread, ctx);
+  if (thread.kind === 'role' || thread.kind === 'former_teammate' || thread.kind === 'reunited_teammate' || thread.kind === 'media' || thread.kind === 'locker_room') return true;
   var wins = Number(signals && signals.winStreak) || 0;
   var losses = Number(signals && signals.lossStreak) || 0;
   var standout = Number(signals && signals.standoutStreak) || 0;
@@ -12729,7 +12753,7 @@ function queueGameDrivenRivalryThread(ctx) {
   var thread = makeSeasonStoryThread(
     'rivalry_escalation_s' + getNarrativeSeasonNumber(), 'rivalry', '宿敌线：' + (rivalry.playerName || '对方核心'), '⚔️',
     getEventGameNumber(), Math.min(78, getEventGameNumber() + 18),
-    { opponent: opponent, rivalName: rivalry.playerName || '对方核心' }
+    { opponent: opponent, rivalId: rivalry.playerId || null, rivalName: rivalry.playerName || '对方核心' }
   );
   events.storyThreads.push(thread);
   return thread;
@@ -13268,7 +13292,7 @@ function checkSeasonNarrativeDirector(ctx) {
   queueGameDrivenRivalryThread(ctx);
   if (!canShowDirectorEvent) return null;
   var opening = threads.find(function(thread) {
-    return thread && thread.state === 'queued' && isNarrativeThreadInCurrentTeamContext(thread) && isNarrativeThreadReadyToOpen(thread, gameNum, events.storySignals);
+    return thread && thread.state === 'queued' && isNarrativeThreadInCurrentTeamContext(thread) && isNarrativeThreadReadyToOpen(thread, gameNum, events.storySignals, ctx);
   });
   if (!opening) return null;
   var data = getDirectorThreadOpening(opening);
@@ -15033,7 +15057,7 @@ EVENT_REGISTRY.push({
   condition: function(ctx) {
     var rivalry = getNarrativeRivalry();
     if (!rivalry || rivalry.active === false || !rivalry.playerId || !ctx.game) return false;
-    if (rivalry.team !== ctx.game.opponent) return false;
+    if (!isNarrativeRivalAvailableAgainstTeam(rivalry, ctx.game.opponent)) return false;
     if (getEventGameNumber() - (rivalry.sinceGame || 0) < 8) return false;
     return rivalry.lastRematchSeason !== (STATE.career.seasonCount || 0);
   },

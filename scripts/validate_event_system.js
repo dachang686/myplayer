@@ -98,6 +98,8 @@ if (registryStart < 0 || registryEnd < 0) {
   const leagueData = {
     HOME: [{ id: 'home-star', cname: '故事队友', ovr: 87 }, { id: 'home-wing', cname: '轮换队友', ovr: 82 }],
     AWAY: [{ id: 'active-rival', cname: '现役宿敌', ovr: 90 }],
+    CHI: [{ id: 'chi-star', cname: '芝加哥核心', ovr: 88 }],
+    MIL: [{ id: 'stale-rival', cname: '希罗', ovr: 87 }],
   };
   const eventModule = new Function(
     'window',
@@ -151,6 +153,30 @@ if (registryStart < 0 || registryEnd < 0) {
     if (!rivalryRematch.condition({ game: { opponent: 'AWAY' } })) {
       failures.push('现役且在对手阵容中的宿敌无法触发再次相遇事件');
     }
+
+    // 已排队的旧宿敌线不能在当前对手不是宿敌所在球队时开场。
+    state.careerTeam = 'HOME';
+    state.career.flags = {
+      eventRivalry: { playerId: 'stale-rival', team: 'MIL', playerName: '希罗', active: true, sinceGame: 1 },
+    };
+    state.season = {
+      games: [], wins: 0, losses: 0, isPlayoffs: true, playoffStats: { games: 1 },
+      events: createEventState(0),
+    };
+    state.season.events.narrativeTeam = 'HOME';
+    state.season.events.seasonTheme = { id: 'rise', season: 1 };
+    state.season.events.storyThreads = [{
+      id: 'stale-rivalry', kind: 'rivalry', state: 'queued', openingGame: 1,
+      payload: { opponent: 'CHI', rivalName: '希罗' },
+    }];
+    if (rivalryRematch.condition({ game: { opponent: 'CHI' } })) {
+      failures.push('宿敌再会事件在芝加哥阵容没有宿敌时仍然触发');
+    }
+    const staleRivalryOpening = eventModule.checkSeasonNarrativeDirector({
+      game: { opponent: 'CHI' }, result: { won: false }, stats: {}, _narrativeSignalsUpdated: true,
+    });
+    if (staleRivalryOpening) failures.push('旧宿敌线在芝加哥阵容没有宿敌时仍然开场');
+    state.season.isPlayoffs = false;
   }
 
   const coachRoleMeeting = registry.find(item => item.id === 'career_coach_role_meeting');
