@@ -6,10 +6,10 @@
 var PLAYER_BUILD_TOTAL_ROUNDS = 14;
 var PLAYER_BUILD_MAX_REROLLS = 3;
 var PLAYER_BUILD_TIERS = Object.freeze({
-  core: Object.freeze({ key: 'core', label: '核心', count: 3, multiplier: 1.00, tone: 'core' }),
-  strong: Object.freeze({ key: 'strong', label: '强项', count: 3, multiplier: 0.92, tone: 'strong' }),
-  normal: Object.freeze({ key: 'normal', label: '普通', count: 4, multiplier: 0.84, tone: 'normal' }),
-  weak: Object.freeze({ key: 'weak', label: '弱项', count: 4, multiplier: 0.76, tone: 'weak' })
+  core: Object.freeze({ key: 'core', label: '核心', count: 4, multiplier: 1.00, tone: 'core' }),
+  strong: Object.freeze({ key: 'strong', label: '强项', count: 4, multiplier: 0.92, tone: 'strong' }),
+  normal: Object.freeze({ key: 'normal', label: '普通', count: 3, multiplier: 0.84, tone: 'normal' }),
+  weak: Object.freeze({ key: 'weak', label: '弱项', count: 3, multiplier: 0.76, tone: 'weak' })
 });
 var PLAYER_BUILD_TIER_ORDER = Object.freeze(['core', 'strong', 'normal', 'weak']);
 
