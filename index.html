@@ -29,6 +29,7 @@ window.open = function(){ return null; };
   <script src="js/translations.js"></script>
   <script src="js/i18n.js"></script>
   <link rel="stylesheet" href="css/draft.css">
+  <link rel="stylesheet" href="css/player-build.css">
   <style>
 /* ============================================================
    BuildPlayer — Mobile-First Game Edition
@@ -857,13 +858,13 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     <main class="home-shell">
       <section class="home-hero">
         <div class="home-eyebrow">本地单机生涯模拟</div>
-        <h1>自由建人，<br><span>打完整个生涯</span></h1>
-        <p>分配十四项能力，把独一无二的新秀带进漫长赛季。</p>
+        <h1>拼装球员，<br><span>打完整个生涯</span></h1>
+        <p>从 14 名现有球员身上各拿一项能力，拼出独一无二的新秀。</p>
       </section>
 
       <div class="home-loop" aria-label="游戏流程">
         <div class="home-loop-item"><b>01</b><strong>选位置</strong><small>确定场上角色</small></div>
-        <div class="home-loop-item"><b>02</b><strong>分配能力</strong><small>自由加点十四项属性</small></div>
+        <div class="home-loop-item"><b>02</b><strong>拼装能力</strong><small>14 轮各锁定一项属性</small></div>
         <div class="home-loop-item"><b>03</b><strong>跑生涯</strong><small>赛季、季后赛与休赛期</small></div>
       </div>
 
@@ -944,8 +945,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   <div class="screen" id="screen-build">
     <div class="build-header">
       <div>
-        <span class="build-kicker">ATTRIBUTE POINTS</span>
-        <h1>自由分配能力</h1>
+        <span class="build-kicker">PLAYER FORGE · 14 ROUNDS</span>
+        <h1>拼装你的球员</h1>
       </div>
       <div class="build-identity" id="build-pos-indicator"></div>
     </div>
@@ -1256,6 +1257,7 @@ const STATE = {
   // Build phase state
   buildStep: 'select',  // 'select' | 'spin' | 'pick'
   selectedAttr: null,   // currently selected attribute key
+  playerBuild: null,    // versioned 14-round builder history (current mode only)
   
   // 当前 spin
   currentTeam: null,    // 'LAL'
@@ -1888,7 +1890,7 @@ function initGame() {
     attrs: {}, attrSlots: {}, lockedCount: 0,
     buildPointsTotal: 0, buildPointsRemaining: 0,
     usedPlayers: [], _mustLockAfterSpin: false,
-    buildStep: 'select', noPlayerSelected: true,
+    buildStep: 'select', noPlayerSelected: true, playerBuild: null,
     currentTeam: null, currentRoster: [],
     _shownThisTeam: [], _rerollsLeft: 3, _teamsVisited: [],
     selectedPlayer: null, _locking: false,
@@ -1933,7 +1935,7 @@ function initGame() {
 // ==================== 玩法说明弹窗 ====================
 var _helpPage = 0;
 var _helpPages = [
-  { title: '建球员', content: '选择我的位置后，系统会随机发放 300 到 360 点能力点。十四项属性均从 50 起步，创建阶段单项最高 90；进入生涯后仍可继续成长。点数用完后按真实属性揭晓总评、模板风格和相似球员；位置会影响总评计算与赛场角色。' },
+  { title: '建球员', content: '填写名字并选择位置后，连续 14 轮抽取现有球员。每轮从当前球员的 14 项属性中选 1 项，再决定它是核心、强项、普通还是弱项；全程共有 3 次重新随机机会。14 轮结束后，系统会用最终属性计算总评，并进入生涯。' },
   { title: '赛季', content: '抽签决定我的生涯球队后进入赛季。系统根据我与队内同位置球员的总评比较判定首发或替补。每场比赛可点单场推进，也可点击日历日期批量模拟到当天。比赛数据根据属性和位置动态生成，方差较大，有爆发也有低迷。赛季中可随时点我的数据查看场均表现。' },
   { title: '生涯事件', content: '赛季事件分为伤病、纪律、职业剧情和生活花絮，各自拥有独立概率、冷却和赛季名额。部分事件会根据单场表现、球队战绩、合同阶段和季后赛形势触发，并提供会影响信任、声望、伤病风险或未来数场球队气势的选择。同一随机事件不会在一个赛季内重复，所有结果可在“我的数据—事件”中回看。' },
   { title: '季后赛', content: '常规赛结束后根据排名决定季后赛或附加赛资格。附加赛在七到十名之间进行，逐场淘汰。季后赛每轮七场四胜，我的系列赛会一场一场模拟，每场生成简报。点击简报可展开查看详细比分、我的数据和全队数据。一路赢下去直到总冠军。' },
@@ -2007,7 +2009,7 @@ function renderModeSelect() {
         </div>
         <span class="home-mode-tag">本地模式</span>
       </div>
-      <p class="home-launch-desc">创建一名球员，分配能力点，完整经历选秀、常规赛、季后赛和休赛期。</p>
+      <p class="home-launch-desc">创建一名球员，从现有球员身上逐项拼装能力，完整经历选秀、常规赛、季后赛和休赛期。</p>
       <fieldset class="home-engine-picker" aria-describedby="new-career-engine-help">
         <legend>比赛模拟引擎</legend>
         <div class="home-engine-options">
@@ -2182,19 +2184,7 @@ function confirmPosition() {
     renderTeamPicker();
     return;
   }
-  const buildConfig = SIM_CONFIG.BUILD;
-  const baseAttr = buildConfig.POINT_BUILD_BASE_ATTR;
-  STATE.attrs = {};
-  STATE.attrSlots = {};
-  ATTR_KEYS.forEach(key => { STATE.attrs[key] = baseAttr; });
-  STATE.lockedCount = ATTR_KEYS.length;
-  STATE.buildPointsTotal = buildConfig.POINT_BUILD_MIN_POINTS + Math.floor(Math.random() * (buildConfig.POINT_BUILD_MAX_POINTS - buildConfig.POINT_BUILD_MIN_POINTS + 1));
-  STATE.buildPointsRemaining = STATE.buildPointsTotal;
-  STATE.selectedPlayer = null;
-  STATE.currentTeam = null;
-  showScreen('screen-build');
-  renderBuildUI();
-  renderTeamPicker();
+  startDraftPlayerBuild();
 }
 
 // ==================== 3. 建球员 - LEFT-RIGHT SPLIT ====================
@@ -2204,6 +2194,10 @@ function renderBuildUI() {
   if (pi) pi.textContent = getMyPlayerDisplayName() + ' · ' + (SIM_CONFIG.POSITIONS[STATE.position] || STATE.position) + ' · ' + STATE.position;
   var legacyPi = document.getElementById('legacy-build-pos-indicator');
   if (legacyPi) legacyPi.textContent = getMyPlayerDisplayName() + ' · ' + (SIM_CONFIG.POSITIONS[STATE.position] || STATE.position) + ' · ' + STATE.position;
+  if (isDraftPlayerBuildActive()) {
+    renderDraftPlayerBuildUI();
+    return;
+  }
   renderLeftAttrs();
 }
 
@@ -2337,6 +2331,10 @@ function renderLeftAttrs() {
 
 /** Render slot machine — 3 buttons (no reroll limit, forced choice) */
 function renderTeamPicker() {
+  if (isDraftPlayerBuildActive()) {
+    renderDraftPlayerBuildUI();
+    return;
+  }
   if (isPointBuildActive()) {
     renderPointBuildAllocator();
     return;
@@ -3093,6 +3091,9 @@ function revealPlayer() {
     ${archHtml}
     ${top3Html}
   `;
+  if (typeof renderPlayerBuildRevealSummary === 'function' && STATE.playerBuild && STATE.playerBuild.status === 'complete') {
+    html('reveal-content').innerHTML += renderPlayerBuildRevealSummary();
+  }
 }
 
 function goToCareer() {
@@ -3911,6 +3912,7 @@ function saveBuildPlayerData(team) {
     position: STATE.position,
     finalOVR: STATE.finalOVR,
     attrs: {},
+    playerBuild: STATE.playerBuild ? JSON.parse(JSON.stringify(STATE.playerBuild)) : null,
   };
   SIM_CONFIG.ATTR_LIST.forEach(function(k) { playerData.attrs[k] = STATE.attrs[k] || null; });
   Storage.savePlayer(playerData).then(function(result) {
@@ -10349,7 +10351,9 @@ function manualLoadGame(slot, options) {
         if (!Number.isFinite(Number(STATE.attrs.STL))) STATE.attrs.STL = Number(STATE.attrs.PDEF) || 50;
         if (!Object.prototype.hasOwnProperty.call(STATE.attrSlots, 'STL')) STATE.attrSlots.STL = null;
         STATE.lockedCount = ATTR_KEYS.filter(function(key) { return STATE.attrs[key] !== null && STATE.attrs[key] !== undefined; }).length;
-         STATE.finalOVR = calcOVR(STATE.attrs, STATE.position);
+         STATE.finalOVR = STATE.playerBuild && STATE.playerBuild.status === 'in_progress'
+           ? 0
+           : calcOVR(STATE.attrs, STATE.position);
          ensureSeasonEventState();
         if (typeof reconcileCareerLegacyRecords === 'function') reconcileCareerLegacyRecords({ silent: true });
          // 页面刷新后原来的模拟定时器已不存在，恢复为可手动继续的状态。
@@ -10456,6 +10460,7 @@ function manualClearSave(slot) {
 }
 
 function resumeLoadedCareer(targetScreen) {
+  if (typeof resumePlayerBuildIfNeeded === 'function' && resumePlayerBuildIfNeeded()) return;
   var season = STATE.season || {};
   var draft = STATE.offseasonDraft || {};
   var phase = draft.phase;
@@ -11289,6 +11294,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 
+<script src="js/player_build_draft.js"></script>
 <script src="js/awards.js"></script>
 <script src="js/offseason.js"></script>
 <script src="js/draft.js"></script>

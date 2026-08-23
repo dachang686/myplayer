@@ -1,0 +1,475 @@
+/* ============================================================
+   PlayerBuildDraft - 14 轮随机球员拼装系统
+   当前“新建球员”专用；经典建人继续使用 index.html 内的旧逻辑。
+   ============================================================ */
+
+var PLAYER_BUILD_TOTAL_ROUNDS = 14;
+var PLAYER_BUILD_MAX_REROLLS = 3;
+var PLAYER_BUILD_TIERS = Object.freeze({
+  core: Object.freeze({ key: 'core', label: '核心', count: 3, multiplier: 1.00, tone: 'core' }),
+  strong: Object.freeze({ key: 'strong', label: '强项', count: 3, multiplier: 0.92, tone: 'strong' }),
+  normal: Object.freeze({ key: 'normal', label: '普通', count: 4, multiplier: 0.84, tone: 'normal' }),
+  weak: Object.freeze({ key: 'weak', label: '弱项', count: 4, multiplier: 0.76, tone: 'weak' })
+});
+var PLAYER_BUILD_TIER_ORDER = Object.freeze(['core', 'strong', 'normal', 'weak']);
+
+function calculatePlayerBuildFinalValue(baseValue, tierKey) {
+  var tier = PLAYER_BUILD_TIERS[tierKey];
+  var base = Number(baseValue);
+  if (!tier || !Number.isFinite(base)) return 0;
+  return Math.round(base * tier.multiplier);
+}
+
+function escapePlayerBuildText(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function createPlayerBuildState() {
+  return {
+    version: 4,
+    status: 'in_progress',
+    round: 1,
+    rerollsUsed: 0,
+    picks: [],
+    usedAttrs: [],
+    tiers: { core: 0, strong: 0, normal: 0, weak: 0 },
+    currentPlayer: null,
+    selectedAttr: null,
+    selectedTier: null,
+    error: ''
+  };
+}
+
+function getPlayerBuildTierCounts(build) {
+  if (!build.tiers || typeof build.tiers !== 'object') build.tiers = {};
+  PLAYER_BUILD_TIER_ORDER.forEach(function(tierKey) {
+    var count = Number(build.tiers[tierKey]);
+    build.tiers[tierKey] = Number.isFinite(count) ? Math.max(0, Math.floor(count)) : 0;
+  });
+  return build.tiers;
+}
+
+function ensurePlayerBuildState() {
+  var build = STATE.playerBuild;
+  if (!build || typeof build !== 'object' || Array.isArray(build)) return null;
+  if (!Array.isArray(build.picks)) build.picks = [];
+  if (!Array.isArray(build.usedAttrs)) build.usedAttrs = [];
+  getPlayerBuildTierCounts(build);
+  if (!Number.isFinite(Number(build.rerollsUsed))) build.rerollsUsed = 0;
+  build.rerollsUsed = Math.max(0, Math.min(PLAYER_BUILD_MAX_REROLLS, Math.floor(Number(build.rerollsUsed))));
+  if (!build.version) build.version = 4;
+  if (!build.status) build.status = 'in_progress';
+  if (build.status === 'in_progress') {
+    build.round = Math.max(1, Math.min(PLAYER_BUILD_TOTAL_ROUNDS, build.picks.length + 1));
+  }
+
+  var derivedAttrs = build.picks.map(function(pick) { return pick && pick.attr; }).filter(Boolean);
+  if (build.usedAttrs.length !== derivedAttrs.length || derivedAttrs.some(function(key) { return build.usedAttrs.indexOf(key) < 0; })) {
+    build.usedAttrs = derivedAttrs.slice();
+  }
+  STATE._rerollsLeft = Math.max(0, PLAYER_BUILD_MAX_REROLLS - build.rerollsUsed);
+  return build;
+}
+
+function isDraftPlayerBuildActive() {
+  var build = ensurePlayerBuildState();
+  return STATE.mode === 'current' && STATE.buildStep === 'player-draft' && !!build && build.status === 'in_progress';
+}
+
+function isDraftPlayerBuildComplete() {
+  var build = ensurePlayerBuildState();
+  return STATE.mode === 'current' && !!build && build.status === 'complete';
+}
+
+function getPlayerBuildPool() {
+  var pool = [];
+  var teams = typeof LEAGUE_TEAM_IDS !== 'undefined' && Array.isArray(LEAGUE_TEAM_IDS)
+    ? LEAGUE_TEAM_IDS
+    : (typeof LEAGUE_PLAYER_DATA !== 'undefined' ? Object.keys(LEAGUE_PLAYER_DATA) : []);
+  teams.forEach(function(team) {
+    var players = (typeof LEAGUE_PLAYER_DATA !== 'undefined' && LEAGUE_PLAYER_DATA[team]) || [];
+    players.forEach(function(player) {
+      if (!player || !player.id) return;
+      var complete = ATTR_KEYS.every(function(key) {
+        return Number.isFinite(Number(player[key]));
+      });
+      if (complete) pool.push({ team: team, player: player });
+    });
+  });
+  return pool;
+}
+
+function findPlayerBuildSource(source) {
+  if (!source || !source.id) return null;
+  var teams = source.team ? [source.team] : [];
+  if (typeof LEAGUE_TEAM_IDS !== 'undefined' && Array.isArray(LEAGUE_TEAM_IDS)) {
+    LEAGUE_TEAM_IDS.forEach(function(team) {
+      if (teams.indexOf(team) < 0) teams.push(team);
+    });
+  }
+  for (var i = 0; i < teams.length; i++) {
+    var players = (typeof LEAGUE_PLAYER_DATA !== 'undefined' && LEAGUE_PLAYER_DATA[teams[i]]) || [];
+    var player = players.find(function(item) { return item && item.id === source.id; });
+    if (player) return { team: teams[i], player: player };
+  }
+  return null;
+}
+
+function getCurrentPlayerBuildSource(build) {
+  return build && build.currentPlayer ? findPlayerBuildSource(build.currentPlayer) : null;
+}
+
+function drawNextPlayerBuildPlayer(excludeId) {
+  var build = ensurePlayerBuildState();
+  if (!build) return false;
+  var pool = getPlayerBuildPool();
+  if (!pool.length) {
+    build.error = '当前正式球员数据库没有可用的完整14项属性球员。';
+    renderDraftPlayerBuildUI();
+    return false;
+  }
+  var candidates = pool.length > 1 && excludeId
+    ? pool.filter(function(item) { return item.player.id !== excludeId; })
+    : pool;
+  if (!candidates.length) candidates = pool;
+  var picked = candidates[Math.floor(Math.random() * candidates.length)];
+  build.currentPlayer = { id: picked.player.id, team: picked.team };
+  build.round = build.picks.length + 1;
+  build.selectedAttr = null;
+  build.selectedTier = null;
+  build.error = '';
+  STATE.selectedPlayer = null;
+  STATE.currentTeam = null;
+  STATE.currentRoster = [];
+  STATE._mustLockAfterSpin = false;
+  return true;
+}
+
+function startDraftPlayerBuild() {
+  var build = createPlayerBuildState();
+  STATE.playerBuild = build;
+  STATE.buildStep = 'player-draft';
+  STATE.attrs = {};
+  STATE.attrSlots = {};
+  ATTR_KEYS.forEach(function(key) {
+    STATE.attrs[key] = null;
+    STATE.attrSlots[key] = null;
+  });
+  STATE.lockedCount = 0;
+  STATE.buildPointsTotal = 0;
+  STATE.buildPointsRemaining = 0;
+  STATE.usedPlayers = [];
+  STATE._rerollsLeft = PLAYER_BUILD_MAX_REROLLS;
+  STATE._teamsVisited = [];
+  STATE._shownThisTeam = [];
+  STATE.selectedPlayer = null;
+  STATE.currentTeam = null;
+  STATE.finalOVR = 0;
+  STATE.finalPosition = null;
+  STATE.finalArchetype = null;
+  drawNextPlayerBuildPlayer();
+  showScreen('screen-build');
+  renderBuildUI();
+  queuePlayerBuildSave();
+}
+
+function getPlayerBuildBaseValue(player, attrKey) {
+  var value = Number(player && player[attrKey]);
+  return Number.isFinite(value) ? Math.round(value) : 0;
+}
+
+function getPlayerBuildCurrentRound(build) {
+  return Math.min(PLAYER_BUILD_TOTAL_ROUNDS, build.picks.length + 1);
+}
+
+function isPlayerBuildAttrOwned(build, attrKey) {
+  return build.usedAttrs.indexOf(attrKey) >= 0;
+}
+
+function isPlayerBuildTierAvailable(build, tierKey) {
+  var tier = PLAYER_BUILD_TIERS[tierKey];
+  var counts = getPlayerBuildTierCounts(build);
+  if (!tier || counts[tierKey] >= tier.count) return false;
+
+  // 选择后剩余名额必须刚好覆盖剩余轮数，避免在最后几轮制造死局。
+  var nextCounts = Object.assign({}, counts);
+  nextCounts[tierKey]++;
+  var remainingRounds = PLAYER_BUILD_TOTAL_ROUNDS - (build.picks.length + 1);
+  var remainingSlots = PLAYER_BUILD_TIER_ORDER.reduce(function(total, key) {
+    return total + (PLAYER_BUILD_TIERS[key].count - nextCounts[key]);
+  }, 0);
+  return remainingSlots === remainingRounds;
+}
+
+function selectPlayerBuildAttribute(attrKey) {
+  if (!isDraftPlayerBuildActive() || ATTR_KEYS.indexOf(attrKey) < 0) return;
+  var build = ensurePlayerBuildState();
+  var source = getCurrentPlayerBuildSource(build);
+  if (!source || isPlayerBuildAttrOwned(build, attrKey)) return;
+  build.selectedAttr = attrKey;
+  build.selectedTier = null;
+  renderDraftPlayerBuildUI();
+  queuePlayerBuildSave();
+}
+
+function selectPlayerBuildTier(tierKey) {
+  if (!isDraftPlayerBuildActive() || !PLAYER_BUILD_TIERS[tierKey]) return;
+  var build = ensurePlayerBuildState();
+  if (!build.selectedAttr || !isPlayerBuildTierAvailable(build, tierKey)) return;
+  build.selectedTier = tierKey;
+  renderDraftPlayerBuildUI();
+  queuePlayerBuildSave();
+}
+
+function rerollPlayerBuildPlayer() {
+  if (!isDraftPlayerBuildActive()) return;
+  var build = ensurePlayerBuildState();
+  if (STATE._rerollsLeft <= 0 || !build.currentPlayer) return;
+  var currentId = build.currentPlayer.id;
+  STATE._rerollsLeft--;
+  build.rerollsUsed = PLAYER_BUILD_MAX_REROLLS - STATE._rerollsLeft;
+  if (!drawNextPlayerBuildPlayer(currentId)) {
+    STATE._rerollsLeft++;
+    build.rerollsUsed = PLAYER_BUILD_MAX_REROLLS - STATE._rerollsLeft;
+    return;
+  }
+  renderDraftPlayerBuildUI();
+  queuePlayerBuildSave();
+}
+
+function validateCompletedPlayerBuild(build) {
+  if (!build || build.picks.length !== PLAYER_BUILD_TOTAL_ROUNDS) return false;
+  if (new Set(build.usedAttrs).size !== ATTR_KEYS.length) return false;
+  if (ATTR_KEYS.some(function(key) { return build.usedAttrs.indexOf(key) < 0 || !Number.isFinite(Number(STATE.attrs[key])); })) return false;
+  return PLAYER_BUILD_TIER_ORDER.every(function(key) {
+    return build.tiers[key] === PLAYER_BUILD_TIERS[key].count;
+  });
+}
+
+function confirmPlayerBuildRound() {
+  if (!isDraftPlayerBuildActive()) return;
+  var build = ensurePlayerBuildState();
+  var source = getCurrentPlayerBuildSource(build);
+  var attrKey = build.selectedAttr;
+  var tierKey = build.selectedTier;
+  if (!source || !attrKey || !tierKey || isPlayerBuildAttrOwned(build, attrKey) || !isPlayerBuildTierAvailable(build, tierKey)) return;
+
+  var baseValue = getPlayerBuildBaseValue(source.player, attrKey);
+  var tier = PLAYER_BUILD_TIERS[tierKey];
+  var finalValue = calculatePlayerBuildFinalValue(baseValue, tierKey);
+  build.picks.push({
+    round: build.picks.length + 1,
+    sourcePlayerId: source.player.id,
+    sourcePlayerName: source.player.cname || source.player.name || source.player.id,
+    sourceTeam: source.team,
+    attr: attrKey,
+    baseValue: baseValue,
+    tier: tierKey,
+    multiplier: tier.multiplier,
+    finalValue: finalValue
+  });
+  build.usedAttrs.push(attrKey);
+  build.tiers[tierKey]++;
+  STATE.attrs[attrKey] = finalValue;
+  STATE.attrSlots[attrKey] = {
+    player: source.player.id,
+    team: source.team,
+    value: finalValue,
+    raw: baseValue,
+    penalty: 1,
+    capped: false,
+    tier: tierKey,
+    multiplier: tier.multiplier,
+    round: build.picks.length
+  };
+  STATE.lockedCount = build.picks.length;
+  STATE.selectedPlayer = null;
+  build.selectedAttr = null;
+  build.selectedTier = null;
+  build.error = '';
+
+  if (build.picks.length === PLAYER_BUILD_TOTAL_ROUNDS) {
+    if (!validateCompletedPlayerBuild(build)) {
+      build.error = '建人结果校验未通过，请检查属性和档位名额。';
+      renderDraftPlayerBuildUI();
+      return;
+    }
+    build.status = 'complete';
+    build.round = PLAYER_BUILD_TOTAL_ROUNDS;
+    build.currentPlayer = null;
+    STATE.buildStep = 'complete';
+    STATE.finalOVR = calcOVR(STATE.attrs, STATE.position);
+    STATE.finalPosition = STATE.position;
+    renderBuildUI();
+    revealPlayer();
+    queuePlayerBuildSave();
+    return;
+  }
+
+  drawNextPlayerBuildPlayer();
+  renderDraftPlayerBuildUI();
+  queuePlayerBuildSave();
+}
+
+function renderPlayerBuildTierCounters(build) {
+  return PLAYER_BUILD_TIER_ORDER.map(function(key) {
+    var tier = PLAYER_BUILD_TIERS[key];
+    var count = getPlayerBuildTierCounts(build)[key];
+    return '<div class="pb-tier-counter pb-tier-counter-' + tier.tone + '" data-build-tier-count="' + key + '">' +
+      '<span>' + tier.label + '</span><strong>' + count + '<small> / ' + tier.count + '</small></strong></div>';
+  }).join('');
+}
+
+function renderPlayerBuildAttributes(build, player) {
+  var selectedAttr = build.selectedAttr;
+  return ATTR_KEYS.map(function(attrKey) {
+    var owned = isPlayerBuildAttrOwned(build, attrKey);
+    var selected = selectedAttr === attrKey;
+    var value = getPlayerBuildBaseValue(player, attrKey);
+    var stateLabel = owned ? '已拥有' : (selected ? '已选' : '可选择');
+    var disabled = owned ? ' disabled' : '';
+    return '<button type="button" class="pb-attr-card' + (owned ? ' is-owned' : '') + (selected ? ' is-selected' : '') + '"' +
+      ' data-build-attr="' + attrKey + '" aria-pressed="' + (selected ? 'true' : 'false') + '"' + disabled +
+      ' onclick="selectPlayerBuildAttribute(\'' + attrKey + '\')">' +
+      '<span class="pb-attr-name">' + escapePlayerBuildText(attrCN(attrKey)) + '</span>' +
+      '<strong class="pb-attr-value">' + value + '</strong>' +
+      '<span class="pb-attr-state">' + stateLabel + '</span>' +
+      '</button>';
+  }).join('');
+}
+
+function renderPlayerBuildTierChooser(build, player) {
+  if (!build.selectedAttr) {
+    return '<div class="pb-tier-empty"><span class="pb-tier-empty-icon">↳</span><div><strong>先选一项属性</strong><small>再决定它要成为核心、强项、普通或弱项</small></div></div>';
+  }
+  var baseValue = getPlayerBuildBaseValue(player, build.selectedAttr);
+  return '<div class="pb-tier-options">' + PLAYER_BUILD_TIER_ORDER.map(function(key) {
+    var tier = PLAYER_BUILD_TIERS[key];
+    var count = getPlayerBuildTierCounts(build)[key];
+    var available = isPlayerBuildTierAvailable(build, key);
+    var selected = build.selectedTier === key;
+    var value = calculatePlayerBuildFinalValue(baseValue, key);
+    return '<button type="button" class="pb-tier-option pb-tier-option-' + tier.tone + (selected ? ' is-selected' : '') + (!available ? ' is-full' : '') + '"' +
+      ' data-build-tier="' + key + '" aria-pressed="' + (selected ? 'true' : 'false') + '"' + (!available ? ' disabled' : '') +
+      ' onclick="selectPlayerBuildTier(\'' + key + '\')">' +
+      '<span class="pb-tier-option-top"><strong>' + tier.label + '</strong><small>×' + tier.multiplier.toFixed(2) + '</small></span>' +
+      '<span class="pb-tier-option-value"><b>' + baseValue + '</b><span>→</span><strong>' + value + '</strong></span>' +
+      '<span class="pb-tier-option-foot">' + (available ? '剩余 ' + (tier.count - count) + ' 名额' : '名额已满') + '</span>' +
+      '</button>';
+  }).join('') + '</div>';
+}
+
+function renderPlayerBuildHistory(build) {
+  if (!build.picks.length) {
+    return '<div class="pb-history-empty"><span>14</span><div><strong>你的拼装结果会出现在这里</strong><small>每次确认一轮，就锁定一项来自当前球员的能力。</small></div></div>';
+  }
+  return '<div class="pb-history-groups">' + PLAYER_BUILD_TIER_ORDER.map(function(key) {
+    var tier = PLAYER_BUILD_TIERS[key];
+    var picks = build.picks.filter(function(pick) { return pick.tier === key; });
+    if (!picks.length) return '';
+    return '<section class="pb-history-group pb-history-group-' + tier.tone + '" data-build-history-tier="' + key + '">' +
+      '<div class="pb-history-group-head"><div><span class="pb-history-kicker">' + tier.label.toUpperCase() + '</span><strong>' + tier.label + ' ×' + tier.multiplier.toFixed(2) + '</strong></div><span>' + picks.length + ' / ' + tier.count + ' 项</span></div>' +
+      '<div class="pb-history-list">' + picks.map(function(pick) {
+        return '<div class="pb-history-row" data-build-pick-attr="' + pick.attr + '">' +
+          '<div><strong>' + escapePlayerBuildText(attrCN(pick.attr)) + '</strong><small>来源：' + escapePlayerBuildText(pick.sourcePlayerName) + '</small></div>' +
+          '<span><b>' + pick.baseValue + '</b><i>→</i><strong>' + pick.finalValue + '</strong></span>' +
+          '</div>';
+      }).join('') + '</div></section>';
+  }).join('') + '</div>';
+}
+
+function renderDraftPlayerBuildUI() {
+  var area = document.getElementById('point-build-area');
+  var history = document.getElementById('point-build-note');
+  var build = ensurePlayerBuildState();
+  if (!area || !build || build.status !== 'in_progress') return;
+  var source = getCurrentPlayerBuildSource(build);
+  if (!source) {
+    area.innerHTML = '<div class="pb-build-shell"><div class="pb-error-state"><strong>无法恢复当前球员</strong><span>正式球员数据库中找不到本轮来源。</span></div></div>';
+    if (history) history.innerHTML = renderPlayerBuildHistory(build);
+    return;
+  }
+  var player = source.player;
+  var round = getPlayerBuildCurrentRound(build);
+  var progress = Math.round((build.picks.length / PLAYER_BUILD_TOTAL_ROUNDS) * 100);
+  var canConfirm = !!build.selectedAttr && !!build.selectedTier && isPlayerBuildTierAvailable(build, build.selectedTier);
+  var teamName = typeof getTeamName === 'function' ? getTeamName(source.team) : source.team;
+  var position = player.pos || '位置未知';
+
+  area.innerHTML =
+    '<div class="pb-build-shell" data-build-round="' + round + '" data-build-status="in_progress">' +
+      '<div class="pb-round-strip">' +
+        '<div class="pb-round-copy"><span class="pb-round-kicker">PLAYER FORGE · ROUND ' + String(round).padStart(2, '0') + '</span><strong>第 ' + round + ' / ' + PLAYER_BUILD_TOTAL_ROUNDS + ' 轮</strong></div>' +
+        '<div class="pb-reroll-meter"><span>重抽</span><strong>' + STATE._rerollsLeft + ' <small>/ ' + PLAYER_BUILD_MAX_REROLLS + '</small></strong></div>' +
+      '</div>' +
+      '<div class="pb-progress-track" aria-label="建人进度"><span style="width:' + progress + '%"></span></div>' +
+      '<div class="pb-tier-counters" aria-label="档位名额">' + renderPlayerBuildTierCounters(build) + '</div>' +
+      '<section class="pb-source-section" aria-labelledby="pb-source-title">' +
+        '<div class="pb-section-head"><div><span class="pb-section-kicker">CURRENT SOURCE</span><h2 id="pb-source-title">本轮随机球员</h2></div><span class="pb-rule-copy">只能从当前球员拿 1 项</span></div>' +
+        '<div class="pb-source-card">' +
+          '<div class="pb-source-identity"><div class="pb-source-avatar">' + escapePlayerBuildText(String(player.cname || '?').slice(0, 1)) + '</div><div><strong>' + escapePlayerBuildText(player.cname || player.id) + '</strong><span>' + escapePlayerBuildText(position) + ' · ' + escapePlayerBuildText(teamName) + '</span></div><b class="pb-source-ovr"><small>OVR</small>' + (Number(player.ovr) || '—') + '</b></div>' +
+          '<div class="pb-source-divider"></div>' +
+          '<div class="pb-attr-grid" aria-label="当前球员14项属性">' + renderPlayerBuildAttributes(build, player) + '</div>' +
+        '</div>' +
+      '</section>' +
+      '<section class="pb-tier-section" aria-labelledby="pb-tier-title">' +
+        '<div class="pb-section-head"><div><span class="pb-section-kicker">CHOOSE A TIER</span><h2 id="pb-tier-title">' + (build.selectedAttr ? '选择「' + escapePlayerBuildText(attrCN(build.selectedAttr)) + '」的定位' : '为这项能力选择档位') + '</h2></div><span class="pb-rule-copy">确认后不可回头</span></div>' +
+        renderPlayerBuildTierChooser(build, player) +
+      '</section>' +
+      '<div class="pb-build-actions">' +
+        '<button type="button" class="pb-reroll-button" data-build-reroll onclick="rerollPlayerBuildPlayer()"' + (STATE._rerollsLeft > 0 ? '' : ' disabled') + '><span>↻</span>重新随机 <small>剩余 ' + STATE._rerollsLeft + ' 次</small></button>' +
+        '<button type="button" class="pb-confirm-button" data-build-confirm onclick="confirmPlayerBuildRound()"' + (canConfirm ? '' : ' disabled') + '>' + (round === PLAYER_BUILD_TOTAL_ROUNDS ? '确认并完成拼装' : '确认本轮，进入下一轮') + '<span>→</span></button>' +
+      '</div>' +
+      '<p class="pb-build-footnote" aria-live="polite">' + (build.error ? escapePlayerBuildText(build.error) : '锁定一项属性和一个档位后，系统会自动抽取下一名球员。') + '</p>' +
+    '</div>';
+  if (history) {
+    history.innerHTML = '<section class="pb-history-section" aria-labelledby="pb-history-title"><div class="pb-section-head"><div><span class="pb-section-kicker">LOCKED PICKS</span><h2 id="pb-history-title">已获得属性 <small>' + build.picks.length + ' / ' + PLAYER_BUILD_TOTAL_ROUNDS + '</small></h2></div><span class="pb-rule-copy">已锁定不可更换</span></div>' + renderPlayerBuildHistory(build) + '</section>';
+  }
+}
+
+function renderPlayerBuildRevealSummary() {
+  var build = ensurePlayerBuildState();
+  if (!build || build.status !== 'complete') return '';
+  return '<section class="pb-final-summary" aria-labelledby="pb-final-summary-title"><div class="pb-final-summary-head"><div><span class="pb-section-kicker">BUILD LOG · VERSION ' + build.version + '</span><h2 id="pb-final-summary-title">14轮拼装记录</h2></div><span class="pb-final-summary-check">✓ 已完成</span></div>' + renderPlayerBuildHistory(build) + '</section>';
+}
+
+function queuePlayerBuildSave() {
+  if (typeof autoSaveGame !== 'function' || !STATE.career || STATE.career.retired) return;
+  if (queuePlayerBuildSave.timer) clearTimeout(queuePlayerBuildSave.timer);
+  queuePlayerBuildSave.pending = true;
+  queuePlayerBuildSave.timer = setTimeout(function flushPlayerBuildSave() {
+    queuePlayerBuildSave.timer = null;
+    if (!queuePlayerBuildSave.pending || queuePlayerBuildSave.inFlight) return;
+    queuePlayerBuildSave.pending = false;
+    queuePlayerBuildSave.inFlight = true;
+    Promise.resolve(autoSaveGame()).catch(function(error) {
+      console.warn('[PlayerBuild] 建人进度保存失败:', error && error.message ? error.message : error);
+    }).then(function() {
+      queuePlayerBuildSave.inFlight = false;
+      if (queuePlayerBuildSave.pending) queuePlayerBuildSave();
+    });
+  }, 120);
+}
+
+function resumePlayerBuildIfNeeded() {
+  var build = ensurePlayerBuildState();
+  if (STATE.mode !== 'current' || !build) return false;
+  if (build.status === 'in_progress' && STATE.buildStep === 'player-draft') {
+    showScreen('screen-build');
+    renderBuildUI();
+    return true;
+  }
+  if (build.status === 'complete' && !STATE.careerTeam && !(STATE.season && STATE.season.schedule)) {
+    revealPlayer();
+    return true;
+  }
+  return false;
+}
+
+window.PLAYER_BUILD_TIERS = PLAYER_BUILD_TIERS;
+window.calculatePlayerBuildFinalValue = calculatePlayerBuildFinalValue;
