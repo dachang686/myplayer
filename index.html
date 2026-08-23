@@ -1149,9 +1149,21 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 <script src="js/career_legacy_records.js"></script>
 <script>
 // ── Storage 工具 ──
+function getUtf8ByteLength(value) {
+  var text = String(value == null ? '' : value);
+  try {
+    if (typeof TextEncoder !== 'undefined') return new TextEncoder().encode(text).byteLength;
+    if (typeof Blob !== 'undefined') return new Blob([text]).size;
+    return encodeURIComponent(text).replace(/%[0-9A-F]{2}/gi, 'x').length;
+  } catch (error) {
+    return text.length;
+  }
+}
+
 var Storage = {
   MAX_VALUE_BYTES: 200 * 1024,
   MAX_PLAYER_HISTORY: 64,
+  getUtf8ByteLength: getUtf8ByteLength,
   _ready: null,
   waitForReady: function(cb) {
     if (!Storage._ready) Storage._ready = Promise.resolve();
@@ -1171,7 +1183,7 @@ var Storage = {
         if (!Storage._validateKey(key)) { return Promise.resolve({ ok: false, reason: 'invalid_key' }); }
       }
       var serialized = JSON.stringify(data);
-      if (serialized.length > Storage.MAX_VALUE_BYTES) {
+      if (getUtf8ByteLength(serialized) > Storage.MAX_VALUE_BYTES) {
         return Promise.resolve({ ok: false, reason: 'size_limit' });
       }
       return Promise.all(Object.keys(data).map(function(key) {
@@ -10049,7 +10061,9 @@ function refreshManualSaveMeta() {
   });
 }
 
-function buildManualFingerprint(s) {
+var MANUAL_SAVE_VERSION = 5;
+
+function buildLegacyManualFingerprint(s) {
   var c = s.career || {};
   var sp = (s.season && s.season.playerStats) || {};
   return {
@@ -10062,6 +10076,45 @@ function buildManualFingerprint(s) {
     wins: (s.season && s.season.wins) || 0,
     honors: (c.honors || []).length
   };
+}
+
+function stableManualSerialize(value) {
+  if (value === null) return 'null';
+  if (Array.isArray(value)) return '[' + value.map(stableManualSerialize).join(',') + ']';
+  if (typeof value === 'object') {
+    return '{' + Object.keys(value).sort().map(function(key) {
+      return JSON.stringify(key) + ':' + stableManualSerialize(value[key]);
+    }).join(',') + '}';
+  }
+  if (typeof value === 'number' && !Number.isFinite(value)) return 'null';
+  return JSON.stringify(value);
+}
+
+function hashManualPayload(text) {
+  var hash = 2166136261;
+  for (var i = 0; i < text.length; i++) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
+function getManualFingerprintPayload(snapshot) {
+  return {
+    v: snapshot.v,
+    screen: snapshot.screen || '',
+    localPlayerProfile: snapshot.localPlayerProfile || {},
+    state: snapshot.state || {},
+    league: snapshot.league || {},
+    ages: snapshot.ages || {},
+    genes: snapshot.genes || {},
+    rookieState: snapshot.rookieState || {},
+    rng: snapshot.rng == null ? null : snapshot.rng
+  };
+}
+
+function buildManualFingerprint(snapshot) {
+  return hashManualPayload(stableManualSerialize(getManualFingerprintPayload(snapshot)));
 }
 
 function buildManualSaveSnapshot() {
@@ -10082,8 +10135,8 @@ function buildManualSaveSnapshot() {
   if (STATE.season && STATE.season._processedDays instanceof Set) {
     rawState.season._processedDays = Array.from(STATE.season._processedDays);
   }
-  return {
-    v: 4,
+  var snapshot = {
+    v: MANUAL_SAVE_VERSION,
     savedAt: Date.now(),
     label: (STATE.career ? '第' + (STATE.career.seasonCount + 1) + '赛季 · ' + STATE.career.currentAge + '岁' : '未开始'),
     screen: (document.querySelector('.screen.active') || {}).id || '',
@@ -10103,8 +10156,10 @@ function buildManualSaveSnapshot() {
       rookieNameSeq: _rookieNameSeq || 0
     },
     rng: JSON.parse(JSON.stringify(_rngState)),
-    fingerprint: buildManualFingerprint(STATE)
+    fingerprint: ''
   };
+  snapshot.fingerprint = buildManualFingerprint(snapshot);
+  return snapshot;
 }
 
 function bytesToB64(bytes) {
@@ -10257,12 +10312,22 @@ function manualLoadGame(slot, options) {
     }
     var data;
     try { data = typeof raw === 'string' ? JSON.parse(raw) : raw; } catch(e) { showManualSaveToast('自动存档损坏'); return; }
-    function restoreJson(text) {
-      var snap;
-      try { snap = JSON.parse(text); } catch(e) { showManualSaveToast('自动存档损坏'); return; }
-      if (!snap || !snap.state) { showManualSaveToast('自动存档损坏'); return; }
-      try {
-        if (snap.fingerprint && JSON.stringify(snap.fingerprint) !== JSON.stringify(buildManualFingerprint(snap.state))) {
+      function restoreJson(text) {
+        var snap;
+        try { snap = JSON.parse(text); } catch(e) { showManualSaveToast('自动存档损坏'); return; }
+        if (!snap || !snap.state) { showManualSaveToast('自动存档损坏'); return; }
+        try {
+        var saveVersion = Number(snap.v || 1);
+        if (!Number.isInteger(saveVersion) || saveVersion < 1 || saveVersion > MANUAL_SAVE_VERSION) {
+          throw new Error('存档版本不受支持');
+        }
+        if (saveVersion >= MANUAL_SAVE_VERSION) {
+          if (typeof snap.fingerprint !== 'string' || snap.fingerprint !== buildManualFingerprint(snap)) {
+            throw new Error('存档完整性校验失败');
+          }
+        } else if (snap.fingerprint && typeof snap.fingerprint === 'object' &&
+            JSON.stringify(snap.fingerprint) !== JSON.stringify(buildLegacyManualFingerprint(snap.state))) {
+          // 兼容 v4 及更早版本的旧版部分 fingerprint；新存档使用完整 payload checksum。
           throw new Error('存档完整性校验失败');
         }
         // STATE 与 LEAGUE_PLAYER_DATA 是 const，只能原地清空后填充，保证所有引用仍然有效
