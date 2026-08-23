@@ -332,8 +332,10 @@
     var effectiveFin = rawFin.map(offenseMetric);
     var effectiveDnk = rawDnk.map(offenseMetric);
     var str = rawStr.slice();
-    var reb = rawReb.slice();
     var effectiveReb = rawReb.map(defenseMetric);
+    var reb = rawReb.map(function(value, index) {
+      return value * 0.70 + effectiveReb[index] * 0.30;
+    });
     var pdef = rawPdef.map(defenseMetric);
     var idef = rawIdef.map(defenseMetric);
     var stl = rawStl.map(defenseMetric);

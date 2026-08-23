@@ -477,8 +477,6 @@ function renderDraftPlayerBuildUI() {
   var round = getPlayerBuildCurrentRound(build);
   var progress = Math.round((build.picks.length / PLAYER_BUILD_TOTAL_ROUNDS) * 100);
   var canConfirm = !!build.selectedAttr && !!build.selectedTier && isPlayerBuildTierAvailable(build, build.selectedTier);
-  var teamName = typeof getTeamName === 'function' ? getTeamName(source.team) : source.team;
-  var position = player.pos || '位置未知';
 
   area.innerHTML =
     '<div class="pb-build-shell" data-build-round="' + round + '" data-build-status="in_progress">' +
@@ -492,8 +490,6 @@ function renderDraftPlayerBuildUI() {
         '<div class="pb-section-head"><div><span class="pb-section-kicker">CURRENT SOURCES · 2 PLAYERS</span><h2 id="pb-source-title">本轮随机2名球员</h2></div><span class="pb-rule-copy">点击切换来源，再拿 1 项</span></div>' +
         '<div class="pb-source-card">' +
           renderPlayerBuildSourceSwitcher(build, sources) +
-          '<div class="pb-source-selection-label">当前使用的球员</div>' +
-          '<div class="pb-source-identity"><div class="pb-source-avatar">' + escapePlayerBuildText(String(player.cname || '?').slice(0, 1)) + '</div><div><strong>' + escapePlayerBuildText(player.cname || player.id) + '</strong><span>' + escapePlayerBuildText(position) + ' · ' + escapePlayerBuildText(teamName) + '</span></div><b class="pb-source-ovr"><small>OVR</small>' + (Number(player.ovr) || '—') + '</b></div>' +
           '<div class="pb-source-divider"></div>' +
           '<div class="pb-attr-grid" aria-label="当前球员14项属性">' + renderPlayerBuildAttributes(build, player) + '</div>' +
         '</div>' +
