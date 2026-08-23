@@ -11,6 +11,7 @@ const games = gamesArgument
 if (!['smoke', 'statistical'].includes(mode)) {
   throw new Error(`未知校准模式：${mode}，可选 smoke/statistical`);
 }
+const isStatistical = mode === 'statistical';
 
 const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const v2Source = fs.readFileSync(path.join(root, 'js', 'simulation_v2.js'), 'utf8');
@@ -85,7 +86,7 @@ const positions = ['PG', 'SG', 'SF', 'PF', 'C', 'PG/SG', 'SF/PF', 'C/PF', 'SG/SF
 const minutes = [36, 34, 32, 30, 28, 24, 20, 16, 12, 8];
 const sourceTeam = leagueData.LEAGUE_TEAM_IDS[0];
 
-function makeSyntheticTeam(id, offenseLevel, defenseLevel) {
+function makeSyntheticTeam(id, offenseLevel, defenseLevel, attributePatch) {
   const players = JSON.parse(JSON.stringify(leagueData.LEAGUE_PLAYER_DATA[sourceTeam].slice(0, 10)));
   players.forEach((player, index) => {
     player.id = `${id}-${index}`;
@@ -99,6 +100,7 @@ function makeSyntheticTeam(id, offenseLevel, defenseLevel) {
     if (defenseLevel != null) {
       ['PDEF', 'STL', 'IDEF', 'BLK', 'REB'].forEach(key => { player[key] = defenseLevel; });
     }
+    Object.assign(player, attributePatch || {});
   });
   leagueData.LEAGUE_PLAYER_DATA[id] = players;
   return id;
@@ -179,8 +181,52 @@ const report = scenarios.map((scenario, index) => {
   };
 });
 
+const archetypeScenarios = [
+  { label: '纯三分 +19', patch: { threePT: 99 } },
+  { label: '纯中投 +19', patch: { MID: 99 } },
+  { label: '纯终结 +19', patch: { FIN: 99 } },
+  { label: '纯护球 +19', patch: { HAN: 99 } },
+  { label: '纯传球 +19', patch: { PAS: 99 } },
+  { label: '纯外防 +19', patch: { PDEF: 99 } },
+  { label: '纯内防 +19', patch: { IDEF: 99 } },
+];
+const archetypeReport = isStatistical ? archetypeScenarios.map((scenario, index) => {
+  const team = makeSyntheticTeam(`V2_CALIBRATION_ARCHETYPE_${index}`, null, null, scenario.patch);
+  const prepared = { [team]: fixedRotation(team), [control]: fixedRotation(control) };
+  const first = runGame(team, control, prepared, 600000 + index * 10000);
+  let wins = 0;
+  let estimatedWinRate = 0;
+  let invariantErrors = 0;
+  for (let game = 0; game < games; game++) {
+    const resultA = runGame(team, control, prepared, 600000 + index * 10000 + game);
+    const resultB = runGame(control, team, prepared, 700000 + index * 10000 + game);
+    if (resultA.won) wins++;
+    if (!resultB.won) wins++;
+    estimatedWinRate += resultA.estimatedWinProb + (1 - resultB.estimatedWinProb);
+    [[team, control, resultA], [control, team, resultB]].forEach(([teamA, teamB, result]) => {
+      const rowsA = result.boxScore[teamA] || [];
+      const rowsB = result.boxScore[teamB] || [];
+      if (result.scoreA !== sum(rowsA, 'pts') || result.scoreB !== sum(rowsB, 'pts')
+        || result.won !== (result.scoreA > result.scoreB)
+        || sum(rowsA, 'mins') !== 240 + (Number(result.ot) || 0) * 25
+        || sum(rowsB, 'mins') !== 240 + (Number(result.ot) || 0) * 25) {
+        invariantErrors++;
+      }
+    });
+  }
+  const sampleCount = games * 2;
+  return {
+    label: scenario.label,
+    games: sampleCount,
+    rawAttackGap: Number((first.teamA.power.offense - first.teamB.power.offense).toFixed(4)),
+    pregameAttackGap: Number((first.teamA.power.pregameOffense - first.teamB.power.pregameOffense).toFixed(4)),
+    estimatedWinRate: Number((estimatedWinRate / sampleCount * 100).toFixed(2)),
+    empiricalWinRate: Number((wins / sampleCount * 100).toFixed(2)),
+    invariantErrors,
+  };
+}) : [];
+
 const failures = [];
-const isStatistical = mode === 'statistical';
 report.forEach(row => {
   const scenario = scenarios.find(item => item.label === row.label);
   const empirical = row.empiricalWinRate / 100;
@@ -193,6 +239,12 @@ report.forEach(row => {
   }
   if (Math.abs(empirical - estimated) > (isStatistical ? 0.02 : 0.08)) {
     failures.push(`${row.label} 预计/实测胜率偏差过大：${row.estimatedWinRate}% vs ${row.empiricalWinRate}%`);
+  }
+});
+archetypeReport.forEach(row => {
+  if (row.invariantErrors > 0) failures.push(`${row.label} 存在比分/分钟守恒错误：${row.invariantErrors}`);
+  if (Math.abs(row.empiricalWinRate - row.estimatedWinRate) > 2.0) {
+    failures.push(`${row.label} 类型校准偏差过大：${row.estimatedWinRate}% vs ${row.empiricalWinRate}%`);
   }
 });
 const monotonicGroups = [
@@ -209,7 +261,7 @@ if (isStatistical) {
   });
 }
 
-console.log(JSON.stringify({ mode, gamesPerOrientation: games, report }, null, 2));
+console.log(JSON.stringify({ mode, gamesPerOrientation: games, report, archetypeReport }, null, 2));
 if (failures.length) {
   throw new Error(`V2 攻防胜率校准失败：${failures.join('；')}`);
 }

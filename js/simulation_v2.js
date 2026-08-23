@@ -347,6 +347,38 @@
     var volumeRim = players.map(function(_, index) {
       return 0.22 + fin[index] * 0.32 + dnk[index] * 0.18 + ath[index] * 0.10 + str[index] * 0.06;
     });
+    // 赛前预测不能把最高威胁区域简单视为同值：三分和中投的命中各代表
+    // 不同的得分价值。这里使用中性防守下的每次机会期望得分，只服务于
+    // pregameAttack；实际比赛事件仍读取下方的原有机会与有效能力。
+    var rawShotValue = players.map(function(_, index) {
+      var volumeTotal = volumeThree[index] + volumeMid[index] + volumeRim[index] || 1;
+      var rimAttack = volumeRim[index] / volumeTotal;
+      var neutralThreePct = clamp(0.255 + rawThree[index] * 0.210, 0.20, 0.58);
+      var neutralMidPct = clamp(0.300 + rawMid[index] * 0.170, 0.23, 0.60);
+      var neutralRimPct = clamp(
+        0.400 + rawFin[index] * 0.200 + rawDnk[index] * 0.040
+          + ath[index] * 0.025 + rawStr[index] * 0.035,
+        0.28, 0.72,
+      );
+      var neutralFreeThrowRate = clamp(
+        0.095 + rimAttack * 0.070 + rawCreation[index] * 0.022 - 0.50 * 0.015,
+        0.075, 0.185,
+      );
+      var neutralFreeThrowPct = clamp(
+        0.60 + (rawThree[index] * 0.52 + rawMid[index] * 0.48) * 0.30,
+        0.56, 0.94,
+      );
+      return volumeThree[index] / volumeTotal * neutralThreePct * 3
+        + volumeMid[index] / volumeTotal * neutralMidPct * 2
+        + volumeRim[index] / volumeTotal * neutralRimPct * 2
+        + neutralFreeThrowRate * neutralFreeThrowPct;
+    });
+    var pregameAttack = rawAttack.map(function(value, index) {
+      // 0.57 约等于统一进攻提升时的 shotValue/rawThreat 增量比；
+      // 用得分威胁而非完整 rawAttack 做基准，避免把护球/创造能力误抵消。
+      var shotShapeResidual = rawShotValue[index] - rawThreat[index] * 0.57;
+      return value + shotShapeResidual * 1.20 + rawPas[index] * 0.05;
+    });
     var rimAbility = players.map(function(_, index) {
       return fin[index] * 0.55 + dnk[index] * 0.20 + ath[index] * 0.13 + str[index] * 0.12;
     });
@@ -464,6 +496,7 @@
       // 保留原始攻防评分供赛前 expectedMargin 使用；比赛事件读取下方的
       // 压缩后有效能力，避免同一属性差在多个事件层被重复放大。
       attack: weightedMean(rawAttack, weights),
+      pregameAttack: weightedMean(pregameAttack, weights),
       effectiveAttack: weightedMean(threat.map(function(value, index) {
         return value * 0.58 + creation[index] * 0.27 + ath[index] * 0.15;
       }), weights),
@@ -975,7 +1008,8 @@
       delete line._twoA; delete line._twoM; delete line._rimA; delete line._blocked;
       delete line._missedField; delete line._missedFt;
     });
-    var directEdge = (first.attack - second.attack) * 23 + (first.defense - second.defense) * 13.5;
+    var directEdge = (first.pregameAttack - second.pregameAttack) * 23
+      + (first.defense - second.defense) * 13.5;
     var homeCourtEdge = (homeA - homeB) * 100;
     var seedBonusEdge = Number(seedBonus || 0) * 0.5;
     var eventTeamMarginEdge = activeEventEdge * 0.4;
@@ -999,8 +1033,8 @@
       highlight: highlight,
       keyEvents: keyEvents,
       ot: overtime,
-      teamA: { power: { overall: null, offense: first.attack * 100, defense: first.defense * 100, rotationMinutes: totalLinesA.map(function(line) { return line.mins; }) } },
-      teamB: { power: { overall: null, offense: second.attack * 100, defense: second.defense * 100, rotationMinutes: totalLinesB.map(function(line) { return line.mins; }) } },
+      teamA: { power: { overall: null, offense: first.attack * 100, pregameOffense: first.pregameAttack * 100, defense: first.defense * 100, rotationMinutes: totalLinesA.map(function(line) { return line.mins; }) } },
+      teamB: { power: { overall: null, offense: second.attack * 100, pregameOffense: second.pregameAttack * 100, defense: second.defense * 100, rotationMinutes: totalLinesB.map(function(line) { return line.mins; }) } },
       pace: basePace,
       possPerQ: Math.round(basePace / 4),
       isHomeA: isHomeA,
@@ -1012,6 +1046,8 @@
         rosterEdge: 0,
         rawMatchupEdge: directEdge,
         matchupEdge: directEdge,
+        pregameAttackGap: first.pregameAttack - second.pregameAttack,
+        pregameDefenseGap: first.defense - second.defense,
         rawStarEdge: 0,
         starEdge: 0,
         seasonFormEdge: 0,
