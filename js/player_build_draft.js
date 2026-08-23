@@ -429,25 +429,6 @@ function renderPlayerBuildTierChooser(build, player) {
   }).join('') + '</div>';
 }
 
-function renderPlayerBuildHistory(build) {
-  if (!build.picks.length) {
-    return '<div class="pb-history-empty"><span>14</span><div><strong>你的拼装结果会出现在这里</strong><small>每次确认一轮，就锁定一项来自当前球员的能力。</small></div></div>';
-  }
-  return '<div class="pb-history-groups">' + PLAYER_BUILD_TIER_ORDER.map(function(key) {
-    var tier = PLAYER_BUILD_TIERS[key];
-    var picks = build.picks.filter(function(pick) { return pick.tier === key; });
-    if (!picks.length) return '';
-    return '<section class="pb-history-group pb-history-group-' + tier.tone + '" data-build-history-tier="' + key + '">' +
-      '<div class="pb-history-group-head"><div><span class="pb-history-kicker">' + tier.label.toUpperCase() + '</span><strong>' + tier.label + ' ×' + tier.multiplier.toFixed(2) + '</strong></div><span>' + picks.length + ' / ' + tier.count + ' 项</span></div>' +
-      '<div class="pb-history-list">' + picks.map(function(pick) {
-        return '<div class="pb-history-row" data-build-pick-attr="' + pick.attr + '">' +
-          '<div><strong>' + escapePlayerBuildText(attrCN(pick.attr)) + '</strong><small>来源：' + escapePlayerBuildText(pick.sourcePlayerName) + '</small></div>' +
-          '<span><b>' + pick.baseValue + '</b><i>→</i><strong>' + pick.finalValue + '</strong></span>' +
-          '</div>';
-      }).join('') + '</div></section>';
-  }).join('') + '</div>';
-}
-
 function renderPlayerBuildSourceSwitcher(build, sources) {
   return '<div class="pb-source-switcher" role="group" aria-label="本轮随机的两名球员">' + sources.map(function(source, index) {
     var player = source.player;
@@ -463,14 +444,12 @@ function renderPlayerBuildSourceSwitcher(build, sources) {
 
 function renderDraftPlayerBuildUI() {
   var area = document.getElementById('player-build-area');
-  var history = document.getElementById('player-build-history');
   var build = ensurePlayerBuildState();
   if (!area || !build || build.status !== 'in_progress') return;
   var sources = getPlayerBuildSources(build);
   var source = getCurrentPlayerBuildSource(build);
   if (!source || sources.length < 2) {
     area.innerHTML = '<div class="pb-build-shell"><div class="pb-error-state"><strong>无法恢复本轮球员</strong><span>正式球员数据库中找不到两名可用的完整属性球员。</span></div></div>';
-    if (history) history.innerHTML = '';
     return;
   }
   var player = source.player;
@@ -504,15 +483,6 @@ function renderDraftPlayerBuildUI() {
       '</div>' +
       '<p class="pb-build-footnote" aria-live="polite">' + (build.error ? escapePlayerBuildText(build.error) : '锁定一项属性和一个档位后，系统会自动抽取下一名球员。') + '</p>' +
     '</div>';
-  if (history) {
-    history.innerHTML = '';
-  }
-}
-
-function renderPlayerBuildRevealSummary() {
-  var build = ensurePlayerBuildState();
-  if (!build || build.status !== 'complete') return '';
-  return '<section class="pb-final-summary" aria-labelledby="pb-final-summary-title"><div class="pb-final-summary-head"><div><span class="pb-section-kicker">BUILD LOG · VERSION ' + build.version + '</span><h2 id="pb-final-summary-title">14轮拼装记录</h2></div><span class="pb-final-summary-check">✓ 已完成</span></div>' + renderPlayerBuildHistory(build) + '</section>';
 }
 
 function queuePlayerBuildSave() {

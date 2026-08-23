@@ -469,14 +469,14 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .season-team-player.is-user .season-team-ovr{color:var(--gold)!important}
 @media (max-width:420px){.season-team-roster{padding-inline:8px}.season-team-roster-table{min-width:312px}.season-team-roster-table col.season-team-col-age{width:38px}.season-team-roster-table col.season-team-col-metric{width:33px}.season-team-roster-table col.season-team-col-ovr{width:37px}.season-team-player-cell{gap:4px}.season-team-avatar{width:24px;height:24px;flex-basis:24px}}
 .season-team-stats{padding:8px 12px 12px;overflow-x:auto}
-.season-team-stats-head,.season-team-stat-row{display:grid;grid-template-columns:minmax(132px,1fr) 34px 48px repeat(3,42px);gap:5px;align-items:center;min-width:365px}
+.season-team-stats-head,.season-team-stat-row{display:grid;grid-template-columns:minmax(132px,1fr) 34px 48px repeat(5,42px);gap:5px;align-items:center;min-width:459px}
 .season-team-stats-head{padding:5px 6px;color:var(--text-muted);font-size:9px;text-align:right}
 .season-team-stats-head span:first-child{text-align:left}
 .season-team-stat-row{min-height:38px;padding:6px;border-bottom:1px solid var(--border-light);font:600 11px var(--font-display);text-align:right}
 .season-team-stat-row.is-user{background:var(--orange-dim);border:0;border-radius:8px;color:var(--orange)}
 .season-team-stat-player{min-width:0;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .season-team-stat-player small{margin-right:5px;color:var(--text-muted);font-size:9px}
-@media (max-width:420px){.season-team-stats-head,.season-team-stat-row{grid-template-columns:minmax(100px,1fr) 30px 43px repeat(3,35px);gap:3px;min-width:293px}}
+@media (max-width:420px){.season-team-stats-head,.season-team-stat-row{grid-template-columns:minmax(100px,1fr) 30px 43px repeat(5,35px);gap:3px;min-width:363px}}
 .season-rankings-page{padding:10px 10px 20px}
 .season-rankings-heading{padding:3px 2px 10px;font:700 20px var(--font-display);color:var(--text)}
 .season-rankings-heading small{display:block;margin-top:4px;color:var(--text-muted);font:400 10px var(--font-body)}
@@ -526,27 +526,24 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .build-edit-btn{position:absolute;top:10px;right:16px;z-index:10;width:32px;height:32px;border:none;border-radius:50%;background:var(--bg-card);border:1.5px solid var(--border);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all .15s;box-shadow:var(--shadow)}
 .build-edit-btn:active{transform:scale(0.92);border-color:var(--orange)}
 .modal-body{padding:8px 10px 12px;overflow-x:auto}
-.st-hdr,.st-row{display:grid;grid-template-columns:32px minmax(120px,1fr) 76px 46px 36px 36px 46px 40px;gap:5px;align-items:center;min-width:467px}
+.st-hdr,.st-row{display:grid;grid-template-columns:32px minmax(120px,1fr) 36px 36px 46px 36px 36px 46px 40px;gap:5px;align-items:center;min-width:512px}
 .st-hdr{padding:4px 8px 6px;font-family:var(--font-display);font-size:10px;color:var(--text-muted)}
-.st-hdr span{width:auto;text-align:right}.st-hdr span:first-child{text-align:center}.st-hdr span:nth-child(2){text-align:left}.st-hdr-ovr{display:block;margin-top:2px;font-size:8px;color:var(--text-muted);font-weight:400}
+.st-hdr span{width:auto;text-align:right}.st-hdr span:first-child{text-align:center}.st-hdr span:nth-child(2){text-align:left}
 .st-row{padding:7px 8px;font-family:var(--font-display);font-size:13px;background:var(--bg-card);border:1px solid var(--border);border-radius:6px;margin-bottom:2px}
 .st-row.st-my{border-color:var(--orange);background:var(--orange-bg)}
 .st-row>span{width:auto;text-align:right}.st-row>span:first-child{text-align:center;color:var(--text-dim)}
 .st-row>span:nth-child(2){min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left}
-.st-team-cell{display:block;min-width:0;line-height:1.15}.st-team-name{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%}.st-ovr-cell{display:flex;flex-direction:row;align-items:center;justify-content:flex-end;gap:8px;color:var(--text);font-size:10px;font-weight:700;line-height:1.15;white-space:nowrap}.st-ovr-cell small{margin-right:3px;color:var(--text-muted);font-size:8px;font-weight:400}.st-power-cell{color:var(--text);font-weight:800;font-variant-numeric:tabular-nums}
+.st-team-cell{display:block;min-width:0;line-height:1.15}.st-team-name{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%}.st-offense-cell,.st-defense-cell,.st-power-cell{font-weight:800;font-variant-numeric:tabular-nums}.st-offense-cell{color:var(--orange)}.st-defense-cell{color:var(--green)}.st-power-cell{color:var(--text)}
 .st-w{color:var(--green)}.st-l{color:var(--red)}
 .st-streak{font-size:11px;color:var(--text-dim)}
 @container (max-width:500px){
-  .st-hdr,.st-row{grid-template-columns:18px minmax(76px,1fr) 44px 38px 21px 21px 30px 26px;gap:2px;min-width:0}
+  .st-hdr,.st-row{grid-template-columns:18px minmax(76px,1fr) 30px 30px 38px 21px 21px 30px 26px;gap:2px;min-width:0}
   .st-hdr{padding-inline:5px;font-size:9px}
   .st-row{padding-inline:5px;font-size:12px}
-  .st-ovr-cell{gap:1px;font-size:10px}
-  .st-ovr-cell small{display:none}
-  .st-ovr-cell>span+span::before{content:'/';margin-right:1px;color:var(--text-muted);font-weight:400}
   .st-streak{font-size:10px}
 }
 @container (max-width:320px){
-  .st-hdr,.st-row{grid-template-columns:minmax(72px,1fr) 42px 36px 20px 20px 28px 24px}
+  .st-hdr,.st-row{grid-template-columns:minmax(72px,1fr) 30px 30px 36px 20px 20px 28px 24px}
   .st-hdr>span:first-child,.st-row>span:first-child{display:none}
 }
 .bv-wrap{padding:0 6px 20px}
@@ -946,7 +943,6 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
       <div class="build-identity" id="build-pos-indicator"></div>
     </div>
     <div id="player-build-area"></div>
-    <div id="player-build-history"></div>
   </div>
 
   <!-- ====== 经典建人（旧版） ====== -->
@@ -2074,17 +2070,6 @@ function renderModeSelect() {
 function startGame() {
   ensureLocalPlayerProfile(true);
   if (STATE.mode === 'current' || STATE.mode === 'legend' || STATE.mode === 'legacy') {
-    // 输出孟菲斯(MEM)和波士顿(BOS)全阵容
-    console.log('========== 🏀 孟菲斯河熊(MEM) 全阵容 ==========');
-    (LEAGUE_PLAYER_DATA['MEM'] || []).forEach(function(p) {
-      console.log(p.cname + ' (' + p.id + ')', '| OVR:', p.ovr, '| 位置:', p.pos, '| 类型:', p.type);
-    });
-    console.log('==========================================');
-    console.log('========== 🏀 波士顿海鹰(BOS) 全阵容 ==========');
-    (LEAGUE_PLAYER_DATA['BOS'] || []).forEach(function(p) {
-      console.log(p.cname + ' (' + p.id + ')', '| OVR:', p.ovr, '| 位置:', p.pos, '| 类型:', p.type);
-    });
-    console.log('==========================================');
     showScreen('screen-position');
     renderPositionNameInput();
   } else {
@@ -2951,9 +2936,6 @@ function revealPlayer() {
     ${archHtml}
     ${top3Html}
   `;
-  if (typeof renderPlayerBuildRevealSummary === 'function' && STATE.playerBuild && STATE.playerBuild.status === 'complete') {
-    html('reveal-content').innerHTML += renderPlayerBuildRevealSummary();
-  }
 }
 
 function goToCareer() {
@@ -7494,17 +7476,18 @@ function renderConferenceStandings(conf) {
   var leader = sorted[0] || { wins: 0, losses: 0 };
   var zoneLabels = ['🏀 季后赛区', '🔥 附加赛区', '📋 乐透区'];
   var zoneIndex = 0;
-  var html = '<div class="st-hdr"><span>排名</span><span>球队</span><span title="首发与主要轮换的平均总评">总评<small class="st-hdr-ovr">首 / 轮</small></span><span title="阵容基准战力，不含主场、战绩、伤病与疲劳修正">战力</span><span>胜</span><span>负</span><span>胜差</span><span>近况</span></div>';
+  var html = '<div class="st-hdr"><span>排名</span><span>球队</span><span title="球队进攻评分">攻</span><span title="球队防守评分">防</span><span title="阵容基准战力，不含主场、战绩、伤病与疲劳修正">战力</span><span>胜</span><span>负</span><span>胜差</span><span>近况</span></div>';
   sorted.forEach(function(row, index) {
     if (index === 0 || index === 6 || index === 10) html += '<div class="season-zone">' + zoneLabels[zoneIndex++] + '</div>';
     var gb = index === 0 ? '-' : ((leader.wins - row.wins + row.losses - leader.losses) / 2).toFixed(1);
     var isMyTeam = row.team === STATE.careerTeam;
-    var lineupOvr = getTeamLineupOvr(row.team);
-    var battlePower = getTeamBattlePower(row.team);
+    var teamPower = calcTeamPowerWithPlayer(row.team);
+    var battlePower = getTeamCompetitiveRating(teamPower).total;
     html += '<div class="st-row is-interactive ' + (isMyTeam ? 'st-my' : '') + '" data-season-team="' + row.team + '" role="button" tabindex="0" aria-label="查看' + getTeamName(row.team) + '球队阵容" title="点击查看球队阵容">' +
       '<span>' + (index + 1) + '</span>' +
       '<span class="st-team-cell"><span class="st-team-name">' + getTeamLogo(row.team, 16) + ' ' + getTeamName(row.team) + (isMyTeam ? ' ⭐' : '') + '</span></span>' +
-      '<span class="st-ovr-cell"><span><small>首发</small>' + lineupOvr.starter + '</span><span><small>轮换</small>' + lineupOvr.rotation + '</span></span>' +
+      '<span class="st-offense-cell" title="球队进攻评分">' + Math.round(teamPower.offense) + '</span>' +
+      '<span class="st-defense-cell" title="球队防守评分">' + Math.round(teamPower.defense) + '</span>' +
       '<span class="st-power-cell" title="中立场阵容战力">' + battlePower.toFixed(1) + '</span>' +
       '<span class="st-w">' + row.wins + '</span>' +
       '<span class="st-l">' + row.losses + '</span>' +
@@ -7790,11 +7773,13 @@ function showSeasonTeamModal(teamOverride) {
       '<span>' + statRow.ppg.toFixed(1) + '</span>' +
       '<span>' + statRow.rpg.toFixed(1) + '</span>' +
       '<span>' + statRow.apg.toFixed(1) + '</span>' +
+      '<span>' + statRow.spg.toFixed(1) + '</span>' +
+      '<span>' + statRow.bpg.toFixed(1) + '</span>' +
     '</div>';
   }
 
   var statsHtml = '<div class="season-team-stats">' +
-    '<div class="season-team-stats-head"><span>球员</span><span>场次</span><span title="场均上场时间">上场时间</span><span>得分</span><span>篮板</span><span>助攻</span></div>' +
+    '<div class="season-team-stats-head"><span>球员</span><span>场次</span><span title="场均上场时间">上场时间</span><span>得分</span><span>篮板</span><span>助攻</span><span>抢断</span><span>盖帽</span></div>' +
     starters.concat(bench).map(renderPlayerStat).join('') +
   '</div>';
 
