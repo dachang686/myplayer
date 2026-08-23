@@ -22,6 +22,14 @@
 .pb-rule-copy{max-width:130px;color:var(--text-muted);font-size:8px;line-height:1.4;text-align:right}
 .pb-source-section,.pb-tier-section{margin-bottom:15px}
 .pb-source-card{padding:12px;border:1px solid var(--border);border-radius:13px;background:var(--bg-card);box-shadow:var(--shadow)}
+.pb-source-switcher{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-bottom:11px}
+.pb-source-option{display:grid;grid-template-columns:24px minmax(0,1fr) auto;align-items:center;gap:7px;min-width:0;padding:8px;border:1px solid var(--border-light);border-radius:9px;background:var(--bg-elevated);color:var(--text);text-align:left;cursor:pointer;transition:transform .16s cubic-bezier(.16,1,.3,1),background .16s ease,border-color .16s ease,opacity .16s ease}
+.pb-source-option:hover,.pb-source-option:focus-visible{border-color:var(--orange);outline:none;transform:translateY(-1px)}
+.pb-source-option.is-selected{border-color:var(--orange);background:var(--orange-bg);box-shadow:0 0 0 1px var(--orange)}
+.pb-source-option-index{display:grid;place-items:center;width:23px;height:23px;border-radius:7px;background:var(--bg-card);color:var(--orange);font:800 11px var(--font-display)}
+.pb-source-option-copy{min-width:0}.pb-source-option-copy strong{display:block;overflow:hidden;color:var(--text);font:800 10px var(--font-body);text-overflow:ellipsis;white-space:nowrap}.pb-source-option-copy small{display:block;margin-top:3px;overflow:hidden;color:var(--text-muted);font-size:7px;text-overflow:ellipsis;white-space:nowrap}
+.pb-source-option-ovr{display:flex;flex-direction:column;align-items:flex-end;color:var(--orange);font:800 15px/1 var(--font-display)}.pb-source-option-ovr small{margin-bottom:2px;color:var(--text-muted);font:800 6px var(--font-body);letter-spacing:.7px}
+.pb-source-selection-label{margin:0 0 7px;color:var(--text-muted);font-size:8px;font-weight:800;letter-spacing:.5px}
 .pb-source-identity{display:flex;align-items:center;gap:9px;min-width:0}
 .pb-source-avatar{display:grid;place-items:center;width:38px;height:38px;flex:0 0 auto;border:1px solid var(--orange);border-radius:11px;background:var(--orange-bg);color:var(--orange);font:800 18px var(--font-display)}
 .pb-source-identity>div:nth-child(2){min-width:0;flex:1}

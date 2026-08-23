@@ -16,6 +16,24 @@
     return clamp(((parseInt(player && player[key], 10) || 50) - 25) / 74, 0, 1);
   }
 
+  // 80 是联盟中性能力锚点。比赛事件使用压缩后的有效能力，
+  // 但球队攻防诊断仍保留原始能力，用于统一的赛前胜率分差。
+  var ATTRIBUTE_ANCHOR = (80 - 25) / 74;
+  var OFFENSE_EFFECT_SCALE = 0.45;
+  var DEFENSE_EFFECT_SCALE = 0.55;
+
+  function anchoredMetric(value, scale) {
+    return clamp(ATTRIBUTE_ANCHOR + (Number(value) - ATTRIBUTE_ANCHOR) * scale, 0, 1);
+  }
+
+  function offenseMetric(value) {
+    return anchoredMetric(value, OFFENSE_EFFECT_SCALE);
+  }
+
+  function defenseMetric(value) {
+    return anchoredMetric(value, DEFENSE_EFFECT_SCALE);
+  }
+
   function normal(mean, deviation) {
     var u = Math.max(Math.random(), 0.000001);
     var v = Math.random();
@@ -267,20 +285,59 @@
       return value;
     }
     var weights = minutes.map(function(value) { return Math.max(0, Number(value) || 0); });
-    var three = players.map(function(player) { return playerNorm(player, 'threePT'); });
-    var mid = players.map(function(player) { return playerNorm(player, 'MID'); });
-    var fin = players.map(function(player) { return playerNorm(player, 'FIN'); });
-    var dnk = players.map(function(player) { return playerNorm(player, 'DNK'); });
-    var han = players.map(function(player) { return playerNorm(player, 'HAN'); });
-    var pas = players.map(function(player) { return playerNorm(player, 'PAS'); });
+    var rawThree = players.map(function(player) { return playerNorm(player, 'threePT'); });
+    var rawMid = players.map(function(player) { return playerNorm(player, 'MID'); });
+    var rawFin = players.map(function(player) { return playerNorm(player, 'FIN'); });
+    var rawDnk = players.map(function(player) { return playerNorm(player, 'DNK'); });
+    var rawHan = players.map(function(player) { return playerNorm(player, 'HAN'); });
+    var rawPas = players.map(function(player) { return playerNorm(player, 'PAS'); });
     var ath = players.map(function(player) { return playerNorm(player, 'ATH'); });
-    var str = players.map(function(player) { return playerNorm(player, 'STR'); });
-    var reb = players.map(function(player) { return playerNorm(player, 'REB'); });
-    var pdef = players.map(function(player) { return playerNorm(player, 'PDEF'); });
-    var idef = players.map(function(player) { return playerNorm(player, 'IDEF'); });
-    var stl = players.map(function(player) { return playerNorm(player, 'STL'); });
-    var blk = players.map(function(player) { return playerNorm(player, 'BLK'); });
+    var rawStr = players.map(function(player) { return playerNorm(player, 'STR'); });
+    var rawReb = players.map(function(player) { return playerNorm(player, 'REB'); });
+    var rawPdef = players.map(function(player) { return playerNorm(player, 'PDEF'); });
+    var rawIdef = players.map(function(player) { return playerNorm(player, 'IDEF'); });
+    var rawStl = players.map(function(player) { return playerNorm(player, 'STL'); });
+    var rawBlk = players.map(function(player) { return playerNorm(player, 'BLK'); });
     var clu = players.map(function(player) { return playerNorm(player, 'CLU'); });
+
+    var rawRimAbility = players.map(function(_, index) {
+      return rawFin[index] * 0.55 + rawDnk[index] * 0.20 + ath[index] * 0.13 + rawStr[index] * 0.12;
+    });
+    var rawThreat = players.map(function(_, index) {
+      var regions = [rawThree[index], rawMid[index], rawRimAbility[index]];
+      regions.sort(function(a, b) { return b - a; });
+      return regions[0] * 0.58 + regions[1] * 0.27 + regions[2] * 0.15;
+    });
+    var rawCreation = players.map(function(_, index) {
+      return clamp(rawHan[index] * 0.45 + ath[index] * 0.25 + rawThreat[index] * 0.30, 0, 1);
+    });
+    var rawAttack = rawThreat.map(function(value, index) {
+      return value * 0.58 + rawCreation[index] * 0.27 + ath[index] * 0.15;
+    });
+    var rawDefense = players.map(function(_, index) {
+      return rawPdef[index] * 0.32 + rawIdef[index] * 0.28 + rawReb[index] * 0.14
+        + rawBlk[index] * 0.16 + rawStr[index] * 0.10;
+    });
+
+    // 出手机会、角色和球员原始攻防评分继续使用原始能力，避免压缩整个
+    // 联盟的得分生态；只有命中效率读取下方的 effective* 数组。
+    var three = rawThree.slice();
+    var mid = rawMid.slice();
+    var fin = rawFin.slice();
+    var dnk = rawDnk.slice();
+    var han = rawHan.slice();
+    var pas = rawPas.slice();
+    var effectiveThree = rawThree.map(offenseMetric);
+    var effectiveMid = rawMid.map(offenseMetric);
+    var effectiveFin = rawFin.map(offenseMetric);
+    var effectiveDnk = rawDnk.map(offenseMetric);
+    var str = rawStr.slice();
+    var reb = rawReb.slice();
+    var effectiveReb = rawReb.map(defenseMetric);
+    var pdef = rawPdef.map(defenseMetric);
+    var idef = rawIdef.map(defenseMetric);
+    var stl = rawStl.map(defenseMetric);
+    var blk = rawBlk.map(defenseMetric);
     var positions = players.map(function(player) { return String(player.pos || 'SF').split('/')[0].trim(); });
 
     var volumeThree = players.map(function(_, index) { return 0.18 + three[index] * 0.52; });
@@ -372,6 +429,10 @@
       mid: mid,
       fin: fin,
       dnk: dnk,
+      effectiveThree: effectiveThree,
+      effectiveMid: effectiveMid,
+      effectiveFin: effectiveFin,
+      effectiveDnk: effectiveDnk,
       han: han,
       pas: pas,
       ath: ath,
@@ -381,6 +442,15 @@
       idef: idef,
       stl: stl,
       blk: blk,
+      effectiveReb: effectiveReb,
+      rawStr: rawStr,
+      rawPdef: rawPdef,
+      rawIdef: rawIdef,
+      rawStl: rawStl,
+      rawBlk: rawBlk,
+      rawStealing: weightedMean(rawStl.map(function(value, index) {
+        return value * 0.58 + rawPdef[index] * 0.24 + ath[index] * 0.18;
+      }), weights),
       clu: clu,
       volumeThree: volumeThree,
       volumeMid: volumeMid,
@@ -389,24 +459,27 @@
       threat: threat,
       creation: creation,
       teamCreation: weightedMean(creation, weights),
-      attack: weightedMean(threat.map(function(value, index) {
+      // 保留原始攻防评分供赛前 expectedMargin 使用；比赛事件读取下方的
+      // 压缩后有效能力，避免同一属性差在多个事件层被重复放大。
+      attack: weightedMean(rawAttack, weights),
+      effectiveAttack: weightedMean(threat.map(function(value, index) {
         return value * 0.58 + creation[index] * 0.27 + ath[index] * 0.15;
       }), weights),
-      defense: weightedMean(players.map(function(_, index) {
-        return pdef[index] * 0.32 + idef[index] * 0.28 + reb[index] * 0.14
-          + blk[index] * 0.16 + str[index] * 0.10;
-      }), weights),
+      defense: weightedMean(rawDefense, weights),
       perimeterDefense: weightedMean(players.map(function(_, index) {
         return pdef[index] * 0.55 + stl[index] * 0.20 + ath[index] * 0.25;
       }), weights),
       rimProtection: weightedMean(players.map(function(_, index) {
-        return idef[index] * 0.42 + blk[index] * 0.34 + str[index] * 0.16 + reb[index] * 0.08;
+        return idef[index] * 0.42 + blk[index] * 0.34 + str[index] * 0.16 + effectiveReb[index] * 0.08;
+      }), weights),
+      rawRimProtection: weightedMean(players.map(function(_, index) {
+        return rawIdef[index] * 0.42 + rawBlk[index] * 0.34 + rawStr[index] * 0.16 + rawReb[index] * 0.08;
       }), weights),
       offensiveRebound: weightedMean(players.map(function(_, index) {
-        return reb[index] * 0.55 + str[index] * 0.25 + ath[index] * 0.20;
+        return effectiveReb[index] * 0.55 + str[index] * 0.25 + ath[index] * 0.20;
       }), weights),
       defensiveRebound: weightedMean(players.map(function(_, index) {
-        return reb[index] * 0.56 + idef[index] * 0.22 + str[index] * 0.22;
+        return effectiveReb[index] * 0.56 + idef[index] * 0.22 + str[index] * 0.22;
       }), weights),
       stealing: weightedMean(players.map(function(_, index) {
         return stl[index] * 0.58 + pdef[index] * 0.24 + ath[index] * 0.18;
@@ -514,20 +587,26 @@
       var rimShareBase = context.volumeRim[index] / Math.max(0.01, context.volumeRim[index] + context.volumeMid[index]);
       var rimDeterrence = clamp((opponent.rimProtection - 0.50) * 0.75, -0.15, 0.30);
       var rimShare = clamp(rimShareBase * (1 - rimDeterrence), 0.15, 0.75);
-      var rimAttempts = Math.round(twoAttempts * rimShare);
+      // 每次两分出手独立决定区域，避免 Math.round 在低出手量下制造
+      // 防守属性跨阈值时的篮下出手断崖。
+      var rimAttempts = sampleMakes(twoAttempts, rimShare);
       var midAttempts = twoAttempts - rimAttempts;
       var defensePenalty = (opponent.rimProtection - 0.50) * 0.11;
       var perimeterPenalty = (opponent.perimeterDefense - 0.50) * 0.085;
       var clutchBonus = isClutch ? (context.clutch - 0.50) * 0.045 : 0;
       var qualityBias = bias + (context.passing - 0.50) * 0.014 - context.fatigue * 0.004;
-      var threePct = clamp(0.255 + context.three[index] * 0.210 - perimeterPenalty + qualityBias + clutchBonus, 0.20, 0.58);
-      var midPct = clamp(0.300 + context.mid[index] * 0.170 - perimeterPenalty * 0.55 + qualityBias + clutchBonus, 0.23, 0.60);
+      var threePct = clamp(0.255 + context.effectiveThree[index] * 0.210 - perimeterPenalty + qualityBias + clutchBonus, 0.20, 0.58);
+      var midPct = clamp(0.300 + context.effectiveMid[index] * 0.170 - perimeterPenalty * 0.55 + qualityBias + clutchBonus, 0.23, 0.60);
       var rimPct = clamp(
-        0.400 + context.fin[index] * 0.200 + context.dnk[index] * 0.040
+        0.400 + context.effectiveFin[index] * 0.200 + context.effectiveDnk[index] * 0.040
           + context.ath[index] * 0.025 + context.str[index] * 0.035 - defensePenalty + qualityBias + clutchBonus,
         0.28, 0.72,
       );
-      var blockChance = clamp(0.006 + opponent.rimProtection * 0.092, 0.004, 0.115);
+      var rawBlockProtection = Number(opponent.rawRimProtection);
+      var blockProtection = Number.isFinite(rawBlockProtection)
+        ? rawBlockProtection * 0.70 + opponent.rimProtection * 0.30
+        : opponent.rimProtection;
+      var blockChance = clamp(0.006 + blockProtection * 0.092, 0.004, 0.115);
       var preventedBlocks = sampleMakes(rimAttempts, blockChance);
       var rimMakes = sampleMakes(Math.max(0, rimAttempts - preventedBlocks), rimPct);
       var midMakes = sampleMakes(midAttempts, midPct);
@@ -535,7 +614,7 @@
       // 盖帽既包括直接改变出手结果的封盖，也包括原本已落入投失集合的封盖记录。
       // 后一部分只补齐事件归因，不再二次降低命中率，避免校准盖帽时破坏球队得分环境。
       var uncreditedRimMisses = Math.max(0, rimAttempts - preventedBlocks - rimMakes);
-      var creditedMissBlockRate = clamp(0.020 + opponent.rimProtection * 0.245, 0.015, 0.21);
+      var creditedMissBlockRate = clamp(0.020 + blockProtection * 0.245, 0.015, 0.21);
       var blocked = preventedBlocks + sampleMakes(uncreditedRimMisses, creditedMissBlockRate);
       line.fga += threeAttempts + twoAttempts;
       line.threeA += threeAttempts;
@@ -557,7 +636,7 @@
       line._rimA = 0;
       line._blocked = 0;
       addFieldGoalAttempts(line, index, threeAttempts, twoAttempts);
-      var ftSkill = context.three[index] * 0.52 + context.mid[index] * 0.48;
+      var ftSkill = context.effectiveThree[index] * 0.52 + context.effectiveMid[index] * 0.48;
       var qualityBias = bias + (context.passing - 0.50) * 0.014 - context.fatigue * 0.004;
       var ftPct = clamp(0.60 + ftSkill * 0.30 + qualityBias * 0.35, 0.56, 0.94);
       var ftMakes = sampleMakes(ftaByPlayer[index], ftPct);
@@ -634,11 +713,11 @@
   }
 
   function addDefensiveEvents(defender, offense) {
-    var steals = sampleMakes(offense.turnovers, clamp(0.15 + defender.stealing * 0.48, 0, 1));
+    var steals = sampleMakes(offense.turnovers, clamp(0.15 + defender.rawStealing * 0.48, 0, 1));
     var stealsByPlayer = weightedRandomAllocation(
       steals,
       defender.players.map(function(_, index) {
-        var stealSkill = defender.stl[index] * 0.72 + defender.pdef[index] * 0.18 + defender.ath[index] * 0.10;
+        var stealSkill = defender.rawStl[index] * 0.72 + defender.rawPdef[index] * 0.18 + defender.ath[index] * 0.10;
         return defender.weights[index] * (0.010 + Math.pow(stealSkill, 2.4) * 3.0);
       }),
       defender.players.map(function() { return 7; }),
@@ -649,7 +728,7 @@
     var blocksByPlayer = weightedRandomAllocation(
       blocked,
       defender.players.map(function(_, index) {
-        var blockSkill = defender.blk[index] * 0.72 + defender.idef[index] * 0.18 + defender.str[index] * 0.10;
+        var blockSkill = defender.rawBlk[index] * 0.72 + defender.rawIdef[index] * 0.18 + defender.rawStr[index] * 0.10;
         return defender.weights[index] * (0.004 + Math.pow(blockSkill, 3.3) * 3.5);
       }),
       defender.players.map(function() { return 8; }),
@@ -692,6 +771,9 @@
       attack: weightedMean(context.threat.map(function(value, index) {
         return value * 0.58 + context.creation[index] * 0.27 + context.ath[index] * 0.15;
       }), weights),
+      effectiveAttack: weightedMean(context.threat.map(function(value, index) {
+        return value * 0.58 + context.creation[index] * 0.27 + context.ath[index] * 0.15;
+      }), weights),
       defense: weightedMean(context.players.map(function(_, index) {
         return context.pdef[index] * 0.32 + context.idef[index] * 0.28 + context.reb[index] * 0.14
           + context.blk[index] * 0.16 + context.str[index] * 0.10;
@@ -700,13 +782,13 @@
         return context.pdef[index] * 0.55 + context.stl[index] * 0.20 + context.ath[index] * 0.25;
       }), weights),
       rimProtection: weightedMean(context.players.map(function(_, index) {
-        return context.idef[index] * 0.42 + context.blk[index] * 0.34 + context.str[index] * 0.16 + context.reb[index] * 0.08;
+        return context.idef[index] * 0.42 + context.blk[index] * 0.34 + context.str[index] * 0.16 + context.effectiveReb[index] * 0.08;
       }), weights),
       offensiveRebound: weightedMean(context.players.map(function(_, index) {
-        return context.reb[index] * 0.55 + context.str[index] * 0.25 + context.ath[index] * 0.20;
+        return context.effectiveReb[index] * 0.55 + context.str[index] * 0.25 + context.ath[index] * 0.20;
       }), weights),
       defensiveRebound: weightedMean(context.players.map(function(_, index) {
-        return context.reb[index] * 0.56 + context.idef[index] * 0.22 + context.str[index] * 0.22;
+        return context.effectiveReb[index] * 0.56 + context.idef[index] * 0.22 + context.str[index] * 0.22;
       }), weights),
       stealing: weightedMean(context.players.map(function(_, index) {
         return context.stl[index] * 0.58 + context.pdef[index] * 0.24 + context.ath[index] * 0.18;
@@ -823,8 +905,8 @@
         contextA = makePeriodContext(first, allocateTotal(25, first.weights, first.players.map(function() { return 5; })));
         contextB = makePeriodContext(second, allocateTotal(25, second.weights, second.players.map(function() { return 5; })));
       }
-      contextA.usagePressure = clamp((contextA.attack - 0.50) * 0.50, 0, 0.25);
-      contextB.usagePressure = clamp((contextB.attack - 0.50) * 0.50, 0, 0.25);
+      contextA.usagePressure = clamp((contextA.effectiveAttack - 0.50) * 0.50, 0, 0.25);
+      contextB.usagePressure = clamp((contextB.effectiveAttack - 0.50) * 0.50, 0, 0.25);
       var periodPossessions = Math.max(1, possessions + Math.round(normal(0, 0.7)));
       var quarterA = makeQuarter(contextA, contextB, periodPossessions, biasA, clutch, fgaLedgerA, threeLedgerA);
       var quarterB = makeQuarter(contextB, contextA, periodPossessions, biasB, clutch, fgaLedgerB, threeLedgerB);
@@ -891,7 +973,7 @@
       delete line._twoA; delete line._twoM; delete line._rimA; delete line._blocked;
       delete line._missedField; delete line._missedFt;
     });
-    var directEdge = (first.attack - second.attack) * 4 + (first.defense - second.defense) * 3;
+    var directEdge = (first.attack - second.attack) * 23 + (first.defense - second.defense) * 13.5;
     var homeCourtEdge = (homeA - homeB) * 100;
     var seedBonusEdge = Number(seedBonus || 0) * 0.5;
     var eventTeamMarginEdge = activeEventEdge * 0.4;

@@ -4,7 +4,7 @@
    ============================================================ */
 
 var PLAYER_BUILD_TOTAL_ROUNDS = 14;
-var PLAYER_BUILD_MAX_REROLLS = 10;
+var PLAYER_BUILD_MAX_REROLLS = 5;
 var PLAYER_BUILD_TIERS = Object.freeze({
   core: Object.freeze({ key: 'core', label: '核心', count: 4, multiplier: 1.00, tone: 'core' }),
   strong: Object.freeze({ key: 'strong', label: '强项', count: 4, multiplier: 0.92, tone: 'strong' }),
@@ -39,6 +39,8 @@ function createPlayerBuildState() {
     usedAttrs: [],
     tiers: { core: 0, strong: 0, normal: 0, weak: 0 },
     currentPlayer: null,
+    currentPlayers: [],
+    selectedSourcePlayerId: null,
     selectedAttr: null,
     selectedTier: null,
     error: ''
@@ -120,25 +122,74 @@ function findPlayerBuildSource(source) {
   return null;
 }
 
-function getCurrentPlayerBuildSource(build) {
-  return build && build.currentPlayer ? findPlayerBuildSource(build.currentPlayer) : null;
+function getPlayerBuildSourceRefs(build) {
+  var refs = Array.isArray(build && build.currentPlayers) ? build.currentPlayers.slice() : [];
+  if (build && build.currentPlayer && !refs.some(function(ref) { return ref && ref.id === build.currentPlayer.id; })) {
+    refs.push(build.currentPlayer);
+  }
+  var unique = [];
+  refs.forEach(function(ref) {
+    if (!ref || !ref.id || unique.some(function(item) { return item.id === ref.id; })) return;
+    unique.push({ id: ref.id, team: ref.team });
+  });
+  return unique.slice(0, 2);
 }
 
-function drawNextPlayerBuildPlayer(excludeId) {
+function ensurePlayerBuildSources(build) {
+  var refs = getPlayerBuildSourceRefs(build);
+  if (!build || build.status !== 'in_progress') return refs.map(findPlayerBuildSource).filter(Boolean);
+  if (refs.length < 2) {
+    var pool = getPlayerBuildPool();
+    var existingIds = refs.map(function(ref) { return ref.id; });
+    var candidates = pool.filter(function(item) { return existingIds.indexOf(item.player.id) < 0; });
+    while (refs.length < 2 && candidates.length) {
+      var pickedIndex = Math.floor(Math.random() * candidates.length);
+      var picked = candidates.splice(pickedIndex, 1)[0];
+      refs.push({ id: picked.player.id, team: picked.team });
+      existingIds.push(picked.player.id);
+    }
+  }
+  build.currentPlayers = refs.slice(0, 2);
+  if (!build.currentPlayers.length) return [];
+  if (!build.selectedSourcePlayerId || !build.currentPlayers.some(function(ref) { return ref.id === build.selectedSourcePlayerId; })) {
+    build.selectedSourcePlayerId = build.currentPlayers[0].id;
+  }
+  build.currentPlayer = build.currentPlayers.find(function(ref) { return ref.id === build.selectedSourcePlayerId; }) || build.currentPlayers[0];
+  return build.currentPlayers.map(findPlayerBuildSource).filter(Boolean);
+}
+
+function getPlayerBuildSources(build) {
+  return ensurePlayerBuildSources(build);
+}
+
+function getCurrentPlayerBuildSource(build) {
+  var sources = getPlayerBuildSources(build);
+  if (!sources.length) return null;
+  var selectedId = build && build.selectedSourcePlayerId;
+  return sources.find(function(source) { return source.player.id === selectedId; }) || sources[0];
+}
+
+function drawNextPlayerBuildPlayers(excludeIds) {
   var build = ensurePlayerBuildState();
   if (!build) return false;
   var pool = getPlayerBuildPool();
-  if (!pool.length) {
-    build.error = '当前正式球员数据库没有可用的完整14项属性球员。';
+  if (pool.length < 2) {
+    build.error = '当前正式球员数据库没有足够的完整14项属性球员。';
     renderDraftPlayerBuildUI();
     return false;
   }
-  var candidates = pool.length > 1 && excludeId
-    ? pool.filter(function(item) { return item.player.id !== excludeId; })
-    : pool;
-  if (!candidates.length) candidates = pool;
-  var picked = candidates[Math.floor(Math.random() * candidates.length)];
-  build.currentPlayer = { id: picked.player.id, team: picked.team };
+  var excluded = Array.isArray(excludeIds) ? excludeIds : (excludeIds ? [excludeIds] : []);
+  var candidates = pool.filter(function(item) { return excluded.indexOf(item.player.id) < 0; });
+  if (candidates.length < 2) candidates = pool.slice();
+  var pickedPlayers = [];
+  while (pickedPlayers.length < 2 && candidates.length) {
+    var pickedIndex = Math.floor(Math.random() * candidates.length);
+    pickedPlayers.push(candidates.splice(pickedIndex, 1)[0]);
+  }
+  if (pickedPlayers.length < 2) return false;
+  build.currentPlayers = pickedPlayers.map(function(item) { return { id: item.player.id, team: item.team }; });
+  build.selectedSourcePlayerId = build.currentPlayers[0].id;
+  build.currentPlayer = build.currentPlayers[0];
   build.round = build.picks.length + 1;
   build.selectedAttr = null;
   build.selectedTier = null;
@@ -172,7 +223,7 @@ function startDraftPlayerBuild() {
   STATE.finalOVR = 0;
   STATE.finalPosition = null;
   STATE.finalArchetype = null;
-  drawNextPlayerBuildPlayer();
+  drawNextPlayerBuildPlayers();
   showScreen('screen-build');
   renderBuildUI();
   queuePlayerBuildSave();
@@ -217,6 +268,19 @@ function selectPlayerBuildAttribute(attrKey) {
   queuePlayerBuildSave();
 }
 
+function selectPlayerBuildSource(sourceId) {
+  if (!isDraftPlayerBuildActive()) return;
+  var build = ensurePlayerBuildState();
+  var source = getPlayerBuildSources(build).find(function(item) { return item.player.id === sourceId; });
+  if (!source) return;
+  build.selectedSourcePlayerId = source.player.id;
+  build.currentPlayer = { id: source.player.id, team: source.team };
+  build.selectedAttr = null;
+  build.selectedTier = null;
+  renderDraftPlayerBuildUI();
+  queuePlayerBuildSave();
+}
+
 function selectPlayerBuildTier(tierKey) {
   if (!isDraftPlayerBuildActive() || !PLAYER_BUILD_TIERS[tierKey]) return;
   var build = ensurePlayerBuildState();
@@ -229,11 +293,12 @@ function selectPlayerBuildTier(tierKey) {
 function rerollPlayerBuildPlayer() {
   if (!isDraftPlayerBuildActive()) return;
   var build = ensurePlayerBuildState();
-  if (STATE._rerollsLeft <= 0 || !build.currentPlayer) return;
-  var currentId = build.currentPlayer.id;
+  var currentSources = getPlayerBuildSourceRefs(build);
+  if (STATE._rerollsLeft <= 0 || !currentSources.length) return;
+  var currentIds = currentSources.map(function(source) { return source.id; });
   STATE._rerollsLeft--;
   build.rerollsUsed = PLAYER_BUILD_MAX_REROLLS - STATE._rerollsLeft;
-  if (!drawNextPlayerBuildPlayer(currentId)) {
+  if (!drawNextPlayerBuildPlayers(currentIds)) {
     STATE._rerollsLeft++;
     build.rerollsUsed = PLAYER_BUILD_MAX_REROLLS - STATE._rerollsLeft;
     return;
@@ -311,7 +376,7 @@ function confirmPlayerBuildRound() {
     return;
   }
 
-  drawNextPlayerBuildPlayer();
+  drawNextPlayerBuildPlayers();
   renderDraftPlayerBuildUI();
   queuePlayerBuildSave();
 }
@@ -383,14 +448,28 @@ function renderPlayerBuildHistory(build) {
   }).join('') + '</div>';
 }
 
+function renderPlayerBuildSourceSwitcher(build, sources) {
+  return '<div class="pb-source-switcher" role="group" aria-label="本轮随机的两名球员">' + sources.map(function(source, index) {
+    var player = source.player;
+    var selected = player.id === build.selectedSourcePlayerId;
+    var teamName = typeof getTeamName === 'function' ? getTeamName(source.team) : source.team;
+    return '<button type="button" class="pb-source-option' + (selected ? ' is-selected' : '') + '" data-build-source-player="' + escapePlayerBuildText(player.id) + '" aria-pressed="' + (selected ? 'true' : 'false') + '" onclick="selectPlayerBuildSource(\'' + player.id + '\')">' +
+      '<span class="pb-source-option-index">' + (index === 0 ? 'A' : 'B') + '</span>' +
+      '<span class="pb-source-option-copy"><strong>' + escapePlayerBuildText(player.cname || player.id) + '</strong><small>' + escapePlayerBuildText(player.pos || '位置未知') + ' · ' + escapePlayerBuildText(teamName) + '</small></span>' +
+      '<span class="pb-source-option-ovr"><small>OVR</small>' + (Number(player.ovr) || '—') + '</span>' +
+      '</button>';
+  }).join('') + '</div>';
+}
+
 function renderDraftPlayerBuildUI() {
   var area = document.getElementById('point-build-area');
   var history = document.getElementById('point-build-note');
   var build = ensurePlayerBuildState();
   if (!area || !build || build.status !== 'in_progress') return;
+  var sources = getPlayerBuildSources(build);
   var source = getCurrentPlayerBuildSource(build);
-  if (!source) {
-    area.innerHTML = '<div class="pb-build-shell"><div class="pb-error-state"><strong>无法恢复当前球员</strong><span>正式球员数据库中找不到本轮来源。</span></div></div>';
+  if (!source || sources.length < 2) {
+    area.innerHTML = '<div class="pb-build-shell"><div class="pb-error-state"><strong>无法恢复本轮球员</strong><span>正式球员数据库中找不到两名可用的完整属性球员。</span></div></div>';
     if (history) history.innerHTML = renderPlayerBuildHistory(build);
     return;
   }
@@ -410,8 +489,10 @@ function renderDraftPlayerBuildUI() {
       '<div class="pb-progress-track" aria-label="建人进度"><span style="width:' + progress + '%"></span></div>' +
       '<div class="pb-tier-counters" aria-label="档位名额">' + renderPlayerBuildTierCounters(build) + '</div>' +
       '<section class="pb-source-section" aria-labelledby="pb-source-title">' +
-        '<div class="pb-section-head"><div><span class="pb-section-kicker">CURRENT SOURCE</span><h2 id="pb-source-title">本轮随机球员</h2></div><span class="pb-rule-copy">只能从当前球员拿 1 项</span></div>' +
+        '<div class="pb-section-head"><div><span class="pb-section-kicker">CURRENT SOURCES · 2 PLAYERS</span><h2 id="pb-source-title">本轮随机2名球员</h2></div><span class="pb-rule-copy">点击切换来源，再拿 1 项</span></div>' +
         '<div class="pb-source-card">' +
+          renderPlayerBuildSourceSwitcher(build, sources) +
+          '<div class="pb-source-selection-label">当前使用的球员</div>' +
           '<div class="pb-source-identity"><div class="pb-source-avatar">' + escapePlayerBuildText(String(player.cname || '?').slice(0, 1)) + '</div><div><strong>' + escapePlayerBuildText(player.cname || player.id) + '</strong><span>' + escapePlayerBuildText(position) + ' · ' + escapePlayerBuildText(teamName) + '</span></div><b class="pb-source-ovr"><small>OVR</small>' + (Number(player.ovr) || '—') + '</b></div>' +
           '<div class="pb-source-divider"></div>' +
           '<div class="pb-attr-grid" aria-label="当前球员14项属性">' + renderPlayerBuildAttributes(build, player) + '</div>' +
@@ -462,8 +543,8 @@ function resumePlayerBuildIfNeeded() {
   if (build.status === 'in_progress' && STATE.buildStep === 'player-draft') {
     showScreen('screen-build');
     renderBuildUI();
-    return true;
-  }
+  return true;
+}
   if (build.status === 'complete' && !STATE.careerTeam && !(STATE.season && STATE.season.schedule)) {
     revealPlayer();
     return true;

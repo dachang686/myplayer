@@ -6,6 +6,8 @@
     "test:smoke": "node scripts/validate_simulation_v2.js --mode=smoke",
     "test:integration": "node scripts/validate_simulation_v2.js --mode=integration",
     "test:statistical": "node scripts/validate_simulation_v2.js --mode=statistical",
+    "test:calibration:smoke": "node scripts/validate_v2_win_calibration.js --mode=smoke",
+    "test:calibration": "node scripts/validate_v2_win_calibration.js --mode=statistical",
     "test:retirement": "node scripts/validate_retirement_summary.js"
   },
   "devDependencies": {
