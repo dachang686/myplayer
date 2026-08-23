@@ -7276,9 +7276,9 @@ function renderSeasonInsights() {
         '<div class="season-stats-grid">' + statHtml + '</div>' +
         '<div class="season-shooting-line">投篮 ' + (ps.fgm || 0) + '-' + (ps.fga || 0) + ' (' + pctText(fgPct) + ') · 三分 ' + (ps.threeM || 0) + '-' + (ps.threeA || 0) + ' (' + pctText(threePct) + ') · 罚球 ' + (ps.ftm || 0) + '-' + (ps.fta || 0) + ' (' + pctText(ftPct) + ')</div>' +
       '</div>' +
+      bestHtml +
       renderCareerTeamInjuryNotices() +
       narrativeHtml +
-      bestHtml +
     '</div>'
   );
 }
