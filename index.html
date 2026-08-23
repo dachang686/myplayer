@@ -8459,6 +8459,7 @@ function renderMyCard(isFinal, activeTab) {
   const awardItems = getMyCardAwardItems();
   const eventItems = getMyCardEventItems();
   const tradeRequestHtml = typeof renderPlayerTradeRequestCard === 'function' ? renderPlayerTradeRequestCard() : '';
+  const reinforcementRequestHtml = typeof renderPlayerReinforcementRequestCard === 'function' ? renderPlayerReinforcementRequestCard() : '';
   
   let playoffInfo = '';
   if (isFinal) {
@@ -8581,6 +8582,7 @@ function renderMyCard(isFinal, activeTab) {
     </div>
 
     ${tradeRequestHtml}
+    ${reinforcementRequestHtml}
 
     <div class="mc-section">
       <div class="mc-section-title">🏷️ 个人属性</div>

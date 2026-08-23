@@ -1218,6 +1218,80 @@ function getPlayerTradeRequest() {
   return m && m.tradeRequest ? m.tradeRequest : null;
 }
 
+var REINFORCEMENT_POSITION_META = {
+  PG: { label: '控球后卫', short: 'PG', icon: '🧭' },
+  SG: { label: '得分后卫', short: 'SG', icon: '🎯' },
+  SF: { label: '小前锋', short: 'SF', icon: '🪽' },
+  PF: { label: '大前锋', short: 'PF', icon: '🧱' },
+  C: { label: '中锋', short: 'C', icon: '🛡️' }
+};
+
+function getPlayerReinforcementRequest() {
+  var m = getMobility();
+  return m && m.reinforcementRequest ? m.reinforcementRequest : null;
+}
+
+function getReinforcementPositionLabel(position) {
+  var meta = REINFORCEMENT_POSITION_META[position];
+  return meta ? meta.label : '阵容短板';
+}
+
+function getPlayerReinforcementWeakestStarter(team) {
+  var lineup = typeof calcTeamLineup === 'function' ? calcTeamLineup(team) : null;
+  var weakest = null;
+  var weakOvr = 999;
+  ['PG', 'SG', 'SF', 'PF', 'C'].forEach(function(pos) {
+    var player = lineup && lineup.starters ? lineup.starters[pos] : null;
+    if (player && !player._isUser && (Number(player.ovr) || 0) < weakOvr) {
+      weakest = { position: pos, ovr: Number(player.ovr) || 0 };
+      weakOvr = Number(player.ovr) || 0;
+    }
+  });
+  if (weakest) return weakest;
+  return { position: STATE.position || 'SF', ovr: 0 };
+}
+
+function getReinforcementRequestAvailability() {
+  var c = STATE.career;
+  var season = STATE.season;
+  if (!c || !season || c.retired) return { allowed: false, reason: '当前没有进行中的职业生涯' };
+  if (season.isPlayoffs || season._resultsViewed) return { allowed: false, reason: '季后赛及赛季结束后不能提交要求' };
+  if ((c.contract || 0) <= 1) return { allowed: false, reason: '合同将在本赛季后到期，请通过自由市场选择球队' };
+
+  var currentSeason = getActiveTradeRequestSeason();
+  var request = getPlayerReinforcementRequest();
+  if (request && request.season === currentSeason) {
+    if (request.status === 'approved') return { allowed: false, reason: '补强要求已获准，将在休赛期优先评估', status: request.status };
+    if (request.status === 'denied') return { allowed: false, reason: '本赛季的补强要求已被拒绝', status: request.status };
+    return { allowed: false, reason: '本赛季已经提交过补强要求', status: request.status };
+  }
+
+  var gamesPlayed = (season.schedule || []).filter(function(game) { return game && game.simulated; }).length;
+  if (gamesPlayed < 10) return { allowed: false, reason: '常规赛至少完成 10 场后开放', gamesNeeded: 10 - gamesPlayed };
+  return { allowed: true, reason: '每赛季限一次；获批后将在休赛期优先处理' };
+}
+
+function getReinforcementApprovalChance(priority) {
+  var c = STATE.career || {};
+  var season = STATE.season || {};
+  var profile = typeof getCareerProfile === 'function' ? getCareerProfile() : {};
+  var total = (season.wins || 0) + (season.losses || 0);
+  var winRate = total ? (season.wins || 0) / total : 0.5;
+  var chance = 54;
+
+  if (winRate < 0.4) chance += 10;
+  else if (winRate > 0.65) chance -= 8;
+  if ((STATE.finalOVR || 0) >= 88) chance += 8;
+  else if ((STATE.finalOVR || 0) < 76) chance -= 4;
+  chance += Math.min(8, Math.max(0, Number(profile.leadership) || 0));
+  chance += Math.min(5, Math.max(0, Number(profile.coachTrust) || 0));
+
+  var weakest = getPlayerReinforcementWeakestStarter(STATE.careerTeam);
+  if (priority === weakest.position) chance += 8;
+  if ((c.contract || 0) === 2) chance += 5;
+  return Math.max(30, Math.min(88, Math.round(chance)));
+}
+
 function getTradeRequestAvailability() {
   var c = STATE.career;
   var season = STATE.season;
@@ -1294,6 +1368,156 @@ function recordPlayerTradeRequest(request, resultText) {
     choice: request.preferredTeam ? ('意向球队：' + getTeamName(request.preferredTeam)) : '不指定下家',
     result: resultText || ''
   });
+}
+
+function recordPlayerReinforcementRequest(request, resultText) {
+  var c = STATE.career;
+  if (!c || request.source !== 'manual') return;
+  c.branchHistory = c.branchHistory || [];
+  c.branchHistory.push({
+    seasonNum: c.seasonCount || 0,
+    phase: 'career',
+    branch: 'team_building',
+    eventId: 'player_reinforcement_request_' + request.season,
+    event: '要求阵容补强',
+    choice: '优先补强：' + getReinforcementPositionLabel(request.priority),
+    result: resultText || ''
+  });
+}
+
+function recordPlayerReinforcementOutcome(request, resultText) {
+  var c = STATE.career;
+  if (!c) return;
+  c.branchHistory = c.branchHistory || [];
+  c.branchHistory.push({
+    seasonNum: c.seasonCount || 0,
+    phase: 'offseason',
+    branch: 'team_building',
+    eventId: 'player_reinforcement_outcome_' + request.season,
+    event: '补强要求结果',
+    choice: '优先补强：' + getReinforcementPositionLabel(request.priority),
+    result: resultText || ''
+  });
+}
+
+function createPlayerReinforcementRequest(priority, source, options) {
+  options = options || {};
+  var availability = getReinforcementRequestAvailability();
+  if (!availability.allowed) return null;
+  if (!REINFORCEMENT_POSITION_META[priority]) return null;
+
+  var chance = getReinforcementApprovalChance(priority);
+  var approved = Math.random() * 100 < chance;
+  var request = {
+    season: getActiveTradeRequestSeason(),
+    submittedGame: (STATE.season.schedule || []).filter(function(game) { return game && game.simulated; }).length,
+    priority: priority,
+    source: source || 'manual',
+    status: approved ? 'approved' : 'denied',
+    approvalChance: chance
+  };
+  getMobility().reinforcementRequest = request;
+  STATE.career.flags = STATE.career.flags || {};
+  STATE.career.flags.reinforcementRequested = approved;
+
+  if (options.applyEffects !== false) {
+    if (approved) addProfileDelta('leadership', 1);
+    else addProfileDelta('coachTrust', -1);
+  }
+
+  var positionLabel = getReinforcementPositionLabel(priority);
+  var resultText = approved
+    ? '管理层接受了你的建议，将在休赛期优先评估' + positionLabel + '的补强。最终是否完成，仍取决于市场和可用资产。'
+    : '管理层暂不承诺在休赛期补强' + positionLabel + '，表示会继续观察阵容。';
+  recordPlayerReinforcementRequest(request, resultText);
+  if (typeof queueSeasonAutoSave === 'function') queueSeasonAutoSave();
+  return { request: request, resultText: resultText, positionLabel: positionLabel };
+}
+
+function closeReinforcementRequestModal() {
+  var modal = document.getElementById('reinforcement-request-modal');
+  if (modal) modal.remove();
+}
+
+function showReinforcementRequestModal() {
+  var availability = getReinforcementRequestAvailability();
+  if (!availability.allowed) return;
+  closeReinforcementRequestModal();
+
+  var weakest = getPlayerReinforcementWeakestStarter(STATE.careerTeam);
+  var cards = '';
+  Object.keys(REINFORCEMENT_POSITION_META).forEach(function(position) {
+    var meta = REINFORCEMENT_POSITION_META[position];
+    var recommended = position === weakest.position;
+    cards += '<button class="team-pick-card" style="font:inherit;cursor:pointer;min-height:78px;position:relative;" onclick="showReinforcementRequestConfirmation(\'' + position + '\')">' +
+      '<span style="font-size:22px;line-height:1.1;">' + meta.icon + '</span>' +
+      '<span class="tpc-abbr">' + meta.short + '</span>' +
+      '<span class="tpc-name">' + meta.label + '</span>' +
+      (recommended ? '<span style="font-size:9px;color:var(--orange);font-weight:700;margin-top:2px;">当前短板</span>' : '') +
+      '</button>';
+  });
+
+  var html = '<div class="team-picker-overlay" id="reinforcement-request-modal">';
+  html += '<div class="team-picker-modal">';
+  html += '<div class="team-picker-header"><span>🧩 要求补强</span><button class="team-picker-close" onclick="closeReinforcementRequestModal()">✕</button></div>';
+  html += '<div style="padding:10px 14px 4px;font-size:12px;line-height:1.6;color:var(--text-dim);">选择一个优先方向。管理层会在休赛期交易和签约阶段优先评估，但不会保证一定完成。</div>';
+  html += '<div style="padding:0 14px 5px;font-size:11px;color:var(--orange);">当前建议短板：' + getReinforcementPositionLabel(weakest.position) + (weakest.ovr ? ' · 首发 OVR ' + weakest.ovr : '') + '</div>';
+  html += '<div class="team-picker-grid">' + cards + '</div>';
+  html += '</div></div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function showReinforcementRequestConfirmation(priority) {
+  var modal = document.getElementById('reinforcement-request-modal');
+  var meta = REINFORCEMENT_POSITION_META[priority];
+  if (!modal || !meta) return;
+  var chance = getReinforcementApprovalChance(priority);
+  var weakest = getPlayerReinforcementWeakestStarter(STATE.careerTeam);
+  modal.innerHTML = '<div class="team-picker-modal" style="max-width:380px;">' +
+    '<div class="team-picker-header"><span>确认补强要求</span><button class="team-picker-close" onclick="closeReinforcementRequestModal()">✕</button></div>' +
+    '<div style="padding:18px 14px;text-align:center;">' + meta.icon +
+    '<div style="font:700 18px var(--font-display);margin:8px 0 6px;">优先补强' + meta.label + '</div>' +
+    '<div style="font-size:12px;line-height:1.65;color:var(--text-dim);">当前管理层接受概率约为 ' + chance + '%。提交后本赛季不能撤回或再次提出其他补强要求。</div>' +
+    (priority === weakest.position ? '<div style="font-size:11px;color:var(--orange);margin-top:8px;">这是系统识别出的当前首发短板。</div>' : '') + '</div>' +
+    '<div style="padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;">' +
+    '<button class="btn btn-secondary btn-sm" style="flex:1;" onclick="showReinforcementRequestModal()">返回</button>' +
+    '<button class="btn btn-primary btn-sm" style="flex:1;" onclick="submitPlayerReinforcementRequest(\'' + priority + '\')">提交要求</button>' +
+    '</div></div>';
+}
+
+function submitPlayerReinforcementRequest(priority) {
+  var result = createPlayerReinforcementRequest(priority, 'manual');
+  closeReinforcementRequestModal();
+  if (!result) return;
+  var effectText = result.request.status === 'approved'
+    ? '<br><br>影响：领导力+1；休赛期优先评估' + result.positionLabel + '补强。'
+    : '<br><br>影响：教练信任-1；本赛季补强要求次数已用完。';
+  showOffseasonResultModal(result.request.status === 'approved' ? '补强要求获准' : '补强要求被拒', result.resultText + effectText, function() {
+    showMyCard();
+  });
+}
+
+function renderPlayerReinforcementRequestCard() {
+  var availability = getReinforcementRequestAvailability();
+  var request = getPlayerReinforcementRequest();
+  var currentSeason = getActiveTradeRequestSeason();
+  var title = '🧩 要求补强';
+  var body = availability.reason || '';
+  var action = '';
+
+  if (availability.allowed) {
+    if (request && request.season < currentSeason && request.status === 'fulfilled') {
+      body = '上次要求已落实：' + getReinforcementPositionLabel(request.priority) + '。' + availability.reason;
+    } else if (request && request.season < currentSeason && request.status === 'reviewed') {
+      body = '上次要求暂未找到合适交易。' + availability.reason;
+    }
+    action = '<button class="btn btn-secondary btn-sm" style="width:100%;margin-top:9px;" onclick="showReinforcementRequestModal()">提出补强要求</button>';
+  } else if (request && request.season === currentSeason) {
+    body += ' · 优先补强' + getReinforcementPositionLabel(request.priority);
+  }
+
+  return '<div class="mc-section"><div class="mc-section-title">' + title + '</div>' +
+    '<div style="font-size:12px;line-height:1.6;color:var(--text-dim);">' + body + '</div>' + action + '</div>';
 }
 
 function createPlayerTradeRequest(preferredTeam, source, options) {
@@ -1595,6 +1819,92 @@ function swapRosterPlayers(teamA, teamB, playerA, playerB) {
   });
 }
 
+function getTeamTradeNeed(team) {
+  var lineup = calcTeamLineup(team);
+  var weakest = null;
+  var weakOvr = 999;
+  ['PG', 'SG', 'SF', 'PF', 'C'].forEach(function(pos) {
+    var player = lineup && lineup.starters ? lineup.starters[pos] : null;
+    if (player && !player._isUser && player.ovr < weakOvr) {
+      weakOvr = player.ovr;
+      weakest = pos;
+    }
+  });
+  return weakest;
+}
+
+function getReinforcementBenchmarkOvr(team, priority) {
+  var lineup = calcTeamLineup(team);
+  var starter = lineup && lineup.starters ? lineup.starters[priority] : null;
+  if (starter && !starter._isUser) return Number(starter.ovr) || 0;
+  var roster = LEAGUE_PLAYER_DATA[team] || [];
+  var best = 0;
+  roster.forEach(function(player) {
+    if (player && !player._isUser && canPlayPosition(player.pos || '', priority)) {
+      best = Math.max(best, Number(player.ovr) || 0);
+    }
+  });
+  return best;
+}
+
+function tryFulfillPlayerReinforcementRequest(request, needs, shuffled, tradedPlayers, tradedTeams) {
+  var c = STATE.career || {};
+  if (!request || request.status !== 'approved' || request.processedSeason === (c.seasonCount || 0)) return null;
+  if (request.season > (c.seasonCount || 0) || !STATE.careerTeam) return null;
+
+  var targetTeam = STATE.careerTeam;
+  var priority = REINFORCEMENT_POSITION_META[request.priority] ? request.priority : getTeamTradeNeed(targetTeam);
+  if (!priority) return null;
+  if ((tradedTeams.get(targetTeam) || 0) >= 2) return null;
+
+  var targetRoster = LEAGUE_PLAYER_DATA[targetTeam] || [];
+  var baselineOvr = getReinforcementBenchmarkOvr(targetTeam, priority);
+  var best = null;
+  shuffled.forEach(function(partner) {
+    if (partner === targetTeam || (tradedTeams.get(partner) || 0) >= 2) return;
+    var partnerRoster = LEAGUE_PLAYER_DATA[partner] || [];
+    var incoming = findTradeCandidate(partnerRoster, priority, null, tradedPlayers);
+    if (!incoming || incoming._isUser) return;
+
+    var improvement = baselineOvr > 0 ? incoming.ovr - baselineOvr : incoming.ovr - 60;
+    if (baselineOvr > 0 && improvement < 1) return;
+
+    var partnerNeed = needs[partner] || getTeamTradeNeed(partner);
+    if (!partnerNeed || partnerNeed === priority) return;
+    var outgoing = findTradeCandidate(targetRoster, partnerNeed, incoming.ovr, tradedPlayers)
+      || findTradeCandidate(targetRoster, partnerNeed, null, tradedPlayers);
+    if (!outgoing || outgoing._isUser) return;
+
+    var diff = Math.abs(incoming.ovr - outgoing.ovr);
+    if (diff > 15) return;
+    var standing = STATE._prevStandings && STATE._prevStandings[partner];
+    var partnerWinRate = standing ? ((standing.wins || 0) + (standing.losses || 0) > 0
+      ? (standing.wins || 0) / ((standing.wins || 0) + (standing.losses || 0))
+      : 0.5) : 0.5;
+    var score = improvement * 10 + incoming.ovr * 0.2 - diff * 0.75 + (0.5 - partnerWinRate) * 8;
+    if (!best || score > best.score) {
+      best = { partner: partner, incoming: incoming, outgoing: outgoing, position: priority, score: score };
+    }
+  });
+
+  if (!best) return null;
+  swapRosterPlayers(targetTeam, best.partner, best.incoming, best.outgoing);
+  tradedPlayers.add(best.incoming);
+  tradedPlayers.add(best.outgoing);
+  tradedTeams.set(targetTeam, (tradedTeams.get(targetTeam) || 0) + 1);
+  tradedTeams.set(best.partner, (tradedTeams.get(best.partner) || 0) + 1);
+  needs[targetTeam] = getTeamTradeNeed(targetTeam);
+  needs[best.partner] = getTeamTradeNeed(best.partner);
+
+  var tradeLog = STATE._leagueChanges.trades[STATE._leagueChanges.trades.length - 1];
+  if (tradeLog) {
+    tradeLog.requestedReinforcement = true;
+    tradeLog.reinforcementPosition = priority;
+    tradeLog.incomingOvr = best.incoming.ovr;
+  }
+  return best;
+}
+
 function processTrades() {
   if (!LEAGUE_PLAYER_DATA) return;
   if (!STATE._leagueChanges) STATE._leagueChanges = { retired: [], rookies: [], teamChanges: {}, trades: [] };
@@ -1603,15 +1913,7 @@ function processTrades() {
   // 算每队需求位置
   var needs = {};
   LEAGUE_TEAM_IDS.forEach(function(t) {
-    var lineup = calcTeamLineup(t);
-    var weakest = null, weakOvr = 999;
-    ['PG','SG','SF','PF','C'].forEach(function(pos) {
-      var p = lineup.starters[pos];
-      if (p && !p._isUser && p.ovr < weakOvr) {
-        weakOvr = p.ovr; weakest = pos;
-      }
-    });
-    needs[t] = weakest;
+    needs[t] = getTeamTradeNeed(t);
   });
 
   console.log('[Trade] 需求:', JSON.stringify(needs));
@@ -1623,6 +1925,33 @@ function processTrades() {
   var shuffled = LEAGUE_TEAM_IDS.slice().sort(function() { return rngNext() - 0.5; });
 
   var tradeCount = 0;
+  var reinforcementRequest = typeof getPlayerReinforcementRequest === 'function' ? getPlayerReinforcementRequest() : null;
+  if (reinforcementRequest && reinforcementRequest.status === 'approved' && reinforcementRequest.season <= (STATE.career.seasonCount || 0)) {
+    var reinforcementTrade = tryFulfillPlayerReinforcementRequest(reinforcementRequest, needs, shuffled, tradedPlayers, tradedTeams);
+    reinforcementRequest.processedSeason = STATE.career.seasonCount || 0;
+    STATE.career.flags = STATE.career.flags || {};
+    STATE.career.flags.reinforcementRequested = false;
+    if (reinforcementTrade) {
+      reinforcementRequest.status = 'fulfilled';
+      reinforcementRequest.completedSeason = STATE.career.seasonCount || 0;
+      reinforcementRequest.outcome = 'trade';
+      var reinforcementLabel = getReinforcementPositionLabel(reinforcementTrade.position);
+      var reinforcementResult = '管理层完成了一笔针对' + reinforcementLabel + '的交易，补强要求已落实。';
+      recordPlayerReinforcementOutcome(reinforcementRequest, reinforcementResult);
+      if (typeof addNextSeasonMod === 'function') {
+        addNextSeasonMod('teamChemistry', 1, -10, 10);
+        addNextSeasonMod('moraleBonus', 1, -10, 10);
+      }
+    } else {
+      reinforcementRequest.status = 'reviewed';
+      reinforcementRequest.completedSeason = STATE.career.seasonCount || 0;
+      reinforcementRequest.outcome = 'no_match';
+      recordPlayerReinforcementOutcome(reinforcementRequest, '管理层评估了补强要求，但本次休赛期没有找到合适的交易组合。');
+    }
+    if (typeof queueSeasonAutoSave === 'function') queueSeasonAutoSave();
+    if (reinforcementTrade) tradeCount++;
+  }
+
   for (var ti = 0; ti < shuffled.length && tradeCount < 16; ti++) {
     var a = shuffled[ti];
     if ((tradedTeams.get(a) || 0) >= 2) continue; // 每队最多参与 2 笔
@@ -1654,23 +1983,11 @@ function processTrades() {
           tradedPlayers.add(playerForB);
           tradedTeams.set(a, (tradedTeams.get(a) || 0) + 1);
           tradedTeams.set(b, (tradedTeams.get(b) || 0) + 1);
-          swapRosterPlayers(a, b, playerForA, playerForB);
-          tradeCount++;
-          // 重新算两队需求
-          lineup = calcTeamLineup(a);
-          var w2 = null, wo2 = 999;
-          ['PG','SG','SF','PF','C'].forEach(function(pos) {
-            var p2 = lineup.starters[pos];
-            if (p2 && !p2._isUser && p2.ovr < wo2) { wo2 = p2.ovr; w2 = pos; }
-          });
-          needs[a] = w2;
-          lineup = calcTeamLineup(b);
-          w2 = null; wo2 = 999;
-          ['PG','SG','SF','PF','C'].forEach(function(pos) {
-            var p2 = lineup.starters[pos];
-            if (p2 && !p2._isUser && p2.ovr < wo2) { wo2 = p2.ovr; w2 = pos; }
-          });
-          needs[b] = w2;
+           swapRosterPlayers(a, b, playerForA, playerForB);
+           tradeCount++;
+           // 重新算两队需求
+          needs[a] = getTeamTradeNeed(a);
+          needs[b] = getTeamTradeNeed(b);
           break;
         }
       }

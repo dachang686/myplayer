@@ -110,6 +110,17 @@ if (denied.STATE.careerTeam !== 'AAA') failures.push('已拒绝申请仍然导�
 if (!/renderPlayerTradeRequestCard\(\)/.test(indexText)) failures.push('我的球员页面没有渲染申请交易入口');
 if (!/createPlayerTradeRequest\('', 'deadline_event'/.test(indexText)) failures.push('交易截止日剧情没有接入真实申请流程');
 
+const reinforcement = buildContext(0);
+if (!reinforcement.getReinforcementRequestAvailability().allowed) failures.push('完成 10 场且合同有效时仍不能提交补强要求');
+const reinforcementResult = reinforcement.createPlayerReinforcementRequest('PG', 'manual');
+if (!reinforcementResult || reinforcementResult.request.status !== 'approved') failures.push('批准分支没有生成已批准补强要求');
+if (reinforcement.createPlayerReinforcementRequest('PF', 'manual') !== null) failures.push('同一赛季可以重复提交补强要求');
+
+const reinforcementDenied = buildContext(0.99);
+const reinforcementDeniedResult = reinforcementDenied.createPlayerReinforcementRequest('PG', 'manual');
+if (!reinforcementDeniedResult || reinforcementDeniedResult.request.status !== 'denied') failures.push('拒绝分支没有生成已拒绝补强要求');
+if (!/renderPlayerReinforcementRequestCard\(\)/.test(indexText)) failures.push('我的球员页面没有渲染补强要求入口');
+
 if (failures.length) {
   console.error(failures.join('\n'));
   process.exit(1);
