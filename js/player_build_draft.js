@@ -395,9 +395,10 @@ function renderPlayerBuildAttributes(build, player) {
   return ATTR_KEYS.map(function(attrKey) {
     var owned = isPlayerBuildAttrOwned(build, attrKey);
     var selected = selectedAttr === attrKey;
+    var pick = owned ? build.picks.find(function(item) { return item && item.attr === attrKey; }) : null;
     var lockedValue = Number(STATE.attrs[attrKey]);
     var value = owned && Number.isFinite(lockedValue) ? lockedValue : getPlayerBuildBaseValue(player, attrKey);
-    var stateLabel = owned ? '已拥有' : (selected ? '已选' : '可选择');
+    var stateLabel = owned ? (pick && pick.sourcePlayerName ? '来源：' + pick.sourcePlayerName : '已拥有') : (selected ? '已选' : '可选择');
     var disabled = owned ? ' disabled' : '';
     return '<button type="button" class="pb-attr-card' + (owned ? ' is-owned' : '') + (selected ? ' is-selected' : '') + '"' +
       ' data-build-attr="' + attrKey + '" aria-pressed="' + (selected ? 'true' : 'false') + '"' + disabled +

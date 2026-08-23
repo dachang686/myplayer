@@ -38,7 +38,7 @@
 .pb-attr-card.is-owned{border-color:var(--border);background:rgba(130,130,130,.08);opacity:.52;cursor:not-allowed}
 .pb-attr-name{overflow:hidden;color:var(--text-dim);font:750 10px var(--font-body);text-overflow:ellipsis;white-space:nowrap}
 .pb-attr-value{color:var(--text);font:800 17px/1 var(--font-display)}
-.pb-attr-state{grid-column:1/-1;margin-top:4px;color:var(--orange);font-size:7px;font-weight:800;letter-spacing:.4px}
+.pb-attr-state{display:block;grid-column:1/-1;min-width:0;margin-top:4px;overflow:hidden;color:var(--orange);font-size:7px;font-weight:800;letter-spacing:.4px;text-overflow:ellipsis;white-space:nowrap}
 .pb-attr-card.is-owned .pb-attr-state{color:var(--text-muted)}
 .pb-tier-section{padding:12px;border:1px solid var(--border);border-radius:13px;background:var(--bg-card)}
 .pb-tier-empty{display:flex;align-items:center;gap:10px;min-height:64px;padding:12px;border:1px dashed var(--border-light);border-radius:9px;color:var(--text-muted)}
