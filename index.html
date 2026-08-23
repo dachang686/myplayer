@@ -30,6 +30,7 @@ window.open = function(){ return null; };
   <script src="js/i18n.js"></script>
   <link rel="stylesheet" href="css/draft.css">
   <link rel="stylesheet" href="css/player-build.css">
+  <link rel="stylesheet" href="css/retirement.css">
   <style>
 /* ============================================================
    BuildPlayer — Mobile-First Game Edition
@@ -1144,6 +1145,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 <script src="js/local_player_profile.js"></script>
 <script src="js/data/draft_data.js"></script>
 <script src="js/data/legacy_text.js"></script>
+<script src="js/career_summary.js"></script>
 <script src="js/data/career_biography_text.js"></script>
 <script src="js/playoffs.js"></script>
 <script src="js/simulation_v2.js"></script>
@@ -8272,7 +8274,7 @@ function getMyCardAwardItems() {
     items.push({ label: label, emoji: (rawAward && rawAward.emoji) || '', seasonNum: seasonNum });
   }
 
-  (career.honors || []).forEach(function(award) {
+  getCanonicalCareerAwards().forEach(function(award) {
     addAward(award, award && award.seasonNum);
   });
   ((STATE.season && STATE.season.awards) || []).forEach(function(award) {
@@ -8573,7 +8575,7 @@ function renderMyCard(isFinal, activeTab) {
     </div>
 
     <div class="mc-section">
-      <div class="mc-section-title">🧮 职业生涯总数据 · ${careerAvg.games} 场</div>
+      <div class="mc-section-title">🧮 职业生涯常规赛累计 · ${careerAvg.games} 场</div>
       <div class="mc-stats-grid">
         <div class="mc-stat"><span class="mc-stat-val">${careerAvg.totalPts}</span><span class="mc-stat-lbl">总得分</span></div>
         <div class="mc-stat"><span class="mc-stat-val">${careerAvg.totalReb}</span><span class="mc-stat-lbl">总篮板</span></div>
@@ -8630,6 +8632,70 @@ function renderMyCard(isFinal, activeTab) {
 function isRookieHonorForLaterSeason(h) {
   var label = (h && h.label) || '';
   return label.indexOf('最佳新秀') >= 0 && (parseInt(h.seasonNum, 10) || 0) !== 1;
+}
+
+function getCareerSummary() {
+  var state = (typeof STATE !== 'undefined' && STATE) ? STATE : {};
+  var career = state.career || {};
+  if (typeof CareerSummary !== 'undefined' && CareerSummary && typeof CareerSummary.normalize === 'function') {
+    return CareerSummary.normalize(career, state);
+  }
+  return {
+    seasons: Array.isArray(career.seasons) ? career.seasons.slice() : [],
+    seasonsCount: Array.isArray(career.seasons) ? career.seasons.length : 0,
+    regularSeason: career.totalStats || {},
+    playoffs: career.playoffStats || {},
+    games: Number(career.totalStats && career.totalStats.games) || 0,
+    points: Number(career.totalStats && career.totalStats.pts) || 0,
+    playoffGames: Number(career.playoffStats && career.playoffStats.games) || 0,
+    playoffPoints: Number(career.playoffStats && career.playoffStats.pts) || 0,
+    championships: 0, fmvp: 0, mvp: 0, dpoy: 0, allLeague: 0, allStar: 0,
+    finalsAppearances: 0, championshipSeasons: [], championshipTeams: [],
+    teams: [], teamCount: 0, teamYears: {}, longestTeam: '', longestYears: 0,
+    firstTeam: '', lastTeam: '', oneTeamCareer: true, peakOVR: Number(state.finalOVR) || 0,
+    bestSeason: null, bestSeasonScore: 0, bestSeasonStats: null, awardEntries: [],
+    seasonStatsComplete: false,
+    hadMajorInjury: false, wasTraded: false, hasRivalry: false
+  };
+}
+
+function repairCareerAggregateStats() {
+  var state = (typeof STATE !== 'undefined' && STATE) ? STATE : {};
+  if (typeof CareerSummary !== 'undefined' && CareerSummary && typeof CareerSummary.reconcileRegularSeasonTotals === 'function') {
+    return CareerSummary.reconcileRegularSeasonTotals(state.career || null, state);
+  }
+  return false;
+}
+
+function getCanonicalCareerAwards() {
+  var career = (typeof STATE !== 'undefined' && STATE && STATE.career) || {};
+  var summary = getCareerSummary();
+  var entries = (summary.awardEntries || []).map(function(entry) {
+    return Object.assign({}, entry, { label: entry.label || '' });
+  });
+  var seen = {};
+  entries.forEach(function(entry) {
+    seen[(entry.seasonNum || 0) + '|' + entry.label] = true;
+  });
+  (summary.championshipSeasons || []).forEach(function(season) {
+    var key = (season.seasonNum || 0) + '|🏆 总冠军';
+    if (!seen[key]) {
+      entries.push({ seasonNum: season.seasonNum, team: season.team, label: '🏆 总冠军', emoji: '🏆' });
+      seen[key] = true;
+    }
+  });
+  // 历史纪录类荣誉不属于赛季奖项，但仍应保留在荣誉墙中；标准奖项统一以赛季档案为准。
+  (career.honors || []).forEach(function(entry) {
+    var label = (entry && entry.label) || '';
+    var isStandard = /总冠军|MVP|DPOY|最佳阵容|全明星|最佳新秀|得分王|篮板王|助攻王|抢断王|盖帽王/.test(label);
+    if (!label || isStandard || isRookieHonorForLaterSeason(entry)) return;
+    var key = (entry.seasonNum || 0) + '|' + label;
+    if (!seen[key]) {
+      entries.push(Object.assign({}, entry));
+      seen[key] = true;
+    }
+  });
+  return entries;
 }
 
 function renderHonorBadge(label, emoji, cls) {
@@ -8732,7 +8798,8 @@ function saveCurrentSeasonToCareer() {
 function showCareerHonors() {
   showScreen('screen-career-honors');
   var c = STATE.career;
-  document.getElementById('career-honors-sub').textContent = '生涯共 ' + c.honors.length + ' 项荣誉 · ' + c.seasonCount + ' 个赛季';
+  var honors = getCanonicalCareerAwards();
+  document.getElementById('career-honors-sub').textContent = '生涯共 ' + honors.length + ' 项荣誉 · ' + c.seasonCount + ' 个赛季';
 
   var html = '';
   if (c.seasons.length === 0) {
@@ -8741,7 +8808,7 @@ function showCareerHonors() {
     for (var i = c.seasons.length - 1; i >= 0; i--) {
       var s = c.seasons[i];
       var tn = getTeamName ? getTeamName(s.team) : s.team;
-      var seasHonors = c.honors.filter(function(h) { return h.seasonNum === s.seasonNum && !isRookieHonorForLaterSeason(h); });
+       var seasHonors = honors.filter(function(h) { return h.seasonNum === s.seasonNum && !isRookieHonorForLaterSeason(h); });
       html += '<div class="ch-season">';
       html += '<div class="ch-season-header">🏀 ' + getSeasonLabel(s.seasonNum) + ' <span class="ch-team">' + tn + '</span></div>';
       if (seasHonors.length === 0) {
@@ -8758,7 +8825,7 @@ function showCareerHonors() {
   }
 
   var counts = {};
-  c.honors.forEach(function(h) {
+  honors.forEach(function(h) {
     if (isRookieHonorForLaterSeason(h)) return;
     counts[h.label] = (counts[h.label] || 0) + 1;
   });
@@ -9845,6 +9912,13 @@ function getChinaTournamentName() {
 }
 
 function countCareerHonor(label) {
+  var summary = getCareerSummary();
+  if (label === 'MVP') return summary.mvp || 0;
+  if (label === '总冠军') return summary.championships || 0;
+  if (label.indexOf('总决赛MVP') >= 0 || label.indexOf('FMVP') >= 0) return summary.fmvp || 0;
+  if (label.indexOf('DPOY') >= 0) return summary.dpoy || 0;
+  if (label.indexOf('最佳阵容') >= 0) return summary.allLeague || 0;
+  if (label.indexOf('全明星') >= 0) return summary.allStar || 0;
   var honors = (STATE.career && STATE.career.honors) || [];
   return honors.filter(function(h) { return (h.label || '').indexOf(label) >= 0 && !isRookieHonorForLaterSeason(h); }).length;
 }
@@ -10131,6 +10205,7 @@ function buildManualSaveSnapshot() {
     canonicalPlayerName = String(LOCAL_PLAYER_PROFILE.nickname).replace(/\s+/g, ' ').trim().slice(0, 20);
     STATE.playerName = canonicalPlayerName;
   }
+  repairCareerAggregateStats();
   var rawState = JSON.parse(JSON.stringify(STATE));
   // 自动模拟定时器无法跨刷新恢复；存档按“已暂停、可继续”状态保存。
   rawState._calendarAutoSimulating = false;
@@ -10338,6 +10413,7 @@ function manualLoadGame(slot, options) {
         // STATE 与 LEAGUE_PLAYER_DATA 是 const，只能原地清空后填充，保证所有引用仍然有效
         Object.keys(STATE).forEach(function(k) { delete STATE[k]; });
         Object.assign(STATE, snap.state);
+        repairCareerAggregateStats();
         var savedProfile = snap.localPlayerProfile && typeof snap.localPlayerProfile === 'object'
           ? snap.localPlayerProfile
           : {};
@@ -10829,6 +10905,7 @@ function announcePlayerRetirement() {
   c.flags.postCareerDeferred = false;
   c.contract = 0;
   saveCurrentSeasonToCareer();
+  repairCareerAggregateStats();
   c.retired = true;
   c.legacy = calculateLegacyResult();
   clearAutoSaveStorage();
@@ -10850,6 +10927,8 @@ function buildJerseyAchievement(info) {
     parts.push(champLine);
   }
   if (info.mvp > 0) parts.push('把 ' + info.mvp + ' 座常规赛MVP留在这座城市');
+  if (info.dpoy > 0) parts.push('留下 ' + info.dpoy + ' 次最佳防守球员的防守印记');
+  if (info.allLeague > 0) parts.push('写下 ' + info.allLeague + ' 次最佳阵容记录');
   if (parts.length === 0) parts.push('你把最好的 ' + (info.years || 0) + ' 年都交给了这座城市');
   return parts.join('，');
 }
@@ -10871,6 +10950,8 @@ function buildJerseyCeremonyCopy(info) {
     championships: info.championships || 0,
     mvp: info.mvp || 0,
     fmvp: info.fmvp || 0,
+    dpoy: info.dpoy || 0,
+    allLeague: info.allLeague || 0,
     allStar: info.allStar || 0,
     achievement: buildJerseyAchievement(info),
   };
@@ -10886,15 +10967,72 @@ function buildJerseyCeremonyCopy(info) {
 
 ;
 
+function getLegacyNarrativeFacts(r) {
+  var summary = getCareerSummary();
+  var facts = Object.assign({}, r || {});
+  facts.championships = summary.championships;
+  facts.fmvp = summary.fmvp;
+  facts.mvp = summary.mvp;
+  facts.dpoy = summary.dpoy;
+  facts.allLeague = summary.allLeague;
+  facts.allStar = summary.allStar;
+  facts.teamCount = summary.teamCount || facts.teamCount || 0;
+  facts.seasonsCount = summary.seasonsCount || facts.seasonsCount || 0;
+  facts.games = summary.games;
+  facts.points = summary.points;
+  facts.playoffGames = summary.playoffGames;
+  facts.playoffPoints = summary.playoffPoints;
+  facts.finalsAppearances = summary.finalsAppearances;
+  facts.peakOVR = summary.peakOVR;
+  facts.hadMajorInjury = summary.hadMajorInjury;
+  facts.wasTraded = summary.wasTraded;
+  facts.hasRivalry = summary.hasRivalry;
+  facts.oneTeamCareer = summary.oneTeamCareer;
+  facts.longestTeam = facts.longestTeam || (summary.longestTeam ? getTeamName(summary.longestTeam) : '');
+  facts.longestYears = summary.longestYears || facts.longestYears || 0;
+  facts.firstTeam = facts.firstTeam || (summary.firstTeam ? getTeamName(summary.firstTeam) : '');
+  facts.lastTeam = facts.lastTeam || (summary.lastTeam ? getTeamName(summary.lastTeam) : '');
+  facts.teamList = facts.teamList || summary.teams.map(function(team) { return getTeamName(team); }).join('、');
+  if (!facts.teamList) facts.teamList = facts.firstTeam || '';
+  facts.hasFamilyStory = !!(facts.hasFamilyStory || (typeof getBranchNode === 'function' && getBranchNode('family') !== 'start'));
+  return facts;
+}
+
+function legacyCopyIsCompatible(text, r) {
+  var facts = r || {};
+  var copy = String(text || '');
+  if (!facts.championships && /冠军|戒指/.test(copy)) return false;
+  if (!facts.finalsAppearances && /总决赛|抢七/.test(copy)) return false;
+  if (!facts.hadMajorInjury && /伤病|受伤|伤愈|康复|复健|护具/.test(copy)) return false;
+  if (!facts.wasTraded && /被交易|第一次交易|交易官宣|交易流言|交易过/.test(copy)) return false;
+  if (!facts.hasRivalry && /老对手|宿敌/.test(copy)) return false;
+  if (!facts.allStar && /全明星/.test(copy)) return false;
+  if (!facts.allLeague && /最佳阵容/.test(copy)) return false;
+  if (!facts.hasFamilyStory && /家人|女儿|儿子|孩子|爸爸|妈妈|父母/.test(copy)) return false;
+  if ((Number(facts.teamCount) || 0) <= 1 && /很多城市|多座城市/.test(copy)) return false;
+  return true;
+}
+
+function pickLegacyCopy(pool, variant, r, fallback) {
+  var facts = getLegacyNarrativeFacts(r);
+  var source = Array.isArray(pool) ? pool : [pool];
+  var compatible = source.filter(function(copy) { return legacyCopyIsCompatible(copy, facts); });
+  if (!compatible.length) return fallback || '你的生涯已经被完整记录，退役之后，球场把答案交给时间。';
+  var raw = typeof variant === 'number' ? Math.abs(variant) : Math.floor(Math.random() * compatible.length);
+  return compatible[raw % compatible.length] || compatible[0];
+}
+
 function buildHofAchievement(r) {
-  return buildCareerAchievement(r);
+  return buildCareerAchievement(getLegacyNarrativeFacts(r));
 }
 
 function buildCareerAchievement(r) {
+  r = getLegacyNarrativeFacts(r);
   var parts = [];
   if (r.championships > 0) parts.push(r.championships + ' 座总冠军');
   if (r.mvp > 0) parts.push(r.mvp + ' 次MVP');
   if (r.fmvp > 0) parts.push(r.fmvp + ' 次总决赛MVP');
+  if (r.dpoy > 0) parts.push(r.dpoy + ' 次最佳防守球员');
   if (r.allLeague > 0) parts.push(r.allLeague + ' 次最佳阵容');
   if (r.allStar > 0) parts.push(r.allStar + ' 次全明星');
   if (parts.length === 0) parts.push('一段没有奖杯却足够完整的生涯');
@@ -10902,28 +11040,30 @@ function buildCareerAchievement(r) {
 }
 
 function buildHofCopy(r) {
-  var pool = r.hof ? HOF_TEXT : HOF_FAIL_TEXT;
-  var idx = typeof r.hofCopyVariant === 'number' ? (r.hofCopyVariant % pool.length) : Math.floor(Math.random() * pool.length);
-  var tpl = pool[idx] || pool[0];
+  var facts = getLegacyNarrativeFacts(r);
+  var pool = facts.hof ? HOF_TEXT : HOF_FAIL_TEXT;
+  var tpl = pickLegacyCopy(pool, facts.hofCopyVariant, facts, facts.hof
+    ? '名人堂为你的生涯留出了位置。你走过的每一场比赛，都成为这段历史的一部分。'
+    : '这次投票没有写下你的名字，但你的生涯事实仍然完整地留在联盟档案里。');
   var vars = {
-    achievement: buildHofAchievement(r),
-    tier: r.tier || '',
-    score: r.score || 0,
-    games: r.games || 0,
-    points: Math.round(r.points || 0),
-    championships: r.championships || 0,
-    mvp: r.mvp || 0,
-    fmvp: r.fmvp || 0,
-    dpoy: r.dpoy || 0,
-    allLeague: r.allLeague || 0,
-    allStar: r.allStar || 0,
-    teamCount: r.teamCount || 0,
-    longestTeam: getTeamName(r.longestTeam || r.team || ''),
-    longestYears: r.longestYears || 0,
-    firstTeam: r.firstTeam || '',
-    lastTeam: r.lastTeam || '',
-    teamList: r.teamList || '',
-    seasonsCount: r.seasonsCount || 0,
+    achievement: buildHofAchievement(facts),
+    tier: facts.tier || '',
+    score: facts.score || 0,
+    games: facts.games || 0,
+    points: Math.round(facts.points || 0),
+    championships: facts.championships || 0,
+    mvp: facts.mvp || 0,
+    fmvp: facts.fmvp || 0,
+    dpoy: facts.dpoy || 0,
+    allLeague: facts.allLeague || 0,
+    allStar: facts.allStar || 0,
+    teamCount: facts.teamCount || 0,
+    longestTeam: getTeamName(facts.longestTeam || facts.team || ''),
+    longestYears: facts.longestYears || 0,
+    firstTeam: facts.firstTeam || '',
+    lastTeam: facts.lastTeam || '',
+    teamList: facts.teamList || '',
+    seasonsCount: facts.seasonsCount || 0,
   };
   return tpl.replace(/\{(\w+)\}/g, function(m, key) {
     return key in vars ? String(vars[key]) : m;
@@ -10935,28 +11075,28 @@ function buildHofCopy(r) {
 ;
 
 function buildGoatHistoryCopy(r) {
+  var facts = getLegacyNarrativeFacts(r);
   var pool = GOAT_HISTORY_TEXT;
-  var idx = typeof r.goatCopyVariant === 'number' ? (r.goatCopyVariant % pool.length) : Math.floor(Math.random() * pool.length);
-  var tpl = pool[idx] || pool[0];
+  var tpl = pickLegacyCopy(pool, facts.goatCopyVariant, facts, '你的生涯把标准推到了一个新的高度，历史会继续讨论这份答案。');
   var vars = {
-    achievement: buildCareerAchievement(r),
-    tier: r.tier || '',
-    score: r.score || 0,
-    games: r.games || 0,
-    points: Math.round(r.points || 0),
-    championships: r.championships || 0,
-    mvp: r.mvp || 0,
-    fmvp: r.fmvp || 0,
-    dpoy: r.dpoy || 0,
-    allLeague: r.allLeague || 0,
-    allStar: r.allStar || 0,
-    teamCount: r.teamCount || 0,
-    longestTeam: getTeamName(r.longestTeam || r.team || ''),
-    longestYears: r.longestYears || 0,
-    firstTeam: r.firstTeam || '',
-    lastTeam: r.lastTeam || '',
-    teamList: r.teamList || '',
-    seasonsCount: r.seasonsCount || 0,
+    achievement: buildCareerAchievement(facts),
+    tier: facts.tier || '',
+    score: facts.score || 0,
+    games: facts.games || 0,
+    points: Math.round(facts.points || 0),
+    championships: facts.championships || 0,
+    mvp: facts.mvp || 0,
+    fmvp: facts.fmvp || 0,
+    dpoy: facts.dpoy || 0,
+    allLeague: facts.allLeague || 0,
+    allStar: facts.allStar || 0,
+    teamCount: facts.teamCount || 0,
+    longestTeam: getTeamName(facts.longestTeam || facts.team || ''),
+    longestYears: facts.longestYears || 0,
+    firstTeam: facts.firstTeam || '',
+    lastTeam: facts.lastTeam || '',
+    teamList: facts.teamList || '',
+    seasonsCount: facts.seasonsCount || 0,
   };
   return tpl.replace(/\{(\w+)\}/g, function(m, key) {
     return key in vars ? String(vars[key]) : m;
@@ -10971,28 +11111,30 @@ function buildGoatHistoryCopy(r) {
 ;
 
 function buildTop100Copy(r) {
-  var pool = r.top100 ? TOP100_TEXT : TOP100_FAIL_TEXT;
-  var idx = typeof r.top100CopyVariant === 'number' ? (r.top100CopyVariant % pool.length) : Math.floor(Math.random() * pool.length);
-  var tpl = pool[idx] || pool[0];
+  var facts = getLegacyNarrativeFacts(r);
+  var pool = facts.top100 ? TOP100_TEXT : TOP100_FAIL_TEXT;
+  var tpl = pickLegacyCopy(pool, facts.top100CopyVariant, facts, facts.top100
+    ? '历史档案收录了你的名字。它记录的不是一句评价，而是许多赛季留下的事实。'
+    : '历史百大没有写下你的名字，但你的生涯数据和球队记忆仍然真实存在。');
   var vars = {
-    achievement: buildCareerAchievement(r),
-    tier: r.tier || '',
-    score: r.score || 0,
-    games: r.games || 0,
-    points: Math.round(r.points || 0),
-    championships: r.championships || 0,
-    mvp: r.mvp || 0,
-    fmvp: r.fmvp || 0,
-    dpoy: r.dpoy || 0,
-    allLeague: r.allLeague || 0,
-    allStar: r.allStar || 0,
-    teamCount: r.teamCount || 0,
-    longestTeam: getTeamName(r.longestTeam || r.team || ''),
-    longestYears: r.longestYears || 0,
-    firstTeam: r.firstTeam || '',
-    lastTeam: r.lastTeam || '',
-    teamList: r.teamList || '',
-    seasonsCount: r.seasonsCount || 0,
+    achievement: buildCareerAchievement(facts),
+    tier: facts.tier || '',
+    score: facts.score || 0,
+    games: facts.games || 0,
+    points: Math.round(facts.points || 0),
+    championships: facts.championships || 0,
+    mvp: facts.mvp || 0,
+    fmvp: facts.fmvp || 0,
+    dpoy: facts.dpoy || 0,
+    allLeague: facts.allLeague || 0,
+    allStar: facts.allStar || 0,
+    teamCount: facts.teamCount || 0,
+    longestTeam: getTeamName(facts.longestTeam || facts.team || ''),
+    longestYears: facts.longestYears || 0,
+    firstTeam: facts.firstTeam || '',
+    lastTeam: facts.lastTeam || '',
+    teamList: facts.teamList || '',
+    seasonsCount: facts.seasonsCount || 0,
   };
   return tpl.replace(/\{(\w+)\}/g, function(m, key) {
     return key in vars ? String(vars[key]) : m;
@@ -11008,29 +11150,29 @@ function buildTop100Copy(r) {
 ;
 
 function buildRetirementCopy(r) {
-  var pool = r.goat ? GOAT_RETIREMENT_TEXT : RETIREMENT_TEXT;
-  var variant = (r.goat && typeof r.goatCopyVariant === 'number') ? r.goatCopyVariant : r.retirementCopyVariant;
-  var idx = typeof variant === 'number' ? (variant % pool.length) : Math.floor(Math.random() * pool.length);
-  var tpl = pool[idx] || pool[0];
+  var facts = getLegacyNarrativeFacts(r);
+  var pool = facts.goat ? GOAT_RETIREMENT_TEXT : RETIREMENT_TEXT;
+  var variant = (facts.goat && typeof facts.goatCopyVariant === 'number') ? facts.goatCopyVariant : facts.retirementCopyVariant;
+  var tpl = pickLegacyCopy(pool, variant, facts, '你把一段完整的职业生涯交给了篮球。今天离开球场，答案已经留在每一个赛季里。');
   var vars = {
-    achievement: buildCareerAchievement(r),
-    tier: r.tier || '',
-    score: r.score || 0,
-    games: r.games || 0,
-    points: Math.round(r.points || 0),
-    championships: r.championships || 0,
-    mvp: r.mvp || 0,
-    fmvp: r.fmvp || 0,
-    dpoy: r.dpoy || 0,
-    allLeague: r.allLeague || 0,
-    allStar: r.allStar || 0,
-    teamCount: r.teamCount || 0,
-    longestTeam: getTeamName(r.longestTeam || r.team || ''),
-    longestYears: r.longestYears || 0,
-    firstTeam: r.firstTeam || '',
-    lastTeam: r.lastTeam || '',
-    teamList: r.teamList || '',
-    seasonsCount: r.seasonsCount || 0,
+    achievement: buildCareerAchievement(facts),
+    tier: facts.tier || '',
+    score: facts.score || 0,
+    games: facts.games || 0,
+    points: Math.round(facts.points || 0),
+    championships: facts.championships || 0,
+    mvp: facts.mvp || 0,
+    fmvp: facts.fmvp || 0,
+    dpoy: facts.dpoy || 0,
+    allLeague: facts.allLeague || 0,
+    allStar: facts.allStar || 0,
+    teamCount: facts.teamCount || 0,
+    longestTeam: getTeamName(facts.longestTeam || facts.team || ''),
+    longestYears: facts.longestYears || 0,
+    firstTeam: facts.firstTeam || '',
+    lastTeam: facts.lastTeam || '',
+    teamList: facts.teamList || '',
+    seasonsCount: facts.seasonsCount || 0,
   };
   return tpl.replace(/\{(\w+)\}/g, function(m, key) {
     return key in vars ? String(vars[key]) : m;
@@ -11039,26 +11181,23 @@ function buildRetirementCopy(r) {
 
 function calculateLegacyResult() {
   var c = STATE.career || {};
-  var seasons = c.seasons || [];
-  var honors = c.honors || [];
-  function cnt(key) { return honors.filter(function(h) { return (h.label || '').indexOf(key) >= 0 && !isRookieHonorForLaterSeason(h); }).length; }
-  var championships = cnt('总冠军');
-  var seasonChampTotal = 0;
-  seasons.forEach(function(s) { if ((s.playoffResult || '').indexOf('总冠军') >= 0) seasonChampTotal++; });
-  if (seasonChampTotal > championships) championships = seasonChampTotal;
-  var fmvp = cnt('总决赛MVP') + cnt('FMVP');
-  var mvp = honors.filter(function(h) { return (h.label || '') === 'MVP'; }).length;
-  var dpoy = cnt('DPOY');
-  var allLeague = cnt('最佳阵容');
-  var allStar = cnt('全明星');
-  var games = (c.totalStats && c.totalStats.games) || 0;
-  var points = (c.totalStats && c.totalStats.pts) || 0;
+  var summary = getCareerSummary();
+  var seasons = summary.seasons || [];
+  var achievements = summary.awardEntries || [];
+  var championships = summary.championships || 0;
+  var fmvp = summary.fmvp || 0;
+  var mvp = summary.mvp || 0;
+  var dpoy = summary.dpoy || 0;
+  var allLeague = summary.allLeague || 0;
+  var allStar = summary.allStar || 0;
+  var games = summary.games || 0;
+  var points = summary.points || 0;
   var longestTeam = '';
-  var teamYears = {};
-  seasons.forEach(function(s) { teamYears[s.team] = (teamYears[s.team] || 0) + 1; });
-  Object.keys(teamYears).forEach(function(t) { if (!longestTeam || teamYears[t] > teamYears[longestTeam]) longestTeam = t; });
-  var seenTeams = [];
-  seasons.forEach(function(s) { if (seenTeams.indexOf(s.team) < 0) seenTeams.push(s.team); });
+  var teamYears = summary.teamYears || {};
+  Object.keys(teamYears).forEach(function(t) {
+    if (!longestTeam || teamYears[t] > teamYears[longestTeam]) longestTeam = t;
+  });
+  var seenTeams = summary.teams || [];
   var teamCount = seenTeams.length;
   var teamList = seenTeams.map(getTeamName).join('、');
   var firstTeam = seenTeams.length ? getTeamName(seenTeams[0]) : '';
@@ -11067,7 +11206,7 @@ function calculateLegacyResult() {
   score += Math.min(35, Math.floor(points / 2500));
   score += Math.min(18, Math.floor(games / 120));
   if (teamYears[longestTeam] >= 8) score += 10;
-  if (STATE.finalOVR >= 94) score += 8;
+  if (summary.peakOVR >= 94) score += 8;
   var cd = c.flags || {};
   if (cd.finalShow) score += 2;
   if (cd.finalHurt) score -= 1;
@@ -11105,14 +11244,17 @@ function calculateLegacyResult() {
     var td = teamData[s.team];
     if (td && s.seasonNum < td.firstSeason) td.firstSeason = s.seasonNum;
   });
-  honors.forEach(function(h) {
+  achievements.forEach(function(h) {
     if (isRookieHonorForLaterSeason(h)) return;
-    var td = teamData[seasonTeam[h.seasonNum]];
+    var td = teamData[seasonTeam[h.seasonNum] || h.team];
     if (!td) return;
     var label = h.label || '';
-    if (label.indexOf('总冠军') >= 0) return; // 冠军归属以赛季战绩为准，防止存档错位
+    if (label.indexOf('总冠军') >= 0) {
+      if (!summary.seasonResultsComplete) td.championships++;
+      return; // 完整赛季档案以赛季战绩为准，防止荣誉错位
+    }
     if (label.indexOf('总决赛MVP') >= 0 || label.indexOf('FMVP') >= 0) td.fmvp++;
-    if (label === 'MVP') td.mvp++;
+    if (label.replace(/^[^A-Za-z0-9\u3400-\u9FFF]+/, '').trim() === 'MVP') td.mvp++;
     if (label.indexOf('DPOY') >= 0) td.dpoy++;
     if (label.indexOf('最佳阵容') >= 0) td.allLeague++;
     if (label.indexOf('全明星') >= 0) td.allStar++;
@@ -11120,7 +11262,7 @@ function calculateLegacyResult() {
   var jerseyTeams = [];
   Object.keys(teamData).forEach(function(t) {
     var td = teamData[t];
-    td.teamLegacy = td.years * 7 + td.championships * 12 + td.mvp * 10 + td.fmvp * 8 + td.allStar * 2;
+    td.teamLegacy = td.years * 7 + td.championships * 12 + td.mvp * 10 + td.fmvp * 8 + td.dpoy * 8 + td.allLeague * 4 + td.allStar * 2;
     if (td.teamLegacy >= 80 || (td.championships > 0 && td.years >= 5) || (td.mvp > 0 && td.years >= 4)) {
       var pool = JERSEY_RETIREMENT_TEXT_BY_TEAM[td.team] || JERSEY_RETIREMENT_TEXT_FALLBACK;
       td.copyVariant = Math.floor(Math.random() * (Array.isArray(pool) ? pool.length : 1));
@@ -11129,7 +11271,20 @@ function calculateLegacyResult() {
   });
   jerseyTeams.sort(function(a, b) { return (a.firstSeason - b.firstSeason) || (b.teamLegacy - a.teamLegacy); });
   var jersey = jerseyTeams.length > 0;
-  return { score: score, tier: tier, hof: hof, hofCopyVariant: hofCopyVariant, top100: top100, top100CopyVariant: top100CopyVariant, retirementCopyVariant: retirementCopyVariant, goat: goat, goatCopyVariant: goatCopyVariant, seasonsCount: seasons.length, jersey: jersey, jerseyTeams: jerseyTeams, team: longestTeam, longestTeam: longestTeam, longestYears: teamYears[longestTeam] || 0, teamCount: teamCount, teamList: teamList, firstTeam: firstTeam, lastTeam: lastTeam, teamYears: teamYears[longestTeam] || 0, championships: championships, fmvp: fmvp, mvp: mvp, dpoy: dpoy, allLeague: allLeague, allStar: allStar, points: points, games: games };
+  return {
+    score: score, tier: tier, hof: hof, hofCopyVariant: hofCopyVariant,
+    top100: top100, top100CopyVariant: top100CopyVariant,
+    retirementCopyVariant: retirementCopyVariant, goat: goat, goatCopyVariant: goatCopyVariant,
+    seasonsCount: seasons.length, jersey: jersey, jerseyTeams: jerseyTeams,
+    team: longestTeam, longestTeam: longestTeam, longestYears: teamYears[longestTeam] || 0,
+    teamCount: teamCount, teamList: teamList, firstTeam: firstTeam, lastTeam: lastTeam,
+    teamYears: teamYears[longestTeam] || 0, championships: championships, fmvp: fmvp,
+    mvp: mvp, dpoy: dpoy, allLeague: allLeague, allStar: allStar, points: points, games: games,
+    playoffGames: summary.playoffGames || 0, playoffPoints: summary.playoffPoints || 0,
+    finalsAppearances: summary.finalsAppearances || 0, peakOVR: summary.peakOVR || 0,
+    hadMajorInjury: summary.hadMajorInjury, wasTraded: summary.wasTraded,
+    hasRivalry: summary.hasRivalry, oneTeamCareer: summary.oneTeamCareer
+  };
 }
 
 function showLegacyModal(step, jerseyIdx) {
@@ -11139,7 +11294,12 @@ function showLegacyModal(step, jerseyIdx) {
   var next = step + 1;
   var nextJersey = 0;
   if (step === 0) {
-    body = buildRetirementCopy(r) + '<br><br>生涯总结：' + r.games + '场，' + Math.round(r.points) + '分，' + r.mvp + '次MVP，' + r.championships + '次总冠军，' + r.allLeague + '次最佳阵容。<br><br>历史分：' + r.score + ' · ' + r.tier + '。';
+    var playoffLine = r.playoffGames > 0
+      ? '；季后赛 ' + r.playoffGames + ' 场，' + Math.round(r.playoffPoints || 0) + ' 分'
+      : '；季后赛暂无出场记录';
+    body = buildRetirementCopy(r) + '<br><br>常规赛生涯：' + r.games + '场，' + Math.round(r.points) + '分' + playoffLine + '。' +
+      '<br>主要荣誉：' + r.mvp + '次MVP，' + r.championships + '次总冠军，' + r.allLeague + '次最佳阵容。' +
+      '<br><br>历史分：' + r.score + ' · ' + r.tier + '。';
   } else if (step === 1) {
     var jerseyTeams = r.jerseyTeams || [];
     if (jerseyTeams.length > 0) {
@@ -11155,7 +11315,11 @@ function showLegacyModal(step, jerseyIdx) {
       }
     } else {
       title = '退役球衣';
-      body = '你的老东家为你准备了致敬短片，但球衣没有升上球馆上空。管理层给出的说法很体面：你属于很多城市，也属于这个时代。<br><br>结果：未触发退役球衣。';
+      var summary = getCareerSummary();
+      var noJerseyCopy = summary.teamCount <= 1
+        ? '你的老东家为你准备了致敬短片。你把整个职业生涯留在了这座城市，球衣虽然没有升上屋顶，但这里仍然记得你的名字。'
+        : '你的老东家为你准备了致敬短片。你的故事走过 ' + summary.teamCount + ' 支球队，球衣没有升上屋顶，但每一站都留下了真实的比赛记忆。';
+      body = noJerseyCopy + '<br><br>结果：未触发退役球衣。';
     }
   } else if (step === 2) {
     title = '名人堂投票';
@@ -11168,12 +11332,25 @@ function showLegacyModal(step, jerseyIdx) {
     else body = buildTop100Copy(r) + '<br><br>结果：未入选联盟历史百大。';
     next = -1;
   }
-  var html = '<div class="team-picker-overlay" id="legacy-modal">';
-  html += '<div class="team-picker-modal">';
-  html += '<div class="team-picker-header"><span>' + title + '</span></div>';
-  html += '<div style="padding:14px;">';
-  html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.65;margin-bottom:14px;">' + body + '</div>';
-  html += '<button class="btn btn-primary btn-sm" style="width:100%;" onclick="' + (next >= 0 ? 'closeLegacyAndShow(' + next + ',' + nextJersey + ')' : 'finishLegacyStory()') + '">' + (next >= 0 ? '继续' : '完成') + '</button>';
+  var legacyPhaseNames = ['退役发言', '球衣仪式', '名人堂', '历史地位'];
+  var legacyPhaseIcons = ['◌', '▣', '◇', '★'];
+  var phaseIndex = Math.max(0, Math.min(legacyPhaseNames.length - 1, Number(step) || 0));
+  var progressHtml = '<div class="legacy-modal-progress" aria-label="退役流程">';
+  legacyPhaseNames.forEach(function(name, index) {
+    var stateClass = index < phaseIndex ? ' is-done' : (index === phaseIndex ? ' is-current' : '');
+    progressHtml += '<div class="legacy-progress-step' + stateClass + '"><span>' + String(index + 1).padStart(2, '0') + ' · ' + name + '</span></div>';
+  });
+  progressHtml += '</div>';
+  var html = '<div class="team-picker-overlay legacy-overlay" id="legacy-modal" role="dialog" aria-modal="true" aria-labelledby="legacy-modal-title">';
+  html += '<div class="team-picker-modal legacy-modal-card">';
+  html += '<div class="legacy-modal-head">';
+  html += '<div class="legacy-modal-kicker">CAREER ARCHIVE · FINAL CHAPTER</div>';
+  html += '<div class="legacy-modal-title-row"><span class="legacy-modal-title-icon" aria-hidden="true">' + legacyPhaseIcons[phaseIndex] + '</span><span class="legacy-modal-title" id="legacy-modal-title">' + title + '</span><span class="legacy-modal-step-label">' + (phaseIndex + 1) + ' / ' + legacyPhaseNames.length + '</span></div>';
+  html += progressHtml;
+  html += '</div>';
+  html += '<div class="legacy-modal-content">';
+  html += '<div class="legacy-modal-copy" aria-live="polite">' + body + '</div>';
+  html += '<button class="btn btn-primary btn-sm legacy-modal-action" onclick="' + (next >= 0 ? 'closeLegacyAndShow(' + next + ',' + nextJersey + ')' : 'finishLegacyStory()') + '">' + (next >= 0 ? '继续' : '完成') + '</button>';
   html += '</div></div></div>';
   document.body.insertAdjacentHTML('beforeend', html);
 }
@@ -15688,6 +15865,7 @@ function renderPosterPage() {
   if (img) img.src = window._posterDataURL;
   if (label) label.textContent = (_posterPageIndex + 1) + ' / ' + _posterPages.length;
   if (pager) pager.style.display = _posterPages.length > 1 ? 'flex' : 'none';
+  if (overlay) overlay.classList.toggle('legacy-poster-overlay', !!(STATE && STATE.career && STATE.career.retired && STATE.career.legacy));
   if (overlay) overlay.style.display = 'flex';
 }
 
@@ -16250,29 +16428,22 @@ var CAREER_EVAL_PARAGRAPHS = {
 };
 function buildCareerEvaluationScores() {
   var c = STATE.career || {};
-  var honors = c.honors || [];
-  var ts = c.totalStats || {};
+  var summary = getCareerSummary();
+  var ts = summary.regularSeason || {};
   var tg = Math.max(ts.games || 0, 1);
   var avgPts = (ts.pts || 0) / tg;
   var avgAst = (ts.ast || 0) / tg;
   var avgStl = (ts.stl || 0) / tg;
   var avgBlk = (ts.blk || 0) / tg;
-  function cnt(key) { return honors.filter(function(h) { return (h.label || '').indexOf(key) >= 0; }).length; }
-  var championships = cnt('总冠军');
-  var mvp = honors.filter(function(h) { return (h.label || '') === 'MVP'; }).length;
-  var fmvp = cnt('总决赛MVP') + cnt('FMVP');
-  var allLeague = cnt('最佳阵容');
-  var allStar = cnt('全明星');
-  var dpoy = cnt('DPOY');
-  var roty = cnt('最佳新秀');
-  var teams = [];
-  var teamYears = {};
-  (c.seasons || []).forEach(function(se) {
-    if (teams.indexOf(se.team) < 0) teams.push(se.team);
-    teamYears[se.team] = (teamYears[se.team] || 0) + 1;
-  });
-  var longest = 0;
-  Object.keys(teamYears).forEach(function(t) { if (teamYears[t] > longest) longest = teamYears[t]; });
+  var championships = summary.championships;
+  var mvp = summary.mvp;
+  var fmvp = summary.fmvp;
+  var allLeague = summary.allLeague;
+  var allStar = summary.allStar;
+  var dpoy = summary.dpoy;
+  var roty = summary.roty;
+  var teams = summary.teams || [];
+  var longest = summary.longestYears || 0;
   var flags = c.flags || {};
   var profile = c.profile || {};
   var legacy = c.legacy || {};
@@ -16307,7 +16478,7 @@ function buildCareerEvaluationScores() {
   if (getBranchNode('team_practice') === 'practice_identity' || (profile.lockerRoomTrust || 0) >= 8) add('leader', 5);
   if (getBranchNode('media') !== 'start') add('media', 3);
   if (flags.fanCulturePersona || (profile.fanSupport || 0) >= 8) add('fan', 4);
-  if (flags.legacyHurt || flags.finalHurt) add('injury', 5);
+  if (summary.hadMajorInjury) add('injury', 5);
   if (flags.postCareerIdentity) add('postcareer', 4);
   if (flags.cityLoyal || flags.cityIcon || flags.cityAcademy || flags.cityParade) add('city', 5);
   if (flags.mentalResilient) add('mental', 3);
@@ -16332,33 +16503,19 @@ var CAREER_EVAL_IDENTITY_LABELS = {
 function buildCareerEvaluationFacts() {
   var s = STATE || {};
   var c = s.career || {};
-  var ts = c.totalStats || {};
+  var summary = getCareerSummary();
+  var ts = summary.regularSeason || {};
   var tg = Math.max(ts.games || 0, 1);
-  var honors = c.honors || [];
-  function cnt(key) {
-    return honors.filter(function(h) { return (h.label || '').indexOf(key) >= 0 && !isRookieHonorForLaterSeason(h); }).length;
-  }
-  var championships = cnt('总冠军');
-  var mvp = honors.filter(function(h) { return (h.label || '') === 'MVP'; }).length;
-  var fmvp = cnt('总决赛MVP') + cnt('FMVP');
-  var dpoy = cnt('DPOY');
-  var allLeague = cnt('最佳阵容');
-  var allStar = cnt('全明星');
-  var seasons = c.seasons || [];
-  var teams = [];
-  var teamYears = {};
-  seasons.forEach(function(se) {
-    if (teams.indexOf(se.team) < 0) teams.push(se.team);
-    teamYears[se.team] = (teamYears[se.team] || 0) + 1;
-  });
-  var longestTeam = '';
-  var longestYears = 0;
-  Object.keys(teamYears).forEach(function(t) {
-    if (teamYears[t] > longestYears) {
-      longestYears = teamYears[t];
-      longestTeam = t;
-    }
-  });
+  var championships = summary.championships;
+  var mvp = summary.mvp;
+  var fmvp = summary.fmvp;
+  var dpoy = summary.dpoy;
+  var allLeague = summary.allLeague;
+  var allStar = summary.allStar;
+  var seasons = summary.seasons || [];
+  var teams = summary.teams || [];
+  var longestTeam = summary.longestTeam || '';
+  var longestYears = summary.longestYears || 0;
   function tn(id) { return typeof getTeamName === 'function' ? getTeamName(id) : id; }
   var lastSeason = seasons[seasons.length - 1];
   var finalTeam = (lastSeason && lastSeason.team) || s.careerTeam;
@@ -16371,8 +16528,10 @@ function buildCareerEvaluationFacts() {
   else if (allStar > 0 && allLeague > 0) starLine = allStar + '次全明星、' + allLeague + '次最佳阵容';
   else if (allStar > 0) starLine = allStar + '次全明星';
   else if (allLeague > 0) starLine = allLeague + '次最佳阵容';
-  else starLine = '一次次全明星与最佳阵容';
-  var champLine = fmvp > 0 ? championships + '次总冠军、' + fmvp + '次FMVP' : championships + '次总冠军';
+  else starLine = '长期稳定的球队贡献';
+  var champLine = championships > 0
+    ? (fmvp > 0 ? championships + '次总冠军、' + fmvp + '次FMVP' : championships + '次总冠军')
+    : '没有总冠军，但留下了完整的竞争生涯';
   var teamLine = '';
   if (teams.length <= 1) teamLine = '他把' + longestYears + '年青春留给' + tn(longestTeam || finalTeam);
   else if (teams.length === 2) teamLine = '他先后效力' + tn(teams[0]) + '与' + tn(teams[1]);
@@ -16425,10 +16584,17 @@ function pickCareerEvaluationCategory() {
 
 function getCareerEvaluation(forceReroll) {
   var c = STATE.career || {};
-  var sig = [c.totalStats && c.totalStats.games, (c.honors || []).length, (c.seasons || []).length, (c.legacy && c.legacy.score) || 0].join('|');
+  var summary = getCareerSummary();
+  var sig = [summary.games, summary.points, summary.championships, summary.mvp, summary.dpoy,
+    summary.allLeague, summary.allStar, summary.seasonsCount, (c.legacy && c.legacy.score) || 0].join('|');
   if (!forceReroll && c.careerEvaluation && c.careerEvaluation._sig === sig && c.careerEvaluation.text) return c.careerEvaluation;
   var cat = pickCareerEvaluationCategory();
   var list = CAREER_EVAL_PARAGRAPHS[cat] || CAREER_EVAL_PARAGRAPHS.ordinary;
+  var evalFacts = buildCareerEvaluationFacts();
+  if (cat === 'defender' && Number(evalFacts.DPOY) === 0) {
+    var noDPOY = list.filter(function(item) { return String(item || '').indexOf('{DPOY}') < 0; });
+    if (noDPOY.length) list = noDPOY;
+  }
   var text = fillCareerEvaluationText(list[Math.floor(Math.random() * list.length)] || CAREER_EVAL_PARAGRAPHS.ordinary[0]);
   var evaluation = { cat: cat, text: text, _sig: sig };
   c.careerEvaluation = evaluation;
@@ -16766,38 +16932,26 @@ function buildBiographyFacts(r) {
   var s = STATE || {};
   var c = s.career || {};
   r = r || c.legacy || calculateLegacyResult();
-  var seasons = (c.seasons || []).slice().sort(function(a, b) { return a.seasonNum - b.seasonNum; });
-  var honors = c.honors || [];
-  function cnt(key) { return honors.filter(function(h) { return (h.label || '').indexOf(key) >= 0 && !isRookieHonorForLaterSeason(h); }).length; }
-  var teams = [];
-  seasons.forEach(function(se) { if (teams.indexOf(se.team) < 0) teams.push(se.team); });
-  if (!teams.length && s.careerTeam) teams.push(s.careerTeam);
+  var summary = getCareerSummary();
+  var seasons = summary.seasons || [];
+  var teams = summary.teams && summary.teams.length ? summary.teams : (s.careerTeam ? [s.careerTeam] : []);
   function tn(team) { return (typeof getTeamName === 'function') ? getTeamName(team) : (team || '一支球队'); }
   function city(team) { return getBiographyTeamCity(team); }
   var teamNames = teams.map(function(t) { return tn(t); });
   var cityNames = teams.map(function(t) { return city(t); });
-  var ts = c.totalStats || {};
+  var ts = summary.regularSeason || {};
   var tg = Math.max(ts.games || 0, 1);
-  var best = seasons[0] || {};
-  seasons.forEach(function(se) {
-    var score = (se.ovr || 0) + ((se.awards || []).length * 3) + ((se.wins || 0) * 0.08);
-    var bestScore = (best.ovr || 0) + (((best.awards || []).length) * 3) + ((best.wins || 0) * 0.08);
-    if (score > bestScore) best = se;
-  });
-  var championships = cnt('总冠军');
-  var seasonChampTotal = 0;
+  var best = summary.bestSeason || {};
+  var championships = summary.championships;
   var champTeams = [];
-  seasons.forEach(function(se) {
-    if ((se.playoffResult || '').indexOf('总冠军') >= 0) {
-      seasonChampTotal++;
-      if (champTeams.indexOf(se.team) < 0) champTeams.push(se.team);
-    }
+  (summary.championshipTeams || []).forEach(function(team) {
+    if (champTeams.indexOf(team) < 0) champTeams.push(team);
   });
-  if (seasonChampTotal > championships) championships = seasonChampTotal;
-  var mvp = honors.filter(function(h) { return (h.label || '') === 'MVP'; }).length;
-  var fmvp = cnt('总决赛MVP') + cnt('FMVP');
-  var dpoy = cnt('DPOY');
-  var allLeague = cnt('最佳阵容');
+  var mvp = summary.mvp;
+  var fmvp = summary.fmvp;
+  var dpoy = summary.dpoy;
+  var allLeague = summary.allLeague;
+  var allStar = summary.allStar;
   var avgPts = (ts.pts || 0) / tg;
   var avgAst = (ts.ast || 0) / tg;
   var playerType = '球队基石';
@@ -16817,12 +16971,14 @@ function buildBiographyFacts(r) {
     buildCountPhrase(fmvp, '次', 'FMVP'),
     buildCountPhrase(dpoy, '次', 'DPOY'),
     buildCountPhrase(allLeague, '次', '最佳阵容'),
-    buildCountPhrase(cnt('全明星'), '次', '全明星')
+    buildCountPhrase(allStar, '次', '全明星')
   ], '漫长而扎实的职业履历');
   var champLine = championships > 0 ? buildCountPhrase(championships, '枚', '总冠军戒指') : '';
   var defenseLine = dpoy > 0
     ? buildCountPhrase(dpoy, '次', '最佳防守球员')
-    : ('场均' + ((ts.stl || 0) / tg).toFixed(1) + '次抢断、场均' + ((ts.blk || 0) / tg).toFixed(1) + '次盖帽的防守履历');
+    : (((ts.stl || 0) + (ts.blk || 0)) > 0
+      ? ('场均' + ((ts.stl || 0) / tg).toFixed(1) + '次抢断、场均' + ((ts.blk || 0) / tg).toFixed(1) + '次盖帽的防守履历')
+      : '持续参与攻防两端');
   var mvpLine = mvp > 0 ? buildCountPhrase(mvp, '座', 'MVP') : '';
   return {
     '姓名': (typeof getMyPlayerDisplayName === 'function') ? getMyPlayerDisplayName() : '我的球员',
@@ -16834,7 +16990,7 @@ function buildBiographyFacts(r) {
     '退役年龄': String(c.currentAge || 0),
     '首队': tn(teams[0] || s.careerTeam),
     '末队': tn(teams[teams.length - 1] || s.careerTeam),
-    '最长球队': tn((r && r.longestTeam) || teams[0] || s.careerTeam),
+    '最长球队': tn(summary.longestTeam || teams[0] || s.careerTeam),
     '球队1': tn(teams[0] || s.careerTeam),
     '球队2': tn(teams[1] || teams[0] || s.careerTeam),
     '球队3': tn(teams[2] || teams[teams.length - 1] || teams[0] || s.careerTeam),
@@ -16863,7 +17019,7 @@ function buildBiographyFacts(r) {
     'FMVP': String(fmvp),
     'DPOY': String(dpoy),
     '最佳阵容': String(allLeague),
-    '全明星': String(cnt('全明星')),
+    '全明星': String(allStar),
     '历史档位': (r && r.tier) || '优秀职业球员',
     '历史分': String((r && r.score) || 0),
     '最佳赛季': best.seasonNum ? (seasonYear(best.seasonNum) + '-' + String((seasonYear(best.seasonNum) + 1) % 100) + '赛季') : '某个重要赛季',
@@ -16888,27 +17044,10 @@ function getBiographySeasonsSorted() {
 
 function getBiographyHonorCountsForSeasons(seasonNums) {
   var c = (STATE && STATE.career) || {};
-  var map = {};
-  seasonNums.forEach(function(n) { map[n] = true; });
-  var counts = { championships:0, mvp:0, fmvp:0, dpoy:0, allLeague:0, allStar:0, roty:0 };
-  var seasonChamp = 0;
-  (c.seasons || []).forEach(function(se) {
-    if (map[se.seasonNum] && (se.playoffResult || '').indexOf('总冠军') >= 0) seasonChamp++;
-  });
-  (c.honors || []).forEach(function(h) {
-    if (!map[h.seasonNum] || isRookieHonorForLaterSeason(h)) return;
-    var label = h.label || '';
-    if (label.indexOf('总冠军') >= 0) counts.championships++;
-    if (label === 'MVP') counts.mvp++;
-    if (label.indexOf('总决赛MVP') >= 0 || label.indexOf('FMVP') >= 0) counts.fmvp++;
-    if (label.indexOf('DPOY') >= 0) counts.dpoy++;
-    if (label.indexOf('最佳阵容') >= 0) counts.allLeague++;
-    if (label.indexOf('全明星') >= 0) counts.allStar++;
-    if (label.indexOf('最佳新秀') >= 0) counts.roty++;
-  });
-  // 以赛季战绩为准：荣誉若因存档错位挂错队，用赛季自身结果纠正
-  if (seasonChamp > 0) counts.championships = seasonChamp;
-  return counts;
+  if (typeof CareerSummary !== 'undefined' && CareerSummary && typeof CareerSummary.getAchievementCountsForSeasons === 'function') {
+    return CareerSummary.getAchievementCountsForSeasons(c, seasonNums);
+  }
+  return { championships: 0, mvp: 0, fmvp: 0, dpoy: 0, allLeague: 0, allStar: 0, roty: 0 };
 }
 
 function buildEraHonorPhrase(counts) {
@@ -17138,9 +17277,9 @@ function wrapBiographyParagraphText(ctx, text, maxWidth, firstIndent, font) {
 function generateCareerBiographyPosterDataURL(r) {
   var bio = buildCareerBiographyText(r);
   var C = {
-    bg: '#ded6c9', paper: '#fffdf5', ink: '#14110e', ink2: '#40362f',
-    muted: '#76695f', line: '#cdbda8', red: '#b82822',
-    redSoft: 'rgba(184,40,34,0.10)', cream: '#f4e6d2',
+    bg: 'oklch(0.115 0.022 250)', paper: 'oklch(0.17 0.028 248)', ink: 'oklch(0.94 0.02 88)', ink2: 'oklch(0.74 0.025 235)',
+    muted: 'oklch(0.52 0.025 235)', line: 'oklch(0.31 0.035 245)', red: 'oklch(0.68 0.15 30)',
+    redSoft: 'oklch(0.35 0.08 30 / 0.22)', cream: 'oklch(0.22 0.032 248)',
     fd: '"Fredoka","Noto Sans SC",sans-serif',
     fb: '"Nunito","Noto Sans SC",sans-serif'
   };
@@ -17405,9 +17544,10 @@ function generateCareerPoster() {
   updatePosterModeButtons();
   var s = STATE;
   var c = s.career || {};
+  var summary = getCareerSummary();
   if (!c.totalStats && !s.finalOVR) { alert('请先完成生涯！'); return; }
 
-  var ts = c.totalStats || {};
+  var ts = summary.regularSeason || {};
   var tg = Math.max(ts.games || 0, 1);
   var avg = getPerGameStats(ts, tg);
   var fga = ts.fga || 0, fgm = ts.fgm || 0;
@@ -17417,34 +17557,28 @@ function generateCareerPoster() {
   var ftPct = getPercentageFromTotals(ftm, fta);
   var threePct = getPercentageFromTotals(t3m, t3a);
 
-  var honors = c.honors || [];
-  function cnt(key) { return honors.filter(function(h) { return (h.label || '').indexOf(key) >= 0 && !isRookieHonorForLaterSeason(h); }).length; }
-  var championships = cnt('总冠军');
-  var mvp = honors.filter(function(h) { return (h.label || '') === 'MVP'; }).length;
-  var fmvp = cnt('总决赛MVP') + cnt('FMVP');
-  var dpoy = cnt('DPOY');
-  var allLeague = cnt('最佳阵容');
-  var allStar = cnt('全明星');
-  var roty = cnt('最佳新秀');
+  var championships = summary.championships;
+  var mvp = summary.mvp;
+  var fmvp = summary.fmvp;
+  var dpoy = summary.dpoy;
+  var allLeague = summary.allLeague;
+  var allStar = summary.allStar;
 
   var teamName = getTeamName ? getTeamName(s.careerTeam) : s.careerTeam;
-  var allTeams = [];
-  (c.seasons || []).forEach(function(se) {
-    if (allTeams.indexOf(se.team) < 0) allTeams.push(se.team);
-  });
+  var allTeams = summary.teams || [];
   var allTeamsStr = allTeams.length ? allTeams.map(function(t) { return getTeamName ? getTeamName(t) : t; }).join('、') : teamName;
   var honorEntries = [];
   var champBySeason = {};
-  (c.seasons || []).forEach(function(se) {
-    if ((se.playoffResult || '').indexOf('总冠军') >= 0) champBySeason[se.seasonNum] = true;
+  (summary.championshipSeasons || []).forEach(function(se) {
+    champBySeason[se.seasonNum] = true;
   });
-  (c.honors || []).forEach(function(h) {
+  (summary.awardEntries || []).forEach(function(h) {
     var label = h.label || '';
     if (label.indexOf('最佳新秀') >= 0) return; // 海报不显示最佳新秀/最佳新秀阵容
-    if (label.indexOf('总冠军') >= 0 && !champBySeason[h.seasonNum]) return; // 与赛季战绩冲突的冠军荣誉忽略
+    if (label.indexOf('总冠军') >= 0 && summary.seasonResultsComplete && !champBySeason[h.seasonNum]) return; // 与赛季战绩冲突的冠军荣誉忽略
     var hSeason = null;
-    for (var hs2 = 0; hs2 < (c.seasons || []).length; hs2++) {
-      if (c.seasons[hs2].seasonNum === h.seasonNum) { hSeason = c.seasons[hs2]; break; }
+    for (var hs2 = 0; hs2 < summary.seasons.length; hs2++) {
+      if (summary.seasons[hs2].seasonNum === h.seasonNum) { hSeason = summary.seasons[hs2]; break; }
     }
     honorEntries.push({
       seasonNum: h.seasonNum || 1,
@@ -17452,7 +17586,7 @@ function generateCareerPoster() {
       label: label
     });
   });
-  (c.seasons || []).forEach(function(se) {
+  summary.seasons.forEach(function(se) {
     if (champBySeason[se.seasonNum]) {
       var hasChampEntry = honorEntries.some(function(he) { return he.seasonNum === se.seasonNum && (he.label || '').indexOf('总冠军') >= 0; });
       if (!hasChampEntry) honorEntries.push({ seasonNum: se.seasonNum, team: se.team, label: '🏆 总冠军' });
@@ -17501,7 +17635,7 @@ function generateCareerPoster() {
       return n2 > 1 ? lb + ' ×' + n2 : lb;
     }).join('、');
     var erTeamCn = getTeamName ? getTeamName(er.team) : er.team;
-    var erRange = er.last > er.first ? seasonYear(er.first) + '-' + String(seasonYear(er.last) % 100) : shortSeasonLabel(er.first);
+    var erRange = er.last > er.first ? seasonYear(er.first) + '-' + String((seasonYear(er.last) + 1) % 100) : shortSeasonLabel(er.first);
     honorRows.push(erRange + ' ' + erTeamCn + (labelStr ? ' ' + labelStr : ''));
   });
   if (!honorRows.length) honorRows.push('暂无主要荣誉');
@@ -17512,7 +17646,13 @@ function generateCareerPoster() {
   var posName = (SIM_CONFIG && SIM_CONFIG.POSITIONS) ? SIM_CONFIG.POSITIONS[s.position] : s.position;
   var displayName = (typeof getMyPlayerDisplayName === 'function') ? getMyPlayerDisplayName() : '我的球员';
 
-  var C = {
+  var C = retired && legacy ? {
+    bg: 'oklch(0.115 0.022 250)', bgCard: 'oklch(0.17 0.028 248)', border: 'oklch(0.31 0.035 245)',
+    text: 'oklch(0.94 0.02 88)', textDim: 'oklch(0.68 0.025 235)', textMuted: 'oklch(0.48 0.025 235)',
+    orange: 'oklch(0.78 0.15 62)', gold: 'oklch(0.79 0.13 88)', green: 'oklch(0.75 0.12 160)', red: 'oklch(0.68 0.14 28)',
+    fd: '"Fredoka","Noto Sans SC",sans-serif',
+    fb: '"Nunito","Noto Sans SC",sans-serif'
+  } : {
     bg: '#faf5eb', bgCard: '#fffaf2', border: '#f0e0cc',
     text: '#2d1f0e', textDim: '#8a7a66', textMuted: '#baa992',
     orange: '#ff6b35', gold: '#f7a600', green: '#2ec4b6', red: '#e63946',
@@ -17550,9 +17690,9 @@ function generateCareerPoster() {
   ctx.fillRect(0, 0, W, H);
 
   function card(x, y, w, h) {
-    ctx.fillStyle = '#fffaf2';
+    ctx.fillStyle = C.bgCard;
     roundRectC(ctx, x, y, w, h, 12); ctx.fill();
-    ctx.strokeStyle = '#f0e0cc';
+    ctx.strokeStyle = C.border;
     ctx.lineWidth = 1.2;
     roundRectC(ctx, x, y, w, h, 12); ctx.stroke();
   }
@@ -17636,7 +17776,7 @@ function generateCareerPoster() {
   ctx.textAlign = 'left'; ctx.textBaseline = 'top';
   ctx.fillStyle = C.orange;
   ctx.font = '500 13px ' + C.fd;
-  ctx.fillText('📊 生涯总数据', cardX + 14, y + 8);
+  ctx.fillText('📊 常规赛生涯累计', cardX + 14, y + 8);
 
   var statLabels = ['总出场', '总得分', '场均得分', '场均篮板', '场均助攻', '场均抢断'];
   var statVals = [tg, Math.round(ts.pts || 0), formatPerGameStat(avg.pts), formatPerGameStat(avg.reb), formatPerGameStat(avg.ast), formatPerGameStat(avg.stl)];
@@ -17750,10 +17890,14 @@ function buildRetirementStoryPosterSections(r) {
   var jerseyTeams = Array.isArray(r.jerseyTeams) ? r.jerseyTeams : [];
   var jerseyText = '';
   if (jerseyTeams.length) {
-    var first = jerseyTeams[0];
-    jerseyText = buildJerseyCeremonyCopy(first);
+    jerseyText = jerseyTeams.map(function(info) {
+      return buildJerseyCeremonyCopy(info) + '<br><br>结果：' + getTeamName(info.team) + ' 退役你的球衣。';
+    }).join('<br><br>');
   } else {
-    jerseyText = displayName + '离开球场时，没有球衣被升上屋顶。可有些号码不需要仪式确认，记住它的人会在多年后提起某个夜晚、某个回合、某次沉默的掌声。';
+    var summary = getCareerSummary();
+    jerseyText = summary.teamCount <= 1
+      ? displayName + '把整个职业生涯留在了一座城市。球衣没有升上屋顶，但记住他的人仍会在多年后提起某个夜晚、某个回合、某次沉默的掌声。'
+      : displayName + '走过 ' + summary.teamCount + ' 支球队，球衣没有升上屋顶，但每一站真实的比赛记忆都留在球迷之间。';
   }
 
   return [
@@ -17821,11 +17965,13 @@ function generateRetirementStoryPosterDataURL(r) {
 
   var displayName = (typeof getMyPlayerDisplayName === 'function') ? getMyPlayerDisplayName() : '我的球员';
   var seasons = (c.seasons || []).length || (r.seasons || 0);
-  var summary = seasons + '年生涯，' + Math.round(r.games || 0) + '场，' + Math.round(r.points || 0) + '分，' + (r.mvp || 0) + '座MVP，' + (r.championships || 0) + '枚总冠军戒指。';
+  var summary = seasons + '年生涯；常规赛 ' + Math.round(r.games || 0) + '场/' + Math.round(r.points || 0) + '分；' +
+    '季后赛 ' + Math.round(r.playoffGames || 0) + '场/' + Math.round(r.playoffPoints || 0) + '分；' +
+    (r.mvp || 0) + '座MVP，' + (r.championships || 0) + '枚总冠军戒指。';
   var C = {
-    bg: '#faf5eb', bgCard: '#fffaf2', border: '#ead6bb',
-    text: '#2d1f0e', textDim: '#7f6e59', textMuted: '#b49d80',
-    orange: '#ff6b35', gold: '#d49a35', seal: '#b94835',
+    bg: 'oklch(0.115 0.022 250)', bgCard: 'oklch(0.17 0.028 248)', border: 'oklch(0.31 0.035 245)',
+    text: 'oklch(0.94 0.02 88)', textDim: 'oklch(0.68 0.025 235)', textMuted: 'oklch(0.48 0.025 235)',
+    orange: 'oklch(0.78 0.15 62)', gold: 'oklch(0.79 0.13 88)', seal: 'oklch(0.68 0.15 30)',
     fd: '"Fredoka","Noto Sans SC",sans-serif',
     fb: '"Nunito","Noto Sans SC",sans-serif'
   };

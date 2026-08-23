@@ -5,7 +5,8 @@
   "scripts": {
     "test:smoke": "node scripts/validate_simulation_v2.js --mode=smoke",
     "test:integration": "node scripts/validate_simulation_v2.js --mode=integration",
-    "test:statistical": "node scripts/validate_simulation_v2.js --mode=statistical"
+    "test:statistical": "node scripts/validate_simulation_v2.js --mode=statistical",
+    "test:retirement": "node scripts/validate_retirement_summary.js"
   },
   "devDependencies": {
     "@babel/generator": "^8.0.0",

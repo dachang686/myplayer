@@ -1,0 +1,253 @@
+/* 退役档案馆主题：只作用于退役流程与退役海报，不改变其它通用弹窗。 */
+#legacy-modal.legacy-overlay {
+  --legacy-bg: oklch(0.13 0.025 250);
+  --legacy-surface: oklch(0.17 0.028 248);
+  --legacy-surface-2: oklch(0.205 0.032 247);
+  --legacy-border: oklch(0.31 0.035 245);
+  --legacy-border-soft: oklch(0.25 0.028 245);
+  --legacy-text: oklch(0.94 0.02 88);
+  --legacy-muted: oklch(0.68 0.025 235);
+  --legacy-dim: oklch(0.48 0.025 235);
+  --legacy-accent: oklch(0.78 0.15 62);
+  --legacy-accent-soft: oklch(0.34 0.07 62 / 0.35);
+  background: oklch(0.06 0.025 250 / 0.9);
+  padding: 18px;
+  backdrop-filter: blur(12px) saturate(0.82);
+  -webkit-backdrop-filter: blur(12px) saturate(0.82);
+}
+
+#legacy-modal .legacy-modal-card {
+  width: min(100%, 560px);
+  max-height: min(88vh, 720px);
+  overflow: hidden;
+  background: var(--legacy-bg);
+  border: 1px solid var(--legacy-border);
+  border-radius: 20px;
+  box-shadow: 0 30px 90px oklch(0.02 0.02 250 / 0.72), 0 0 0 1px oklch(0.72 0.08 62 / 0.06);
+}
+
+#legacy-modal .legacy-modal-head {
+  display: block;
+  padding: 19px 22px 16px;
+  background: var(--legacy-surface);
+  border-bottom: 1px solid var(--legacy-border-soft);
+}
+
+#legacy-modal .legacy-modal-kicker {
+  margin-bottom: 12px;
+  color: var(--legacy-accent);
+  font: 800 9px/1 var(--font-body);
+  letter-spacing: 1.7px;
+}
+
+#legacy-modal .legacy-modal-title-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+}
+
+#legacy-modal .legacy-modal-title-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border: 1px solid oklch(0.65 0.1 62 / 0.42);
+  border-radius: 11px;
+  background: var(--legacy-accent-soft);
+  color: var(--legacy-accent);
+  font-size: 17px;
+}
+
+#legacy-modal .legacy-modal-title {
+  min-width: 0;
+  color: var(--legacy-text);
+  font: 800 20px/1.2 var(--font-body);
+  letter-spacing: 0.2px;
+}
+
+#legacy-modal .legacy-modal-step-label {
+  margin-left: auto;
+  color: var(--legacy-muted);
+  font: 700 10px/1 var(--font-body);
+  white-space: nowrap;
+}
+
+#legacy-modal .legacy-modal-progress {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  margin-top: 18px;
+}
+
+#legacy-modal .legacy-progress-step {
+  position: relative;
+  padding-top: 14px;
+  color: var(--legacy-dim);
+  font: 700 9px/1.2 var(--font-body);
+  text-align: center;
+}
+
+#legacy-modal .legacy-progress-step::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  transform: translateX(-50%);
+  border: 1px solid var(--legacy-border);
+  border-radius: 50%;
+  background: var(--legacy-surface-2);
+}
+
+#legacy-modal .legacy-progress-step.is-current {
+  color: var(--legacy-accent);
+}
+
+#legacy-modal .legacy-progress-step.is-current::before {
+  border-color: var(--legacy-accent);
+  background: var(--legacy-accent);
+  box-shadow: 0 0 0 4px oklch(0.7 0.12 62 / 0.12);
+}
+
+#legacy-modal .legacy-progress-step.is-done {
+  color: var(--legacy-muted);
+}
+
+#legacy-modal .legacy-progress-step.is-done::before {
+  border-color: oklch(0.64 0.08 160);
+  background: oklch(0.64 0.08 160);
+}
+
+#legacy-modal .legacy-modal-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 21px 22px 22px;
+}
+
+#legacy-modal .legacy-modal-copy {
+  max-height: 51vh;
+  overflow-y: auto;
+  padding: 1px 2px 5px;
+  color: var(--legacy-muted);
+  font: 500 14px/1.85 var(--font-body);
+  letter-spacing: 0.1px;
+  scrollbar-color: var(--legacy-border) transparent;
+}
+
+#legacy-modal .legacy-modal-copy::selection {
+  background: var(--legacy-accent-soft);
+  color: var(--legacy-text);
+}
+
+#legacy-modal .legacy-modal-action {
+  width: 100%;
+  min-height: 48px;
+  margin-top: 14px;
+  border: 1px solid var(--legacy-accent);
+  border-radius: 11px;
+  background: var(--legacy-accent);
+  color: oklch(0.18 0.025 250);
+  font: 800 13px/1 var(--font-body);
+  cursor: pointer;
+  box-shadow: 0 9px 22px oklch(0.62 0.12 62 / 0.18);
+  transition: transform 160ms ease-out, background-color 160ms ease-out, box-shadow 160ms ease-out;
+}
+
+#legacy-modal .legacy-modal-action:hover,
+#legacy-modal .legacy-modal-action:focus-visible {
+  background: oklch(0.84 0.13 62);
+  outline: none;
+  box-shadow: 0 12px 28px oklch(0.62 0.12 62 / 0.28);
+}
+
+#legacy-modal .legacy-modal-action:focus-visible {
+  box-shadow: 0 0 0 3px oklch(0.75 0.12 62 / 0.25), 0 12px 28px oklch(0.62 0.12 62 / 0.28);
+}
+
+#legacy-modal .legacy-modal-action:active {
+  transform: translateY(1px);
+}
+
+#posterOverlay.legacy-poster-overlay {
+  background: oklch(0.06 0.025 250 / 0.97) !important;
+}
+
+#posterOverlay.legacy-poster-overlay #posterPreviewImg {
+  border: 1px solid oklch(0.34 0.035 245);
+  box-shadow: 0 26px 80px oklch(0.02 0.02 250 / 0.76), 0 0 0 1px oklch(0.72 0.08 62 / 0.08);
+}
+
+#posterOverlay.legacy-poster-overlay #posterPager {
+  color: oklch(0.78 0.02 235) !important;
+}
+
+#posterOverlay.legacy-poster-overlay .btn-share-poster {
+  background: oklch(0.78 0.15 62) !important;
+  color: oklch(0.18 0.025 250) !important;
+  box-shadow: 0 10px 24px oklch(0.62 0.12 62 / 0.22) !important;
+}
+
+#posterOverlay.legacy-poster-overlay .btn-share-poster:hover,
+#posterOverlay.legacy-poster-overlay .btn-share-poster:focus-visible {
+  background: oklch(0.84 0.13 62) !important;
+  outline: none;
+}
+
+#posterOverlay.legacy-poster-overlay button:not(.btn-share-poster) {
+  border: 1px solid oklch(0.32 0.035 245) !important;
+  background: oklch(0.18 0.028 248) !important;
+  color: oklch(0.9 0.018 85) !important;
+}
+
+@media (max-width: 480px) {
+  #legacy-modal.legacy-overlay {
+    align-items: flex-end;
+    padding: 10px;
+  }
+
+  #legacy-modal .legacy-modal-card {
+    max-height: 91vh;
+    border-radius: 18px;
+  }
+
+  #legacy-modal .legacy-modal-head {
+    padding: 16px 17px 14px;
+  }
+
+  #legacy-modal .legacy-modal-title {
+    font-size: 18px;
+  }
+
+  #legacy-modal .legacy-modal-step-label {
+    font-size: 9px;
+  }
+
+  #legacy-modal .legacy-modal-progress {
+    gap: 4px;
+    margin-top: 16px;
+  }
+
+  #legacy-modal .legacy-progress-step {
+    font-size: 8px;
+  }
+
+  #legacy-modal .legacy-modal-content {
+    padding: 17px 17px 18px;
+  }
+
+  #legacy-modal .legacy-modal-copy {
+    max-height: 56vh;
+    font-size: 13px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #legacy-modal .legacy-modal-action {
+    transition: none;
+  }
+}

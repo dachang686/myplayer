@@ -689,7 +689,7 @@ function showFreeAgencyTeamChangeModal(oldTeam, newTeam, done) {
   html += '<div style="font-size:12px;color:var(--text-dim);margin-top:6px;line-height:1.55;">离开' + oldName + '之前，这座城市把你的这一站生涯收进档案。</div>';
   html += '</div>';
   html += '<div style="padding:0 12px 12px;max-height:58vh;overflow-y:auto;">';
-  html += '<div class="sr-section" style="text-align:left;margin-bottom:8px;"><div class="sr-section-title">📊 ' + oldName + '生涯总数据</div>';
+  html += '<div class="sr-section" style="text-align:left;margin-bottom:8px;"><div class="sr-section-title">📊 ' + oldName + '常规赛队内累计</div>';
   html += '<div class="sr-stats-grid"><div class="sr-stat"><div class="sr-stat-val">' + gp + '</div><div class="sr-stat-lbl">场次</div></div><div class="sr-stat"><div class="sr-stat-val">' + Math.round(totals.pts) + '</div><div class="sr-stat-lbl">总分</div></div><div class="sr-stat"><div class="sr-stat-val">' + (totalWins + '-' + totalLosses) + '</div><div class="sr-stat-lbl">战绩</div></div></div>';
   html += '<div class="sr-pct-line">场均 ' + avgPts + '分 ' + avgReb + '板 ' + avgAst + '助</div></div>';
   html += '<div class="sr-section" style="text-align:left;margin-bottom:8px;"><div class="sr-section-title">🏅 在队荣誉</div><div class="sr-awards">' + honorHtml + '</div></div>';
