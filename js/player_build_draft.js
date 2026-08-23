@@ -470,7 +470,7 @@ function renderDraftPlayerBuildUI() {
   var source = getCurrentPlayerBuildSource(build);
   if (!source || sources.length < 2) {
     area.innerHTML = '<div class="pb-build-shell"><div class="pb-error-state"><strong>无法恢复本轮球员</strong><span>正式球员数据库中找不到两名可用的完整属性球员。</span></div></div>';
-    if (history) history.innerHTML = renderPlayerBuildHistory(build);
+    if (history) history.innerHTML = '';
     return;
   }
   var player = source.player;
@@ -505,7 +505,7 @@ function renderDraftPlayerBuildUI() {
       '<p class="pb-build-footnote" aria-live="polite">' + (build.error ? escapePlayerBuildText(build.error) : '锁定一项属性和一个档位后，系统会自动抽取下一名球员。') + '</p>' +
     '</div>';
   if (history) {
-    history.innerHTML = '<section class="pb-history-section" aria-labelledby="pb-history-title"><div class="pb-section-head"><div><span class="pb-section-kicker">LOCKED PICKS</span><h2 id="pb-history-title">已获得属性 <small>' + build.picks.length + ' / ' + PLAYER_BUILD_TOTAL_ROUNDS + '</small></h2></div><span class="pb-rule-copy">已锁定不可更换</span></div>' + renderPlayerBuildHistory(build) + '</section>';
+    history.innerHTML = '';
   }
 }
 
