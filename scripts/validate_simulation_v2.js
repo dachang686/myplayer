@@ -95,6 +95,27 @@ function seeded(seed, callback) {
   }
 }
 
+const usageBiasStart = indexSource.indexOf('function getSeasonUsageBias');
+const usageBiasEnd = indexSource.indexOf('/** 计数型数据采样', usageBiasStart);
+if (usageBiasStart < 0 || usageBiasEnd < 0) throw new Error('无法定位赛季 usage 偏移逻辑');
+const getSeasonUsageBiasForValidation = new Function(
+  'STATE',
+  `${indexSource.slice(usageBiasStart, usageBiasEnd)}\nreturn getSeasonUsageBias;`,
+);
+function probeSeasonUsageBias(age, legacyBias) {
+  const probeState = {
+    career: { currentAge: age },
+    season: legacyBias == null ? {} : { _usageBias: legacyBias },
+  };
+  const bias = seeded(23550, () => getSeasonUsageBiasForValidation(probeState)());
+  return { bias, version: probeState.season._usageBiasVersion };
+}
+const seasonUsageAgeNeutral = probeSeasonUsageBias(23).bias === probeSeasonUsageBias(35).bias;
+const seasonUsageLegacyCacheMigrates = (() => {
+  const migrated = probeSeasonUsageBias(23, 0.90);
+  return migrated.version === 2 && migrated.bias >= 0.92 && migrated.bias <= 1.08;
+})();
+
 function sum(rows, field) {
   return rows.reduce((total, row) => total + (Number(row[field]) || 0), 0);
 }
@@ -684,6 +705,7 @@ function mutableSimulationStateFingerprint() {
     npcSeasonProfiles: state.season._npcSeasonProfiles,
     usageBiasExists: Object.prototype.hasOwnProperty.call(state.season, '_usageBias'),
     usageBias: state.season._usageBias,
+    usageBiasVersion: state.season._usageBiasVersion,
     careerTeamAvailabilityGame: state.season._careerTeamAvailabilityGame,
     historicCelebrationSequence: state.season._historicCelebrationSequence,
     events: state.season.events,
@@ -1040,6 +1062,8 @@ const specialistStats = {
   npcAvailabilityStress,
   ovrIsolation,
   npcFormOvrIsolation,
+  seasonUsageAgeNeutral,
+  seasonUsageLegacyCacheMigrates,
   emergencyReplacementPath,
   seededStateRestored,
   engineChoiceUiPath,
@@ -1234,6 +1258,8 @@ if (result.full99PlayerPpg - result.partial99PlayerPpg < 1.5
   || !specialistStats.deterministicV2
   || !specialistStats.ovrIsolation
   || !specialistStats.npcFormOvrIsolation
+  || !specialistStats.seasonUsageAgeNeutral
+  || !specialistStats.seasonUsageLegacyCacheMigrates
   || !specialistStats.emergencyReplacementPath
   || !specialistStats.seededStateRestored
   || !specialistStats.engineChoiceUiPath

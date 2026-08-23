@@ -5164,6 +5164,7 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
       captureProperty(STATE, '_lineupCache', true),
       captureProperty(season, '_npcSeasonProfiles', false),
       captureProperty(season, '_usageBias', false),
+      captureProperty(season, '_usageBiasVersion', false),
       captureProperty(season, '_careerTeamAvailabilityGame', false),
       captureProperty(season, '_historicCelebrationSequence', false),
       captureProperty(season, 'events', false),
@@ -6416,17 +6417,12 @@ function af(val) { return Math.pow(attrFactor(val), 1.5); }
 
 function getSeasonUsageBias() {
   if (!STATE.season) return 1;
-  if (STATE.season._usageBias == null) {
-    var age = STATE.career && STATE.career.currentAge ? STATE.career.currentAge : 22;
-    var ageBase = 1;
-    if (age <= 23) ageBase = 0.90;
-    else if (age <= 25) ageBase = 0.98;
-    else if (age <= 29) ageBase = 1.06;
-    else if (age <= 32) ageBase = 1.02;
-    else if (age <= 35) ageBase = 0.94;
-    else if (age <= 39) ageBase = 0.78;
-    else ageBase = 0.68;
-    STATE.season._usageBias = ageBase * (0.92 + Math.random() * 0.16);
+  // 赛季状态只提供小幅随机波动；年龄不再直接压低或抬高球权。
+  // 版本号用于让旧存档丢弃曾经按年龄生成的缓存值。
+  var usageBiasVersion = 2;
+  if (STATE.season._usageBias == null || STATE.season._usageBiasVersion !== usageBiasVersion) {
+    STATE.season._usageBias = 0.92 + Math.random() * 0.16;
+    STATE.season._usageBiasVersion = usageBiasVersion;
   }
   return STATE.season._usageBias;
 }
