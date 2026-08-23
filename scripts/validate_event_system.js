@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const parser = require('@babel/parser');
 
 const root = path.resolve(__dirname, '..');
 const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
@@ -15,7 +14,7 @@ const inlineScripts = [...indexSource.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\
 
 inlineScripts.forEach((source, index) => {
   try {
-    parser.parse(source, { sourceType: 'script', plugins: ['optionalChaining'] });
+    new Function(source);
   } catch (error) {
     failures.push(`第 ${index + 1} 个内联脚本无法解析：${error.message}`);
   }

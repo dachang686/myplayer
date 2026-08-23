@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const parser = require('@babel/parser');
 
 const root = path.resolve(__dirname, '..');
 const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
@@ -589,7 +588,7 @@ const standingsTiebreakers = validateStandingsTiebreakers();
 
 for (const [source, label] of [[indexSimulation, 'index.html 比赛模拟'], [playoffsSource, 'js/playoffs.js']]) {
   try {
-    parser.parse(source, { sourceType: 'script', plugins: ['optionalChaining', 'objectRestSpread'] });
+    new Function(source);
   } catch (error) {
     throw new Error(`${label} 语法错误：${error.message}`);
   }

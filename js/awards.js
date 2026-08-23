@@ -480,12 +480,6 @@ function calcSeasonAwards() {
         getSeedBonus(c.team) * 1.2 +
         (c.ovr || 70) * 0.12;
 
-      if (!c.isUser && c.raw && getPlayerAwardStreak(c.raw, 'mvp') >= 2) score *= 0.82;
-      if (c.isUser) {
-        var uObj = getUserPlayerObject();
-        if (uObj && getPlayerAwardStreak(uObj, 'mvp') >= 2) score *= 0.88;
-      }
-      if (c.age >= 34) score *= 0.92;
       return score;
     }
 

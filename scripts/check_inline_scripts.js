@@ -1,5 +1,4 @@
 const fs = require('fs');
-const parser = require('@babel/parser');
 
 const html = fs.readFileSync('index.html', 'utf8');
 const scriptPattern = /<script([^>]*)>([\s\S]*?)<\/script>/g;
@@ -11,11 +10,7 @@ while ((match = scriptPattern.exec(html))) {
   if (/type=['"]application\/json/.test(match[1]) || /\bsrc=/.test(match[1])) continue;
   inlineCount += 1;
   try {
-    parser.parse(match[2], {
-      sourceType: 'script',
-      allowReturnOutsideFunction: true,
-      plugins: ['optionalChaining', 'nullishCoalescingOperator'],
-    });
+    new Function(match[2]);
   } catch (error) {
     const htmlLine = html.slice(0, match.index).split(/\r?\n/).length;
     console.error(`inline script ${inlineCount} near HTML line ${htmlLine}: ${error.message}`);
@@ -29,7 +24,7 @@ const localModules = Array.from(html.matchAll(/<script\s+src=["']([^"']+\.js)["'
 
 for (const file of localModules) {
   try {
-    parser.parse(fs.readFileSync(file, 'utf8'), { sourceType: 'script' });
+    new Function(fs.readFileSync(file, 'utf8'));
   } catch (error) {
     console.error(`${file}: ${error.message}`);
     failed = true;

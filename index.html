@@ -1140,6 +1140,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 <script src="js/data/draft_data.js"></script>
 <script src="js/data/legacy_text.js"></script>
 <script src="js/career_summary.js"></script>
+<script src="js/career_narrative_rules.js"></script>
 <script src="js/data/career_biography_text.js"></script>
 <script src="js/playoffs.js"></script>
 <script src="js/simulation_v2.js"></script>
@@ -8277,7 +8278,7 @@ function renderMyCard(isFinal, activeTab) {
     </div>
 
     <div class="mc-section">
-      <div class="mc-section-title">📈 职业生涯场均 · ${careerAvg.games} 场</div>
+      <div class="mc-section-title">📈 常规赛生涯场均 · ${careerAvg.games} 场</div>
       <div class="mc-stats-grid">
         <div class="mc-stat"><span class="mc-stat-val">${formatPerGameStat(careerAvg.pts)}</span><span class="mc-stat-lbl">得分</span></div>
         <div class="mc-stat"><span class="mc-stat-val">${formatPerGameStat(careerAvg.reb)}</span><span class="mc-stat-lbl">篮板</span></div>
@@ -9756,10 +9757,7 @@ function renderTrainingCamp() {
 
   if (!STATE._tpPending) STATE._tpPending = {};
   var pending = STATE._tpPending;
-  var used = 0;
-  for (var k in pending) {
-    if (pending.hasOwnProperty(k)) used += pending[k];
-  }
+  var used = calculateTrainingSpentPoints(STATE.attrs, pending);
   var remaining = tp - used;
 
   var html = '';
@@ -10444,8 +10442,7 @@ function renderTrainingAttrs(tp) {
   var attrsEl = document.getElementById('tp-attrs');
   if (!attrsEl) return;
   var html = '';
-  var used = 0;
-  for (var kk in pending) { if (pending.hasOwnProperty(kk)) used += pending[kk]; }
+  var used = calculateTrainingSpentPoints(STATE.attrs, pending);
   var remaining = tp - used;
 
   ATTR_KEYS.forEach(function(k) {
@@ -10458,10 +10455,10 @@ function renderTrainingAttrs(tp) {
     var curGrade = getGrade ? getGrade(cur).letter : '';
     var afterGrade = getGrade ? getGrade(after).letter : '';
     var gradeChanged = curGrade !== afterGrade ? '<span style="color:var(--gold);font-weight:700;">' + curGrade + '→' + afterGrade + '</span>' : curGrade;
-    var cost = getPointCost(cur + added);
-    var disabled = added >= 8 || remaining < cost || cur >= 99;
+    var cost = getTrainingPointCost(cur + added);
+    var disabled = maxAdd <= 0 || cur + added >= 99;
     var costLabel = cost > 1 ? ' (×' + cost + ')' : '';
-    var btnLabel = remaining >= cost && after < 99 ? '+' : '';
+    var btnLabel = maxAdd > 0 && after < 99 ? '+' : '';
 
     html += '<div class="tp-row' + (added > 0 ? ' tp-added' : '') + '">';
     html += '<span class="tp-label">' + attrCN(k) + '</span>';
@@ -10479,33 +10476,52 @@ function renderTrainingAttrs(tp) {
   attrsEl.innerHTML = html;
 }
 
-function getPointCost(val) {
-  if (val >= 96) return 4;
-  if (val >= 90) return 2;
-  return 1;
+function getTrainingPointCost(currentValue) {
+  return Number(currentValue) >= 96 ? 2 : 1;
+}
+
+function calculateTrainingSpentPoints(baseAttrs, pending) {
+  var spent = 0;
+  var base = baseAttrs || {};
+  var additions = pending || {};
+  ATTR_KEYS.forEach(function(key) {
+    var current = Number(base[key]);
+    if (!Number.isFinite(current)) current = 50;
+    var add = Number(additions[key]);
+    if (!Number.isFinite(add) || add <= 0) return;
+    add = Math.floor(add);
+    for (var i = 0; i < add; i++) {
+      spent += getTrainingPointCost(current + i);
+    }
+  });
+  return Math.max(0, spent);
 }
 
 function getMaxAdd(alreadyAdded, totalPoints, curVal) {
-  var used = 0;
-  var p = STATE._tpPending || {};
-  for (var kk in p) { if (p.hasOwnProperty(kk)) used += p[kk]; }
-  var remaining = totalPoints - used;
-  if (remaining <= 0) return 0;
-  var cost = getPointCost(curVal + alreadyAdded);
-  return Math.floor(remaining / cost);
+  var pending = STATE._tpPending || {};
+  var used = calculateTrainingSpentPoints(STATE.attrs, pending);
+  var remaining = Math.max(0, Number(totalPoints) - used);
+  var nextValue = Number(curVal) + (Number(alreadyAdded) || 0);
+  var extra = 0;
+  while (remaining > 0 && nextValue < 99) {
+    var cost = getTrainingPointCost(nextValue);
+    if (remaining < cost) break;
+    remaining -= cost;
+    nextValue++;
+    extra++;
+  }
+  return extra;
 }
 
 function addTrainingPoint(key) {
   if (!STATE._tpPending) STATE._tpPending = {};
   var added = STATE._tpPending[key] || 0;
   var cur = STATE.attrs[key] || 50;
-  if (added >= 8) return;
   var tp = calcTrainingPoints();
-  var used = 0;
-  for (var kk in STATE._tpPending) { if (STATE._tpPending.hasOwnProperty(kk)) used += STATE._tpPending[kk]; }
+  var used = calculateTrainingSpentPoints(STATE.attrs, STATE._tpPending);
   var remaining = tp - used;
-  var cost = getPointCost(cur + added);
-  if (remaining < cost || cur + added >= 99) return;
+  var cost = getTrainingPointCost(cur + added);
+  if (remaining < cost || cur + added >= 99 || cur + added < 0) return;
   STATE._tpPending[key] = (STATE._tpPending[key] || 0) + 1;
   renderTrainingCamp();
 }
@@ -10522,8 +10538,20 @@ function confirmTraining() {
     throw new Error('本休赛期训练已经结算');
   }
   var pending = STATE._tpPending || {};
+  var totalPoints = calcTrainingPoints();
+  var spent = calculateTrainingSpentPoints(STATE.attrs, pending);
+  if (spent < 0 || spent > totalPoints) {
+    throw new Error('训练点预算校验失败');
+  }
   for (var k in pending) {
-    if (pending.hasOwnProperty(k)) STATE.attrs[k] = (STATE.attrs[k] || 50) + pending[k];
+    if (!pending.hasOwnProperty(k)) continue;
+    if (ATTR_KEYS.indexOf(k) < 0 || !Number.isInteger(Number(pending[k])) || Number(pending[k]) < 0) {
+      throw new Error('训练属性增量无效');
+    }
+    var baseValue = Number(STATE.attrs[k]);
+    if (!Number.isFinite(baseValue)) baseValue = 50;
+    if (baseValue + Number(pending[k]) > 99) throw new Error('训练属性不能超过99');
+    STATE.attrs[k] = baseValue + Number(pending[k]);
   }
   STATE.finalOVR = calcOVR(STATE.attrs);
 
@@ -10728,7 +10756,10 @@ function getLegacyNarrativeFacts(r) {
   facts.hadMajorInjury = summary.hadMajorInjury;
   facts.wasTraded = summary.wasTraded;
   facts.hasRivalry = summary.hasRivalry;
+  facts.hasRival = summary.hasRivalry;
+  facts.majorInjury = summary.hadMajorInjury;
   facts.oneTeamCareer = summary.oneTeamCareer;
+  facts.teamsPlayed = summary.teamCount;
   facts.longestTeam = facts.longestTeam || (summary.longestTeam ? getTeamName(summary.longestTeam) : '');
   facts.longestYears = summary.longestYears || facts.longestYears || 0;
   facts.firstTeam = facts.firstTeam || (summary.firstTeam ? getTeamName(summary.firstTeam) : '');
@@ -10739,28 +10770,21 @@ function getLegacyNarrativeFacts(r) {
   return facts;
 }
 
-function legacyCopyIsCompatible(text, r) {
-  var facts = r || {};
-  var copy = String(text || '');
-  if (!facts.championships && /冠军|戒指/.test(copy)) return false;
-  if (!facts.finalsAppearances && /总决赛|抢七/.test(copy)) return false;
-  if (!facts.hadMajorInjury && /伤病|受伤|伤愈|康复|复健|护具/.test(copy)) return false;
-  if (!facts.wasTraded && /被交易|第一次交易|交易官宣|交易流言|交易过/.test(copy)) return false;
-  if (!facts.hasRivalry && /老对手|宿敌/.test(copy)) return false;
-  if (!facts.allStar && /全明星/.test(copy)) return false;
-  if (!facts.allLeague && /最佳阵容/.test(copy)) return false;
-  if (!facts.hasFamilyStory && /家人|女儿|儿子|孩子|爸爸|妈妈|父母/.test(copy)) return false;
-  if ((Number(facts.teamCount) || 0) <= 1 && /很多城市|多座城市/.test(copy)) return false;
-  return true;
-}
-
 function pickLegacyCopy(pool, variant, r, fallback) {
   var facts = getLegacyNarrativeFacts(r);
   var source = Array.isArray(pool) ? pool : [pool];
-  var compatible = source.filter(function(copy) { return legacyCopyIsCompatible(copy, facts); });
+  var compatible = source.filter(function(entry) {
+    return entry && typeof entry === 'object' && typeof entry.text === 'string' &&
+      (typeof CareerNarrativeRules === 'undefined' || CareerNarrativeRules.matches(entry, facts));
+  });
   if (!compatible.length) return fallback || '你的生涯已经被完整记录，退役之后，球场把答案交给时间。';
   var raw = typeof variant === 'number' ? Math.abs(variant) : Math.floor(Math.random() * compatible.length);
-  return compatible[raw % compatible.length] || compatible[0];
+  return compatible[raw % compatible.length].text || compatible[0].text;
+}
+
+function getLegacyNarrativePool(section, facts) {
+  if (typeof CareerNarrativeRules === 'undefined' || !CareerNarrativeRules) return [];
+  return CareerNarrativeRules.getPool(section, facts);
 }
 
 function buildHofAchievement(r) {
@@ -10782,7 +10806,7 @@ function buildCareerAchievement(r) {
 
 function buildHofCopy(r) {
   var facts = getLegacyNarrativeFacts(r);
-  var pool = facts.hof ? HOF_TEXT : HOF_FAIL_TEXT;
+  var pool = getLegacyNarrativePool(facts.hof ? 'hof' : 'hofFail', facts);
   var tpl = pickLegacyCopy(pool, facts.hofCopyVariant, facts, facts.hof
     ? '名人堂为你的生涯留出了位置。你走过的每一场比赛，都成为这段历史的一部分。'
     : '这次投票没有写下你的名字，但你的生涯事实仍然完整地留在联盟档案里。');
@@ -10817,7 +10841,7 @@ function buildHofCopy(r) {
 
 function buildGoatHistoryCopy(r) {
   var facts = getLegacyNarrativeFacts(r);
-  var pool = GOAT_HISTORY_TEXT;
+  var pool = getLegacyNarrativePool('goat', facts);
   var tpl = pickLegacyCopy(pool, facts.goatCopyVariant, facts, '你的生涯把标准推到了一个新的高度，历史会继续讨论这份答案。');
   var vars = {
     achievement: buildCareerAchievement(facts),
@@ -10853,7 +10877,7 @@ function buildGoatHistoryCopy(r) {
 
 function buildTop100Copy(r) {
   var facts = getLegacyNarrativeFacts(r);
-  var pool = facts.top100 ? TOP100_TEXT : TOP100_FAIL_TEXT;
+  var pool = getLegacyNarrativePool(facts.top100 ? 'top100' : 'top100Fail', facts);
   var tpl = pickLegacyCopy(pool, facts.top100CopyVariant, facts, facts.top100
     ? '历史档案收录了你的名字。它记录的不是一句评价，而是许多赛季留下的事实。'
     : '历史百大没有写下你的名字，但你的生涯数据和球队记忆仍然真实存在。');
@@ -10892,7 +10916,7 @@ function buildTop100Copy(r) {
 
 function buildRetirementCopy(r) {
   var facts = getLegacyNarrativeFacts(r);
-  var pool = facts.goat ? GOAT_RETIREMENT_TEXT : RETIREMENT_TEXT;
+  var pool = getLegacyNarrativePool(facts.goat ? 'goat' : 'retirement', facts);
   var variant = (facts.goat && typeof facts.goatCopyVariant === 'number') ? facts.goatCopyVariant : facts.retirementCopyVariant;
   var tpl = pickLegacyCopy(pool, variant, facts, '你把一段完整的职业生涯交给了篮球。今天离开球场，答案已经留在每一个赛季里。');
   var vars = {
@@ -10964,10 +10988,21 @@ function calculateLegacyResult() {
   else if (score >= 60) tier = '队史传奇';
   var hof = score >= 100 || (score >= 75 && Math.random() < (0.25 + (score - 75) * 0.025));
   var top100 = score >= 140;
-  var hofCopyVariant = Math.floor(Math.random() * (hof ? HOF_TEXT : HOF_FAIL_TEXT).length);
-  var top100CopyVariant = Math.floor(Math.random() * (top100 ? TOP100_TEXT : TOP100_FAIL_TEXT).length);
-  var retirementCopyVariant = Math.floor(Math.random() * RETIREMENT_TEXT.length);
-  var goatCopyVariant = Math.floor(Math.random() * GOAT_RETIREMENT_TEXT.length);
+  var narrativeVariantFacts = {
+    championships: championships, mvp: mvp, fmvp: fmvp, dpoy: dpoy,
+    allLeague: allLeague, allStar: allStar, teamsPlayed: teamCount,
+    oneTeamCareer: summary.oneTeamCareer, majorInjury: summary.hadMajorInjury,
+    wasTraded: summary.wasTraded, hasRival: summary.hasRivalry,
+    hof: hof, top100: top100, goat: goat, seasonsCount: seasons.length,
+    games: games, points: points
+  };
+  var hofPool = getLegacyNarrativePool(hof ? 'hof' : 'hofFail', narrativeVariantFacts);
+  var top100Pool = getLegacyNarrativePool(top100 ? 'top100' : 'top100Fail', narrativeVariantFacts);
+  var retirementPool = getLegacyNarrativePool(goat ? 'goat' : 'retirement', narrativeVariantFacts);
+  var hofCopyVariant = Math.floor(Math.random() * Math.max(1, hofPool.length));
+  var top100CopyVariant = Math.floor(Math.random() * Math.max(1, top100Pool.length));
+  var retirementCopyVariant = Math.floor(Math.random() * Math.max(1, retirementPool.length));
+  var goatCopyVariant = Math.floor(Math.random() * Math.max(1, getLegacyNarrativePool('goat', narrativeVariantFacts).length));
   // 每支效力过的球队独立结算，所有达标的球队都会退役球衣，按生涯先后展示
   var seasonTeam = {};
   seasons.forEach(function(s) { seasonTeam[s.seasonNum] = s.team; });
@@ -16603,8 +16638,10 @@ function biographyTextsOverlap(a, b) {
   return false;
 }
 
-function biographyPickRule(section, tags, seed, salt, avoidTexts) {
-  var list = CAREER_BIOGRAPHY_RULED_TEXT[section] || CAREER_BIOGRAPHY_TEXT[section] || [];
+function biographyPickRule(section, facts, tags, seed, salt, avoidTexts) {
+  var list = (typeof CareerNarrativeRules !== 'undefined' && CareerNarrativeRules)
+    ? CareerNarrativeRules.getPool(section, facts)
+    : [];
   if (!list.length) return '';
   var scored = list.map(function(entry, idx) {
     return { entry: entry, idx: idx, score: biographyEntryScore(entry, tags) };
@@ -16774,7 +16811,21 @@ function buildBiographyFacts(r) {
     '冠军线': champLine || '那些接近山顶的赛季',
     '防守荣誉': defenseLine,
     'MVP线': mvpLine || '长期稳定的明星表现',
-    '语气': '温暖'
+    '语气': '温暖',
+    championships: championships,
+    mvp: mvp,
+    fmvp: fmvp,
+    dpoy: dpoy,
+    allLeague: allLeague,
+    allStar: allStar,
+    teamsPlayed: teams.length,
+    oneTeamCareer: summary.oneTeamCareer,
+    majorInjury: !!summary.hadMajorInjury,
+    hadMajorInjury: !!summary.hadMajorInjury,
+    wasTraded: !!summary.wasTraded,
+    hasRival: !!summary.hasRivalry,
+    hasRivalry: !!summary.hasRivalry,
+    finalsAppearances: summary.finalsAppearances || 0
   };
 }
 
@@ -16932,8 +16983,8 @@ function buildCareerBiographyText(r) {
   var paragraphs = [];
   var tags = narrative.tags;
   var usedTexts = [];
-  var title = fillBiographyText(biographyPickRule('title', tags, seed, 1), facts);
-  var leadText = biographyPickRule('lead', tags, seed, 2, usedTexts);
+  var title = fillBiographyText(biographyPickRule('title', facts, tags, seed, 1), facts);
+  var leadText = biographyPickRule('lead', facts, tags, seed, 2, usedTexts);
   paragraphs.push(fillBiographyText(leadText, facts));
   if (leadText) usedTexts.push(leadText);
   if (eras.length) {
@@ -16948,15 +16999,17 @@ function buildCareerBiographyText(r) {
       eraFacts['时代冠军'] = String(era.championships || 0);
       eraFacts['时代MVP'] = String(era.mvp || 0);
       eraFacts['时代DPOY'] = String(era.dpoy || 0);
+      eraFacts.eraChampionships = Number(era.championships) || 0;
+      eraFacts.eraDpoy = Number(era.dpoy) || 0;
       var eraTags = buildEraBiographyTags(era, idx, eras.length, tags);
-      var eraText = biographyPickRule('era', eraTags, seed, 10 + idx, usedTexts);
+      var eraText = biographyPickRule('era', eraFacts, eraTags, seed, 10 + idx, usedTexts);
       if (eraText) {
         paragraphs.push(fillBiographyText(eraText, eraFacts));
         usedTexts.push(eraText);
       }
     });
   } else {
-    var firstCityText = biographyPickRule('first_city', tags, seed, 3, usedTexts);
+    var firstCityText = biographyPickRule('first_city', facts, tags, seed, 3, usedTexts);
     paragraphs.push(fillBiographyText(firstCityText, facts));
     if (firstCityText) usedTexts.push(firstCityText);
   }
@@ -16969,7 +17022,7 @@ function buildCareerBiographyText(r) {
   if (tags.indexOf('late_peak') >= 0) plan.push('late_peak');
   plan.push('city_memory', 'legacy');
   plan.forEach(function(section, idx) {
-    var text = biographyPickRule(section, tags, seed, idx + 2, usedTexts);
+    var text = biographyPickRule(section, facts, tags, seed, idx + 2, usedTexts);
     if (text) {
       paragraphs.push(fillBiographyText(text, facts));
       usedTexts.push(text);
@@ -17511,7 +17564,7 @@ function generateCareerPoster() {
   }
   y += cardH + 6;
 
-  // 4. 生涯数据
+  // 4. 常规赛生涯数据
   var cardH = 130;
   card(cardX, y, cardW, cardH);
   ctx.textAlign = 'left'; ctx.textBaseline = 'top';

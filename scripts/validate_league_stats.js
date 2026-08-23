@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const parser = require('@babel/parser');
 
 const root = path.resolve(__dirname, '..');
 const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
@@ -10,7 +9,7 @@ inlineScripts.forEach((match, index) => {
   const source = match[2] || '';
   if (/\bsrc\s*=/.test(attributes) || /application\/json/.test(attributes) || !source.trim()) return;
   try {
-    parser.parse(source, { sourceType: 'script', plugins: ['optionalChaining', 'objectRestSpread'] });
+    new Function(source);
   } catch (error) {
     throw new Error(`index.html 第 ${index + 1} 个内联脚本语法错误：${error.message}`);
   }

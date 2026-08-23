@@ -8,7 +8,11 @@
     "test:statistical": "node scripts/validate_simulation_v2.js --mode=statistical",
     "test:calibration:smoke": "node scripts/validate_v2_win_calibration.js --mode=smoke",
     "test:calibration": "node scripts/validate_v2_win_calibration.js --mode=statistical",
-    "test:retirement": "node scripts/validate_retirement_summary.js"
+    "test:retirement": "node scripts/validate_retirement_summary.js",
+    "test:training": "node scripts/validate_training_budget.js",
+    "test:narratives": "node scripts/validate_career_narratives.js",
+    "test:mvp": "node scripts/validate_mvp_fairness.js",
+    "test:player-build": "node scripts/validate_player_build.js"
   },
   "devDependencies": {
     "@babel/generator": "^8.0.0",
