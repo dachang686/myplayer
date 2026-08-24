@@ -3,6 +3,7 @@ const path = require('path');
 
 const root = path.resolve(__dirname, '..');
 const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const v2Source = fs.readFileSync(path.join(root, 'js', 'simulation_v2.js'), 'utf8');
 const dataSource = fs.readFileSync(path.join(root, 'js/data/league_players.js'), 'utf8');
 const configSource = fs.readFileSync(path.join(root, 'js/data/simulation_config.js'), 'utf8');
 const scheduleSource = fs.readFileSync(path.join(root, 'js/data/league_schedule.js'), 'utf8');
@@ -38,7 +39,7 @@ const engine = new Function(
   'getLeaguePlayerAge',
   'af',
   'ensureSeasonEventState',
-  `${indexSource.slice(engineStart, engineEnd)}\nreturn { simulateGameNew, calcTeamPowerWithPlayer, getTeamCompetitiveRating };`,
+  `${indexSource.slice(engineStart, engineEnd)}\n${v2Source}\nreturn { simulateGameNew, simulateGameAggregateV2: globalThis.simulateGameAggregateV2, calcTeamPowerWithPlayer, getTeamCompetitiveRating };`,
 )(
   leagueData.LEAGUE_PLAYER_DATA,
   simConfig,
@@ -124,15 +125,18 @@ function runSeason(seasonNumber, teams) {
     schedule,
     standings,
     isPlayoffs: false,
+    simulationEngine: engineName === 'v2' ? 'v2' : null,
     _npcSeasonProfiles: {},
     events: { activeEffects: [] },
   };
   state._lineupCache = {};
   const preseason = getTeamRatings(teams);
 
+  const simulate = engineName === 'v2' ? engine.simulateGameAggregateV2 : engine.simulateGameNew;
+  if (typeof simulate !== 'function') throw new Error(`${engineName} 比赛引擎未加载`);
   for (const game of schedule) {
     // 该门禁只校准阵容实力映射；伤病、轮休和背靠背由其他测试覆盖，避免把可用性噪声混入实力排名。
-    const result = engine.simulateGameNew(game.home, game.away, 0, null, {
+    const result = simulate(game.home, game.away, 0, null, {
       isHomeA: true,
       isB2BA: false,
       isB2BB: false,
@@ -204,6 +208,34 @@ function mean(values) {
   return values.reduce((sum, value) => sum + value, 0) / Math.max(1, values.length);
 }
 
+function pearsonCorrelation(left, right) {
+  if (left.length !== right.length || left.length < 2) return 0;
+  const leftMean = mean(left);
+  const rightMean = mean(right);
+  let numerator = 0;
+  let leftVariance = 0;
+  let rightVariance = 0;
+  left.forEach((value, index) => {
+    const leftDelta = value - leftMean;
+    const rightDelta = right[index] - rightMean;
+    numerator += leftDelta * rightDelta;
+    leftVariance += leftDelta * leftDelta;
+    rightVariance += rightDelta * rightDelta;
+  });
+  const denominator = Math.sqrt(leftVariance * rightVariance);
+  return denominator > 0 ? numerator / denominator : 0;
+}
+
+function percentile(values, quantile) {
+  if (!values.length) return 0;
+  const sorted = values.slice().sort((a, b) => a - b);
+  const position = (sorted.length - 1) * quantile;
+  const lower = Math.floor(position);
+  const upper = Math.ceil(position);
+  if (lower === upper) return sorted[lower];
+  return sorted[lower] + (sorted[upper] - sorted[lower]) * (position - lower);
+}
+
 function summarize(seasons, teams) {
   const top1 = seasons.flatMap(season => season.top1);
   const top3 = seasons.flatMap(season => season.top3);
@@ -231,6 +263,18 @@ function summarize(seasons, teams) {
   const top1PlayIn = top1.filter(entry => entry.rank >= 7 && entry.rank <= 10).length;
   const top1OutOfPlayoffs = top1.filter(entry => entry.rank > 10).length;
   const top5TopSix = top5.filter(entry => entry.rank <= 6).length;
+  const top3OutOfPlayoffs = top3.filter(entry => entry.rank > 10).length;
+  const correlationBySeason = seasons.map(season => {
+    const ratingByTeam = Object.fromEntries(season.preseason.map(entry => [entry.team, entry.rating]));
+    const winsByTeam = season.final.reduce((map, entry) => {
+      map[entry.team] = entry.wins;
+      return map;
+    }, {});
+    return pearsonCorrelation(
+      teams.map(team => ratingByTeam[team]),
+      teams.map(team => winsByTeam[team]),
+    );
+  });
   return {
     seasons: seasons.length,
     teams: teams.length,
@@ -241,12 +285,13 @@ function summarize(seasons, teams) {
       minWins: Math.min(...top1.map(entry => entry.wins)),
       maxWins: Math.max(...top1.map(entry => entry.wins)),
       averageRank: mean(top1.map(entry => entry.rank)),
-      playInRate: top1PlayIn / seasons.length,
-      outOfPlayoffsRate: top1OutOfPlayoffs / seasons.length,
+      playInRate: top1PlayIn / Math.max(1, top1.length),
+      outOfPlayoffsRate: top1OutOfPlayoffs / Math.max(1, top1.length),
     },
     conferenceTop3: {
       averageWins: mean(top3.map(entry => entry.wins)),
       averageRank: mean(top3.map(entry => entry.rank)),
+      outOfPlayoffsRate: top3OutOfPlayoffs / Math.max(1, top3.length),
     },
     conferenceTop5: {
       averageWins: mean(top5.map(entry => entry.wins)),
@@ -270,6 +315,11 @@ function summarize(seasons, teams) {
       actualFirstMinWins: Math.min(...leagueTop.map(entry => entry.wins)),
       actualLastMaxWins: Math.max(...leagueBottom.map(entry => entry.wins)),
     },
+    ratingWinCorrelation: {
+      bySeason: correlationBySeason,
+      average: mean(correlationBySeason),
+      p10: percentile(correlationBySeason, 0.10),
+    },
   };
 }
 
@@ -281,11 +331,23 @@ function validate(summary, mode) {
   const top1MaxPlayInRate = isStatistical ? 0.08 : 0.17;
   const top1MaxOutRate = isStatistical ? 0.04 : 0.17;
   const top5MinTopSixRate = isStatistical ? 0.68 : 0.62;
+  const minAverageCorrelation = isStatistical ? 0.70 : 0.50;
+  const minP10Correlation = isStatistical ? 0.55 : 0.20;
+  const maxTop3OutOfPlayoffsRate = isStatistical ? 0.05 : 0.15;
   if (summary.conferenceTop1.averageWins < top1MinWins) failures.push(`季前第一平均胜场过低：${summary.conferenceTop1.averageWins.toFixed(2)}`);
   if (summary.conferenceTop1.averageRank > top1MaxRank) failures.push(`季前第一平均排名过低：${summary.conferenceTop1.averageRank.toFixed(2)}`);
   if (summary.conferenceTop1.playInRate > top1MaxPlayInRate) failures.push(`季前第一进入附加赛概率过高：${summary.conferenceTop1.playInRate.toFixed(3)}`);
   if (summary.conferenceTop1.outOfPlayoffsRate > top1MaxOutRate) failures.push(`季前第一掉出季后赛概率过高：${summary.conferenceTop1.outOfPlayoffsRate.toFixed(3)}`);
   if (summary.conferenceTop5.topSixRate < top5MinTopSixRate) failures.push(`季前前五进入前六比例过低：${summary.conferenceTop5.topSixRate.toFixed(3)}`);
+  if (summary.ratingWinCorrelation.average < minAverageCorrelation) {
+    failures.push(`战力与胜场平均 Pearson 相关性过低：${summary.ratingWinCorrelation.average.toFixed(3)}`);
+  }
+  if (summary.ratingWinCorrelation.p10 < minP10Correlation) {
+    failures.push(`战力与胜场单季 Pearson P10 过低：${summary.ratingWinCorrelation.p10.toFixed(3)}`);
+  }
+  if (summary.conferenceTop3.outOfPlayoffsRate > maxTop3OutOfPlayoffsRate) {
+    failures.push(`季前分区前3掉出季后赛概率过高：${summary.conferenceTop3.outOfPlayoffsRate.toFixed(3)}`);
+  }
   if (isStatistical && (summary.league.actualFirstAverageWins < 56 || summary.league.actualFirstAverageWins > 63)) {
     failures.push(`联盟第一平均胜场不在 56～63：${summary.league.actualFirstAverageWins.toFixed(2)}`);
   }
@@ -298,6 +360,9 @@ function validate(summary, mode) {
 const modeArg = process.argv.find(arg => arg.startsWith('--mode='));
 const mode = modeArg ? modeArg.slice('--mode='.length) : 'smoke';
 if (!['smoke', 'statistical'].includes(mode)) throw new Error(`不支持的校准模式：${mode}`);
+const engineArg = process.argv.find(arg => arg.startsWith('--engine='));
+const engineName = engineArg ? engineArg.slice('--engine='.length).toLowerCase() : 'v1';
+if (!['v1', 'v2'].includes(engineName)) throw new Error(`不支持的比赛引擎：${engineName}，可选 v1/v2`);
 const seasonsArg = process.argv.find(arg => arg.startsWith('--seasons='));
 const seasons = seasonsArg
   ? Math.max(1, Number(seasonsArg.slice('--seasons='.length)) || 1)
@@ -313,5 +378,5 @@ const results = seededRandom(`season-strength:${mode}:${seasons}`, () => {
 const summary = summarize(results, teams);
 const failures = validate(summary, mode);
 
-console.log(JSON.stringify({ mode, summary, failures }, null, 2));
+console.log(JSON.stringify({ mode, engine: engineName, summary, failures }, null, 2));
 if (failures.length) process.exitCode = 1;

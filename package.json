@@ -10,6 +10,8 @@
     "test:calibration": "node scripts/validate_v2_win_calibration.js --mode=statistical",
     "test:calibration:season": "node scripts/validate_season_strength_calibration.js --mode=smoke",
     "test:calibration:season:statistical": "node scripts/validate_season_strength_calibration.js --mode=statistical",
+    "test:calibration:season:v2": "node scripts/validate_season_strength_calibration.js --engine=v2 --mode=smoke",
+    "test:calibration:season:v2:statistical": "node scripts/validate_season_strength_calibration.js --engine=v2 --mode=statistical",
     "test:retirement": "node scripts/validate_retirement_summary.js",
     "test:training": "node scripts/validate_training_budget.js",
     "test:narratives": "node scripts/validate_career_narratives.js",

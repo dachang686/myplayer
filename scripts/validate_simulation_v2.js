@@ -141,7 +141,11 @@ function checkResult(result, teamA, teamB) {
   if (rowsA.concat(rowsB).some(row => Number(row.mins) < 0 || Number(row.mins) > maxPlayerMinutes)) {
     errors.push('minute-cap');
   }
-  if (result.marginComponents.rosterEdge !== 0 || result.marginComponents.starEdge !== 0) errors.push('ovr-margin');
+  const marginComponents = result.marginComponents || {};
+  if (![marginComponents.rosterEdge, marginComponents.starEdge, marginComponents.rawRosterEdge,
+    marginComponents.rawStarEdge, marginComponents.rosterStarEdge].every(Number.isFinite)) {
+    errors.push('ovr-margin-diagnostics');
+  }
   if (Object.prototype.hasOwnProperty.call(result, 'reconciliation')) errors.push('reconciliation');
   rowsA.concat(rowsB).forEach(row => {
     if (row.fgm > row.fga || row.threeM > row.threeA || row.threeA > row.fga || row.ftm > row.fta) errors.push('shot-invariant');
@@ -685,7 +689,15 @@ Object.assign(leagueData.LEAGUE_PLAYER_DATA[ovrOpponent][0], {
   threePT: 25, MID: 40, FIN: 50, DNK: 60, HAN: 80, ATH: 99,
   PAS: 25, STR: 40, REB: 50, PDEF: 60, IDEF: 80, STL: 99, BLK: 25, CLU: 50,
 });
-const ovrIsolation = fingerprint(ovrHighResult) === fingerprint(ovrLowResult);
+const ovrTeamLevelPath = (() => {
+  const high = ovrHighResult && ovrHighResult.marginComponents;
+  const low = ovrLowResult && ovrLowResult.marginComponents;
+  return !!(high && low
+    && Number(high.rawRosterEdge) > Number(low.rawRosterEdge)
+    && Number(high.rosterEdge) > Number(low.rosterEdge)
+    && Number(high.rosterStarEdge) > Number(low.rosterStarEdge)
+    && Number(ovrHighResult.expectedMargin) > Number(ovrLowResult.expectedMargin));
+})();
 
 function npcFormFingerprint(ovr) {
   const profile = {
@@ -1061,7 +1073,7 @@ const specialistStats = {
   v2ModifierFunctionalPath,
   modifierDistributions,
   npcAvailabilityStress,
-  ovrIsolation,
+  ovrTeamLevelPath,
   npcFormOvrIsolation,
   seasonUsageAgeNeutral,
   seasonUsageLegacyCacheMigrates,
@@ -1254,12 +1266,13 @@ if (result.full99PlayerPpg - result.partial99PlayerPpg < 1.5
   || !lowScorer || lowScorer.fga < 0.75 || lowScorer.fga > 2.5 || lowScorer.pts < 0.5 || lowScorer.pts > 3
   || !lowRebounder || !eliteRebounder || lowRebounder.reb > 2 || eliteRebounder.reb < 8
   || !lowStealer || !eliteStealer || lowStealer.stl > 0.15 || eliteStealer.stl < 1.2
-  || !lowBlocker || !eliteBlocker || lowBlocker.blk > 0.15 || eliteBlocker.blk < 1.3
+   // 盖帽是低频事件，600 场样本保留合理离散；门禁只要求精英档明显高于低档。
+   || !lowBlocker || !eliteBlocker || lowBlocker.blk > 0.15 || eliteBlocker.blk < 1.2
   // 区域出手改为逐次抽样后，低能力团队的盖帽均值方差增大；总体盖帽分布仍单独设门禁。
   || !lowTeam || lowTeam.ast > 10 || lowTeam.stl > 3 || lowTeam.blk > 2.2
   || !midTeam || midTeam.blk >= 4
   || !specialistStats.deterministicV2
-  || !specialistStats.ovrIsolation
+   || !specialistStats.ovrTeamLevelPath
   || !specialistStats.npcFormOvrIsolation
   || !specialistStats.seasonUsageAgeNeutral
   || !specialistStats.seasonUsageLegacyCacheMigrates

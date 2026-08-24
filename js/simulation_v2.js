@@ -1,7 +1,7 @@
 /* Quarter-level aggregate simulation engine.
  * V1 remains the default until this path passes the long-run comparison gate.
- * The engine deliberately does not use player OVR for offensive or defensive
- * event probabilities; OVR may still affect rotation selection upstream.
+ * The engine keeps player OVR out of offensive/defensive event probabilities;
+ * the shared roster/star rating is consumed only as a limited team-level edge.
  */
 (function installSimulationV2(global) {
   'use strict';
@@ -911,6 +911,37 @@
     var homeB = isHomeA === false ? 0.014 : (isHomeA === true ? -0.014 : 0);
     var biasA = homeA + Number(seedBonus || 0) * 0.003 + activeEventEdge * 0.004 + seasonEdge * 0.004 - first.fatigue * 0.012;
     var biasB = homeB - activeEventEdge * 0.004 - seasonEdge * 0.004 - second.fatigue * 0.012;
+
+    // V2 的事件层继续使用自己的专项攻防模型，但球队的基础层级必须和
+    // 排名页/V1 使用同一套轮换实力。这里只消费 OVR 与巨星集中度，不能
+    // 再把 structureRating 叠加一次，否则会重复放大攻防属性。
+    var powerA = typeof calcTeamPowerWithPlayer === 'function'
+      ? calcTeamPowerWithPlayer(teamA, { preparedRotation: options._preparedRotations[teamA] })
+      : null;
+    var powerB = typeof calcTeamPowerWithPlayer === 'function'
+      ? calcTeamPowerWithPlayer(teamB, { preparedRotation: options._preparedRotations[teamB] })
+      : null;
+    var competitiveA = typeof getTeamCompetitiveRating === 'function'
+      ? getTeamCompetitiveRating(powerA || {})
+      : { roster: 80, star: 0 };
+    var competitiveB = typeof getTeamCompetitiveRating === 'function'
+      ? getTeamCompetitiveRating(powerB || {})
+      : { roster: 80, star: 0 };
+    var rawRosterEdge = Number(competitiveA.roster) - Number(competitiveB.roster);
+    var rawStarEdge = Number(competitiveA.star) - Number(competitiveB.star);
+    if (!Number.isFinite(rawRosterEdge)) rawRosterEdge = 0;
+    if (!Number.isFinite(rawStarEdge)) rawStarEdge = 0;
+    // 先限制共同模型的总边际，再以 65% 进入 V2 赛前分差；这使 V2
+    // 接受排行榜的强弱层级，但不会覆盖专项攻防和比赛随机性。
+    var rosterStarEdge = clamp(rawRosterEdge + rawStarEdge, -12, 12);
+    var rosterStarMarginEdge = rosterStarEdge * 0.65;
+    var rawCombinedEdge = rawRosterEdge + rawStarEdge;
+    var rosterEdge = rawCombinedEdge === 0 ? 0 : rosterStarMarginEdge * rawRosterEdge / rawCombinedEdge;
+    var starEdge = rawCombinedEdge === 0 ? 0 : rosterStarMarginEdge - rosterEdge;
+    // 这部分同时进入命中质量，确保“预计优势”不会只存在于诊断字段。
+    var rosterStarBias = rosterStarEdge * 0.0030;
+    biasA += rosterStarBias;
+    biasB -= rosterStarBias;
     var basePace = clamp(Math.round(
       105 + ((first.pace + second.pace) / 2 - 0.50) * 7
         - (first.fatigue + second.fatigue) * 1.5 + normal(0, 1.8),
@@ -1017,6 +1048,8 @@
     var fatigueEdge = second.fatigue - first.fatigue;
     var pregameExpectedMargin = clamp(
       directEdge
+        + rosterEdge
+        + starEdge
         + homeCourtEdge
         + seedBonusEdge
         + eventTeamMarginEdge
@@ -1033,8 +1066,8 @@
       highlight: highlight,
       keyEvents: keyEvents,
       ot: overtime,
-      teamA: { power: { overall: null, offense: first.attack * 100, pregameOffense: first.pregameAttack * 100, defense: first.defense * 100, rotationMinutes: totalLinesA.map(function(line) { return line.mins; }) } },
-      teamB: { power: { overall: null, offense: second.attack * 100, pregameOffense: second.pregameAttack * 100, defense: second.defense * 100, rotationMinutes: totalLinesB.map(function(line) { return line.mins; }) } },
+      teamA: { power: { overall: powerA && powerA.overall != null ? powerA.overall : null, offense: first.attack * 100, pregameOffense: first.pregameAttack * 100, defense: first.defense * 100, rotationMinutes: totalLinesA.map(function(line) { return line.mins; }) } },
+      teamB: { power: { overall: powerB && powerB.overall != null ? powerB.overall : null, offense: second.attack * 100, pregameOffense: second.pregameAttack * 100, defense: second.defense * 100, rotationMinutes: totalLinesB.map(function(line) { return line.mins; }) } },
       pace: basePace,
       possPerQ: Math.round(basePace / 4),
       isHomeA: isHomeA,
@@ -1043,13 +1076,15 @@
       expectedMargin: pregameExpectedMargin,
       actualMargin: scoreA - scoreB,
       marginComponents: {
-        rosterEdge: 0,
+        rosterEdge: rosterEdge,
+        rawRosterEdge: rawRosterEdge,
+        rosterStarEdge: rosterStarEdge,
         rawMatchupEdge: directEdge,
         matchupEdge: directEdge,
         pregameAttackGap: first.pregameAttack - second.pregameAttack,
         pregameDefenseGap: first.defense - second.defense,
-        rawStarEdge: 0,
-        starEdge: 0,
+        rawStarEdge: rawStarEdge,
+        starEdge: starEdge,
         seasonFormEdge: 0,
         homeCourtEdge: homeCourtEdge,
         seedBonusEdge: seedBonusEdge,
