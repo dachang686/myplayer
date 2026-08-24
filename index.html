@@ -7488,10 +7488,34 @@ function getSeasonPlayerOvrRows() {
         playerId: playerId,
         playerName: player.cname || player.name || playerId || '未知球员',
         teamId: teamId,
+        teamLabel: teamId,
         position: player.pos || player.position || '—',
         ovr: ovr,
         isUser: false,
       });
+    });
+  });
+  var freeAgentEntries = Array.isArray(STATE._freeAgentPool) ? STATE._freeAgentPool.slice() : [];
+  var leagueChanges = STATE._leagueChanges && typeof STATE._leagueChanges === 'object' ? STATE._leagueChanges : {};
+  if (Array.isArray(leagueChanges.freeAgents)) freeAgentEntries.push.apply(freeAgentEntries, leagueChanges.freeAgents);
+  var enteredFreeAgents = leagueChanges.enteredFA;
+  if (Array.isArray(enteredFreeAgents)) freeAgentEntries.push.apply(freeAgentEntries, enteredFreeAgents);
+  else if (enteredFreeAgents && typeof enteredFreeAgents === 'object') freeAgentEntries.push(enteredFreeAgents);
+  freeAgentEntries.forEach(function(player) {
+    if (!player) return;
+    var playerId = String(player.id || player.playerId || '');
+    if (!playerId || seen[playerId]) return;
+    seen[playerId] = true;
+    var ovr = Number(player.ovr) || 0;
+    if (ovr <= 0) return;
+    rows.push({
+      playerId: playerId,
+      playerName: player.cname || player.name || player.displayName || playerId || '未知球员',
+      teamId: 'FA',
+      teamLabel: '自由球员',
+      position: player.pos || player.position || '—',
+      ovr: ovr,
+      isUser: false,
     });
   });
   var userOvr = Number(STATE.finalOVR) || 0;
@@ -7500,6 +7524,7 @@ function getSeasonPlayerOvrRows() {
       playerId: '__user__',
       playerName: typeof getMyPlayerDisplayName === 'function' ? getMyPlayerDisplayName() : '我的球员',
       teamId: STATE.careerTeam,
+      teamLabel: STATE.careerTeam,
       position: STATE.position || '—',
       ovr: userOvr,
       isUser: true,
@@ -7597,7 +7622,7 @@ function renderSeasonRankingsPage() {
       return '<div class="player-ranking-row player-ranking-ovr-row is-interactive ' + (row.isUser ? 'is-user' : '') + '" data-season-player-team="' + row.teamId + '" data-season-player-id="' + row.playerId + '" role="button" tabindex="0" aria-label="查看' + escapeSeasonUiText(row.playerName) + '详细属性" title="点击查看球员详细属性">' +
         '<span>' + (index + 1) + '</span>' +
         '<span class="player-ranking-name">' + escapeSeasonUiText(row.playerName) + (row.isUser ? ' ⭐' : '') + '</span>' +
-        '<span>' + row.teamId + '</span>' +
+        '<span>' + escapeSeasonUiText(row.teamLabel || row.teamId) + '</span>' +
         '<span>' + escapeSeasonUiText(row.position) + '</span>' +
         '<span class="player-ranking-value">' + row.ovr + '</span>' +
       '</div>';
@@ -7897,6 +7922,34 @@ function findSeasonPlayerForDetail(team, playerId) {
     var userPlayer = userPlayers.find(function(player) { return player && player._isUser; });
     if (userPlayer) return { player: userPlayer, team: team };
   }
+  if (team === 'FA') {
+    var freeAgentEntries = Array.isArray(STATE._freeAgentPool) ? STATE._freeAgentPool.slice() : [];
+    var leagueChanges = STATE._leagueChanges && typeof STATE._leagueChanges === 'object' ? STATE._leagueChanges : {};
+    if (Array.isArray(leagueChanges.freeAgents)) freeAgentEntries.push.apply(freeAgentEntries, leagueChanges.freeAgents);
+    var enteredFreeAgents = leagueChanges.enteredFA;
+    if (Array.isArray(enteredFreeAgents)) freeAgentEntries.push.apply(freeAgentEntries, enteredFreeAgents);
+    else if (enteredFreeAgents && typeof enteredFreeAgents === 'object') freeAgentEntries.push(enteredFreeAgents);
+    var freeAgent = freeAgentEntries.find(function(item) {
+      return item && (item.id === playerId || item.playerId === playerId);
+    });
+    if (freeAgent) {
+      var snapshot = null;
+      if (typeof _baseLeagueRosterSnapshot !== 'undefined') {
+        Object.keys(_baseLeagueRosterSnapshot || {}).some(function(teamId) {
+          var found = (_baseLeagueRosterSnapshot[teamId] || []).find(function(item) { return item && item.id === playerId; });
+          if (found) snapshot = found;
+          return !!found;
+        });
+      }
+      var freeAgentPlayer = freeAgent.id ? freeAgent : Object.assign({}, snapshot || {}, {
+        id: playerId,
+        cname: freeAgent.cname || freeAgent.name || freeAgent.displayName || (snapshot && snapshot.cname) || playerId,
+        ovr: Number(freeAgent.ovr) || (snapshot && snapshot.ovr) || 0,
+        _age: Number(freeAgent.age) || (snapshot && snapshot._age) || 0,
+      });
+      return { player: freeAgentPlayer, team: 'FA' };
+    }
+  }
   var player = (LEAGUE_PLAYER_DATA[team] || []).find(function(item) { return item && item.id === playerId; });
   if (player) return { player: player, team: team };
   for (var i = 0; i < LEAGUE_TEAM_IDS.length; i++) {
@@ -7924,6 +7977,7 @@ function showSeasonPlayerDetail(team, playerId) {
   var height = player.height ? ' · ' + escapeSeasonUiText(player.height) : '';
   var age = getSeasonTeamPlayerAge(player);
   var ageText = age > 0 ? ' · ' + age + '岁' : '';
+  var teamLabel = team === 'FA' ? '自由球员' : getTeamName(team);
   var type = player.type ? '<div class="season-player-detail-meta">' + escapeSeasonUiText(player.type) + '</div>' : '';
   var ovr = isUser ? (STATE.finalOVR || player.ovr || 0) : (parseInt(player.ovr) || 0);
   var headshot = !isUser && typeof getPlayerHeadshotStyle === 'function' ? getPlayerHeadshotStyle(player.id, 52) : '';
@@ -7957,7 +8011,7 @@ function showSeasonPlayerDetail(team, playerId) {
       '<div class="modal-header"><div id="season-player-detail-title" style="font:700 14px var(--font-display);">球员详细属性</div><button class="modal-close" onclick="closeSeasonPlayerDetail()" aria-label="关闭球员详情">✕</button></div>' +
       '<div class="season-player-detail-hero">' +
         '<span class="season-player-detail-avatar"' + avatarStyle + '>' + avatarContent + '</span>' +
-        '<div style="min-width:0;"><div class="season-player-detail-name">' + name + (isUser ? ' ⭐' : '') + '</div><div class="season-player-detail-meta">' + getTeamLogo(team, 14) + ' ' + getTeamName(team) + ' · ' + position + height + ageText + '</div>' + type + '</div>' +
+       '<div style="min-width:0;"><div class="season-player-detail-name">' + name + (isUser ? ' ⭐' : '') + '</div><div class="season-player-detail-meta">' + getTeamLogo(team, 14) + ' ' + escapeSeasonUiText(teamLabel) + ' · ' + position + height + ageText + '</div>' + type + '</div>' +
         '<div class="season-player-detail-ovr">' + ovr + '<small>OVR</small></div>' +
       '</div>' +
       '<div class="season-player-detail-section"><div class="season-player-detail-title">本赛季 · ' + statRow.gp + ' 场</div><div class="season-player-season-stats">' + statItems + '</div></div>' +
