@@ -980,6 +980,7 @@
       var roster = LEAGUE_PLAYER_DATA[team] || (LEAGUE_PLAYER_DATA[team] = []);
       STATE._leagueChanges.teamChanges[team] = STATE._leagueChanges.teamChanges[team] || { retired: [], rookies: [] };
       while (roster.length < DRAFT_ROSTER_LIMIT) {
+        if (typeof getLeagueRosterNpcLimit === 'function' && roster.length >= getLeagueRosterNpcLimit(team)) break;
         var player = generateRookie();
         if (player._fixedProspectRating) {
           normalizeRookieAttributesToOvr(player, player.ovr);
@@ -997,6 +998,7 @@
         STATE._leagueChanges.teamChanges[team].rookies.push(player.cname);
       }
     });
+    if (typeof enforceLeagueRosterCapacity === 'function') enforceLeagueRosterCapacity(null, { reason: 'draft_roster_fill_capacity' });
     clearLineupCache();
   };
 })();

@@ -87,7 +87,8 @@ const afterAssignment = vm.runInContext(`(() => {
   const retired = (STATE._leagueChanges && STATE._leagueChanges.retired) || [];
   const ids = players.map(player => player.id).concat(freeAgents.map(player => player.id), retired.map(row => row.playerId));
   const locate = id => ({ roster: players.filter(player => player.id === id).length, freeAgent: freeAgents.filter(player => player.id === id).length, retired: retired.filter(row => row.playerId === id).length });
-  return { roster: players.length, freeAgents: freeAgents.length, retired: retired.length, unique: new Set(ids).size, ids: ids.length, missing: [], jokic: locate('P0120'), lebron: locate('P0379') };
+  const rosterCounts = LEAGUE_TEAM_IDS.map(team => ({ team, count: (LEAGUE_PLAYER_DATA[team] || []).length }));
+  return { roster: players.length, freeAgents: freeAgents.length, retired: retired.length, unique: new Set(ids).size, ids: ids.length, missing: [], rosterCounts, jokic: locate('P0120'), lebron: locate('P0379') };
 })()`, context);
 
 const afterIds = vm.runInContext(`(() => {
@@ -102,6 +103,7 @@ afterAssignment.historicalRetired = firstSeasonRetired.length + afterAssignment.
 
 if (afterAssignment.ids !== afterAssignment.unique) failures.push(`自由市场分配后存在重复身份：${JSON.stringify(afterAssignment)}`);
 if (afterAssignment.missing.length) failures.push(`生命周期中丢失球员：${afterAssignment.missing.join(',')}`);
+if (afterAssignment.rosterCounts.some(row => row.count > 18)) failures.push(`自由市场完成后存在超员球队：${JSON.stringify(afterAssignment.rosterCounts.filter(row => row.count > 18))}`);
 if (afterAssignment.ids + firstSeasonRetired.length !== originalIds.length) failures.push(`跨赛季身份总数异常：${JSON.stringify(afterAssignment)}`);
 for (const [id, location] of Object.entries({ P0120: afterAssignment.jokic, P0379: afterAssignment.lebron })) {
   if (location.roster + location.freeAgent + location.retired !== 1) failures.push(`${id} 生命周期归属异常：${JSON.stringify(location)}`);

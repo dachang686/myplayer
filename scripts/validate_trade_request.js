@@ -83,6 +83,8 @@ function buildContext(randomValue) {
   if (mobilityEnd < 0 || requestStart < 0 || requestEnd < 0) throw new Error('无法提取申请交易函数');
   vm.runInContext(offseasonText.slice(0, mobilityEnd), context, { filename: 'offseason-mobility.js' });
   vm.runInContext(offseasonText.slice(requestStart, requestEnd), context, { filename: 'offseason-trade-request.js' });
+  // 该回归只提取交易剧情片段，不加载完整薪资模块；完整工资合法性由专门测试覆盖。
+  context.isCareerTradePayrollLegal = () => true;
   return context;
 }
 

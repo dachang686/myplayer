@@ -96,11 +96,21 @@ function getTeamRenewalWillingness() {
   return Math.random() < Math.max(0.45, p);
 }
 
+function isCareerTradePayrollLegal(destTeam) {
+  if (!destTeam) return false;
+  if (typeof FREE_AGENT_MARKET === 'undefined') return false;
+  if (typeof STATE === 'undefined' || !STATE || !STATE.career || Number(STATE.career.contract) <= 0) return false;
+  if (typeof getTeamPayroll !== 'function' || typeof getCareerPlayerSalary !== 'function') return false;
+  var payrollAfter = getTeamPayroll(destTeam) + getCareerPlayerSalary();
+  return payrollAfter <= FREE_AGENT_MARKET.secondApron + 0.001;
+}
+
 function pickTradeDestination() {
   var myPos = STATE.position;
   var candidates = [];
   LEAGUE_TEAM_IDS.forEach(function(t) {
     if (t === STATE.careerTeam) return;
+    if (!isCareerTradePayrollLegal(t)) return;
     var lineup = calcTeamLineup(t);
     var weak = null, weakOvr = 999;
     ['PG','SG','SF','PF','C'].forEach(function(pos) {
@@ -121,9 +131,10 @@ function pickTradeDestination() {
   });
   if (candidates.length === 0) {
     LEAGUE_TEAM_IDS.forEach(function(t) {
-      if (t !== STATE.careerTeam) candidates.push({ team: t, score: 1 });
+      if (t !== STATE.careerTeam && isCareerTradePayrollLegal(t)) candidates.push({ team: t, score: 1 });
     });
   }
+  if (!candidates.length) return null;
   candidates.sort(function(a, b) { return b.score - a.score; });
   var top = candidates.slice(0, 6);
   return top[Math.floor(Math.random() * top.length)].team;
@@ -186,6 +197,10 @@ function doTradeUser(destTeam, done) {
     if (done) done();
     return;
   }
+  if (!isCareerTradePayrollLegal(destTeam)) {
+    if (done) done();
+    return;
+  }
   STATE.careerTeam = destTeam;
   STATE.career.teamTenure = 1;
   if (typeof enforceCareerRosterCapacity === 'function') enforceCareerRosterCapacity(destTeam);
@@ -235,7 +250,8 @@ function doTradeUser(destTeam, done) {
 
 function pickPlayerRequestedTradeDestination(request) {
   var preferred = request && request.preferredTeam;
-  if (preferred && preferred !== STATE.careerTeam && LEAGUE_TEAM_IDS.indexOf(preferred) >= 0 && Math.random() < 0.8) {
+  if (preferred && preferred !== STATE.careerTeam && LEAGUE_TEAM_IDS.indexOf(preferred) >= 0
+      && isCareerTradePayrollLegal(preferred) && Math.random() < 0.8) {
     return preferred;
   }
   return pickTradeDestination();
@@ -246,6 +262,12 @@ function completePlayerRequestedTrade(destTeam, request, done) {
   if (!destTeam || destTeam === old) {
     request.status = 'failed';
     request.failureReason = 'no_destination';
+    if (done) done();
+    return;
+  }
+  if (!isCareerTradePayrollLegal(destTeam)) {
+    request.status = 'failed';
+    request.failureReason = 'destination_payroll_cap';
     if (done) done();
     return;
   }
@@ -1144,6 +1166,7 @@ function applyDraftClass2026() {
         contract: pk.pick <= 14 ? 3 : (pk.pick <= 30 ? 2 : 1),
         loyalty: inferPlayerLoyalty('D26-' + pad),
         _awardStreak: {},
+        _justSigned: true,
       };
       if (fixedRating) {
         rookie._rookieProfile = fixedRating.profile;
@@ -1160,6 +1183,7 @@ function applyDraftClass2026() {
       roster.push(rookie);
     });
   });
+  enforceLeagueRosterCapacity(null, { reason: 'draft_class_capacity' });
 }
 
 function saveStandings() {
@@ -1339,6 +1363,11 @@ function getPlayerSalary(player) {
 function getCareerPlayerContractSnapshot() {
   if (typeof STATE === 'undefined' || !STATE || !STATE.career || !STATE.careerTeam || !STATE.finalOVR) return null;
   var attrs = STATE.attrs && typeof STATE.attrs === 'object' ? STATE.attrs : {};
+  var playerStats = STATE.season && STATE.season.playerStats && typeof STATE.season.playerStats === 'object'
+    ? STATE.season.playerStats
+    : {};
+  var games = Number(playerStats.games) || 0;
+  var totalMinutes = Number(playerStats.mins) || 0;
   var player = {
     id: '__CAREER_PLAYER__',
     cname: typeof getMyPlayerDisplayName === 'function' ? getMyPlayerDisplayName() : '我的球员',
@@ -1347,7 +1376,7 @@ function getCareerPlayerContractSnapshot() {
     _age: Number(STATE.career.currentAge) || 18,
     _isUser: true,
     _lastRoleStarter: !!(STATE.season && STATE.season.isUserStarter),
-    _lastRoleMpg: Number(STATE.season && STATE.season.playerStats && STATE.season.playerStats.mins) || 0
+    _lastRoleMpg: games > 0 ? totalMinutes / games : 0
   };
   Object.keys(attrs).forEach(function(key) { player[key] = attrs[key]; });
   if (Number.isFinite(Number(STATE.career.salary)) && Number(STATE.career.salary) >= 0) player.salary = Number(STATE.career.salary);
@@ -1575,22 +1604,42 @@ function addPlayerToFreeAgentPool(player, reason, teamId) {
   });
 }
 
+function getLeagueRosterNpcLimit(teamId) {
+  var userActive = typeof STATE !== 'undefined' && STATE && STATE.career && !STATE.career.retired
+    && STATE.careerTeam === teamId && Number(STATE.career.contract) > 0 && Number(STATE.finalOVR) > 0;
+  return Math.max(0, FREE_AGENT_MARKET.rosterLimit - (userActive ? 1 : 0));
+}
+
+/** 全联盟统一名单上限；被挤出的球员进入 FA 池，不允许静默丢失。 */
+function enforceLeagueRosterCapacity(teamId, options) {
+  if (typeof LEAGUE_PLAYER_DATA === 'undefined') return 0;
+  options = options || {};
+  var teams = teamId
+    ? [teamId]
+    : (typeof LEAGUE_TEAM_IDS !== 'undefined' ? LEAGUE_TEAM_IDS.slice() : []);
+  var reason = options.reason || 'roster_capacity';
+  var totalCuts = 0;
+  teams.forEach(function(team) {
+    var roster = LEAGUE_PLAYER_DATA[team] || (LEAGUE_PLAYER_DATA[team] = []);
+    var npcLimit = getLeagueRosterNpcLimit(team);
+    while (roster.length > npcLimit) {
+      // 先保护本休赛期刚签/刚选中的球员；只有全队都处于保护期时才允许兜底裁掉。
+      var cut = getFreeAgentRosterCutCandidate(team, false) || getFreeAgentRosterCutCandidate(team, true);
+      if (!cut) break;
+      var index = roster.indexOf(cut);
+      if (index < 0) break;
+      roster.splice(index, 1);
+      cut._waived = true;
+      addPlayerToFreeAgentPool(cut, reason, team);
+      totalCuts++;
+    }
+  });
+  if (totalCuts && typeof clearLineupCache === 'function') clearLineupCache();
+  return totalCuts;
+}
+
 function enforceCareerRosterCapacity(teamId) {
-  if (!teamId || typeof LEAGUE_PLAYER_DATA === 'undefined') return 0;
-  var roster = LEAGUE_PLAYER_DATA[teamId] || (LEAGUE_PLAYER_DATA[teamId] = []);
-  var cuts = 0;
-  while (getTeamRosterCount(teamId) > FREE_AGENT_MARKET.rosterLimit) {
-    var cut = getFreeAgentRosterCutCandidate(teamId, true);
-    if (!cut) break;
-    var index = roster.indexOf(cut);
-    if (index < 0) break;
-    roster.splice(index, 1);
-    cut._waived = true;
-    addPlayerToFreeAgentPool(cut, 'career_roster_capacity', teamId);
-    cuts++;
-  }
-  if (cuts && typeof clearLineupCache === 'function') clearLineupCache();
-  return cuts;
+  return enforceLeagueRosterCapacity(teamId, { reason: 'career_roster_capacity' });
 }
 
 function getLeagueAttributeKeys() {
@@ -1838,6 +1887,7 @@ function getTradeRequestCandidates() {
   var candidates = [];
   (LEAGUE_TEAM_IDS || []).forEach(function(team) {
     if (team === STATE.careerTeam) return;
+    if (!isCareerTradePayrollLegal(team)) return;
     var lineup = calcTeamLineup(team);
     var starter = lineup && lineup.starters ? lineup.starters[STATE.position] : null;
     var starterOvr = starter ? (starter.ovr || 0) : 55;
@@ -2022,6 +2072,7 @@ function createPlayerTradeRequest(preferredTeam, source, options) {
   var availability = getTradeRequestAvailability();
   if (!availability.allowed) return null;
   if (preferredTeam && (preferredTeam === STATE.careerTeam || LEAGUE_TEAM_IDS.indexOf(preferredTeam) < 0)) return null;
+  if (preferredTeam && !isCareerTradePayrollLegal(preferredTeam)) return null;
 
   var chance = getTradeRequestApprovalChance(preferredTeam);
   var approved = Math.random() * 100 < chance;
@@ -2096,7 +2147,7 @@ function showTradeRequestTeamRoster(team) {
 
 function showTradeRequestConfirmation(team) {
   var modal = document.getElementById('trade-request-modal');
-  if (!modal || team === STATE.careerTeam || LEAGUE_TEAM_IDS.indexOf(team) < 0) return;
+  if (!modal || team === STATE.careerTeam || LEAGUE_TEAM_IDS.indexOf(team) < 0 || !isCareerTradePayrollLegal(team)) return;
   var chance = getTradeRequestApprovalChance(team);
   modal.innerHTML = '<div class="team-picker-modal" style="max-width:380px;">' +
     '<div class="team-picker-header"><span>确认提交申请</span><button class="team-picker-close" onclick="closeTradeRequestModal()">✕</button></div>' +
@@ -2256,6 +2307,7 @@ function buildFreeAgentOffer(player, teamId, round, standings) {
 }
 
 function assignFreeAgents() {
+  enforceLeagueRosterCapacity(null, { reason: 'pre_free_agent_capacity' });
   var rawPool = Array.isArray(STATE._freeAgentPool) ? STATE._freeAgentPool : [];
   var pool = [];
   var seenPlayers = {};
@@ -2265,7 +2317,10 @@ function assignFreeAgents() {
     if (key) seenPlayers[key] = true;
     pool.push(player);
   });
-  if (pool.length === 0) return;
+  if (pool.length === 0) {
+    enforceLeagueRosterCapacity(null, { reason: 'post_free_agent_capacity' });
+    return;
+  }
 
   if (!STATE._leagueChanges) STATE._leagueChanges = {};
   if (!STATE._leagueChanges.freeSignings) STATE._leagueChanges.freeSignings = [];
@@ -2373,6 +2428,7 @@ function assignFreeAgents() {
   });
   // 未签约球员是合法的自由球员状态，必须继续保存在池中，供下一休赛期或赛季中补员。
   STATE._freeAgentPool = unsignedPlayers;
+  enforceLeagueRosterCapacity(null, { reason: 'post_free_agent_capacity' });
 }
 
 // ==================== 交易系统 ====================
@@ -2525,6 +2581,7 @@ function processTrades() {
   if (!LEAGUE_PLAYER_DATA) return;
   if (!STATE._leagueChanges) STATE._leagueChanges = { retired: [], rookies: [], teamChanges: {}, trades: [] };
   if (!STATE._leagueChanges.trades) STATE._leagueChanges.trades = [];
+  if (typeof enforceLeagueRosterCapacity === 'function') enforceLeagueRosterCapacity(null, { reason: 'pre_trade_capacity' });
 
   // 算每队需求位置
   var needs = {};
@@ -2610,6 +2667,7 @@ function processTrades() {
       }
     }
   }
+  if (typeof enforceLeagueRosterCapacity === 'function') enforceLeagueRosterCapacity(null, { reason: 'post_trade_capacity' });
 }
 
 function getOvrPositions(pos) {
@@ -2924,15 +2982,20 @@ function validateLeaguePlayerAgeData() {
   if (typeof LEAGUE_TEAM_IDS === 'undefined' || typeof LEAGUE_PLAYER_DATA === 'undefined') {
     return { total: 0, rows: 0, missing: [], invalid: [], estimated: [] };
   }
+  var seen = {};
+  var allPlayers = [];
   LEAGUE_TEAM_IDS.forEach(function(teamId) {
-    (LEAGUE_PLAYER_DATA[teamId] || []).forEach(function(player) {
-      if (!player || !player.id) return;
-      rows.push(player.id);
-      var age = Number(_playerAges[player.id]);
-      if (!Number.isFinite(age)) missing.push(player.id);
-      else if (age < 18 || age > 45) invalid.push({ id: player.id, age: age });
-      if (_playerAgeSources[player.id] === 'ovr_estimate') estimated.push(player.id);
-    });
+    allPlayers = allPlayers.concat(LEAGUE_PLAYER_DATA[teamId] || []);
+  });
+  allPlayers = allPlayers.concat(Array.isArray(STATE._freeAgentPool) ? STATE._freeAgentPool : []);
+  allPlayers.forEach(function(player) {
+    if (!player || !player.id || seen[player.id]) return;
+    seen[player.id] = true;
+    rows.push(player.id);
+    var age = Number(_playerAges[player.id]);
+    if (!Number.isFinite(age)) missing.push(player.id);
+    else if (age < 18 || age > 45) invalid.push({ id: player.id, age: age });
+    if (_playerAgeSources[player.id] === 'ovr_estimate') estimated.push(player.id);
   });
   return { total: rows.length, rows: Object.keys(_playerAges || {}).length, missing: missing, invalid: invalid, estimated: estimated };
 }

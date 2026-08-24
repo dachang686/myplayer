@@ -1929,6 +1929,7 @@ function initGame() {
   clearLineupCache();
   
   try { applyDraftClass2026(); } catch(e) {}
+  if (typeof enforceLeagueRosterCapacity === 'function') enforceLeagueRosterCapacity(null, { reason: 'initial_roster_capacity' });
 
   // 属性槽初始化为空
   ATTR_KEYS.forEach(k => { STATE.attrs[k] = null; STATE.attrSlots[k] = null; });
@@ -10718,6 +10719,7 @@ function continueCareerAfterLeagueDraft() {
   processTrades();
   window._offseasonPipelineStage = 'roster_fill';
   if (typeof fillLeagueRostersAfterDraft === 'function') fillLeagueRostersAfterDraft();
+  if (typeof enforceLeagueRosterCapacity === 'function') enforceLeagueRosterCapacity(null, { reason: 'post_draft_capacity' });
   window._offseasonPipelineStage = 'player_mobility';
   maybeMoveUserInOffseason(finishOffseasonPipeline);
 }
@@ -10728,6 +10730,7 @@ function finishOffseasonPipeline() {
     showMyCard();
     return;
   }
+  if (typeof enforceLeagueRosterCapacity === 'function') enforceLeagueRosterCapacity(null, { reason: 'new_season_capacity' });
   resetForNewSeason();
 
   // 清理旧赛季比赛区域，后续直接进入我的球员
