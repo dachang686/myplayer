@@ -79,7 +79,14 @@ const superstar = player('FA-SUPERSTAR', 98, 'C', 31, {
   _birdTeam: 'A',
   contract: 0,
 });
-const fringe = player('FA-FRINGE', 72, 'PG', 35, { _origTeam: 'B', contract: 0 });
+const fringe = player('FA-FRINGE', 72, 'PG', 33, {
+  _origTeam: 'B', contract: 0,
+  threePT: 90, MID: 88, FIN: 76, DNK: 70, HAN: 82, PAS: 80,
+  ATH: 90, STR: 84, REB: 70, PDEF: 86, IDEF: 60, STL: 78, BLK: 50, CLU: 82,
+});
+const protectedFreeAgent = player('FA-PROTECTED', 70, 'SF', 37, {
+  _origTeam: 'C', contract: 0, _protectedRetirementAge: 65,
+});
 context.STATE._freeAgentPool = [superstar, fringe];
 vm.runInContext('assignFreeAgents()', context);
 
@@ -98,10 +105,20 @@ if (superstarSigning && superstarSigning.salary < 20) failures.push('超级球�
 if (superstarSigning && superstarSigning.years > 5) failures.push('合同年限超过 Bird 权利上限');
 if (context.STATE._freeAgentPool.some(current => current.id === 'FA-SUPERSTAR')) failures.push('自由市场池仍存在已签球员副本');
 
+context.STATE._freeAgentPool = [fringe, protectedFreeAgent];
+context.SIM_CONFIG = { ATTR_LIST: ['threePT', 'MID', 'FIN', 'DNK', 'HAN', 'PAS', 'ATH', 'STR', 'REB', 'PDEF', 'IDEF', 'STL', 'BLK', 'CLU'] };
+context.calcOVR = current => Number(current.ovr) || 60;
+context.rngNext = () => 0.1;
 const fringeAgeBeforeCarry = fringe._age;
+const fringeAttrsBeforeCarry = { threePT: fringe.threePT, ATH: fringe.ATH, PDEF: fringe.PDEF };
 vm.runInContext('evolveUnsignedFreeAgents()', context);
 if (!context.STATE._freeAgentPool.some(current => current.id === 'FA-FRINGE')) failures.push('未签约球员跨赛季没有继续保留');
 if (fringe._age !== fringeAgeBeforeCarry + 1) failures.push('未签约球员跨赛季没有年龄推进');
+if (!context.STATE._freeAgentPool.some(current => current.id === 'FA-PROTECTED')) failures.push('受保护退役球员进入 FA 后被错误退休');
+if (context.STATE._leagueChanges.retired.some(current => current.playerId === 'FA-PROTECTED')) failures.push('受保护退役球员的 FA 退休保护失效');
+if (fringe.threePT === fringeAttrsBeforeCarry.threePT && fringe.ATH === fringeAttrsBeforeCarry.ATH && fringe.PDEF === fringeAttrsBeforeCarry.PDEF) {
+  failures.push('未签 FA 的 OVR 衰退没有同步到球员属性');
+}
 
 const market = vm.runInContext(`({
   superstar: getPlayerMarketValue({ ovr: 98, _age: 31 }),
@@ -112,6 +129,58 @@ const market = vm.runInContext(`({
 if (!(market.superstar >= 30 && market.superstar <= 32)) failures.push(`98 OVR 市场价值不在 30 左右：${market.superstar}`);
 if (!(market.fringe >= 1 && market.fringe <= 5)) failures.push(`72 OVR 老将市场价值异常：${market.fringe}`);
 if (market.birdYears > 5 || market.externalYears > 4) failures.push('Bird/外队合同年限上限异常');
+
+// 现有合同不能再默认等于今天的市场价；续约合法性必须统一走 cap/Bird 入口。
+const initialContractPlayer = context.LEAGUE_PLAYER_DATA.A[0];
+const initialMarketValue = vm.runInContext('getPlayerMarketValue(LEAGUE_PLAYER_DATA.A[0])', context);
+const initialContractSalary = vm.runInContext('getPlayerSalary(LEAGUE_PLAYER_DATA.A[0])', context);
+if (!(initialContractSalary > 0 && initialContractSalary < initialMarketValue)) failures.push('初始合同工资仍直接使用市场价');
+
+context.LEAGUE_PLAYER_DATA.A = [
+  player('CAP-A-1', 86, 'PG', 27, { salary: 25, _salaryVersion: 2, contract: 0, _teamTenure: 1, _lastTeam: 'A' }),
+  player('CAP-A-2', 86, 'SG', 27, { salary: 25, _salaryVersion: 2, contract: 2 }),
+  player('CAP-A-3', 86, 'SF', 27, { salary: 25, _salaryVersion: 2, contract: 2 }),
+  player('CAP-A-4', 86, 'PF', 27, { salary: 25, _salaryVersion: 2, contract: 2 }),
+  player('CAP-A-5', 86, 'C', 27, { salary: 25, _salaryVersion: 2, contract: 2 }),
+];
+const nonBirdRenewal = player('CAP-NON-BIRD', 86, 'PG', 27, {
+  salary: 25, _salaryVersion: 2, contract: 0, _teamTenure: 1, _lastTeam: 'A',
+});
+const birdRenewal = player('CAP-BIRD', 86, 'PG', 27, {
+  salary: 25, _salaryVersion: 2, contract: 0, _teamTenure: 4, _lastTeam: 'A', _birdTeam: 'A',
+});
+const nonBirdOffer = vm.runInContext('buildContractOffer', context)(nonBirdRenewal, 'A', { source: 'retention', birdRights: false, salary: 16, years: 2 });
+const birdOffer = vm.runInContext('buildContractOffer', context)(birdRenewal, 'A', { source: 'retention', birdRights: true, salary: 16, years: 2 });
+if (nonBirdOffer) failures.push('超帽 non-Bird 续约没有被拒绝');
+if (!birdOffer) failures.push('合法 Bird 续约被错误拒绝');
+
+// 玩家合同也要成为目标球队的真实工资和阵容名额。
+context.STATE.careerTeam = 'A';
+context.STATE.finalOVR = 90;
+context.STATE.position = 'PG';
+context.STATE.attrs = {};
+context.STATE.career = { currentAge: 24, contract: 2, salary: 10, _salaryVersion: 2, teamTenure: 2, flags: {} };
+const payrollWithoutUser = vm.runInContext('getTeamPayrollExcludingPlayer("A", getCareerPlayerContractSnapshot())', context);
+const payrollWithUser = vm.runInContext('getTeamPayroll("A")', context);
+if (Math.abs(payrollWithUser - payrollWithoutUser - 10) > 0.001) failures.push('玩家工资没有计入球队 payroll');
+if (vm.runInContext('getTeamRosterCount("A")', context) !== context.LEAGUE_PLAYER_DATA.A.length + 1) failures.push('玩家没有占用球队阵容名额');
+
+context.LEAGUE_PLAYER_DATA.CAREER_TARGET = Array.from({ length: 18 }, (_, index) => player('CAREER-TARGET-' + index, 65, 'SF', 27, { salary: 1, _salaryVersion: 2 }));
+const careerOffer = vm.runInContext('buildCareerContractOffer', context)('CAREER_TARGET', 2);
+if (!careerOffer || !careerOffer.rosterCut) failures.push('玩家外部签约没有按阵容名额生成裁员方案');
+if (careerOffer && !vm.runInContext('applyCareerContractOffer', context)('CAREER_TARGET', careerOffer, 'A')) failures.push('玩家合法合同没有成功应用');
+if (context.LEAGUE_PLAYER_DATA.CAREER_TARGET.length !== 17) failures.push('玩家签约后目标球队仍超过 18 人名额');
+
+// 交易后工资不能越过二土豪线。
+context.LEAGUE_PLAYER_DATA.TRADE_A = [player('TRADE-A-1', 80, 'PG', 27, { salary: 1, _salaryVersion: 2 }), player('TRADE-A-2', 80, 'SG', 27, { salary: 129, _salaryVersion: 2 })];
+context.LEAGUE_PLAYER_DATA.TRADE_B = [player('TRADE-B-1', 80, 'PG', 27, { salary: 129, _salaryVersion: 2 })];
+context.STATE.careerTeam = null;
+context.STATE._leagueChanges.trades = [];
+const tradeAPlayer = context.LEAGUE_PLAYER_DATA.TRADE_A[0];
+const tradeBPlayer = context.LEAGUE_PLAYER_DATA.TRADE_B[0];
+const tradeBefore = JSON.stringify(context.LEAGUE_PLAYER_DATA.TRADE_A.map(current => current.id));
+if (vm.runInContext('swapRosterPlayers', context)('TRADE_A', 'TRADE_B', tradeBPlayer, tradeAPlayer)) failures.push('交易工资越过二土豪线仍被执行');
+if (JSON.stringify(context.LEAGUE_PLAYER_DATA.TRADE_A.map(current => current.id)) !== tradeBefore) failures.push('非法工资交易修改了球队名单');
 
 // 完整生命周期回归：上一季未签 FA 不能被本季新到期球员覆盖。
 const oldFreeAgent = player('FA-OLD', 72, 'PG', 27, { _origTeam: 'B', contract: 0 });

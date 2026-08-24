@@ -151,7 +151,6 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .global-next-btn:active{transform:translateY(3px);box-shadow:0 1px 0 oklch(0.48 0.14 42),0 4px 12px rgba(255,107,53,.18)}
 .global-next-btn:disabled{cursor:default}
 .global-next-btn.is-status{background:var(--bg-elevated);color:var(--text-dim);border:1px solid var(--border-light);box-shadow:0 3px 0 var(--border),0 7px 18px rgba(0,0,0,.2)}
-.global-next-kicker{padding-right:10px;border-right:1px solid rgba(33,24,18,.3);font-size:11px;letter-spacing:1px}
 .season-context-active #app{padding-bottom:calc(92px + var(--safe-b))}
 .global-next-active #app{padding-bottom:calc(164px + var(--safe-b))}
 .global-next-active #screen-training #training-content,.global-next-active #screen-roster-review #roster-review-content{padding-bottom:calc(164px + var(--safe-b))!important}
@@ -1113,7 +1112,6 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.8 12 3l9 7.8"></path><path d="M5.5 9.5V21h13V9.5"></path><path d="M9.5 21v-6h5v6"></path></svg>
   </button>
   <button type="button" id="global-next-btn" class="global-next-btn" onclick="runGlobalNextAction()">
-    <span class="global-next-kicker">下一步</span>
     <span id="global-next-label">继续</span>
   </button>
   <button class="global-save-btn" id="global-save-btn" type="button" aria-label="手动保存进度" title="保存进度" onclick="saveProgressFromButton()">💾</button>
@@ -1289,6 +1287,9 @@ const STATE = {
     seasonCount: 0,
     currentAge: 18,
     contract: 4,
+    salary: null,
+    _salaryVersion: 0,
+    teamTenure: 0,
     seasons: [],
     totalStats: { pts: 0, reb: 0, ast: 0, stl: 0, blk: 0, tov: 0, fgm: 0, fga: 0, ftm: 0, fta: 0, threeM: 0, threeA: 0, games: 0, mins: 0 },
     legacyRecords: null,
@@ -1860,6 +1861,9 @@ function createFreshCareer() {
     seasonCount: 0,
     currentAge: 18,
     contract: 4,
+    salary: null,
+    _salaryVersion: 0,
+    teamTenure: 0,
     seasons: [],
     totalStats: { pts:0, reb:0, ast:0, stl:0, blk:0, tov:0, fgm:0, fga:0, ftm:0, fta:0, threeM:0, threeA:0, games:0, mins:0 },
     legacyRecords: typeof createDefaultCareerLegacyRecords === 'function' ? createDefaultCareerLegacyRecords() : null,
@@ -3524,6 +3528,9 @@ function spinCareerSlot() {
 
 function selectCareerTeam(team) {
   STATE.careerTeam = team;
+  if (typeof ensureCareerPlayerContract === 'function') ensureCareerPlayerContract(true);
+  if (STATE.career && !(Number(STATE.career.teamTenure) > 0)) STATE.career.teamTenure = 1;
+  if (typeof enforceCareerRosterCapacity === 'function') enforceCareerRosterCapacity(team);
   const teamPlayers = LEAGUE_PLAYER_DATA[team];
   const cnName = getTeamName(team);
 

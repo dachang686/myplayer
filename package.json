@@ -13,6 +13,8 @@
     "test:calibration:season:v2": "node scripts/validate_season_strength_calibration.js --engine=v2 --mode=smoke",
     "test:calibration:season:v2:statistical": "node scripts/validate_season_strength_calibration.js --engine=v2 --mode=statistical",
     "test:free-agents": "node scripts/validate_free_agent_market.js",
+    "test:offseason-invariants": "node scripts/validate_offseason_invariants.js",
+    "test:offseason-lifecycle": "node scripts/validate_offseason_lifecycle.js",
     "test:retirement": "node scripts/validate_retirement_summary.js",
     "test:training": "node scripts/validate_training_budget.js",
     "test:narratives": "node scripts/validate_career_narratives.js",
