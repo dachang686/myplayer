@@ -1454,7 +1454,7 @@ if (closeRecordWithOneEightSeedEdge - closeRecordSeries < 0.025) {
 }
 if (!report.deterministic.same) failures.push('相同随机种子没有产生相同结果');
 if (competitiveRatingMonotonicity.dominatedMargin <= 0
-  || Math.abs(competitiveRatingMonotonicity.overallOnly - 0.50) > 0.001
+  || Math.abs(competitiveRatingMonotonicity.overallOnly - 0.65) > 0.001
   || Math.abs(competitiveRatingMonotonicity.offenseOnly - 0.20) > 0.001
   || Math.abs(competitiveRatingMonotonicity.defenseOnly - 0.20) > 0.001) {
   failures.push(`球队 OVR/进攻/防守不满足单调性：${JSON.stringify(competitiveRatingMonotonicity)}`);

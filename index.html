@@ -4920,11 +4920,12 @@ function getTeamCompetitiveRating(power) {
   const overall = Number.isFinite(power && power.overall) ? power.overall : 50;
   const offense = Number(power && power.offense) || overall;
   const defense = Number(power && power.defense) || overall;
-  // OVR 是主体实力；40 是中性展示基准，保持战力数值尺度且在双方相减时抵消。
-  const rosterRating = 40 + overall * 0.50;
+  // 80 OVR 是中性锚点；提高阵容差异斜率，让强弱队层级更稳定。
+  const rosterRating = 80 + (overall - 80) * 0.65;
   // 80 + 80 是中性展示基准，双方 structure 相减时会抵消，不影响比赛分差。
   const structureRating = (offense + defense - 160) * 0.20;
-  const starRating = (Number(power && power.starConcentration) || 0) * 0.85;
+  // 适度提高拥有超级核心球队的优势，不改变攻防专项校准。
+  const starRating = (Number(power && power.starConcentration) || 0) * 0.95;
   return {
     overall: overall,
     roster: rosterRating,
