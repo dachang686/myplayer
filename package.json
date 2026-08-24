@@ -16,6 +16,7 @@
     "test:offseason-invariants": "node scripts/validate_offseason_invariants.js",
     "test:offseason-lifecycle": "node scripts/validate_offseason_lifecycle.js",
     "test:player-trade-payroll": "node scripts/validate_player_trade_payroll.js",
+    "test:player-contract-offers": "node scripts/validate_player_contract_offers.js",
     "test:retirement": "node scripts/validate_retirement_summary.js",
     "test:training": "node scripts/validate_training_budget.js",
     "test:narratives": "node scripts/validate_career_narratives.js",

@@ -497,13 +497,30 @@ function generateContractOffers() {
     }
   }
 
-  offers.sort(function(a, b) { return (b.score || b.needStrength) - (a.score || a.needStrength); });
-  var result = offers.slice(0, choice === 'short' ? 6 : 4);
-  if (result.length === 0) {
-    // 兜底：保证永远有下家
+  function decorateLegalContractOffers(rawOffers) {
+    return rawOffers.map(function(offer) {
+      var terms = buildCareerContractOffer(offer.team, offer.years);
+      if (!terms) return null;
+      offer.years = terms.years;
+      offer.salary = terms.salary;
+      offer.payroll = terms.payroll;
+      offer.payrollAfterSigning = terms.payrollAfterSigning;
+      offer.rosterCut = terms.rosterCut;
+      offer.birdRights = terms.birdRights;
+      offer.contractOffer = terms;
+      return offer;
+    }).filter(Boolean);
+  }
+
+  // 必须先做工资帽/阵容合法性过滤，再按篮球层面的意愿排序；否则前四家
+  // 中的非法球队会把后面真正能签约的球队提前截掉。
+  var legalOffers = decorateLegalContractOffers(offers);
+  if (legalOffers.length === 0) {
+    // 兜底：只在“合法主报价确实为 0”时寻找替补/底薪下家。
+    var fallbackOffers = [];
     LEAGUE_TEAM_IDS.forEach(function(t) {
       if (t === STATE.careerTeam || usedTeams[t]) return;
-      if (result.length >= 2) return;
+      if (fallbackOffers.length >= 2) return;
       var r = LEAGUE_PLAYER_DATA[t] || [];
       var lineup2 = calcTeamLineup(t);
       var s2 = lineup2.starters[myPos];
@@ -513,34 +530,25 @@ function generateContractOffers() {
       if (winRate2 > 0.65) return;
       var sr2 = r.slice().sort(function(a, b) { return (b.ovr || 0) - (a.ovr || 0); }).slice(0, 2);
       var rRecruit = isSuperstarRecruitOfferTeam(t);
-      result.push({ team: t, topTwo: sr2, years: 2, role: '底薪/替补', needStrength: s2 ? myOvr - s2.ovr : -5, score: -50 + (rRecruit ? 90 : 0), teamOvr: 0, bigMarket: false, superstarRecruit: rRecruit });
+      fallbackOffers.push({ team: t, topTwo: sr2, years: 2, role: '底薪/替补', needStrength: s2 ? myOvr - s2.ovr : -5, score: -50 + (rRecruit ? 90 : 0), teamOvr: 0, bigMarket: false, superstarRecruit: rRecruit });
       usedTeams[t] = true;
     });
-    if (result.length === 0) {
+    if (fallbackOffers.length === 0) {
       // 极端情况兜底：保证永远有下家
       LEAGUE_TEAM_IDS.forEach(function(t) {
-        if (result.length >= 2) return;
+        if (fallbackOffers.length >= 2) return;
         if (t === STATE.careerTeam || usedTeams[t]) return;
         var r3 = LEAGUE_PLAYER_DATA[t] || [];
         var sr3 = r3.slice().sort(function(a, b) { return (b.ovr || 0) - (a.ovr || 0); }).slice(0, 2);
         var eRecruit = isSuperstarRecruitOfferTeam(t);
-        result.push({ team: t, topTwo: sr3, years: 2, role: '底薪/替补', needStrength: -10, score: -80 + (eRecruit ? 90 : 0), teamOvr: 0, bigMarket: false, superstarRecruit: eRecruit });
+        fallbackOffers.push({ team: t, topTwo: sr3, years: 2, role: '底薪/替补', needStrength: -10, score: -80 + (eRecruit ? 90 : 0), teamOvr: 0, bigMarket: false, superstarRecruit: eRecruit });
         usedTeams[t] = true;
       });
     }
+    legalOffers = decorateLegalContractOffers(fallbackOffers);
   }
-  return result.map(function(offer) {
-    var terms = buildCareerContractOffer(offer.team, offer.years);
-    if (!terms) return null;
-    offer.years = terms.years;
-    offer.salary = terms.salary;
-    offer.payroll = terms.payroll;
-    offer.payrollAfterSigning = terms.payrollAfterSigning;
-    offer.rosterCut = terms.rosterCut;
-    offer.birdRights = terms.birdRights;
-    offer.contractOffer = terms;
-    return offer;
-  }).filter(Boolean);
+  legalOffers.sort(function(a, b) { return (b.score || b.needStrength) - (a.score || a.needStrength); });
+  return legalOffers.slice(0, choice === 'short' ? 6 : 4);
 }
 
 function showContractOffers() {
