@@ -506,6 +506,7 @@ function generateContractOffers() {
       offer.salary = terms.salary;
       offer.payroll = terms.payroll;
       offer.payrollAfterSigning = terms.payrollAfterSigning;
+      offer.rosterCuts = terms.rosterCuts;
       offer.rosterCut = terms.rosterCut;
       offer.birdRights = terms.birdRights;
       offer.contractOffer = terms;
@@ -1530,13 +1531,48 @@ function buildContractOffer(player, teamId, options) {
 
   var roster = LEAGUE_PLAYER_DATA[teamId] || (LEAGUE_PLAYER_DATA[teamId] = []);
   var payrollBefore = getTeamPayrollExcludingPlayer(teamId, isRetention ? player : null);
-  var rosterCut = null;
-  if (!isRetention && getTeamRosterCount(teamId) >= FREE_AGENT_MARKET.rosterLimit) {
-    rosterCut = options.rosterCut || getFreeAgentRosterCutCandidate(teamId, !!player._isUser);
-    if (!rosterCut || rosterCut === player) return null;
-    if (getPlayerMarketValue(player) <= getPlayerMarketValue(rosterCut) + 8 && !player._isUser) return null;
+  var rosterCuts = [];
+  var payrollAfterCut = payrollBefore;
+  var userIncomingCount = player._isUser && teamId !== STATE.careerTeam ? 1 : 0;
+  var rosterTarget = Math.max(0, getLeagueRosterNpcLimit(teamId) - userIncomingCount);
+  var incomingNpcCount = player._isUser ? 0 : 1;
+  var minimumRoster = Math.min(rosterTarget, 12);
+  var marketValue = getPlayerMarketValue(player);
+  var cutCandidates = [];
+  if (!isRetention) {
+    var preferredCandidates = getFreeAgentRosterCutCandidates(teamId, false);
+    var fallbackCandidates = getFreeAgentRosterCutCandidates(teamId, true);
+    var seenCandidates = {};
+    preferredCandidates.concat(fallbackCandidates).forEach(function(candidate) {
+      var key = String(candidate && (candidate.id || candidate.cname) || '');
+      if (!candidate || candidate === player || (key && seenCandidates[key])) return;
+      if (key) seenCandidates[key] = true;
+      cutCandidates.push(candidate);
+    });
   }
-  var payrollAfterCut = payrollBefore - (rosterCut ? getPlayerSalary(rosterCut) : 0);
+
+  function rosterNeedsCut() {
+    return roster.length - rosterCuts.length + incomingNpcCount > rosterTarget;
+  }
+
+  function capAllows(payroll) {
+    if (birdRights) return payroll <= FREE_AGENT_MARKET.secondApron + 0.001;
+    var total = payroll + salary;
+    if (total <= FREE_AGENT_MARKET.softCap + 0.001) return true;
+    return salary <= 6 && total <= FREE_AGENT_MARKET.firstApron + 0.001;
+  }
+
+  while (!isRetention && (rosterNeedsCut() || !capAllows(payrollAfterCut))) {
+    var candidate = cutCandidates.shift();
+    if (!candidate) break;
+    if (!player._isUser && marketValue <= getPlayerMarketValue(candidate) + 8) break;
+    if (roster.length - rosterCuts.length - 1 < minimumRoster) break;
+    rosterCuts.push(candidate);
+    payrollAfterCut -= getPlayerSalary(candidate);
+  }
+
+  if (!isRetention && rosterNeedsCut()) return null;
+
   var totalAfterSigning = payrollAfterCut + salary;
   var capLegal;
   if (birdRights) {
@@ -1556,7 +1592,8 @@ function buildContractOffer(player, teamId, options) {
     payroll: payrollAfterCut,
     payrollAfterSigning: totalAfterSigning,
     birdRights: birdRights,
-    rosterCut: rosterCut,
+    rosterCuts: rosterCuts,
+    rosterCut: rosterCuts[0] || null,
     source: source,
     capLegal: true,
     rosterCount: roster.length
@@ -1589,13 +1626,17 @@ function getBestCareerContractOffer(teamId, years, maxRound) {
 
 function applyCareerContractOffer(teamId, offer, oldTeam) {
   if (!offer || !STATE.career) return false;
-  if (offer.rosterCut) {
+  var rosterCuts = Array.isArray(offer.rosterCuts)
+    ? offer.rosterCuts.slice()
+    : (offer.rosterCut ? [offer.rosterCut] : []);
+  if (rosterCuts.length) {
     var roster = LEAGUE_PLAYER_DATA[teamId] || [];
-    var cutIndex = roster.indexOf(offer.rosterCut);
-    if (cutIndex < 0) return false;
-    roster.splice(cutIndex, 1);
-    offer.rosterCut._waived = true;
-    addPlayerToFreeAgentPool(offer.rosterCut, 'career_contract_capacity', teamId);
+    if (rosterCuts.some(function(player) { return roster.indexOf(player) < 0; })) return false;
+    rosterCuts.forEach(function(player) {
+      roster.splice(roster.indexOf(player), 1);
+      player._waived = true;
+      addPlayerToFreeAgentPool(player, 'career_contract_capacity', teamId);
+    });
   }
   STATE.career.salary = offer.salary;
   STATE.career._salaryVersion = FREE_AGENT_MARKET.salaryVersion;
@@ -2290,12 +2331,16 @@ function getFreeAgentPlayerPreferenceScore(player, teamId, standings, offer, noi
     + (Number(noise) || 0);
 }
 
-function getFreeAgentRosterCutCandidate(teamId, allowJustSigned) {
+function getFreeAgentRosterCutCandidates(teamId, allowJustSigned) {
   return (LEAGUE_PLAYER_DATA[teamId] || [])
     .filter(function(player) { return player && !player._isUser && (allowJustSigned || !player._justSigned); })
     .sort(function(a, b) {
       return getPlayerMarketValue(a) - getPlayerMarketValue(b) || (Number(a.ovr) || 0) - (Number(b.ovr) || 0);
-    })[0] || null;
+    });
+}
+
+function getFreeAgentRosterCutCandidate(teamId, allowJustSigned) {
+  return getFreeAgentRosterCutCandidates(teamId, allowJustSigned)[0] || null;
 }
 
 function buildFreeAgentOffer(player, teamId, round, standings) {
@@ -2321,6 +2366,7 @@ function buildFreeAgentOffer(player, teamId, round, standings) {
     payroll: terms.payroll,
     payrollAfterSigning: terms.payrollAfterSigning,
     birdRights: birdRights,
+    rosterCuts: terms.rosterCuts,
     roleOpportunity: roleOpportunity,
     rosterCut: terms.rosterCut,
     overTax: terms.payroll > FREE_AGENT_MARKET.taxLine,
@@ -2371,18 +2417,21 @@ function assignFreeAgents() {
 
   function signFreeAgent(fa, offer, round, offersCount) {
     var roster = LEAGUE_PLAYER_DATA[offer.teamId] || (LEAGUE_PLAYER_DATA[offer.teamId] = []);
-    if (offer.rosterCut) {
-      var cutIndex = roster.indexOf(offer.rosterCut);
+    var rosterCuts = Array.isArray(offer.rosterCuts)
+      ? offer.rosterCuts.slice()
+      : (offer.rosterCut ? [offer.rosterCut] : []);
+    rosterCuts.forEach(function(cut) {
+      var cutIndex = roster.indexOf(cut);
       if (cutIndex >= 0) roster.splice(cutIndex, 1);
-      offer.rosterCut._origTeam = offer.teamId;
-      offer.rosterCut._lastTeam = offer.teamId;
-      offer.rosterCut._teamTenure = 1;
-      offer.rosterCut._waived = true;
-      offer.rosterCut.contract = 0;
-      delete offer.rosterCut.salary;
-      unsignedPlayers.push(offer.rosterCut);
-      addFreeAgentSummary(offer.rosterCut, offer.teamId, 'superstar_roster_clear');
-    }
+      cut._origTeam = offer.teamId;
+      cut._lastTeam = offer.teamId;
+      cut._teamTenure = 1;
+      cut._waived = true;
+      cut.contract = 0;
+      delete cut.salary;
+      unsignedPlayers.push(cut);
+      addFreeAgentSummary(cut, offer.teamId, 'superstar_roster_clear');
+    });
 
     var returnedToOriginalTeam = offer.teamId === fa._origTeam;
     roster.push(fa);
@@ -2406,7 +2455,8 @@ function assignFreeAgents() {
       salary: fa.salary,
       returned: returnedToOriginalTeam,
       birdRights: offer.birdRights,
-      rosterCut: offer.rosterCut ? offer.rosterCut.id : null,
+      rosterCut: rosterCuts[0] ? rosterCuts[0].id : null,
+      rosterCuts: rosterCuts.map(function(cut) { return cut.id; }),
       years: fa.contract,
       offers: offersCount,
       round: round + 1,
