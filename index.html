@@ -487,6 +487,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .player-ranking-tab.active{border-color:var(--orange);background:var(--orange-bg);color:var(--orange)}
 .player-ranking-list{overflow-x:auto}
 .player-ranking-head,.player-ranking-row{display:grid;grid-template-columns:32px minmax(130px,1fr) 52px 36px 48px;gap:5px;align-items:center;min-width:330px}
+.player-ranking-ovr-head,.player-ranking-ovr-row{grid-template-columns:32px minmax(130px,1fr) 52px 58px 48px;min-width:365px}
+.player-ranking-ovr-row span:nth-child(4){white-space:nowrap}
 .player-ranking-head{padding:5px 7px;color:var(--text-muted);font-size:9px;text-align:right}
 .player-ranking-head span:nth-child(2){text-align:left}
 .player-ranking-row{padding:8px 7px;border:1px solid var(--border);border-radius:7px;margin-bottom:3px;background:var(--bg);font:600 11px var(--font-display);text-align:right}
@@ -7468,6 +7470,46 @@ function getSeasonPlayerStatRows() {
   return rows;
 }
 
+function getSeasonPlayerOvrRows() {
+  if (!STATE.season || typeof LEAGUE_PLAYER_DATA === 'undefined') return [];
+  var rows = [];
+  var seen = {};
+  var teams = typeof LEAGUE_TEAM_IDS !== 'undefined' && Array.isArray(LEAGUE_TEAM_IDS) && LEAGUE_TEAM_IDS.length ? LEAGUE_TEAM_IDS : Object.keys(LEAGUE_PLAYER_DATA);
+  teams.forEach(function(teamId) {
+    (LEAGUE_PLAYER_DATA[teamId] || []).forEach(function(player) {
+      if (!player) return;
+      var playerId = String(player.id || '');
+      var key = playerId || teamId + ':' + String(player.cname || player.name || '');
+      if (seen[key]) return;
+      seen[key] = true;
+      var ovr = Number(player.ovr) || 0;
+      if (ovr <= 0) return;
+      rows.push({
+        playerId: playerId,
+        playerName: player.cname || player.name || playerId || '未知球员',
+        teamId: teamId,
+        position: player.pos || player.position || '—',
+        ovr: ovr,
+        isUser: false,
+      });
+    });
+  });
+  var userOvr = Number(STATE.finalOVR) || 0;
+  if (STATE.careerTeam && userOvr > 0) {
+    rows.push({
+      playerId: '__user__',
+      playerName: typeof getMyPlayerDisplayName === 'function' ? getMyPlayerDisplayName() : '我的球员',
+      teamId: STATE.careerTeam,
+      position: STATE.position || '—',
+      ovr: userOvr,
+      isUser: true,
+    });
+  }
+  return rows.sort(function(a, b) {
+    return b.ovr - a.ovr || String(a.playerName).localeCompare(String(b.playerName)) || String(a.playerId).localeCompare(String(b.playerId));
+  });
+}
+
 function renderConferenceStandings(conf) {
   var standings = STATE.season && STATE.season.standings || {};
   var teams = conf === 'SOUTH' ? SIM_CONFIG.CONFERENCE.SOUTH : SIM_CONFIG.CONFERENCE.NORTH;
@@ -7508,8 +7550,8 @@ function showSeasonRankingsPage() {
 }
 
 function setSeasonRankingsView(view) {
-  STATE._rankingsView = view === 'players' ? 'players' : 'teams';
-  if (STATE._rankingsView === 'players') STATE._playerRankingLimit = 10;
+  STATE._rankingsView = view === 'players' ? 'players' : (view === 'ovr' ? 'ovr' : 'teams');
+  if (STATE._rankingsView === 'players' || STATE._rankingsView === 'ovr') STATE._playerRankingLimit = 10;
   renderSeasonRankingsPage();
 }
 
@@ -7534,7 +7576,7 @@ function showMoreSeasonPlayerRankings() {
 function renderSeasonRankingsPage() {
   var target = document.getElementById('season-rankings-content');
   if (!target || !STATE.season) return;
-  var view = STATE._rankingsView === 'players' ? 'players' : 'teams';
+  var view = STATE._rankingsView === 'players' ? 'players' : (STATE._rankingsView === 'ovr' ? 'ovr' : 'teams');
   var conf = STATE._rankingsConf || getConference(STATE.careerTeam);
   var stat = STATE._playerRankingStat || 'pts';
   var bodyHtml = '';
@@ -7546,6 +7588,30 @@ function renderSeasonRankingsPage() {
         '<button class="season-standings-tab ' + (conf === 'NORTH' ? 'active' : '') + '" onclick="setSeasonRankingsConference(\'NORTH\')">北方</button>' +
       '</div>' +
       '<div class="season-standings">' + renderConferenceStandings(conf) + '</div>' +
+    '</div>';
+  } else if (view === 'ovr') {
+    var ovrRows = getSeasonPlayerOvrRows();
+    var visibleOvrLimit = Math.max(10, Number(STATE._playerRankingLimit) || 10);
+    var visibleOvrRows = ovrRows.slice(0, visibleOvrLimit);
+    var ovrRowsHtml = visibleOvrRows.length ? visibleOvrRows.map(function(row, index) {
+      return '<div class="player-ranking-row player-ranking-ovr-row is-interactive ' + (row.isUser ? 'is-user' : '') + '" data-season-player-team="' + row.teamId + '" data-season-player-id="' + row.playerId + '" role="button" tabindex="0" aria-label="查看' + escapeSeasonUiText(row.playerName) + '详细属性" title="点击查看球员详细属性">' +
+        '<span>' + (index + 1) + '</span>' +
+        '<span class="player-ranking-name">' + escapeSeasonUiText(row.playerName) + (row.isUser ? ' ⭐' : '') + '</span>' +
+        '<span>' + row.teamId + '</span>' +
+        '<span>' + escapeSeasonUiText(row.position) + '</span>' +
+        '<span class="player-ranking-value">' + row.ovr + '</span>' +
+      '</div>';
+    }).join('') : '<div class="ranking-empty">联盟名单中暂无球员 OVR 数据</div>';
+    var remainingOvrRows = Math.max(0, ovrRows.length - visibleOvrRows.length);
+    var ovrMoreHtml = remainingOvrRows > 0
+      ? '<div class="player-ranking-more"><button type="button" class="btn btn-secondary btn-sm" onclick="showMoreSeasonPlayerRankings()">查看更多（下 ' + Math.min(10, remainingOvrRows) + ' 名）</button></div>'
+      : '';
+    bodyHtml = '<div class="season-ranking-panel">' +
+      '<div class="player-ranking-list">' +
+        '<div class="player-ranking-head player-ranking-ovr-head"><span>排名</span><span>球员</span><span>球队</span><span>位置</span><span>OVR</span></div>' +
+        ovrRowsHtml +
+      '</div>' +
+      ovrMoreHtml +
     '</div>';
   } else {
     var statConfig = {
@@ -7598,10 +7664,11 @@ function renderSeasonRankingsPage() {
   }
 
   target.innerHTML = '<div class="season-rankings-page">' +
-    '<div class="season-rankings-heading">联盟排行榜<small>球队战绩与本赛季球员场均统计</small></div>' +
+    '<div class="season-rankings-heading">联盟排行榜<small>球队战绩、本赛季球员场均统计与球员 OVR</small></div>' +
     '<div class="rankings-view-tabs">' +
       '<button class="rankings-view-tab ' + (view === 'teams' ? 'active' : '') + '" onclick="setSeasonRankingsView(\'teams\')">球队战绩</button>' +
       '<button class="rankings-view-tab ' + (view === 'players' ? 'active' : '') + '" onclick="setSeasonRankingsView(\'players\')">球员统计</button>' +
+      '<button class="rankings-view-tab ' + (view === 'ovr' ? 'active' : '') + '" onclick="setSeasonRankingsView(\'ovr\')">球员 OVR</button>' +
     '</div>' + bodyHtml +
     '</div>';
   bindSeasonRankingInteractions(target);

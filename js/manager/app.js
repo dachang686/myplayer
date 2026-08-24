@@ -355,6 +355,32 @@
     return ['pts', 'reb', 'ast', 'stl', 'blk'].indexOf(value) >= 0 ? value : 'pts';
   }
 
+  function playerOvrRows(current) {
+    var rows = [];
+    var seen = {};
+    Object.keys(current.leagueData || {}).forEach(function(teamId) {
+      (current.leagueData[teamId] || []).forEach(function(player) {
+        if (!player) return;
+        var playerId = String(player.id || '');
+        var key = playerId || teamId + ':' + String(player.cname || player.name || '');
+        if (seen[key]) return;
+        seen[key] = true;
+        var ovr = Number(player.ovr) || 0;
+        if (ovr <= 0) return;
+        rows.push({
+          playerId: playerId,
+          playerName: player.cname || player.name || playerId || '未知球员',
+          teamId: teamId,
+          position: player.pos || player.position || '—',
+          ovr: ovr
+        });
+      });
+    });
+    return rows.sort(function(a, b) {
+      return b.ovr - a.ovr || String(a.playerName).localeCompare(String(b.playerName)) || String(a.playerId).localeCompare(String(b.playerId));
+    });
+  }
+
   var SEASON_CALENDAR_MONTHS = [
     { name: '10月', start: 0, end: 10, firstDate: 21, days: 31, firstWday: 3 },
     { name: '11月', start: 11, end: 40, firstDate: 1, days: 30, firstWday: 6 },
@@ -518,10 +544,24 @@
       '</div>' +
       '<div class="manager-player-stat-panel"><div class="manager-player-stat-list"><div class="manager-player-stat-head"><span>排名</span><span>球员</span><span>球队</span><span>场次</span><span>' + activeStat.label + '</span></div>' + playerListHtml + '</div>' +
       (remainingPlayerRows > 0 ? '<button type="button" class="manager-button manager-button-secondary manager-player-stat-more" data-action="show-more-player-stats">查看更多（下 ' + Math.min(10, remainingPlayerRows) + ' 名）</button>' : '') + '</div>';
+    var ovrRows = playerOvrRows(current);
+    var visibleOvrRows = ovrRows.slice(0, playerRankingLimit);
+    var ovrListHtml = visibleOvrRows.length ? visibleOvrRows.map(function(row, index) {
+      return '<div class="manager-player-stat-row manager-player-ovr-row">' +
+        '<span>' + (index + 1) + '</span>' +
+        '<span class="manager-player-stat-name">' + escapeHtml(row.playerName) + '</span>' +
+        '<span>' + escapeHtml(row.teamId) + '</span>' +
+        '<span>' + escapeHtml(row.position) + '</span>' +
+        '<span class="manager-player-stat-value">' + row.ovr + '</span>' +
+      '</div>';
+    }).join('') : '<div class="manager-ranking-empty">联盟名单中暂无球员 OVR 数据。</div>';
+    var remainingOvrRows = Math.max(0, ovrRows.length - visibleOvrRows.length);
+    var ovrBody = '<div class="manager-player-stat-panel manager-player-ovr-panel"><div class="manager-player-stat-list"><div class="manager-player-stat-head manager-player-ovr-head"><span>排名</span><span>球员</span><span>球队</span><span>位置</span><span>OVR</span></div>' + ovrListHtml + '</div>' +
+      (remainingOvrRows > 0 ? '<button type="button" class="manager-button manager-button-secondary manager-player-stat-more" data-action="show-more-player-stats">查看更多（下 ' + Math.min(10, remainingOvrRows) + ' 名）</button>' : '') + '</div>';
     main.innerHTML = '<section class="manager-page manager-standings-page"><div class="manager-page-head"><div><div class="manager-eyebrow">赛季排名 / STANDINGS</div><h1>' + (current.season.phase === 'complete' ? '赛季总结' : '联盟排行榜') + '</h1><p>' + (current.season.phase === 'complete' ? '冠军：' + escapeHtml(teamName(current.season.champion)) + ' · 董事会：' + escapeHtml(owner.label || '') : '排名按胜率与净胜分排序，各联盟前八进入季后赛。') + '</p></div></div>' +
       (current.season.phase === 'complete' ? '<div class="manager-review-banner"><strong>' + (owner.score || 0) + '<em>/100</em></strong><div><b>' + escapeHtml(owner.label || '') + '</b><span>' + escapeHtml(owner.summary || '') + '</span></div></div>' : '') +
-      '<div class="manager-rankings-view-tabs"><button type="button" class="' + (standingsView === 'teams' ? 'is-active' : '') + '" data-action="set-standings-view" data-standings-view="teams" aria-pressed="' + (standingsView === 'teams') + '">球队战绩</button><button type="button" class="' + (standingsView === 'players' ? 'is-active' : '') + '" data-action="set-standings-view" data-standings-view="players" aria-pressed="' + (standingsView === 'players') + '">球员统计</button></div>' +
-      (standingsView === 'players' ? playerBody : teamBody) + '</section>';
+      '<div class="manager-rankings-view-tabs"><button type="button" class="' + (standingsView === 'teams' ? 'is-active' : '') + '" data-action="set-standings-view" data-standings-view="teams" aria-pressed="' + (standingsView === 'teams') + '">球队战绩</button><button type="button" class="' + (standingsView === 'players' ? 'is-active' : '') + '" data-action="set-standings-view" data-standings-view="players" aria-pressed="' + (standingsView === 'players') + '">球员统计</button><button type="button" class="' + (standingsView === 'ovr' ? 'is-active' : '') + '" data-action="set-standings-view" data-standings-view="ovr" aria-pressed="' + (standingsView === 'ovr') + '">球员 OVR</button></div>' +
+      (standingsView === 'players' ? playerBody : (standingsView === 'ovr' ? ovrBody : teamBody)) + '</section>';
   }
 
   function renderSeason() {
@@ -740,7 +780,7 @@
     else if (action === 'save-game') saveGame();
     else if (action === 'restart-game') restartGame();
     else if (action === 'next-step') nextStep();
-    else if (action === 'set-standings-view') { standingsView = target.dataset.standingsView === 'players' ? 'players' : 'teams'; playerRankingLimit = 10; renderStandings(); }
+    else if (action === 'set-standings-view') { standingsView = target.dataset.standingsView === 'players' ? 'players' : (target.dataset.standingsView === 'ovr' ? 'ovr' : 'teams'); playerRankingLimit = 10; renderStandings(); }
     else if (action === 'set-standings-conference') { standingsConference = target.dataset.conference === 'NORTH' ? 'NORTH' : 'SOUTH'; renderStandings(); }
     else if (action === 'set-player-ranking-stat') { playerRankingStat = statConfigValue(target.dataset.stat); playerRankingLimit = 10; renderStandings(); }
     else if (action === 'show-more-player-stats') { playerRankingLimit += 10; renderStandings(); }

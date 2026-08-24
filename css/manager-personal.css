@@ -695,6 +695,15 @@ button.manager-calendar-cell:hover {
   text-align: right;
 }
 
+.manager-player-ovr-head,
+.manager-player-ovr-row {
+  grid-template-columns: 32px minmax(130px, 1fr) 52px 58px 58px;
+}
+
+.manager-player-ovr-row span:nth-child(4) {
+  white-space: nowrap;
+}
+
 .manager-player-stat-head span:nth-child(2) {
   text-align: left;
 }
