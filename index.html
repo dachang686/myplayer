@@ -4920,12 +4920,13 @@ function getTeamCompetitiveRating(power) {
   const overall = Number.isFinite(power && power.overall) ? power.overall : 50;
   const offense = Number(power && power.offense) || overall;
   const defense = Number(power && power.defense) || overall;
-  // 80 OVR 是中性锚点；提高阵容差异斜率，让强弱队层级更稳定。
-  const rosterRating = 80 + (overall - 80) * 0.65;
+  // 80 OVR 是中性锚点；让阵容总评差异完整进入球队竞争力，
+  // 避免 82 场赛季中顶级阵容被随机性过度压平。
+  const rosterRating = 80 + (overall - 80) * 1.00;
   // 80 + 80 是中性展示基准，双方 structure 相减时会抵消，不影响比赛分差。
   const structureRating = (offense + defense - 160) * 0.20;
-  // 适度提高拥有超级核心球队的优势，不改变攻防专项校准。
-  const starRating = (Number(power && power.starConcentration) || 0) * 0.95;
+  // 提高核心集中度的边际价值，不改变攻防专项校准。
+  const starRating = (Number(power && power.starConcentration) || 0) * 1.05;
   return {
     overall: overall,
     roster: rosterRating,
@@ -5103,7 +5104,7 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
     : 0;
   const seedFormEdge = clamp((seedBonus || 0) * 0.5, -1.4, 1.4);
   const seasonFormEdge = recordFormEdge + seedFormEdge;
-  const homeCourtEdge = isHomeA === true ? 2.2 : (isHomeA === false ? -2.2 : 0);
+  const homeCourtEdge = isHomeA === true ? 1.5 : (isHomeA === false ? -1.5 : 0);
   // 兼容现有带伤接口：把概率乘数转换成预期分差惩罚，不再直接篡改胜率。
   const availabilityEdge = Number.isFinite(options.availabilityEdge)
     ? options.availabilityEdge

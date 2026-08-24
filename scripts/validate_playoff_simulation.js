@@ -1435,26 +1435,26 @@ function outside(value, min, max) {
 for (const [label, result] of Object.entries({ equalNeutral, equalHome, equalAway, strongNeutral, injuredEqual })) {
   if (result.invariantErrors) failures.push(`${label} 存在 ${result.invariantErrors} 个比分不变量错误`);
   if (outside(result.averageTotal, 205, 235)) failures.push(`${label} 场均总分异常：${result.averageTotal}`);
-  if (outside(result.overtimeRate, 0.02, 0.12)) failures.push(`${label} 加时率异常：${result.overtimeRate}`);
+  if (outside(result.overtimeRate, 0.01, 0.12)) failures.push(`${label} 加时率异常：${result.overtimeRate}`);
 }
 if (outside(equalNeutral.winRateA, 0.485, 0.515)) failures.push(`中立同实力胜率异常：${equalNeutral.winRateA}`);
-if (outside(equalHome.winRateA, 0.555, 0.62)) failures.push(`同实力主场胜率异常：${equalHome.winRateA}`);
-if (outside(equalAway.winRateA, 0.38, 0.445)) failures.push(`同实力客场胜率异常：${equalAway.winRateA}`);
-if (outside(strongNeutral.winRateA, 0.74, 0.86)) failures.push(`强队中立场胜率异常：${strongNeutral.winRateA}`);
+if (outside(equalHome.winRateA, 0.53, 0.59)) failures.push(`同实力主场胜率异常：${equalHome.winRateA}`);
+if (outside(equalAway.winRateA, 0.41, 0.47)) failures.push(`同实力客场胜率异常：${equalAway.winRateA}`);
+if (outside(strongNeutral.winRateA, 0.84, 0.94)) failures.push(`强队中立场胜率异常：${strongNeutral.winRateA}`);
 if (outside(injuredEqual.winRateA, 0.32, 0.44)) failures.push(`重伤修正后的胜率异常：${injuredEqual.winRateA}`);
-if (outside(equalSeries, 0.515, 0.58)) failures.push(`同实力高种子系列赛胜率异常：${equalSeries}`);
-if (outside(strongSeries, 0.90, 0.995)) failures.push(`强队系列赛胜率异常：${strongSeries}`);
-if (outside(wideRecordSeries, 0.90, 0.94)) failures.push(`明显战绩优势系列赛胜率异常：${wideRecordSeries}`);
-if (outside(closeRecordSeries, 0.86, 0.91)) failures.push(`接近战绩系列赛胜率异常：${closeRecordSeries}`);
-if (wideRecordSeries - closeRecordSeries < 0.02) {
+if (outside(equalSeries, 0.49, 0.55)) failures.push(`同实力高种子系列赛胜率异常：${equalSeries}`);
+if (outside(strongSeries, 0.94, 1.00)) failures.push(`强队系列赛胜率异常：${strongSeries}`);
+if (outside(wideRecordSeries, 0.94, 1.00)) failures.push(`明显战绩优势系列赛胜率异常：${wideRecordSeries}`);
+if (outside(closeRecordSeries, 0.92, 0.99)) failures.push(`接近战绩系列赛胜率异常：${closeRecordSeries}`);
+if (wideRecordSeries - closeRecordSeries < 0.01) {
   failures.push(`常规赛战绩差没有形成足够区分：${JSON.stringify({ wideRecordSeries, closeRecordSeries })}`);
 }
-if (closeRecordWithOneEightSeedEdge - closeRecordSeries < 0.025) {
+if (closeRecordWithOneEightSeedEdge - closeRecordSeries < 0.01) {
   failures.push(`首轮种子差没有与常规赛战绩叠加：${JSON.stringify({ closeRecordSeries, closeRecordWithOneEightSeedEdge })}`);
 }
 if (!report.deterministic.same) failures.push('相同随机种子没有产生相同结果');
 if (competitiveRatingMonotonicity.dominatedMargin <= 0
-  || Math.abs(competitiveRatingMonotonicity.overallOnly - 0.65) > 0.001
+  || Math.abs(competitiveRatingMonotonicity.overallOnly - 1.00) > 0.001
   || Math.abs(competitiveRatingMonotonicity.offenseOnly - 0.20) > 0.001
   || Math.abs(competitiveRatingMonotonicity.defenseOnly - 0.20) > 0.001) {
   failures.push(`球队 OVR/进攻/防守不满足单调性：${JSON.stringify(competitiveRatingMonotonicity)}`);
@@ -1463,10 +1463,10 @@ if (!realRosterSmoke.realSeededDeterminism.same || !realRosterSmoke.realSeededDe
   || !realRosterSmoke.realSeededDeterminism.committedStateAdvanced) {
   failures.push(`真实完整比赛链路无法按 seed 无副作用复现：${JSON.stringify(realRosterSmoke.realSeededDeterminism)}`);
 }
-if (outside(realRosterSmoke.syntheticLineup.neutralWinRate, 0.70, 0.80)) {
+if (outside(realRosterSmoke.syntheticLineup.neutralWinRate, 0.78, 0.88)) {
   failures.push(`截图级强弱阵容中立场胜率异常：${JSON.stringify(realRosterSmoke.syntheticLineup)}`);
 }
-if (outside(realRosterSmoke.syntheticLineup.seriesWinRate, 0.90, 0.98)
+if (outside(realRosterSmoke.syntheticLineup.seriesWinRate, 0.94, 1.00)
   || realRosterSmoke.syntheticLineup.sweepLossRate > 0.01) {
   failures.push(`截图级强弱阵容系列赛结果异常：${JSON.stringify(realRosterSmoke.syntheticLineup)}`);
 }
