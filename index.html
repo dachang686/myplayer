@@ -490,8 +490,9 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .player-ranking-tab.active{border-color:var(--orange);background:var(--orange-bg);color:var(--orange)}
 .player-ranking-list{overflow-x:auto}
 .player-ranking-head,.player-ranking-row{display:grid;grid-template-columns:32px minmax(130px,1fr) 52px 36px 48px;gap:5px;align-items:center;min-width:330px}
-.player-ranking-ovr-head,.player-ranking-ovr-row{grid-template-columns:32px minmax(130px,1fr) 52px 58px 48px;min-width:365px}
-.player-ranking-ovr-row span:nth-child(4){white-space:nowrap}
+.player-ranking-ovr-head,.player-ranking-ovr-row{grid-template-columns:32px clamp(96px,20vw,150px) 64px 42px 65px 50px;min-width:365px;justify-content:space-between}
+.player-ranking-ovr-row span:nth-child(5){white-space:nowrap}
+@media (max-width:420px){.player-ranking-ovr-head,.player-ranking-ovr-row{grid-template-columns:26px minmax(64px,1fr) 42px 32px 54px 42px;gap:3px;min-width:0;justify-content:normal}}
 .player-ranking-head{padding:5px 7px;color:var(--text-muted);font-size:9px;text-align:right}
 .player-ranking-head span:nth-child(2){text-align:left}
 .player-ranking-row{padding:8px 7px;border:1px solid var(--border);border-radius:7px;margin-bottom:3px;background:var(--bg);font:600 11px var(--font-display);text-align:right}
@@ -7491,6 +7492,14 @@ function getSeasonPlayerOvrRows() {
   if (!STATE.season || typeof LEAGUE_PLAYER_DATA === 'undefined') return [];
   var rows = [];
   var seen = {};
+  function resolveAge(player, fallbackAge) {
+    var age = Number(fallbackAge) || 0;
+    if (!age && typeof getLeaguePlayerAge === 'function') {
+      try { age = Number(getLeaguePlayerAge(player)) || 0; } catch (e) {}
+    }
+    if (!age) age = Number(player && player._age) || 0;
+    return age > 0 ? Math.round(age) : 0;
+  }
   var teams = typeof LEAGUE_TEAM_IDS !== 'undefined' && Array.isArray(LEAGUE_TEAM_IDS) && LEAGUE_TEAM_IDS.length ? LEAGUE_TEAM_IDS : Object.keys(LEAGUE_PLAYER_DATA);
   teams.forEach(function(teamId) {
     (LEAGUE_PLAYER_DATA[teamId] || []).forEach(function(player) {
@@ -7506,6 +7515,7 @@ function getSeasonPlayerOvrRows() {
         playerName: player.cname || player.name || playerId || '未知球员',
         teamId: teamId,
         teamLabel: teamId,
+        age: resolveAge(player),
         position: player.pos || player.position || '—',
         ovr: ovr,
         isUser: false,
@@ -7530,6 +7540,7 @@ function getSeasonPlayerOvrRows() {
       playerName: player.cname || player.name || player.displayName || playerId || '未知球员',
       teamId: 'FA',
       teamLabel: '自由球员',
+      age: resolveAge(player, player.age),
       position: player.pos || player.position || '—',
       ovr: ovr,
       isUser: false,
@@ -7542,6 +7553,7 @@ function getSeasonPlayerOvrRows() {
       playerName: typeof getMyPlayerDisplayName === 'function' ? getMyPlayerDisplayName() : '我的球员',
       teamId: STATE.careerTeam,
       teamLabel: STATE.careerTeam,
+      age: Number(STATE.career && STATE.career.currentAge) || 0,
       position: STATE.position || '—',
       ovr: userOvr,
       isUser: true,
@@ -7640,6 +7652,7 @@ function renderSeasonRankingsPage() {
         '<span>' + (index + 1) + '</span>' +
         '<span class="player-ranking-name">' + escapeSeasonUiText(row.playerName) + (row.isUser ? ' ⭐' : '') + '</span>' +
         '<span>' + escapeSeasonUiText(row.teamLabel || row.teamId) + '</span>' +
+        '<span>' + (row.age || '—') + '</span>' +
         '<span>' + escapeSeasonUiText(row.position) + '</span>' +
         '<span class="player-ranking-value">' + row.ovr + '</span>' +
       '</div>';
@@ -7650,7 +7663,7 @@ function renderSeasonRankingsPage() {
       : '';
     bodyHtml = '<div class="season-ranking-panel">' +
       '<div class="player-ranking-list">' +
-        '<div class="player-ranking-head player-ranking-ovr-head"><span>排名</span><span>球员</span><span>球队</span><span>位置</span><span>OVR</span></div>' +
+        '<div class="player-ranking-head player-ranking-ovr-head"><span>排名</span><span>球员</span><span>球队</span><span>年龄</span><span>位置</span><span>OVR</span></div>' +
         ovrRowsHtml +
       '</div>' +
       ovrMoreHtml +

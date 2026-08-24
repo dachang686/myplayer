@@ -254,9 +254,16 @@ if (!Object.values(ACHIEVEMENT_FEATURES).some(v => v)) {
         var pg = ps.games || 1;
 
         // ★ championships 永远追加（记录每一次夺冠详情）
-        var isFirst = data.championTeams.indexOf(team) === -1;
+        // 球队是否已点亮属于全局征服进度，不能用来判断当前球员是否首冠。
+        var isNewTeam = data.championTeams.indexOf(team) === -1;
+        var career = STATE.career || {};
+        var careerSeasons = Array.isArray(career.seasons) ? career.seasons : [];
+        var hasCareerChampionship = careerSeasons.some(function (season) {
+          return String(season && season.playoffResult || "").indexOf("总冠军") >= 0;
+        });
+        var isFirstCareerChampionship = !hasCareerChampionship;
         var championshipStreak = getCurrentChampionshipStreak(STATE);
-        if (isFirst) data.championTeams.push(team);
+        if (isNewTeam) data.championTeams.push(team);
         function calcAvg(src, field, games) {
           if (typeof getPerGameStats === 'function') return getPerGameStats(src, games)[field];
           return Math.round((src[field] || 0) / games * 10) / 10;
@@ -317,13 +324,13 @@ if (!Object.values(ACHIEVEMENT_FEATURES).some(v => v)) {
           var progress = '<span class="cq-toast-detail">征服联盟 ' + total + '/30</span>';
           if (championshipStreak > 1) {
             showAchievementToast("🏆 " + getChampionshipStreakLabel(championshipStreak) + "！<br><span class=\"cq-toast-team\">带领 " + cn + " 夺冠</span><br>" + progress);
-          } else if (isFirst) {
+          } else if (isFirstCareerChampionship) {
             showAchievementToast("🏆 首次带领 " + cn + " 夺冠！<br>" + progress);
           } else {
             showAchievementToast("🏆 " + cn + " 再夺冠！<br>" + progress);
           }
 
-          if (isFirst) {
+          if (isNewTeam) {
             // 里程碑检测
             var milestones = {
               1: "征途开始",
