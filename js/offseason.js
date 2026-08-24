@@ -1714,6 +1714,84 @@ function getLeagueAttributeKeys() {
   return ['threePT', 'MID', 'FIN', 'DNK', 'HAN', 'PAS', 'ATH', 'STR', 'REB', 'PDEF', 'IDEF', 'STL', 'BLK', 'CLU'];
 }
 
+/**
+ * 只对已经完成成长/衰退比例调整的基础球员做逐点微调，
+ * 让属性重新计算出的 OVR 命中目标；不重新生成属性分布。
+ */
+function normalizeLeaguePlayerAttributesToOvr(player, targetOvr) {
+  if (!player || typeof calcOVR !== 'function') return Number(player && player.ovr) || 0;
+
+  var target = Math.max(55, Math.min(99, Math.round(Number(targetOvr) || 55)));
+  var current = Number(calcOVR(player, player.pos));
+  if (!Number.isFinite(current) || current === target) return current;
+
+  var attributeKeys = getLeagueAttributeKeys();
+  var originalValues = {};
+  attributeKeys.forEach(function(key) {
+    var value = Number(player[key]);
+    if (Number.isFinite(value)) originalValues[key] = value;
+  });
+
+  function walkTowardTarget() {
+    var nextCurrent = Number(calcOVR(player, player.pos));
+    var guard = 0;
+    while (nextCurrent !== target && guard++ < 320) {
+      var step = nextCurrent < target ? 1 : -1;
+      var changed = false;
+
+      for (var i = 0; i < attributeKeys.length; i++) {
+        var key = attributeKeys[i];
+        if (player[key] == null) continue;
+
+        var before = Number(player[key]);
+        if (!Number.isFinite(before)) continue;
+
+        var next = Math.max(25, Math.min(99, before + step));
+        if (next === before) continue;
+
+        player[key] = next;
+        var candidate = Number(calcOVR(player, player.pos));
+        var staysOnTargetSide = step > 0
+          ? candidate <= target
+          : candidate >= target;
+
+        if (staysOnTargetSide) {
+          nextCurrent = candidate;
+          changed = true;
+          break;
+        }
+
+        player[key] = before;
+      }
+
+      if (!changed) break;
+    }
+    return Number(calcOVR(player, player.pos));
+  }
+
+  current = walkTowardTarget();
+  if (current === target) return current;
+
+  // 离散 OVR 台阶无法直接命中时，回滚后做一次有限的统一校准，
+  // 再回到逐点逼近；这只处理不可达的边界案例。
+  attributeKeys.forEach(function(key) {
+    if (Object.prototype.hasOwnProperty.call(originalValues, key)) {
+      player[key] = originalValues[key];
+    }
+  });
+  current = Number(calcOVR(player, player.pos));
+  var correction = target - current;
+  if (correction) {
+    attributeKeys.forEach(function(key) {
+      if (player[key] == null) return;
+      var value = Number(player[key]);
+      if (!Number.isFinite(value)) return;
+      player[key] = Math.max(25, Math.min(99, Math.round(value + correction)));
+    });
+  }
+  return walkTowardTarget();
+}
+
 function applyLeaguePlayerOvrChange(player, oldOvr, newOvr) {
   if (!player) return Number(newOvr) || 0;
   var before = Number(oldOvr) || Number(player.ovr) || 60;
@@ -1746,6 +1824,9 @@ function applyLeaguePlayerOvrChange(player, oldOvr, newOvr) {
   var calculated = typeof calcOVR === 'function' && typeof SIM_CONFIG !== 'undefined'
     ? Number(calcOVR(player, player.pos))
     : target;
+  if (calculated !== target && typeof normalizeLeaguePlayerAttributesToOvr === 'function') {
+    calculated = normalizeLeaguePlayerAttributesToOvr(player, target);
+  }
   player.ovr = Number.isFinite(calculated) && calculated >= 40 ? Math.round(calculated) : target;
   return player.ovr;
 }
@@ -2668,6 +2749,7 @@ function processTrades() {
 
   var tradedPlayers = new Set();
   var tradedTeams = new Map(); // 改用 Map 支持计数
+  var tradePairLogs = [];
 
   // 打乱球队顺序，让交易分布更随机
   var shuffled = LEAGUE_TEAM_IDS.slice().sort(function() { return rngNext() - 0.5; });
@@ -2725,9 +2807,13 @@ function processTrades() {
 
       if (playerForA && playerForB) {
         var diff = Math.abs(playerForA.ovr - playerForB.ovr);
-        console.log('[Trade] 配对:', a, needA, 'vs', b, needB, '候选人:', (playerForA.cname || playerForA.id), playerForA.ovr, (playerForB.cname || playerForB.id), playerForB.ovr, 'diff:', diff);
+        var pairLog = a + ' ' + needA + ' vs ' + b + ' ' + needB
+          + ' 候选人: ' + (playerForA.cname || playerForA.id) + ' ' + playerForA.ovr
+          + ' / ' + (playerForB.cname || playerForB.id) + ' ' + playerForB.ovr
+          + ' diff: ' + diff;
         if (diff <= 15) { // 放宽至 <= 15，允许弱队出售大牌换潜力股
           if (swapRosterPlayers(a, b, playerForA, playerForB)) {
+            tradePairLogs.push(pairLog + ' ✅成功');
             tradedPlayers.add(playerForA);
             tradedPlayers.add(playerForB);
             tradedTeams.set(a, (tradedTeams.get(a) || 0) + 1);
@@ -2738,10 +2824,14 @@ function processTrades() {
             needs[b] = getTeamTradeNeed(b);
             break;
           }
+          tradePairLogs.push(pairLog + ' ❌未成交（薪资或交易校验失败）');
+        } else {
+          tradePairLogs.push(pairLog + ' ⏭️未通过 OVR 差距');
         }
       }
     }
   }
+  console.log('[Trade] 配对汇总:', tradePairLogs.length ? tradePairLogs.join(' | ') : '无候选组合');
   if (typeof enforceLeagueRosterCapacity === 'function') enforceLeagueRosterCapacity(null, { reason: 'post_trade_capacity' });
 }
 
