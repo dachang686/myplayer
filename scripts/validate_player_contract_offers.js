@@ -57,21 +57,43 @@ context.calcTeamLineup = teamId => {
 };
 
 run('js/offseason.js');
-vm.runInContext('enforceLeagueRosterCapacity(null, { reason: "contract_offer_validator" });', context);
+// 按真实新档顺序：先应用 2026 选秀，再收缩超员名单，最后生成玩家合同。
+vm.runInContext('applyDraftClass2026(); enforceLeagueRosterCapacity(null, { reason: "contract_offer_validator" });', context);
+context.LEAGUE_PLAYER_DATA.ROUND_TEAM = Array.from({ length: 6 }, (_, index) => ({
+  id: 'ROUND-' + index,
+  cname: 'ROUND-' + index,
+  ovr: 70,
+  pos: 'SF',
+  _age: 27,
+  salary: 12,
+  _salaryVersion: 2,
+  contract: 2,
+}));
 
 const result = vm.runInContext(`(() => {
   const legalTeams = LEAGUE_TEAM_IDS
     .filter(team => team !== STATE.careerTeam)
-    .map(team => ({ team, offer: buildCareerContractOffer(team, 2) }))
+    .map(team => ({ team, offer: getBestCareerContractOffer(team, 2, 3) }))
     .filter(row => !!row.offer)
     .map(row => row.team);
   const displayed = generateContractOffers();
   const displayedTeams = displayed.map(offer => offer.team);
+  const roundOffer = getBestCareerContractOffer('ROUND_TEAM', 2, 3);
+  STATE.career.seasons = [1, 2, 3, 4].map(seasonNum => ({ seasonNum, team: 'DEN' }));
+  STATE.career.teamTenure = 1;
+  const birdTenure = getCareerTeamTenure();
+  const birdRights = hasCareerPlayerBirdRights('DEN');
+  const expiredPayroll = getTeamPayroll('DEN');
+  const payrollWithoutUser = getTeamPayrollExcludingPlayer('DEN', getCareerPlayerContractSnapshot());
   return {
     legalTeams,
     displayedTeams,
     displayedCount: displayed.length,
     contractOffers: displayed.filter(offer => !!offer.contractOffer).length,
+    roundOffer: roundOffer ? { round: roundOffer.round, salary: roundOffer.salary } : null,
+    birdTenure,
+    birdRights,
+    expiredPayrollReleased: Math.abs(expiredPayroll - payrollWithoutUser) < 0.001,
     maxDisplayed: 4,
   };
 })()`, context);
@@ -82,6 +104,9 @@ if (result.displayedCount !== Math.min(4, result.legalTeams.length)) {
 }
 if (result.contractOffers !== result.displayedCount) failures.push('展示的玩家合同缺少已校验的 contractOffer');
 if (new Set(result.displayedTeams).size !== result.displayedTeams.length) failures.push('玩家合同 UI 出现重复球队');
+if (!result.roundOffer || result.roundOffer.round !== 2) failures.push(`玩家合同没有在 Round 0 不合法时降价：${JSON.stringify(result.roundOffer)}`);
+if (result.birdTenure !== 4 || !result.birdRights) failures.push(`玩家连续效力年限没有恢复 Bird 权利：${JSON.stringify({ tenure: result.birdTenure, bird: result.birdRights })}`);
+if (!result.expiredPayrollReleased) failures.push('玩家合同到期后旧工资仍计入母队 payroll');
 
 if (failures.length) {
   console.error(failures.join('\n'));

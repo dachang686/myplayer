@@ -499,9 +499,10 @@ function generateContractOffers() {
 
   function decorateLegalContractOffers(rawOffers) {
     return rawOffers.map(function(offer) {
-      var terms = buildCareerContractOffer(offer.team, offer.years);
+      var terms = getBestCareerContractOffer(offer.team, offer.years, 3);
       if (!terms) return null;
       offer.years = terms.years;
+      offer.round = terms.round;
       offer.salary = terms.salary;
       offer.payroll = terms.payroll;
       offer.payrollAfterSigning = terms.payrollAfterSigning;
@@ -566,7 +567,8 @@ function showContractOffers() {
   var choiceText = { stay: '留守母队，要求补强', contender: '加盟争冠球队', market: '选择大市场球队', short: '签短约保持自由' }[choice] || '';
   var stayYears = choice === 'stay' ? 3 : 2;
   var canRenew = !(c.flags && c.flags.waived) && getTeamRenewalWillingness();
-  if (canRenew && !buildCareerContractOffer(STATE.careerTeam, stayYears)) canRenew = false;
+  var renewalOffer = canRenew ? getBestCareerContractOffer(STATE.careerTeam, stayYears, 3) : null;
+  if (canRenew && !renewalOffer) canRenew = false;
   if (!canRenew && c.flags && !c.flags.waived && !c.flags.nonRenewed) {
     c.flags.nonRenewed = true;
     var m = getMobility();
@@ -588,7 +590,7 @@ function showContractOffers() {
 
   // 续约母队选项
   if (canRenew) {
-    html += '<div class="team-pick-card" style="cursor:pointer;margin-bottom:6px;border-color:' + (choice === 'stay' ? '#ffd700' : 'var(--orange)') + ';" onclick="previewTeamRosterModal(\'' + STATE.careerTeam + '\', function(){ selectContractOption(\'' + STATE.careerTeam + '\', -1); }, ' + stayYears + ')">';
+    html += '<div class="team-pick-card" style="cursor:pointer;margin-bottom:6px;border-color:' + (choice === 'stay' ? '#ffd700' : 'var(--orange)') + ';" onclick="previewTeamRosterModal(\'' + STATE.careerTeam + '\', function(){ selectContractOption(\'' + STATE.careerTeam + '\', -1, ' + (renewalOffer ? renewalOffer.round : 0) + '); }, ' + stayYears + ')">';
     html += '<div style="font-size:14px;font-weight:700;color:var(--orange);">📝 续约 ' + currTeam + '</div>';
     html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px;">';
     html += '<div style="font-size:11px;color:var(--text-dim);">继续留在 ' + currTeam + ' · ' + stayYears + ' 年</div>';
@@ -611,7 +613,7 @@ function showContractOffers() {
     var tp2Name = tp2 ? (tp2.cname) : '—';
     var tp2Ovr = tp2 ? (tp2.ovr || '—') : '—';
 
-    html += '<div class="team-pick-card" style="cursor:pointer;margin-bottom:6px;text-align:left;padding:10px;" onclick="previewTeamRosterModal(\'' + o.team + '\', function(){ selectContractOption(\'' + o.team + '\', ' + o.years + '); }, ' + o.years + ')">';
+    html += '<div class="team-pick-card" style="cursor:pointer;margin-bottom:6px;text-align:left;padding:10px;" onclick="previewTeamRosterModal(\'' + o.team + '\', function(){ selectContractOption(\'' + o.team + '\', ' + o.years + ', ' + (Number(o.round) || 0) + '); }, ' + o.years + ')">';
     html += '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">';
     html += getTeamLogo(o.team, 28);
     html += '<span style="font-family:var(--font-display);font-size:15px;font-weight:700;color:var(--text);">' + tn + '</span>';
@@ -753,7 +755,7 @@ function showFreeAgencyTeamChangeModal(oldTeam, newTeam, done) {
   };
 }
 
-function selectContractOption(team, years) {
+function selectContractOption(team, years, round) {
   var modal = document.getElementById('contract-modal');
   if (modal) modal.remove();
 
@@ -761,7 +763,8 @@ function selectContractOption(team, years) {
   var requestedYears = years > 0
     ? years
     : ((STATE.career.flags && STATE.career.flags.freeAgentChoice === 'stay') ? 3 : 2);
-  var contractOffer = buildCareerContractOffer(team, requestedYears);
+  var requestedRound = Math.max(0, Math.min(3, Number(round) || 0));
+  var contractOffer = buildCareerContractOffer(team, requestedYears, requestedRound);
   if (!contractOffer || !applyCareerContractOffer(team, contractOffer, oldTeam)) {
     var reject = '这份合同没有通过当前工资帽与阵容名额校验，请重新选择一份合法报价。';
     if (typeof showOffseasonResultModal === 'function') {
@@ -1424,7 +1427,8 @@ function getTeamPayrollExcludingPlayer(teamId, excludedPlayer) {
     return sum + getPlayerSalary(player);
   }, 0);
   var user = getCareerPlayerContractSnapshot();
-  if (user && teamId === STATE.careerTeam && excludedPlayer !== user && !(excludedPlayer && excludedPlayer._isUser)) {
+  var userActive = user && STATE.career && !STATE.career.retired && Number(STATE.career.contract) > 0;
+  if (userActive && teamId === STATE.careerTeam && excludedPlayer !== user && !(excludedPlayer && excludedPlayer._isUser)) {
     total += getCareerPlayerSalary();
   }
   return Math.round(total * 10) / 10;
@@ -1481,16 +1485,17 @@ function getFreeAgentRound(player) {
 
 function getCareerTeamTenure() {
   if (typeof STATE === 'undefined' || !STATE || !STATE.career) return 0;
-  if (Number(STATE.career.teamTenure) > 0) return Number(STATE.career.teamTenure);
   var team = STATE.careerTeam;
   if (!team) return 0;
   var seasons = Array.isArray(STATE.career.seasons) ? STATE.career.seasons : [];
-  var tenure = 1;
+  var tenure = 0;
   for (var i = seasons.length - 1; i >= 0; i--) {
     if (seasons[i] && seasons[i].team === team) tenure++;
     else break;
   }
-  return tenure;
+  // teamTenure 只作为没有历史赛季记录的旧存档/新入队状态的兜底；
+  // 一旦存在历史记录，以连续同队赛季为准，避免旧值 1 永久阻断 Bird Rights。
+  return tenure > 0 ? tenure : Math.max(1, Number(STATE.career.teamTenure) || 1);
 }
 
 function hasCareerPlayerBirdRights(teamId) {
@@ -1547,6 +1552,7 @@ function buildContractOffer(player, teamId, options) {
     teamId: teamId,
     salary: salary,
     years: years,
+    round: round,
     payroll: payrollAfterCut,
     payrollAfterSigning: totalAfterSigning,
     birdRights: birdRights,
@@ -1557,7 +1563,7 @@ function buildContractOffer(player, teamId, options) {
   };
 }
 
-function buildCareerContractOffer(teamId, years) {
+function buildCareerContractOffer(teamId, years, round) {
   var player = getCareerPlayerContractSnapshot();
   if (!player) return null;
   var isCurrentTeam = teamId === STATE.careerTeam;
@@ -1566,8 +1572,19 @@ function buildCareerContractOffer(teamId, years) {
     source: isCurrentTeam ? 'career_retention' : 'career_external',
     years: years,
     birdRights: hasCareerPlayerBirdRights(teamId),
-    round: 0
+    round: Math.max(0, Math.min(3, Number(round) || 0))
   });
+}
+
+function getBestCareerContractOffer(teamId, years, maxRound) {
+  var requestedRound = maxRound == null ? 3 : Number(maxRound);
+  if (!Number.isFinite(requestedRound)) requestedRound = 3;
+  var lastRound = Math.max(0, Math.min(3, requestedRound));
+  for (var round = 0; round <= lastRound; round++) {
+    var offer = buildCareerContractOffer(teamId, years, round);
+    if (offer) return offer;
+  }
+  return null;
 }
 
 function applyCareerContractOffer(teamId, offer, oldTeam) {
@@ -3001,9 +3018,14 @@ function validateLeaguePlayerAgeData() {
     seen[player.id] = true;
     rows.push(player.id);
     var age = Number(_playerAges[player.id]);
+    var ageSource = _playerAgeSources[player.id];
+    if (!Number.isFinite(age) && Number.isFinite(Number(player._age))) {
+      age = Number(player._age);
+      ageSource = player._ageSource || 'player_record';
+    }
     if (!Number.isFinite(age)) missing.push(player.id);
     else if (age < 18 || age > 45) invalid.push({ id: player.id, age: age });
-    if (_playerAgeSources[player.id] === 'ovr_estimate') estimated.push(player.id);
+    if (ageSource === 'ovr_estimate') estimated.push(player.id);
   });
   return { total: rows.length, rows: Object.keys(_playerAges || {}).length, missing: missing, invalid: invalid, estimated: estimated };
 }

@@ -40,6 +40,14 @@ context._rawRosterCounts = vm.runInContext('LEAGUE_TEAM_IDS.map(team => ({ team,
 vm.runInContext('enforceLeagueRosterCapacity(null, { reason: "validator_initial_capacity" });', context);
 
 const result = vm.runInContext(`(() => {
+  const initialPlayers = LEAGUE_TEAM_IDS.flatMap(team => LEAGUE_PLAYER_DATA[team] || []);
+  const initialFreeAgents = (STATE._freeAgentPool || []).slice();
+  const initialCurrentPlayers = initialPlayers.concat(initialFreeAgents);
+  const initialRosterCounts = LEAGUE_TEAM_IDS.map(team => ({ team, count: getTeamRosterCount(team) }));
+  const initialRosterViolations = initialRosterCounts.filter(row => row.count > FREE_AGENT_MARKET.rosterLimit);
+
+  // 工资与球星报价必须在真实新档的选秀加入/名单收缩之后校准。
+  applyDraftClass2026();
   const ageAudit = validateLeaguePlayerAgeData();
   const rows = LEAGUE_TEAM_IDS.map(team => ({ team, payroll: getTeamPayroll(team) }))
     .sort((a, b) => a.payroll - b.payroll);
@@ -52,19 +60,15 @@ const result = vm.runInContext(`(() => {
   const superstarOfferTeams = LEAGUE_TEAM_IDS.map(team => buildContractOffer(testSuperstar, team, {
     source: 'free_agent', round: 0, birdRights: team === testSuperstar._origTeam,
   })).filter(Boolean).map(offer => offer.teamId);
-  const initialRosterCounts = LEAGUE_TEAM_IDS.map(team => ({ team, count: getTeamRosterCount(team) }));
-  const initialRosterViolations = initialRosterCounts.filter(row => row.count > FREE_AGENT_MARKET.rosterLimit);
-
-  applyDraftClass2026();
   const postDraftPlayers = LEAGUE_TEAM_IDS.flatMap(team => LEAGUE_PLAYER_DATA[team] || []);
   const postDraftFreeAgents = STATE._freeAgentPool || [];
   const postDraftIds = postDraftPlayers.map(player => player.id).concat(postDraftFreeAgents.map(player => player.id));
   const postDraftRosterCounts = LEAGUE_TEAM_IDS.map(team => ({ team, count: getTeamRosterCount(team) }));
   return {
     teams: LEAGUE_TEAM_IDS.length,
-    players: players.length,
-    freeAgents: freeAgents.length,
-    lifecycleIds: currentPlayers.map(player => player.id),
+    players: initialPlayers.length,
+    freeAgents: initialFreeAgents.length,
+    lifecycleIds: initialCurrentPlayers.map(player => player.id),
     rawRosterCounts: _rawRosterCounts,
     initialRosterCounts,
     initialRosterViolations,
