@@ -86,6 +86,7 @@ vm.runInContext('assignFreeAgents()', context);
 const freeAgentIds = () => (context.STATE._freeAgentPool || []).map(current => current.id);
 const signed = context.STATE._leagueChanges.freeSignings || [];
 const superstarSigning = signed.find(entry => entry.playerId === 'FA-SUPERSTAR');
+const initialUnsignedIds = freeAgentIds();
 
 if (!superstarSigning) failures.push('98 OVR 超级球星没有生成任何签约');
 if (freeAgentIds().includes('FA-SUPERSTAR')) failures.push('98 OVR 超级球星签约后仍错误留在自由市场');
@@ -112,6 +113,53 @@ if (!(market.superstar >= 30 && market.superstar <= 32)) failures.push(`98 OVR �
 if (!(market.fringe >= 1 && market.fringe <= 5)) failures.push(`72 OVR 老将市场价值异常：${market.fringe}`);
 if (market.birdYears > 5 || market.externalYears > 4) failures.push('Bird/外队合同年限上限异常');
 
+// 完整生命周期回归：上一季未签 FA 不能被本季新到期球员覆盖。
+const oldFreeAgent = player('FA-OLD', 72, 'PG', 27, { _origTeam: 'B', contract: 0 });
+const newlyExpired = player('FA-NEW', 70, 'PG', 27, { contract: 1, _lastTeam: 'A', _teamTenure: 1 });
+context.LEAGUE_PLAYER_DATA.A = [newlyExpired];
+context.LEAGUE_PLAYER_DATA.B = [];
+context.LEAGUE_PLAYER_DATA.C = [];
+context.STATE._freeAgentPool = [oldFreeAgent];
+context.STATE._contractsInited = true;
+context.STATE._teamHistory = {};
+context.STATE.season = { leaguePlayerSeasonStats: {} };
+context.SIM_CONFIG = { ATTR_LIST: [] };
+context._playerGenes = {
+  'FA-NEW': { v: 1, potential: 70, loyalty: 50, loyaltyVersion: 3, loyaltyRenewals: 0, loyaltyLastEvent: '', loyaltyTeam: '', roleUnderuseSeasons: 0 },
+  'FA-OLD': { v: 1, potential: 72, loyalty: 50, loyaltyVersion: 3, loyaltyRenewals: 0, loyaltyLastEvent: '', loyaltyTeam: '', roleUnderuseSeasons: 0 },
+};
+try {
+  vm.runInContext(`
+    syncLeaguePlayerOvrs = function() { return 0; };
+    updatePlayerRoleSatisfactionHistory = function() { return 0; };
+    calculateContractStayRate = function() { return 0; };
+    isMvpStar = function() { return false; };
+    calcOVR = function(current) { return Number(current.ovr) || 60; };
+    evolveLeague();
+  `, context);
+} catch (error) {
+  failures.push('完整 evolveLeague 生命周期测试抛出异常：' + error.message);
+}
+
+const afterEvolvePool = context.STATE._freeAgentPool || [];
+const afterEvolveIds = afterEvolvePool.map(current => current.id);
+if (!afterEvolveIds.includes('FA-OLD')) failures.push('完整 evolveLeague 后旧 FA 被覆盖');
+if (!afterEvolveIds.includes('FA-NEW')) failures.push('完整 evolveLeague 后新到期 FA 缺失');
+if (new Set(afterEvolveIds).size !== afterEvolveIds.length) failures.push('完整 evolveLeague 后 FA 池出现重复 ID');
+if (context.STATE._leagueChanges.freeAgentCount !== 2) failures.push(`完整 evolveLeague 的 freeAgentCount 异常：${context.STATE._leagueChanges.freeAgentCount}`);
+
+try {
+  vm.runInContext('assignFreeAgents()', context);
+} catch (error) {
+  failures.push('合并后的 FA 池进入 assignFreeAgents 时抛出异常：' + error.message);
+}
+for (const id of ['FA-OLD', 'FA-NEW']) {
+  const rosterCount = Object.values(context.LEAGUE_PLAYER_DATA).reduce((count, roster) => count + roster.filter(current => current.id === id).length, 0);
+  const poolCount = (context.STATE._freeAgentPool || []).filter(current => current.id === id).length;
+  const retiredCount = (context.STATE._leagueChanges.retired || []).filter(current => current.playerId === id).length;
+  if (rosterCount + poolCount + retiredCount !== 1) failures.push(`${id} 生命周期归属不是恰好一种：${rosterCount}/${poolCount}/${retiredCount}`);
+}
+
 if (failures.length) {
   console.error(failures.join('\n'));
   process.exit(1);
@@ -119,6 +167,10 @@ if (failures.length) {
 
 console.log(JSON.stringify({
   signedSuperstar: superstarSigning,
-  unsignedIds: freeAgentIds(),
+  initialUnsignedIds,
   market,
+  lifecycle: {
+    afterEvolveIds,
+    finalPoolIds: (context.STATE._freeAgentPool || []).map(current => current.id),
+  },
 }, null, 2));

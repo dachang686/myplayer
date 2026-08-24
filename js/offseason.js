@@ -1363,6 +1363,19 @@ function evolveUnsignedFreeAgents() {
   STATE._freeAgentPool = nextPool;
 }
 
+function mergeFreeAgentPools(carriedPlayers, newlyExpiredPlayers) {
+  var merged = [];
+  var seen = {};
+  (carriedPlayers || []).concat(newlyExpiredPlayers || []).forEach(function(player) {
+    if (!player) return;
+    var key = String(player.id || player.cname || '');
+    if (key && seen[key]) return;
+    if (key) seen[key] = true;
+    merged.push(player);
+  });
+  return merged;
+}
+
 // ==================== 玩家主动申请交易 ====================
 function getActiveTradeRequestSeason() {
   var c = STATE.career;
@@ -2816,6 +2829,7 @@ function advanceSpecialLeaguePlayerAge(player, age) {
 function evolveLeague() {
   STATE._leagueChanges = { retired: [], rookies: [], teamChanges: {}, trades: [] };
   evolveUnsignedFreeAgents();
+  var carriedFreeAgents = Array.isArray(STATE._freeAgentPool) ? STATE._freeAgentPool.slice() : [];
   var teams = typeof LEAGUE_TEAM_IDS !== 'undefined' ? LEAGUE_TEAM_IDS : [];
   syncLeaguePlayerOvrs();
   var seasonRoleContexts = {};
@@ -2958,7 +2972,8 @@ function evolveLeague() {
     });
     LEAGUE_PLAYER_DATA[t] = newRoster;
   });
-  STATE._leagueChanges.freeAgentCount = freeAgents.length;
-  STATE._freeAgentPool = freeAgents;
+  var mergedFreeAgents = mergeFreeAgentPools(carriedFreeAgents, freeAgents);
+  STATE._leagueChanges.freeAgentCount = mergedFreeAgents.length;
+  STATE._freeAgentPool = mergedFreeAgents;
 }
 
