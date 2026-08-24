@@ -128,6 +128,10 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .btn-xs{padding:5px 12px;font-size:11px;width:auto;min-height:32px;border-radius:8px;font-family:var(--font-display);letter-spacing:.5px;border:2px solid var(--border);background:var(--bg-card);color:var(--text);cursor:pointer;transition:all .1s}
 .btn-xs:active{transform:scale(0.95)}.btn-gold{background:var(--gold);color:var(--on-accent);box-shadow:0 3px 0 oklch(0.58 0.14 78),0 4px 10px rgba(247,166,0,0.2)}
 .btn-gold:active{transform:translateY(2px);box-shadow:0 1px 0 #c48a00,0 2px 6px rgba(247,166,0,0.15)}
+.global-home-btn{flex:0 0 52px;width:52px;height:52px;padding:0;border:2px solid var(--orange);border-radius:14px;display:flex;align-items:center;justify-content:center;background:var(--bg-elevated);color:var(--orange);cursor:pointer;pointer-events:auto;box-shadow:0 4px 0 var(--border),0 8px 18px rgba(0,0,0,.22);transition:transform .12s,box-shadow .12s,background .12s}
+.global-home-btn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.global-home-btn:hover,.global-home-btn:focus-visible{background:var(--orange-bg);outline:2px solid var(--orange-bg);outline-offset:2px}
+.global-home-btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--border),0 4px 10px rgba(0,0,0,.18)}
 .global-save-btn{flex:0 0 52px;width:52px;height:52px;padding:0;border:2px solid var(--orange);border-radius:14px;display:flex;align-items:center;justify-content:center;background:var(--bg-elevated);color:var(--orange);font-size:21px;line-height:1;cursor:pointer;pointer-events:auto;box-shadow:0 4px 0 var(--border),0 8px 18px rgba(0,0,0,.22);transition:transform .12s,box-shadow .12s,opacity .12s}
 .global-save-btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--border),0 4px 10px rgba(0,0,0,.18)}
 .global-save-btn:disabled{opacity:.7;cursor:wait}
@@ -1105,6 +1109,9 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 </nav>
 
 <div id="global-next-action" class="global-next-action" aria-hidden="true">
+  <button type="button" id="global-home-btn" class="global-home-btn" aria-label="返回首页" title="返回首页" onclick="goHomeFromGame()">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.8 12 3l9 7.8"></path><path d="M5.5 9.5V21h13V9.5"></path><path d="M9.5 21v-6h5v6"></path></svg>
+  </button>
   <button type="button" id="global-next-btn" class="global-next-btn" onclick="runGlobalNextAction()">
     <span class="global-next-kicker">下一步</span>
     <span id="global-next-label">继续</span>
@@ -1158,7 +1165,8 @@ function getUtf8ByteLength(value) {
 
 var Storage = {
   MAX_VALUE_BYTES: 200 * 1024,
-  MAX_PLAYER_HISTORY: 64,
+  // 本地只保留当前最后一次保存的球员，避免球员建档数据持续累积。
+  MAX_PLAYER_HISTORY: 1,
   getUtf8ByteLength: getUtf8ByteLength,
   _ready: null,
   waitForReady: function(cb) {
@@ -1210,21 +1218,10 @@ var Storage = {
       timestamp: Date.now(),
       schemaVersion: 1
     });
-    return Storage.getValue('players').then(function(raw) {
-      var arr = [];
-      if (raw != null) {
-        if (Array.isArray(raw)) { arr = raw; }
-        else if (typeof raw === 'string') { try { arr = JSON.parse(raw); } catch(e) { arr = []; } }
-        if (!Array.isArray(arr)) arr = [];
-      }
-      arr.push(record);
-      arr = arr.slice(-Storage.MAX_PLAYER_HISTORY);
-      return Storage.setValue({ players: arr }).then(function(result) {
-        if (!result || !result.ok) console.error('[Storage] 球员历史保存失败:', result && result.reason);
-        return result;
-      });
-    }).catch(function() {
-      return Storage.setValue({ players: [record] });
+    // 直接覆盖旧记录，不读取或累积球员历史列表。
+    return Storage.setValue({ players: [record].slice(-Storage.MAX_PLAYER_HISTORY) }).then(function(result) {
+      if (!result || !result.ok) console.error('[Storage] 球员保存失败:', result && result.reason);
+      return result;
     });
   }
 };
@@ -1629,6 +1626,12 @@ function clearGlobalNextAction() {
   document.body.classList.remove('global-next-active');
 }
 
+function goHomeFromGame() {
+  showScreen('screen-menu');
+  renderModeSelect();
+  window.scrollTo(0, 0);
+}
+
 function runGlobalNextAction() {
   var handler = globalNextActionHandler;
   if (typeof handler !== 'function') return;
@@ -1796,7 +1799,13 @@ function logSavedPlayerData() {
       if (raw == null) { console.log('📦 暂无保存的球员数据'); return; }
       var arr = Array.isArray(raw) ? raw : (typeof raw === 'string' ? JSON.parse(raw) : null);
       if (Array.isArray(arr) && arr.length > 0) {
-        console.log('📦 已保存的球员列表 (共' + arr.length + '个):');
+        var normalized = arr.slice(-Storage.MAX_PLAYER_HISTORY);
+        if (normalized.length !== arr.length) {
+          // 清理升级前遗留的多条本地球员记录。
+          Storage.setValue({ players: normalized });
+          arr = normalized;
+        }
+        console.log('📦 已保存的球员（仅保留最近1个）:');
         arr.forEach(function(data, i) {
           console.log('  #' + (i+1), '位置:', data.position, '| 球队:', data.team, '| OVR:', data.finalOVR, '| 属性:', data.attrs);
         });
@@ -3760,7 +3769,7 @@ function saveBuildPlayerData(team) {
   };
   SIM_CONFIG.ATTR_LIST.forEach(function(k) { playerData.attrs[k] = STATE.attrs[k] || null; });
   Storage.savePlayer(playerData).then(function(result) {
-    if (result && !result.ok) console.warn('[Storage] 球员历史未保存：' + result.reason);
+    if (result && !result.ok) console.warn('[Storage] 球员未保存：' + result.reason);
   });
 }
 
