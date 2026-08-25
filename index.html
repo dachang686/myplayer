@@ -10419,6 +10419,7 @@ function resumeLoadedCareer(targetScreen) {
   var phase = draft.phase;
   var schedule = Array.isArray(season.schedule) ? season.schedule : [];
   var regularSeasonPending = schedule.length > 0 && schedule.some(function(game) { return !game.simulated; });
+  var regularSeasonComplete = schedule.length > 0 && !regularSeasonPending;
   var postseasonComplete = !!(season.playoffsDone || season.playoffEliminated || season.isChampion
     || (season.playInState && season.playInState.isEliminated));
 
@@ -10435,6 +10436,9 @@ function resumeLoadedCareer(targetScreen) {
     resumePlayoffs();
   } else if (postseasonComplete && !season._resultsViewed) {
     showSeasonResults();
+  } else if (regularSeasonComplete && !season._awardsViewed && !season._resultsViewed && typeof showAwardsScreen === 'function') {
+    // 常规赛已结束但奖项尚未查看时，恢复到奖项页，不能被休赛期默认状态带入加点页。
+    showAwardsScreen();
   } else if (targetScreen === 'screen-roster-review' && typeof showRosterReview === 'function') {
     // 阵容复盘没有独立生命周期状态；仅在所有业务状态都不匹配时使用页面提示。
     showRosterReview();

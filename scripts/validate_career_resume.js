@@ -11,14 +11,14 @@ function resumeFor(state, targetScreen) {
   const resume = new Function(
     'STATE', 'hasActiveSeasonPlayoffs', 'showOffseasonDraftLottery', 'showDraftPickTradeScreen',
     'showOffseasonDraftScreen', 'resumePlayoffs', 'showMyCard', 'showSeasonResults',
-    'showRosterReview', 'renderTrainingCamp',
+    'showAwardsScreen', 'showRosterReview', 'renderTrainingCamp',
     `${source.slice(start, end)}\nreturn resumeLoadedCareer;`,
   )(
     state,
     () => !!state.activePlayoffs,
     () => calls.push('lottery'), () => calls.push('pick_trades'), () => calls.push('draft'),
     () => calls.push('playoffs'), () => calls.push('mycard'), () => calls.push('results'),
-    () => calls.push('roster'), () => calls.push('training'),
+    () => calls.push('awards'), () => calls.push('roster'), () => calls.push('training'),
   );
   resume(targetScreen);
   return calls[0];
@@ -30,6 +30,7 @@ const cases = [
   ['pick-trades', { ...base, offseasonDraft: { phase: 'pick_trades' }, season: { schedule: [{ simulated: true }] } }, 'screen-draft-lottery', 'pick_trades'],
   ['active-playoffs', { ...base, activePlayoffs: true, season: { schedule: [{ simulated: true }], isPlayoffs: true } }, 'screen-mycard', 'playoffs'],
   ['unviewed-results', { ...base, season: { schedule: [{ simulated: true }], playoffsDone: true } }, 'screen-training', 'results'],
+  ['unviewed-awards', { career: { seasonCount: 2, offseasonEventSeason: 2 }, season: { schedule: [{ simulated: true }] } }, 'screen-menu', 'awards'],
   ['roster-review', { ...base, season: {}, career: { seasonCount: 2 } }, 'screen-roster-review', 'roster'],
   ['training', { ...base, season: {}, career: { seasonCount: 2, offseasonEventSeason: 2 } }, 'screen-mycard', 'training'],
 ];
