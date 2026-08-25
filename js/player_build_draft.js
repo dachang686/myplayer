@@ -305,8 +305,7 @@ function selectPlayerBuildTier(tierKey) {
   var build = ensurePlayerBuildState();
   if (!build.selectedAttr || !isPlayerBuildTierAvailable(build, tierKey)) return;
   build.selectedTier = tierKey;
-  renderDraftPlayerBuildUI();
-  queuePlayerBuildSave();
+  confirmPlayerBuildRound();
 }
 
 function rerollPlayerBuildPlayer() {
@@ -476,7 +475,6 @@ function renderDraftPlayerBuildUI() {
   var player = source.player;
   var round = getPlayerBuildCurrentRound(build);
   var progress = Math.round((build.picks.length / PLAYER_BUILD_TOTAL_ROUNDS) * 100);
-  var canConfirm = !!build.selectedAttr && !!build.selectedTier && isPlayerBuildTierAvailable(build, build.selectedTier);
 
   area.innerHTML =
     '<div class="pb-build-shell" data-build-round="' + round + '" data-build-status="in_progress">' +
@@ -495,14 +493,13 @@ function renderDraftPlayerBuildUI() {
         '</div>' +
       '</section>' +
       '<section class="pb-tier-section" aria-labelledby="pb-tier-title">' +
-        '<div class="pb-section-head"><div><span class="pb-section-kicker">CHOOSE A TIER</span><h2 id="pb-tier-title">' + (build.selectedAttr ? '选择「' + escapePlayerBuildText(attrCN(build.selectedAttr)) + '」的定位' : '为这项能力选择档位') + '</h2></div><span class="pb-rule-copy">确认后不可回头</span></div>' +
+        '<div class="pb-section-head"><div><span class="pb-section-kicker">CHOOSE A TIER</span><h2 id="pb-tier-title">' + (build.selectedAttr ? '选择「' + escapePlayerBuildText(attrCN(build.selectedAttr)) + '」的定位' : '为这项能力选择档位') + '</h2></div><span class="pb-rule-copy">点击档位立即锁定</span></div>' +
         renderPlayerBuildTierChooser(build, player) +
       '</section>' +
       '<div class="pb-build-actions">' +
         '<button type="button" class="pb-reroll-button" data-build-reroll onclick="rerollPlayerBuildPlayer()"' + (STATE._rerollsLeft > 0 ? '' : ' disabled') + '><span>↻</span>重新随机 <small>剩余 ' + STATE._rerollsLeft + ' 次</small></button>' +
-        '<button type="button" class="pb-confirm-button" data-build-confirm onclick="confirmPlayerBuildRound()"' + (canConfirm ? '' : ' disabled') + '>' + (round === PLAYER_BUILD_TOTAL_ROUNDS ? '确认并完成拼装' : '确认本轮，进入下一轮') + '<span>→</span></button>' +
       '</div>' +
-      '<p class="pb-build-footnote" aria-live="polite">' + (build.error ? escapePlayerBuildText(build.error) : '锁定一项属性和一个档位后，系统会自动抽取下一名球员。') + '</p>' +
+      '<p class="pb-build-footnote" aria-live="polite">' + (build.error ? escapePlayerBuildText(build.error) : '点击一个档位后立即锁定，系统会自动抽取下一名球员。') + '</p>' +
     '</div>';
 }
 

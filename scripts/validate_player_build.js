@@ -68,9 +68,8 @@ ATTR_KEYS.forEach((attr, index) => {
   assert(new Set(build.currentPlayers.map(item => item.id)).size === 2, `第${index + 1}轮候选串状态`);
   const selectedSourceId = build.selectedSourcePlayerId;
   assert(!selectedSourceIds.has(selectedSourceId), `第${index + 1}轮重复出现已选球员`);
-  build.selectedAttr = attr;
-  build.selectedTier = tierPlan[index];
-  context.confirmPlayerBuildRound();
+  context.selectPlayerBuildAttribute(attr);
+  context.selectPlayerBuildTier(tierPlan[index]);
   selectedSourceIds.add(selectedSourceId);
   if (index < ATTR_KEYS.length - 1) {
     assert(build.currentPlayers.every(item => !selectedSourceIds.has(item.id)), `第${index + 2}轮再次出现已选球员`);
