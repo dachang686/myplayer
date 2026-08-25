@@ -33,8 +33,16 @@ const confirmSource = source.slice(confirmStart, confirmEnd);
 assert(confirmSource.includes('calculateTrainingSpentPoints'), '确认训练没有复用统一预算函数');
 assert(confirmSource.includes('calcOVR(STATE.attrs)'), '训练后没有重新计算 OVR');
 assert(confirmSource.includes('saveCurrentSeasonToCareer()'), '训练后没有写回生涯存档');
+assert(confirmSource.includes('trainingCompletedSeason'), '重复进入训练页时缺少已结算保护');
+assert(confirmSource.includes('beginOffseasonDraft'), '训练已结算后没有恢复后续休赛期流程');
+
+const resumeStart = source.indexOf('function resumeLoadedCareer');
+const resumeEnd = source.indexOf('// 旧调用点保留兼容', resumeStart);
+const resumeSource = source.slice(resumeStart, resumeEnd);
+assert(resumeSource.includes('trainingCompleted'), '存档恢复没有识别本赛季训练是否已结算');
+assert(resumeSource.includes('offseasonEventSeason === seasonKey && !trainingCompleted'), '已结算训练仍会恢复到训练页面');
 
 console.log(JSON.stringify({
   passed: true,
-  checks: ['90-to-96', '96-to-99', '95-to-99-boundary', 'multi-attribute', 'non-negative', 'single-cost-source'],
+  checks: ['90-to-96', '96-to-99', '95-to-99-boundary', 'multi-attribute', 'non-negative', 'single-cost-source', 'training-resume-guard'],
 }));

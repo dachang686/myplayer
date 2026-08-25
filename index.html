@@ -8813,8 +8813,14 @@ function beginOffseason() {
   c.branchHistory = c.branchHistory || [];
   c.branches = c.branches || {};
   var seasonKey = c.seasonCount || 0;
+  var trainingCompleted = c.trainingCompletedSeason != null
+    && Number(c.trainingCompletedSeason) === Number(seasonKey);
   if (c.offseasonEventSeason === seasonKey) {
-    renderTrainingCamp();
+    if (trainingCompleted && typeof beginOffseasonDraft === 'function') {
+      beginOffseasonDraft();
+    } else {
+      renderTrainingCamp();
+    }
     return;
   }
   c.offseasonEventSeason = seasonKey;
@@ -10416,10 +10422,14 @@ function resumeLoadedCareer(targetScreen) {
   if (typeof resumePlayerBuildIfNeeded === 'function' && resumePlayerBuildIfNeeded()) return;
   var season = STATE.season || {};
   var draft = STATE.offseasonDraft || {};
+  var career = STATE.career || {};
   var phase = draft.phase;
   var schedule = Array.isArray(season.schedule) ? season.schedule : [];
   var regularSeasonPending = schedule.length > 0 && schedule.some(function(game) { return !game.simulated; });
   var regularSeasonComplete = schedule.length > 0 && !regularSeasonPending;
+  var seasonKey = Number(career.seasonCount) || 0;
+  var trainingCompleted = career.trainingCompletedSeason != null
+    && Number(career.trainingCompletedSeason) === seasonKey;
   var postseasonComplete = !!(season.playoffsDone || season.playoffEliminated || season.isChampion
     || (season.playInState && season.playInState.isEliminated));
 
@@ -10442,8 +10452,11 @@ function resumeLoadedCareer(targetScreen) {
   } else if (targetScreen === 'screen-roster-review' && typeof showRosterReview === 'function') {
     // 阵容复盘没有独立生命周期状态；仅在所有业务状态都不匹配时使用页面提示。
     showRosterReview();
-  } else if (STATE.career && STATE.career.offseasonEventSeason === STATE.career.seasonCount) {
+  } else if (career.offseasonEventSeason === seasonKey && !trainingCompleted) {
     renderTrainingCamp();
+  } else if (trainingCompleted && typeof beginOffseasonDraft === 'function') {
+    // 训练已结算但旧存档没有停在选秀页时，恢复到后续休赛期流程。
+    beginOffseasonDraft();
   } else {
     showMyCard();
   }
@@ -10676,8 +10689,11 @@ function resetTraining() {
 function confirmTraining() {
   var career = STATE.career || {};
   var seasonKey = Number(career.seasonCount) || 0;
-  if (career.trainingCompletedSeason === seasonKey) {
-    throw new Error('本休赛期训练已经结算');
+  if (career.trainingCompletedSeason != null
+      && Number(career.trainingCompletedSeason) === seasonKey) {
+    // 旧存档/重复点击可能仍保留训练页按钮；训练已结算时直接恢复后续流程。
+    if (typeof beginOffseasonDraft === 'function') beginOffseasonDraft();
+    return;
   }
   var pending = STATE._tpPending || {};
   var totalPoints = calcTrainingPoints();
