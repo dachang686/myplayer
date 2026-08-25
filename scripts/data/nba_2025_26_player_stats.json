@@ -5,7 +5,7 @@
   ],
   "season": "2025-26",
   "seasonType": "Regular Season",
-  "retrievedAt": "2026-08-11T12:56:47.922Z",
+  "retrievedAt": "2026-08-25T08:03:50.713Z",
   "officialNbaPlayers": 234,
   "allPlayers": 583,
   "players": [
@@ -5237,7 +5237,7 @@
     {
       "PLAYER_ID": null,
       "PLAYER": "Peyton Watson",
-      "TEAM": "DEN",
+      "TEAM": "CLE",
       "GP": 54,
       "MIN": 29.592592,
       "FG_PCT": 0.49053001403808594,
@@ -5731,7 +5731,7 @@
     {
       "PLAYER_ID": null,
       "PLAYER": "Julian Reese",
-      "TEAM": "WSH",
+      "TEAM": "DEN",
       "GP": 13,
       "MIN": 30.923077,
       "FG_PCT": 0.5294100189208985,
@@ -5807,7 +5807,7 @@
     {
       "PLAYER_ID": null,
       "PLAYER": "Max Strus",
-      "TEAM": "CLE",
+      "TEAM": "LAC",
       "GP": 12,
       "MIN": 24,
       "FG_PCT": 0.4434000015258789,
@@ -6301,7 +6301,7 @@
     {
       "PLAYER_ID": null,
       "PLAYER": "Cam Whitmore",
-      "TEAM": "WSH",
+      "TEAM": "CLE",
       "GP": 21,
       "MIN": 16.857143,
       "FG_PCT": 0.45562000274658204,
@@ -7308,7 +7308,7 @@
     {
       "PLAYER_ID": null,
       "PLAYER": "Trendon Watford",
-      "TEAM": "PHI",
+      "TEAM": "NO",
       "GP": 53,
       "MIN": 16.301888,
       "FG_PCT": 0.5149300003051758,
@@ -7802,7 +7802,7 @@
     {
       "PLAYER_ID": null,
       "PLAYER": "Tre Mann",
-      "TEAM": "CHA",
+      "TEAM": "WSH",
       "GP": 53,
       "MIN": 12.603773,
       "FG_PCT": 0.359739990234375,
@@ -8011,7 +8011,7 @@
     {
       "PLAYER_ID": null,
       "PLAYER": "Jalen Pickett",
-      "TEAM": "DEN",
+      "TEAM": "LAC",
       "GP": 50,
       "MIN": 16.12,
       "FG_PCT": 0.4224100112915039,
@@ -10234,7 +10234,7 @@
     {
       "PLAYER_ID": null,
       "PLAYER": "Sean Pedulla",
-      "TEAM": "LAC",
+      "TEAM": "HOU",
       "GP": 7,
       "MIN": 4.428571,
       "FG_PCT": 0.3333300018310547,

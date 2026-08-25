@@ -3113,6 +3113,10 @@ function syncLeaguePlayerOvrs() {
       if (isGeneratedLeaguePlayer(player)) {
         rebalanceLegacyGeneratedPlayer(player);
         refreshGeneratedPlayerType(player);
+      } else {
+        // 现实球员的 OVR 由最新 NBA 2K 快照提供；属性公式只用于校验，
+        // 不能在页面初始化时把 2K 的 98/97 等基准重新抬成 99。
+        return;
       }
       var nextOvr = calcOVR(player, player.pos);
       if (player.ovr === nextOvr) return;

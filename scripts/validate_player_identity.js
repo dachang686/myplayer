@@ -28,9 +28,7 @@ const failures = [];
 
 if (players.length !== 525) failures.push(`球员数量应为 525，实际为 ${players.length}`);
 if (new Set(players.map((player) => player.id)).size !== players.length) failures.push('球员 ID 不唯一');
-players.forEach((player, index) => {
-  const expectedId = `P${String(index + 1).padStart(4, '0')}`;
-  if (player.id !== expectedId) failures.push(`球员顺序 ID 错误：${player.id || '(空)'}，应为 ${expectedId}`);
+players.forEach((player) => {
   if (Object.prototype.hasOwnProperty.call(player, 'name') || Object.prototype.hasOwnProperty.call(player, 'nameEN')) {
     failures.push(`${player.id} 仍含英文姓名字段`);
   }
@@ -173,12 +171,16 @@ try {
     const baselineData = baselineContext.__data;
     const gameplayFields = ['pos', 'height', 'type', 'ovr', 'threePT', 'MID', 'FIN', 'DNK', 'HAN', 'PAS', 'PDEF', 'IDEF', 'BLK', 'REB', 'ATH', 'STR', 'CLU'];
     if (JSON.stringify(teams) !== JSON.stringify(baselineTeams)) failures.push('球队顺序相对原基线发生变化');
+    const baselinePlayers = baselineTeams.flatMap((team) => baselineData[team] || []);
+    const baselineById = new Map(baselinePlayers.map((player) => [player.id, player]));
+    const currentById = new Map(players.map((player) => [player.id, player]));
+    if (baselineById.size !== currentById.size || [...baselineById.keys()].some((id) => !currentById.has(id))) {
+      failures.push('球员 ID 覆盖范围相对原基线发生变化');
+    }
     teams.forEach((team) => {
       const currentRoster = vm.runInContext(`LEAGUE_PLAYER_DATA[${JSON.stringify(team)}]`, context);
-      const baselineRoster = baselineData[team] || [];
-      if (currentRoster.length !== baselineRoster.length) failures.push(`${team} 阵容人数相对原基线发生变化`);
-      currentRoster.forEach((player, index) => {
-        const baselinePlayer = baselineRoster[index];
+      currentRoster.forEach((player) => {
+        const baselinePlayer = baselineById.get(player.id);
         if (!baselinePlayer) return;
         gameplayFields.forEach((field) => {
           if (player[field] !== baselinePlayer[field]) {

@@ -66,11 +66,11 @@ if (Math.max(...migratedValues) - Math.min(...migratedValues) < 14) throw new Er
 if (migratedValues.filter(value => value <= 75).length < 3) throw new Error('81 OVR 球员至少应有 3 项明显短板');
 if (published.ovr !== 95) throw new Error(`现实球员人工 OVR 不应改变，实际 ${published.ovr}`);
 
-const expectedPublishedOvr = vm.runInContext('calcOVR({ ...LEAGUE_PLAYER_DATA.POR[1], STL: LEAGUE_PLAYER_DATA.POR[1].PDEF }, LEAGUE_PLAYER_DATA.POR[1].pos)', context);
+const publishedOvrBeforeSync = published.ovr;
 vm.runInContext('syncLeaguePlayerOvrs()', context);
 if (published.STL !== published.PDEF) throw new Error(`旧存档 STL 应由 PDEF 一次性迁移，实际 ${published.STL}`);
 if (published._sourceOvr !== 95) throw new Error(`现实球员来源 OVR 应保留 95，实际 ${published._sourceOvr}`);
-if (published.ovr !== expectedPublishedOvr) throw new Error(`现实球员运行 OVR 应按新公式同步为 ${expectedPublishedOvr}，实际 ${published.ovr}`);
+if (published.ovr !== publishedOvrBeforeSync) throw new Error(`现实球员 OVR 不应被运行时公式覆盖，实际 ${published.ovr}`);
 
 vm.runInContext('evolveGeneratedPlayerAttributes(LEAGUE_PLAYER_DATA.POR[0], 81, 85)', context);
 if (generated.ovr !== 85) throw new Error(`成长后 OVR 应为 85，实际 ${generated.ovr}`);

@@ -11,6 +11,8 @@ const identityPath = path.join(__dirname, 'data', 'nba2k_player_identity.json');
 const mappingPath = path.join(__dirname, 'data', 'nba2k26_player_mapping.json');
 const ratingsPath = path.join(__dirname, 'data', 'nba2k26_player_ratings.json');
 const stealOverridesPath = path.join(__dirname, 'data', 'player_steal_overrides.json');
+const bulkAuditPath = path.join(__dirname, 'data', 'nba2k26_ovr_attribute_audit.json');
+const transferPath = path.join(__dirname, 'data', 'real_world_team_transfers_2026.json');
 const attributes = [
   'ovr', 'threePT', 'MID', 'FIN', 'DNK', 'HAN', 'PAS',
   'PDEF', 'IDEF', 'BLK', 'REB', 'ATH', 'STR', 'CLU',
@@ -52,9 +54,13 @@ const identities = JSON.parse(fs.readFileSync(identityPath, 'utf8')).players || 
 const mappings = JSON.parse(fs.readFileSync(mappingPath, 'utf8')).players || [];
 const ratings = JSON.parse(fs.readFileSync(ratingsPath, 'utf8')).players || [];
 const stealOverrides = JSON.parse(fs.readFileSync(stealOverridesPath, 'utf8')).players || {};
+const bulkAudit = JSON.parse(fs.readFileSync(bulkAuditPath, 'utf8'));
+const transfers = JSON.parse(fs.readFileSync(transferPath, 'utf8')).transfers || [];
 const identityById = new Map(identities.map(identity => [identity.localId, identity]));
 const ratingByUrl = new Map(ratings.map(rating => [rating.url, rating]));
 const mappingById = new Map(mappings.filter(mapping => mapping.accepted).map(mapping => [mapping.localId, mapping]));
+const bulkById = new Map((bulkAudit.players || []).map(player => [player.localId, player]));
+const transferById = new Map(transfers.map(transfer => [transfer.localId, transfer]));
 const reviews = reviewData.players || [];
 const ovrAdjustments = ovrAdjustmentData.players || [];
 const fairOvrAdjustments = fairOvrAdjustmentData.players || [];
@@ -89,7 +95,16 @@ for (const [localId, entry] of playersById) {
   const cachedRating = mapping && ratingByUrl.get(mapping.url);
   const cachedSteal = cachedRating?.attributes?.Steal;
   const override = stealOverrides[localId];
-  const expectedSteal = Number.isInteger(cachedSteal) ? cachedSteal : override?.value;
+  const bulk = bulkById.get(localId);
+  const bulkSteal = bulk?.changes?.STL;
+  let expectedSteal = Number.isInteger(cachedSteal) ? cachedSteal : override?.value;
+  if (bulkSteal) {
+    if (!Array.isArray(bulkSteal) || bulkSteal.length !== 2 || bulkSteal[0] !== expectedSteal) {
+      fail(`${localId} invalid bulk STL adjustment tuple`);
+    } else {
+      expectedSteal = bulkSteal[1];
+    }
+  }
   if (!Number.isInteger(expectedSteal) || expectedSteal < 25 || expectedSteal > 99) {
     fail(`${localId} missing auditable STL source`);
   } else if (entry.player.STL !== expectedSteal) {
@@ -116,8 +131,10 @@ for (let index = 0; index < reviews.length; index++) {
     fail(`missing league player: ${review.localId}`);
     continue;
   }
-  if (leagueEntry.team !== review.team) {
-    fail(`${review.localId} team mismatch: ${leagueEntry.team} != ${review.team}`);
+  const transfer = transferById.get(review.localId);
+  const expectedTeam = transfer && review.team === transfer.from ? transfer.to : review.team;
+  if (leagueEntry.team !== expectedTeam) {
+    fail(`${review.localId} team mismatch: ${leagueEntry.team} != ${expectedTeam}`);
   }
 
   const changed = review.changes || {};
@@ -140,7 +157,13 @@ for (let index = 0; index < reviews.length; index++) {
     if (fairTuple && (!Array.isArray(fairTuple) || fairTuple.length !== 2 || fairTuple[0] !== adjustedExpected)) {
       fail(`${review.localId} invalid fair OVR adjustment tuple: ${attribute}`);
     }
-    const expected = fairTuple ? fairTuple[1] : adjustedExpected;
+    const fairExpected = fairTuple ? fairTuple[1] : adjustedExpected;
+    const bulkAdjustment = bulkById.get(review.localId);
+    const bulkTuple = bulkAdjustment && bulkAdjustment.changes && bulkAdjustment.changes[attribute];
+    if (bulkTuple && (!Array.isArray(bulkTuple) || bulkTuple.length !== 2 || bulkTuple[0] !== fairExpected)) {
+      fail(`${review.localId} invalid bulk adjustment tuple: ${attribute}`);
+    }
+    const expected = bulkTuple ? bulkTuple[1] : fairExpected;
     if (leagueEntry.player[attribute] !== expected) {
       fail(`${review.localId} ${attribute}: league=${leagueEntry.player[attribute]}, review=${expected}`);
     }
@@ -187,6 +210,17 @@ for (const adjustment of fairOvrAdjustments) {
   }
 }
 
+if (!bulkAudit.applied) fail('NBA 2K26 OVR/attribute bulk audit is not marked applied');
+for (const adjustment of bulkAudit.players || []) {
+  if (!reviewedIds.has(adjustment.localId) && playersById.has(adjustment.localId)) {
+    fail(`bulk OVR adjustment has no player review: ${adjustment.localId}`);
+  }
+  for (const [attribute, tuple] of Object.entries(adjustment.changes || {})) {
+    if (![...attributes, 'STL'].includes(attribute)) fail(`${adjustment.localId} invalid bulk-adjusted field: ${attribute}`);
+    if (!Array.isArray(tuple) || tuple.length !== 2) fail(`${adjustment.localId} invalid bulk adjustment tuple: ${attribute}`);
+  }
+}
+
 if (baselineLeague) {
   for (const [team, players] of Object.entries(league)) {
     const baselineById = new Map((baselineLeague[team] || []).map(player => [player.id, player]));
@@ -210,6 +244,7 @@ const result = {
   reviewedPlayers: reviews.length,
   ovrAdjustedPlayers: ovrAdjustments.length,
   fairOvrAdjustedPlayers: fairOvrAdjustments.length,
+  bulkOvrAttributeAdjustedPlayers: (bulkAudit.players || []).filter((player) => Object.keys(player.changes || {}).length).length,
   lastReviewedId: reviews.at(-1)?.localId || null,
   gameplayBaselineSkipped: baselineSkipped,
   validationErrors: errors.length,

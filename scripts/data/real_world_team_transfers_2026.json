@@ -1,0 +1,56 @@
+{
+  "season": "2026-27",
+  "asOf": "2026-08-25",
+  "sources": [
+    "https://www.nba.com/news/nba-offseason-deals-2026",
+    "https://www.nba.com/players",
+    "https://www.nba.com/players/transactions?TeamID=0"
+  ],
+  "transfers": [
+    { "localId": "P0007", "player": "Zaccharie Risacher", "from": "ATL", "to": "DAL", "status": "official" },
+    { "localId": "P0015", "player": "Christian Koloko", "from": "ATL", "to": "NOP", "status": "official" },
+    { "localId": "P0021", "player": "Ziaire Williams", "from": "BKN", "to": "LAL", "status": "official" },
+    { "localId": "P0069", "player": "Tre Mann", "from": "CHA", "to": "WAS", "status": "official" },
+    { "localId": "P0094", "player": "Max Strus", "from": "CLE", "to": "LAC", "status": "official" },
+    { "localId": "P0096", "player": "Dennis Schroder", "from": "CLE", "to": "CHA", "status": "official" },
+    { "localId": "P0112", "player": "Klay Thompson", "from": "DAL", "to": "MIA", "status": "official" },
+    { "localId": "P0115", "player": "Ryan Nembhard", "from": "DAL", "to": "ATL", "status": "official" },
+    { "localId": "P0123", "player": "Peyton Watson", "from": "DEN", "to": "CLE", "status": "official" },
+    { "localId": "P0132", "player": "Jalen Pickett", "from": "DEN", "to": "LAC", "status": "official" },
+    { "localId": "P0149", "player": "Marcus Sasser", "from": "DET", "to": "DAL", "status": "official" },
+    {
+      "localId": "P0207",
+      "player": "Brandon Ingram",
+      "from": "LAC",
+      "to": "TOR",
+      "status": "trade_on_hold_correction",
+      "note": "Clippers-Raptors trade remains on hold; restore official current roster affiliation."
+    },
+    {
+      "localId": "P0217",
+      "player": "Gradey Dick",
+      "from": "LAC",
+      "to": "TOR",
+      "status": "trade_on_hold_correction",
+      "note": "Clippers-Raptors trade remains on hold; restore official current roster affiliation."
+    },
+    { "localId": "P0224", "player": "Sean Pedulla", "from": "LAC", "to": "HOU", "status": "official" },
+    { "localId": "P0257", "player": "Kentavious Caldwell-Pope", "from": "MEM", "to": "PHI", "status": "official" },
+    { "localId": "P0340", "player": "Jeremy Sochan", "from": "NYK", "to": "POR", "status": "official" },
+    { "localId": "P0358", "player": "Aaron Wiggins", "from": "OKC", "to": "ATL", "status": "official" },
+    { "localId": "P0386", "player": "Trendon Watford", "from": "PHI", "to": "NOP", "status": "official" },
+    { "localId": "P0396", "player": "Johni Broome", "from": "PHI", "to": "LAC", "status": "official" },
+    { "localId": "P0426", "player": "Matisse Thybulle", "from": "POR", "to": "LAL", "status": "official" },
+    {
+      "localId": "P0471",
+      "player": "Kawhi Leonard",
+      "from": "TOR",
+      "to": "LAC",
+      "status": "trade_on_hold_correction",
+      "note": "Clippers-Raptors trade remains on hold; restore official current roster affiliation."
+    },
+    { "localId": "P0482", "player": "Kyle Lowry", "from": "TOR", "to": "PHI", "status": "official" },
+    { "localId": "P0520", "player": "Julian Reese", "from": "WAS", "to": "DEN", "status": "official" },
+    { "localId": "P0523", "player": "Cam Whitmore", "from": "WAS", "to": "CLE", "status": "official" }
+  ]
+}
