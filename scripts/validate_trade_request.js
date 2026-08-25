@@ -101,6 +101,8 @@ if (approvedResult.request.status !== 'completed') failures.push('完成交易�
 if (approved.getTeamInitiatedTradeCount() !== 0) failures.push('玩家申请交易错误占用了球队主动交易次数');
 if (approved.getMobility().playerRequestedTrades !== 1) failures.push('玩家申请交易次数没有累计');
 if (!approved.STATE._leagueChanges.trades.some((trade) => trade.requested && trade.to === 'BBB')) failures.push('联盟变动记录缺少玩家申请交易');
+const approvedTradeLog = approved.STATE._leagueChanges.trades.find((trade) => trade.requested && trade.to === 'BBB');
+if (!approvedTradeLog || approvedTradeLog.playerB !== '测试球员' || approvedTradeLog.playerA !== '未来资产') failures.push('玩家申请交易记录的球员流向字段错误');
 
 const denied = buildContext(0.99);
 const deniedResult = denied.createPlayerTradeRequest('BBB', 'manual');

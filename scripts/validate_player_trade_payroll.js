@@ -100,12 +100,16 @@ allowed.doTradeUser('B', () => { allowedDone = true; });
 if (!allowedDone || allowed.STATE.careerTeam !== 'B') failures.push('合法球队主动交易没有完成');
 if (allowed.LEAGUE_PLAYER_DATA.B.length !== 17 || allowed.getTeamRosterCount('B') !== 18) failures.push('玩家交易后的阵容容量没有正确保留用户名额');
 if (allowed.getTeamPayroll('B') > 134.001) failures.push('合法玩家交易完成后 payroll 超过二土豪线');
+const teamTradeLog = allowed.STATE._leagueChanges.trades[0];
+if (!teamTradeLog || teamTradeLog.playerB !== '测试球员' || teamTradeLog.playerA !== '选秀权') failures.push('球队主动交易记录的球员流向字段错误');
 
 const requested = buildContext(110);
 const request = { season: 0, preferredTeam: 'B', status: 'approved' };
 requested.completePlayerRequestedTrade('B', request, () => {});
 if (request.status !== 'completed' || requested.STATE.careerTeam !== 'B') failures.push('合法玩家申请交易没有完成');
 if (requested.getTeamPayroll('B') > 134.001) failures.push('合法申请交易完成后 payroll 超过二土豪线');
+const requestedTradeLog = requested.STATE._leagueChanges.trades[0];
+if (!requestedTradeLog || requestedTradeLog.playerB !== '测试球员' || requestedTradeLog.playerA !== '未来资产') failures.push('玩家申请交易记录的球员流向字段错误');
 
 if (failures.length) {
   console.error(failures.join('\n'));

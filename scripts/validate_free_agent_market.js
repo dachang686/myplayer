@@ -149,8 +149,11 @@ const nonBirdRenewal = player('CAP-NON-BIRD', 86, 'PG', 27, {
 const birdRenewal = player('CAP-BIRD', 86, 'PG', 27, {
   salary: 25, _salaryVersion: 2, contract: 0, _teamTenure: 4, _lastTeam: 'A', _birdTeam: 'A',
 });
+const birdOverApronOffer = vm.runInContext('buildContractOffer', context)(birdRenewal, 'A', { source: 'retention', birdRights: true, salary: 16, years: 2 });
+context.LEAGUE_PLAYER_DATA.A.forEach(current => { current.salary = 23; });
 const nonBirdOffer = vm.runInContext('buildContractOffer', context)(nonBirdRenewal, 'A', { source: 'retention', birdRights: false, salary: 16, years: 2 });
 const birdOffer = vm.runInContext('buildContractOffer', context)(birdRenewal, 'A', { source: 'retention', birdRights: true, salary: 16, years: 2 });
+if (birdOverApronOffer) failures.push('Bird 续约后越过二土豪线仍被接受');
 if (nonBirdOffer) failures.push('超帽 non-Bird 续约没有被拒绝');
 if (!birdOffer) failures.push('合法 Bird 续约被错误拒绝');
 
