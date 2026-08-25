@@ -947,10 +947,7 @@
       button.disabled = true;
       button.textContent = '正在进入自由市场…';
     }
-    try {
-      saveDraftHistory(draft);
-      continueCareerAfterLeagueDraft();
-    } catch (error) {
+    function handlePipelineError(error) {
       console.error('[Draft] 进入自由市场失败:', error);
       if (button) {
         var stageLabels = {
@@ -966,9 +963,21 @@
         button.textContent = stage + '失败：' + reason;
         button.title = error && error.stack ? error.stack : reason;
       }
-    } finally {
       draftPipelineRunning = false;
     }
+
+    var pipeline;
+    try {
+      saveDraftHistory(draft);
+      pipeline = continueCareerAfterLeagueDraft();
+    } catch (error) {
+      handlePipelineError(error);
+      return;
+    }
+
+    Promise.resolve(pipeline).then(function() {
+      draftPipelineRunning = false;
+    }, handlePipelineError);
   };
 
   window.fillLeagueRostersAfterDraft = function() {

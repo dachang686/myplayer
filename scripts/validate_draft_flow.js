@@ -68,6 +68,9 @@ assert(draftSource.includes('while (roster.length > DRAFT_ROSTER_LIMIT)'), '超�
 assert(draftSource.includes('while (roster.length < DRAFT_ROSTER_LIMIT)'), '休赛期结束未补满名单');
 assert(draftSource.includes('STATE.career.draftHistory'), '生涯选秀历史未保存');
 assert(!draftSource.includes('draft.pipelineStarted = true'), '进入自由市场仍把瞬时点击锁写入存档');
+assert(draftSource.includes('Promise.resolve(pipeline)'), '进入自由市场入口没有等待异步休赛期流程');
+assert(indexSource.includes("runOffseasonPipelineStage('free_agents'"), '自由市场流程没有拆分为可渲染阶段');
+assert(indexSource.includes('yieldToBrowser: true'), '自由球员分配没有启用主线程让步模式');
 
 const draftContext = {
   console: { error() {} },

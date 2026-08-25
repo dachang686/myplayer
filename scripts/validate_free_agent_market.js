@@ -232,17 +232,73 @@ for (const id of ['FA-OLD', 'FA-NEW']) {
   if (rosterCount + poolCount + retiredCount !== 1) failures.push(`${id} 生命周期归属不是恰好一种：${rosterCount}/${poolCount}/${retiredCount}`);
 }
 
-if (failures.length) {
-  console.error(failures.join('\n'));
-  process.exit(1);
+const lifecycleFinalPoolIds = (context.STATE._freeAgentPool || []).map(current => current.id);
+
+async function validateBatchedFreeAgentAssignment() {
+  const teamIds = ['A', 'B', 'C'];
+  for (const teamId of teamIds) {
+    context.LEAGUE_PLAYER_DATA[teamId] = Array.from({ length: 18 }, (_, index) => (
+      player(`ASYNC-${teamId}-${index}`, 64 + (index % 4), ['PG', 'SG', 'SF', 'PF', 'C'][index % 5], 27, {
+        salary: 1,
+        _salaryVersion: 2,
+      })
+    ));
+  }
+  const asyncPool = Array.from({ length: 12 }, (_, index) => (
+    player(`ASYNC-FA-${index}`, 79 - (index % 8), ['PG', 'SG', 'SF', 'PF', 'C'][index % 5], 25 + (index % 7), {
+      _origTeam: teamIds[index % teamIds.length],
+      contract: 0,
+    })
+  ));
+  context.STATE.careerTeam = null;
+  context.STATE._leagueChanges = {};
+  context.STATE._freeAgentPool = asyncPool;
+  context._playerGenes = {};
+
+  let scheduledBatches = 0;
+  context.setTimeout = callback => {
+    scheduledBatches += 1;
+    return setImmediate(callback);
+  };
+
+  const result = vm.runInContext(
+    'assignFreeAgents({ yieldToBrowser: true, batchSize: 1, timeBudgetMs: 4 })',
+    context,
+  );
+  if (!result || typeof result.then !== 'function') {
+    failures.push('自由球员分批模式没有返回可等待的 Promise');
+    return scheduledBatches;
+  }
+  await result;
+
+  if (scheduledBatches <= 1) failures.push('自由球员分批模式没有主动让出主线程');
+  for (const current of asyncPool) {
+    const rosterCount = teamIds.reduce((count, teamId) => (
+      count + context.LEAGUE_PLAYER_DATA[teamId].filter(item => item.id === current.id).length
+    ), 0);
+    const poolCount = (context.STATE._freeAgentPool || []).filter(item => item.id === current.id).length;
+    if (rosterCount + poolCount !== 1) failures.push(`${current.id} 分批签约后的归属异常：${rosterCount}/${poolCount}`);
+  }
+  return scheduledBatches;
 }
 
-console.log(JSON.stringify({
-  signedSuperstar: superstarSigning,
-  initialUnsignedIds,
-  market,
-  lifecycle: {
-    afterEvolveIds,
-    finalPoolIds: (context.STATE._freeAgentPool || []).map(current => current.id),
-  },
-}, null, 2));
+validateBatchedFreeAgentAssignment().then(scheduledBatches => {
+  if (failures.length) {
+    console.error(failures.join('\n'));
+    process.exit(1);
+  }
+
+  console.log(JSON.stringify({
+    signedSuperstar: superstarSigning,
+    initialUnsignedIds,
+    market,
+    lifecycle: {
+      afterEvolveIds,
+      finalPoolIds: lifecycleFinalPoolIds,
+    },
+    asyncAssignment: { scheduledBatches },
+  }, null, 2));
+}).catch(error => {
+  console.error('分批自由球员测试抛出异常：' + (error && error.stack ? error.stack : error));
+  process.exit(1);
+});

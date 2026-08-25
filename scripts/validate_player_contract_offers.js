@@ -151,6 +151,61 @@ const result = vm.runInContext(`(() => {
   const birdRights = hasCareerPlayerBirdRights('DEN');
   const expiredPayroll = getTeamPayroll('DEN');
   const payrollWithoutUser = getTeamPayrollExcludingPlayer('DEN', getCareerPlayerContractSnapshot());
+
+  // 长期存档回归：多年自由市场会把大量 NPC 合同更新为市场价，
+  // 97 OVR 玩家到期后仍应至少得到一份可以实际签下的合同。
+  STATE.finalOVR = 97;
+  STATE.careerTeam = 'DEN';
+  STATE.career.currentAge = 24;
+  STATE.career.contract = 0;
+  STATE.career.salary = 30;
+  STATE.career._salaryVersion = 2;
+  STATE.career.flags = {};
+  STATE.career.mobility = {};
+  STATE.career.seasonCount = 4;
+  for (var veteranOffseason = 0; veteranOffseason < 8; veteranOffseason++) {
+    evolveLeague();
+    STATE.career.seasonCount++;
+    STATE.career.currentAge++;
+    assignFreeAgents();
+  }
+  STATE.career.seasons = Array.from({ length: 12 }, function(_, index) {
+    return { seasonNum: index + 1, team: 'DEN' };
+  });
+  STATE.career.teamTenure = 12;
+  STATE.career.contract = 0;
+  var veteranOffers = generateContractOffers();
+  var veteranRenewal = getBestCareerContractOffer('DEN', 2, 4);
+  var veteranPayrolls = LEAGUE_TEAM_IDS.map(function(team) {
+    return getTeamPayroll(team);
+  });
+
+  // 压力场景：多年后球队可能同时有高薪合同和廉价末端球员。
+  // 腾空间时若只裁最便宜的人，即使 97 OVR 球员降到底薪也会被错误判定为无人可签。
+  LEAGUE_TEAM_IDS.forEach(function(team) {
+    LEAGUE_PLAYER_DATA[team] = Array.from({ length: 18 }, function(_, index) {
+      return {
+        id: 'CAP-STRESS-' + team + '-' + index,
+        cname: 'CAP-STRESS-' + team + '-' + index,
+        ovr: index < 2 ? 92 : index < 8 ? 82 : 65,
+        pos: ['PG', 'SG', 'SF', 'PF', 'C'][index % 5],
+        _age: 27,
+        salary: index < 2 ? 30 : index < 8 ? 15 : 2,
+        _salaryVersion: 2,
+        contract: 2
+      };
+    });
+  });
+  STATE.finalOVR = 97;
+  STATE.careerTeam = 'DEN';
+  STATE.career.currentAge = 32;
+  STATE.career.contract = 0;
+  STATE.career.flags = {};
+  var capStressOffers = generateContractOffers();
+  var capStressRenewal = getBestCareerContractOffer('DEN', 2, 4);
+  var capStressCoreCut = capStressOffers.some(function(offer) {
+    return (offer.rosterCuts || []).some(function(player) { return (Number(player.ovr) || 0) >= 88; });
+  });
   return {
     legalTeams,
     roundMatrix,
@@ -163,6 +218,15 @@ const result = vm.runInContext(`(() => {
     birdTenure,
     birdRights,
     expiredPayrollReleased: Math.abs(expiredPayroll - payrollWithoutUser) < 0.001,
+    veteranOfferCount: veteranOffers.length,
+    veteranOfferTeams: veteranOffers.map(function(offer) { return offer.team; }),
+    veteranRenewal: veteranRenewal ? { salary: veteranRenewal.salary, round: veteranRenewal.round } : null,
+    veteranPayrollMin: Math.min.apply(Math, veteranPayrolls),
+    veteranPayrollMax: Math.max.apply(Math, veteranPayrolls),
+    capStressOfferCount: capStressOffers.length,
+    capStressOfferTeams: capStressOffers.map(function(offer) { return offer.team; }),
+    capStressRenewal: !!capStressRenewal,
+    capStressCoreCut: capStressCoreCut,
     maxDisplayed: 4,
   };
 })()`, context);
@@ -188,6 +252,14 @@ if (!result.actualSelectedContract || result.actualSelectedContract.team === 'SA
 if (!result.roundOffer || result.roundOffer.round !== 2) failures.push(`玩家合同没有在 Round 0 不合法时降价：${JSON.stringify(result.roundOffer)}`);
 if (result.birdTenure !== 4 || !result.birdRights) failures.push(`玩家连续效力年限没有恢复 Bird 权利：${JSON.stringify({ tenure: result.birdTenure, bird: result.birdRights })}`);
 if (!result.expiredPayrollReleased) failures.push('玩家合同到期后旧工资仍计入母队 payroll');
+if (result.veteranOfferCount < 1 && !result.veteranRenewal) {
+  failures.push(`97 OVR 长期生涯后没有任何球队报价：${JSON.stringify({ min: result.veteranPayrollMin, max: result.veteranPayrollMax })}`);
+}
+if (result.capStressOfferCount < 1 && !result.capStressRenewal) {
+  failures.push('97 OVR 玩家在全联盟高薪压力场景下没有任何球队报价');
+}
+if (!result.capStressRenewal) failures.push('拥有 Bird Rights 的 97 OVR 玩家被母队薪资空间阻止续约');
+if (result.capStressCoreCut) failures.push('外队为了签约玩家直接裁掉了 OVR 88+ 核心');
 
 if (failures.length) {
   console.error(failures.join('\n'));
@@ -204,4 +276,10 @@ console.log(JSON.stringify({
   birdTenure: result.birdTenure,
   birdRights: result.birdRights,
   expiredPayrollReleased: result.expiredPayrollReleased,
+  veteranOffers: result.veteranOfferTeams,
+  veteranRenewal: result.veteranRenewal,
+  veteranPayrollRange: [result.veteranPayrollMin, result.veteranPayrollMax],
+  capStressOffers: result.capStressOfferTeams,
+  capStressRenewal: result.capStressRenewal,
+  capStressCoreCut: result.capStressCoreCut,
 }, null, 2));

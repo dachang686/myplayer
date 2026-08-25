@@ -10745,16 +10745,65 @@ function continueCareerAfterTraining() {
   continueCareerAfterLeagueDraft();
 }
 
+function updateOffseasonPipelineStatus(stage, detail) {
+  var stageLabels = {
+    free_agents: '正在结算自由球员…',
+    trades: '正在处理联盟交易…',
+    roster_fill: '正在补齐球队名单…',
+    player_mobility: '正在处理球员流动…'
+  };
+  var button = document.querySelector('#draft-content .draft-action-primary');
+  if (button && button.disabled) button.textContent = detail || stageLabels[stage] || '正在进入新赛季…';
+}
+
+function runOffseasonPipelineStage(stage, action) {
+  window._offseasonPipelineStage = stage;
+  updateOffseasonPipelineStatus(stage);
+  return new Promise(function(resolve, reject) {
+    // 先把状态文字绘制出来，再开始下一段计算。
+    setTimeout(function() {
+      try {
+        resolve(action());
+      } catch (error) {
+        reject(error);
+      }
+    }, 0);
+  });
+}
+
 function continueCareerAfterLeagueDraft() {
-  window._offseasonPipelineStage = 'free_agents';
-  assignFreeAgents();
-  window._offseasonPipelineStage = 'trades';
-  processTrades();
-  window._offseasonPipelineStage = 'roster_fill';
-  if (typeof fillLeagueRostersAfterDraft === 'function') fillLeagueRostersAfterDraft();
-  if (typeof enforceLeagueRosterCapacity === 'function') enforceLeagueRosterCapacity(null, { reason: 'post_draft_capacity' });
-  window._offseasonPipelineStage = 'player_mobility';
-  maybeMoveUserInOffseason(finishOffseasonPipeline);
+  return runOffseasonPipelineStage('free_agents', function() {
+    return assignFreeAgents({
+      yieldToBrowser: true,
+      onProgress: function(progress) {
+        updateOffseasonPipelineStatus('free_agents', '正在结算自由球员（第 ' + progress.round + '/' + progress.rounds + ' 轮）…');
+      }
+    });
+  }).then(function() {
+    return runOffseasonPipelineStage('trades', processTrades);
+  }).then(function() {
+    return runOffseasonPipelineStage('roster_fill', function() {
+      if (typeof fillLeagueRostersAfterDraft === 'function') fillLeagueRostersAfterDraft();
+      if (typeof enforceLeagueRosterCapacity === 'function') enforceLeagueRosterCapacity(null, { reason: 'post_draft_capacity' });
+    });
+  }).then(function() {
+    return runOffseasonPipelineStage('player_mobility', function() {
+      return new Promise(function(resolve, reject) {
+        try {
+          maybeMoveUserInOffseason(function() {
+            try {
+              finishOffseasonPipeline();
+              resolve();
+            } catch (error) {
+              reject(error);
+            }
+          });
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+  });
 }
 
 function finishOffseasonPipeline() {

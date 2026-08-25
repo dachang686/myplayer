@@ -1759,8 +1759,32 @@ function buildContractOffer(player, teamId, options) {
     return salary <= 6 && total <= FREE_AGENT_MARKET.firstApron + 0.001;
   }
 
+  function takeNextRosterCutCandidate() {
+    if (!player._isUser) return cutCandidates.shift();
+    var eligibleIndices = [];
+    cutCandidates.forEach(function(candidate, index) {
+      // 玩家加盟不能靠直接裁掉另一名核心完成；高 OVR 合同应留给交易系统处理。
+      if ((Number(candidate && candidate.ovr) || 0) < 88) eligibleIndices.push(index);
+    });
+    if (!eligibleIndices.length) return null;
+    if (capAllows(payrollAfterCut)) return cutCandidates.splice(eligibleIndices[0], 1)[0];
+
+    var bestIndex = eligibleIndices[0];
+    for (var i = 1; i < eligibleIndices.length; i++) {
+      var candidateIndex = eligibleIndices[i];
+      var candidateSalary = getPlayerSalary(cutCandidates[candidateIndex]);
+      var bestSalary = getPlayerSalary(cutCandidates[bestIndex]);
+      if (candidateSalary > bestSalary
+          || (candidateSalary === bestSalary
+            && getPlayerMarketValue(cutCandidates[candidateIndex]) < getPlayerMarketValue(cutCandidates[bestIndex]))) {
+        bestIndex = candidateIndex;
+      }
+    }
+    return cutCandidates.splice(bestIndex, 1)[0];
+  }
+
   while (!isRetention && (rosterNeedsCut() || !capAllows(payrollAfterCut))) {
-    var candidate = cutCandidates.shift();
+    var candidate = takeNextRosterCutCandidate();
     if (!candidate) break;
     if (!player._isUser && marketValue <= getPlayerMarketValue(candidate) + 8) break;
     if (roster.length - rosterCuts.length - 1 < minimumRoster) break;
@@ -1772,7 +1796,11 @@ function buildContractOffer(player, teamId, options) {
 
   var totalAfterSigning = payrollAfterCut + salary;
   var capLegal;
-  if (birdRights) {
+  if (source === 'career_retention' && birdRights) {
+    // 简化 Bird 规则：母队可以超过工资帽续约长期效力的玩家；土豪线只作为球队成本，
+    // 不再充当续约硬上限。
+    capLegal = true;
+  } else if (birdRights) {
     // Bird 允许母队超过软帽，但签约后仍受联盟的二土豪线硬上限约束。
     capLegal = totalAfterSigning <= FREE_AGENT_MARKET.secondApron + 0.001;
   } else {
@@ -2590,8 +2618,12 @@ function getFreeAgentTeamPreferenceScore(player, teamId, standings, noise) {
 
 function getFreeAgentPlayerPreferenceScore(player, teamId, standings, offer, noise) {
   var tier = getPlayerMarketTier(player);
-  var winPct = getTeamHistoricalWinPct(teamId, standings);
-  var roleOpportunity = getFreeAgentRoleOpportunityScore(player, teamId);
+  var winPct = offer && Number.isFinite(Number(offer.winPct))
+    ? Number(offer.winPct)
+    : getTeamHistoricalWinPct(teamId, standings);
+  var roleOpportunity = offer && Number.isFinite(Number(offer.roleOpportunity))
+    ? Number(offer.roleOpportunity)
+    : getFreeAgentRoleOpportunityScore(player, teamId);
   var roleScore = clampFreeAgentValue(0.5 + roleOpportunity * 1.8, 0, 1);
   var salary = offer ? Number(offer.salary) || 0 : getPlayerMarketValue(player);
   var contractScore = clampFreeAgentValue(salary / 32, 0, 1);
@@ -2663,7 +2695,9 @@ function buildFreeAgentOffer(player, teamId, round, standings) {
   return offer;
 }
 
-function assignFreeAgents() {
+function assignFreeAgents(options) {
+  options = options || {};
+  var yieldToBrowser = !!options.yieldToBrowser;
   enforceLeagueRosterCapacity(null, { reason: 'pre_free_agent_capacity' });
   var rawPool = Array.isArray(STATE._freeAgentPool) ? STATE._freeAgentPool : [];
   var pool = [];
@@ -2676,7 +2710,7 @@ function assignFreeAgents() {
   });
   if (pool.length === 0) {
     enforceLeagueRosterCapacity(null, { reason: 'post_free_agent_capacity' });
-    return;
+    return yieldToBrowser ? Promise.resolve() : undefined;
   }
 
   if (!STATE._leagueChanges) STATE._leagueChanges = {};
@@ -2757,39 +2791,113 @@ function assignFreeAgents() {
     signedIds[String(fa.id || fa.cname)] = true;
   }
 
-  // 大牌先选，未签者在后续轮次重新降低要求；每轮都实时读取工资和名额。
-  for (var round = 0; round < 4; round++) {
-    var candidates = pool.filter(function(fa) {
+  function getRoundCandidates(round) {
+    return pool.filter(function(fa) {
       return !signedIds[String(fa.id || fa.cname)] && getFreeAgentRound(fa) <= round;
     }).sort(function(a, b) {
       return getPlayerMarketValue(b) - getPlayerMarketValue(a) || (Number(b.ovr) || 0) - (Number(a.ovr) || 0);
     });
-
-    candidates.forEach(function(fa) {
-      if (signedIds[String(fa.id || fa.cname)]) return;
-      if (!fa._origTeam) offseasonDebugLog('[FA] 无_origTeam:', (fa.cname || fa.id), 'ovr:', fa.ovr);
-      var offers = teams.map(function(teamId) {
-        return buildFreeAgentOffer(fa, teamId, round, st);
-      }).filter(Boolean).sort(function(a, b) {
-        return b.preferenceScore - a.preferenceScore || String(a.teamId).localeCompare(String(b.teamId));
-      });
-      if (!offers.length) return;
-
-      var best = offers[0];
-      var tier = getPlayerMarketTier(fa);
-      var acceptanceFloor = tier === 'SUPERSTAR' ? 0.30 : tier === 'FRINGE' ? 0.34 : 0.27;
-      // 低价值球员在最后一轮可能仍拒绝明显不合适的角色；顶级球星不会被这层随机性蒸发。
-      if (best.preferenceScore < acceptanceFloor && tier !== 'SUPERSTAR' && rngNext() < 0.65) return;
-      signFreeAgent(fa, best, round, offers.length);
-    });
   }
 
-  pool.forEach(function(fa) {
-    if (!signedIds[String(fa.id || fa.cname)]) unsignedPlayers.push(fa);
+  function processFreeAgentCandidate(fa, round) {
+    if (signedIds[String(fa.id || fa.cname)]) return;
+    if (!fa._origTeam) offseasonDebugLog('[FA] 无_origTeam:', (fa.cname || fa.id), 'ovr:', fa.ovr);
+    var best = null;
+    var offersCount = 0;
+    teams.forEach(function(teamId) {
+      var offer = buildFreeAgentOffer(fa, teamId, round, st);
+      if (!offer) return;
+      offersCount++;
+      if (!best
+          || offer.preferenceScore > best.preferenceScore
+          || (offer.preferenceScore === best.preferenceScore && String(offer.teamId).localeCompare(String(best.teamId)) < 0)) {
+        best = offer;
+      }
+    });
+    if (!best) return;
+
+    var tier = getPlayerMarketTier(fa);
+    var acceptanceFloor = tier === 'SUPERSTAR' ? 0.30 : tier === 'FRINGE' ? 0.34 : 0.27;
+    // 低价值球员在最后一轮可能仍拒绝明显不合适的角色；顶级球星不会被这层随机性蒸发。
+    if (best.preferenceScore < acceptanceFloor && tier !== 'SUPERSTAR' && rngNext() < 0.65) return;
+    signFreeAgent(fa, best, round, offersCount);
+  }
+
+  function finishFreeAgentAssignment() {
+    pool.forEach(function(fa) {
+      if (!signedIds[String(fa.id || fa.cname)]) unsignedPlayers.push(fa);
+    });
+    // 未签约球员是合法的自由球员状态，必须继续保存在池中，供下一休赛期或赛季中补员。
+    STATE._freeAgentPool = unsignedPlayers;
+    enforceLeagueRosterCapacity(null, { reason: 'post_free_agent_capacity' });
+  }
+
+  // 脚本测试和其他后台调用继续使用同步路径，保证既有调用语义不变。
+  if (!yieldToBrowser) {
+    for (var round = 0; round < 4; round++) {
+      getRoundCandidates(round).forEach(function(fa) {
+        processFreeAgentCandidate(fa, round);
+      });
+    }
+    finishFreeAgentAssignment();
+    return;
+  }
+
+  // UI 入口按时间片分批执行，避免一个大自由球员池长时间占满主线程。
+  var currentRound = 0;
+  var currentCandidates = getRoundCandidates(currentRound);
+  var candidateIndex = 0;
+  var batchSize = Math.max(1, Number(options.batchSize) || 6);
+  var timeBudgetMs = Math.max(4, Number(options.timeBudgetMs) || 12);
+  var scheduleBatch = typeof setTimeout === 'function'
+    ? function(callback) { setTimeout(callback, 0); }
+    : function(callback) { callback(); };
+
+  return new Promise(function(resolve, reject) {
+    function reportProgress() {
+      if (typeof options.onProgress !== 'function') return;
+      options.onProgress({
+        round: Math.min(4, currentRound + 1),
+        rounds: 4,
+        signed: Object.keys(signedIds).length,
+        total: pool.length
+      });
+    }
+
+    function runBatch() {
+      try {
+        var startedAt = Date.now();
+        var processed = 0;
+        while (currentRound < 4) {
+          if (candidateIndex >= currentCandidates.length) {
+            currentRound++;
+            if (currentRound >= 4) break;
+            currentCandidates = getRoundCandidates(currentRound);
+            candidateIndex = 0;
+            continue;
+          }
+
+          processFreeAgentCandidate(currentCandidates[candidateIndex], currentRound);
+          candidateIndex++;
+          processed++;
+          if (processed >= batchSize || Date.now() - startedAt >= timeBudgetMs) {
+            reportProgress();
+            scheduleBatch(runBatch);
+            return;
+          }
+        }
+
+        finishFreeAgentAssignment();
+        reportProgress();
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
+    }
+
+    reportProgress();
+    scheduleBatch(runBatch);
   });
-  // 未签约球员是合法的自由球员状态，必须继续保存在池中，供下一休赛期或赛季中补员。
-  STATE._freeAgentPool = unsignedPlayers;
-  enforceLeagueRosterCapacity(null, { reason: 'post_free_agent_capacity' });
 }
 
 // ==================== 交易系统 ====================
