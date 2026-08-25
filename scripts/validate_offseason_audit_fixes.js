@@ -95,6 +95,7 @@ if (context.recordTeamNonRenewal()) failures.push('同球队同赛季的不续�
 if (context.STATE.career.mobility.nonRenewals !== nonRenewalsBefore + 1) failures.push('不续约计数没有保持同队同季幂等');
 context.STATE.careerTeam = 'B';
 if (!context.recordTeamNonRenewal() || context.STATE.career.mobility.nonRenewals !== nonRenewalsBefore + 2) failures.push('新球队的不续约事件没有独立记录');
+const nonRenewalsAfter = context.STATE.career.mobility.nonRenewals;
 
 // 生涯早期荣誉不应终身保护；当前顶级能力或近两季荣誉才能触发保护。
 context.STATE.career.honors = [{ seasonNum: 1, label: '全明星' }];
@@ -130,6 +131,7 @@ for (const teamId of context.LEAGUE_TEAM_IDS) {
   if (context.LEAGUE_PLAYER_DATA[teamId].length !== 2) failures.push(teamId + ' 的当届新秀在没有旧 R 球员时被丢弃');
 }
 if (rookieIndex !== 3 || capacityCalls !== 1) failures.push('选秀没有为每队加入一名新秀并统一执行阵容容量校验');
+const draftCapacityCalls = capacityCalls;
 
 // 高薪球队无法提供常规报价时，可以提供仍在一土豪线内的一年底薪合同。
 context.STATE.careerTeam = 'A';
@@ -156,6 +158,56 @@ for (const offer of emergencyOffers) {
   if (!rebuilt || rebuilt.salary !== 1 || rebuilt.years !== 1 || rebuilt.round !== 4) failures.push('用户选择底薪报价时无法重建同一份合法合同');
 }
 
+// Bird 只能突破软帽，签约后不能突破本游戏的二土豪线硬上限。
+const birdPlayer = rosterPlayer('BIRD-PLAYER', 'PG', 0);
+birdPlayer.contract = 0;
+context.LEAGUE_PLAYER_DATA.B = [rosterPlayer('B-PAYROLL', 'SF', 130)];
+const birdOverApron = context.buildContractOffer(birdPlayer, 'B', {
+  source: 'retention',
+  birdRights: true,
+  salary: 5,
+  years: 2,
+});
+context.LEAGUE_PLAYER_DATA.B[0].salary = 129;
+const birdAtApron = context.buildContractOffer(birdPlayer, 'B', {
+  source: 'retention',
+  birdRights: true,
+  salary: 5,
+  years: 2,
+});
+if (birdOverApron) failures.push('Bird 签约后 135 超过二土豪线仍被判定为合法');
+if (!birdAtApron || Math.abs(birdAtApron.payrollAfterSigning - 134) > 0.001) failures.push('Bird 签约后正好 134 被错误拒绝');
+
+// 统一交易展示规约：playerB 从 from 前往 to，playerA 反向前往 from。
+context.getTeamName = (teamId) => teamId;
+context.addProfileDelta = () => {};
+context.addSeasonMod = () => {};
+context.syncNarrativeAfterPlayerTeamChange = () => {};
+context.showOffseasonResultModal = (title, message, done) => { if (done) done(); };
+context.showMobilityChoiceModal = (title, message, choices, done) => { if (done) done(); };
+context.STATE.careerTeam = 'A';
+context.STATE.career.contract = 2;
+context.STATE.career.salary = 10;
+context.STATE.career.mobility = {};
+context.STATE._leagueChanges.trades = [];
+context.LEAGUE_PLAYER_DATA.C = [rosterPlayer('C-LOW-PAYROLL', 'SF', 1)];
+context.doTradeUser('C', () => {});
+const teamTradeLog = context.STATE._leagueChanges.trades[0];
+if (!teamTradeLog || teamTradeLog.playerB !== '测试球员' || teamTradeLog.playerA !== '选秀权' || teamTradeLog.from !== 'A' || teamTradeLog.to !== 'C') {
+  failures.push('球队主动交易记录的球员/资产流向错误');
+}
+
+context.STATE.careerTeam = 'A';
+context.STATE.career.teamTenure = 2;
+context.STATE._leagueChanges.trades = [];
+context.LEAGUE_PLAYER_DATA.B = [rosterPlayer('B-LOW-PAYROLL', 'SF', 1)];
+const request = { preferredTeam: 'B', status: 'approved' };
+context.completePlayerRequestedTrade('B', request, () => {});
+const requestedTradeLog = context.STATE._leagueChanges.trades[0];
+if (!requestedTradeLog || requestedTradeLog.playerB !== '测试球员' || requestedTradeLog.playerA !== '未来资产' || requestedTradeLog.from !== 'A' || requestedTradeLog.to !== 'B') {
+  failures.push('玩家申请交易记录的球员/资产流向错误');
+}
+
 if (failures.length) {
   console.error(failures.join('\n'));
   process.exit(1);
@@ -164,9 +216,17 @@ if (failures.length) {
 console.log(JSON.stringify({
   renewal: {
     historicalNonRenewals: nonRenewalsBefore,
-    finalNonRenewals: context.STATE.career.mobility.nonRenewals,
+    finalNonRenewals: nonRenewalsAfter,
   },
-  draft: { rookiesAdded: rookieIndex, capacityCalls },
+  draft: { rookiesAdded: rookieIndex, capacityCalls: draftCapacityCalls },
+  bird: {
+    overApronRejected: !birdOverApron,
+    atApronAccepted: !!birdAtApron,
+  },
+  trades: {
+    teamInitiated: teamTradeLog,
+    playerRequested: requestedTradeLog,
+  },
   emergencyOffers: emergencyOffers.map((offer) => ({
     team: offer.team,
     salary: offer.salary,
