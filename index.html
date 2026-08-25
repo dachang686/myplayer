@@ -10770,10 +10770,17 @@ function finishOffseasonPipeline() {
   html('gamecast-area').innerHTML = '';
   html('game-list').innerHTML = '';
 
-  if (STATE.career.contract <= 0) {
-    showContractOffers();
+  var continueAfterTeamChanges = function() {
+    if (STATE.career.contract <= 0) {
+      showContractOffers();
+    } else {
+      showOffSeasonModals();
+    }
+  };
+  if (typeof showCareerTeamOffseasonChangesModal === 'function') {
+    showCareerTeamOffseasonChangesModal(continueAfterTeamChanges);
   } else {
-    showOffSeasonModals();
+    continueAfterTeamChanges();
   }
   window._offseasonPipelineStage = '';
 }

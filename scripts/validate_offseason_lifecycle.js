@@ -61,6 +61,32 @@ vm.runInContext(`
   isMvpStar = function() { return false; };
 `, context);
 
+const teamChangeSummary = vm.runInContext(`(() => {
+  STATE._leagueChanges = {
+    freeAgents: [{ team: 'ATL', name: '离队球员' }, { team: 'BOS', name: '其他球队球员' }],
+    retired: [{ team: 'ATL', displayName: '退役球员', hidden: false }],
+    freeSignings: [{ to: 'ATL', name: '签约球员' }, { to: 'BOS', name: '其他签约球员' }],
+    stayed: [{ team: 'ATL', name: '续约球员' }, { team: 'BOS', name: '其他续约球员' }],
+    rookies: [{ team: 'ATL', name: '新秀球员' }],
+    trades: [
+      { from: 'ATL', to: 'BOS', playerA: '加入球员', playerB: '离队球员' },
+      { from: 'CLE', to: 'ATL', playerA: '加入球员2', playerB: '离队球员2' },
+      { from: 'BOS', to: 'CLE', playerA: '无关球员', playerB: '无关球员2' }
+    ]
+  };
+  return getCareerTeamOffseasonChanges('ATL');
+})()`, context);
+if (teamChangeSummary.departures.length !== 1
+  || teamChangeSummary.retired.length !== 1
+  || teamChangeSummary.signings.length !== 1
+  || teamChangeSummary.renewals.length !== 1
+  || teamChangeSummary.rookies.length !== 1
+  || teamChangeSummary.trades.length !== 2) {
+  console.error(`球队人员变化汇总过滤错误：${JSON.stringify(teamChangeSummary)}`);
+  process.exit(1);
+}
+context.STATE._leagueChanges = {};
+
 const originalIds = vm.runInContext('LEAGUE_TEAM_IDS.flatMap(team => LEAGUE_PLAYER_DATA[team] || []).map(player => player.id)', context);
 vm.runInContext('LEAGUE_TEAM_IDS.forEach(team => { STATE._prevStandings[team] = { wins: 41, losses: 41 }; STATE._teamHistory[team] = [0.5]; });', context);
 vm.runInContext('evolveLeague();', context);

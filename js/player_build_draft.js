@@ -135,13 +135,27 @@ function getPlayerBuildSourceRefs(build) {
   return unique.slice(0, 2);
 }
 
+function getPlayerBuildPickedSourceIds(build) {
+  var pickedIds = [];
+  var picks = Array.isArray(build && build.picks) ? build.picks : [];
+  picks.forEach(function(pick) {
+    var playerId = pick && pick.sourcePlayerId;
+    if (playerId && pickedIds.indexOf(playerId) < 0) pickedIds.push(playerId);
+  });
+  return pickedIds;
+}
+
 function ensurePlayerBuildSources(build) {
   var refs = getPlayerBuildSourceRefs(build);
   if (!build || build.status !== 'in_progress') return refs.map(findPlayerBuildSource).filter(Boolean);
+  var pickedIds = getPlayerBuildPickedSourceIds(build);
+  refs = refs.filter(function(ref) { return pickedIds.indexOf(ref.id) < 0; });
   if (refs.length < 2) {
     var pool = getPlayerBuildPool();
     var existingIds = refs.map(function(ref) { return ref.id; });
-    var candidates = pool.filter(function(item) { return existingIds.indexOf(item.player.id) < 0; });
+    var candidates = pool.filter(function(item) {
+      return pickedIds.indexOf(item.player.id) < 0 && existingIds.indexOf(item.player.id) < 0;
+    });
     while (refs.length < 2 && candidates.length) {
       var pickedIndex = Math.floor(Math.random() * candidates.length);
       var picked = candidates.splice(pickedIndex, 1)[0];
@@ -179,8 +193,15 @@ function drawNextPlayerBuildPlayers(excludeIds) {
     return false;
   }
   var excluded = Array.isArray(excludeIds) ? excludeIds : (excludeIds ? [excludeIds] : []);
-  var candidates = pool.filter(function(item) { return excluded.indexOf(item.player.id) < 0; });
-  if (candidates.length < 2) candidates = pool.slice();
+  var pickedIds = getPlayerBuildPickedSourceIds(build);
+  var candidates = pool.filter(function(item) {
+    return excluded.indexOf(item.player.id) < 0 && pickedIds.indexOf(item.player.id) < 0;
+  });
+  if (candidates.length < 2) {
+    build.error = '剩余未选球员不足，无法继续本轮建人。';
+    renderDraftPlayerBuildUI();
+    return false;
+  }
   var pickedPlayers = [];
   while (pickedPlayers.length < 2 && candidates.length) {
     var pickedIndex = Math.floor(Math.random() * candidates.length);

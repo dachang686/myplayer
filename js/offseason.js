@@ -1013,6 +1013,118 @@ function showTradesModal(callback) {
     if (callback) callback();
   };
 }
+
+function getCareerTeamOffseasonChanges(teamId) {
+  var changes = STATE._leagueChanges || {};
+  var team = String(teamId || '');
+  var sameTeam = function(value) { return String(value || '') === team; };
+  var trades = (changes.trades || []).filter(function(trade) {
+    return sameTeam(trade.from) || sameTeam(trade.to);
+  }).map(function(trade) {
+    var fromTeam = sameTeam(trade.from);
+    return {
+      partner: fromTeam ? trade.to : trade.from,
+      incoming: fromTeam ? trade.playerA : trade.playerB,
+      outgoing: fromTeam ? trade.playerB : trade.playerA
+    };
+  });
+
+  return {
+    teamId: team,
+    departures: (changes.freeAgents || []).filter(function(row) { return sameTeam(row.team); }),
+    retired: (changes.retired || []).filter(function(row) { return sameTeam(row.team) && !isHiddenRetiredPlayer(row); }),
+    signings: (changes.freeSignings || []).filter(function(row) { return sameTeam(row.to); }),
+    renewals: (changes.stayed || []).filter(function(row) { return sameTeam(row.team); }),
+    rookies: (changes.rookies || []).filter(function(row) { return sameTeam(row.team); }),
+    trades: trades
+  };
+}
+
+function showCareerTeamOffseasonChangesModal(callback) {
+  callback = typeof callback === 'function' ? callback : function() {};
+  var summary = getCareerTeamOffseasonChanges(STATE.careerTeam);
+  var teamName = getTeamName ? getTeamName(summary.teamId) : summary.teamId;
+  var old = document.getElementById('career-team-offseason-changes-modal');
+  if (old) old.remove();
+
+  function text(value) {
+    return typeof escapeSeasonUiText === 'function'
+      ? escapeSeasonUiText(value)
+      : String(value == null ? '' : value);
+  }
+
+  function playerName(row, fallback) {
+    return row && (row.name || row.displayName)
+      || (row && row.playerId && typeof getPlayerDisplayName === 'function' ? getPlayerDisplayName(row.playerId) : '')
+      || fallback || '球员';
+  }
+
+  function renderRow(icon, name, detail, value, tone) {
+    return '<div style="display:flex;align-items:center;gap:8px;padding:7px 2px;border-bottom:1px solid var(--border-light);">' +
+      '<span style="width:24px;height:24px;display:grid;place-items:center;border-radius:7px;background:' + (tone || 'var(--orange-bg)') + ';font-size:13px;flex-shrink:0;">' + icon + '</span>' +
+      '<div style="min-width:0;flex:1;"><strong style="display:block;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + text(name) + '</strong>' +
+      '<small style="display:block;color:var(--text-dim);font-size:10px;margin-top:2px;line-height:1.35;">' + text(detail) + '</small></div>' +
+      (value ? '<span style="font-size:11px;color:var(--text-dim);white-space:nowrap;">' + text(value) + '</span>' : '') +
+      '</div>';
+  }
+
+  function renderSection(title, icon, rows) {
+    if (!rows.length) return '';
+    return '<section style="background:var(--bg-card);border:1px solid var(--border);border-radius:9px;padding:7px 10px;margin-bottom:8px;">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;font-family:var(--font-display);font-size:12px;color:var(--orange);padding:2px 0 4px;">' +
+        '<span>' + icon + ' ' + title + '</span><span style="font-size:10px;color:var(--text-muted);">' + rows.length + ' 人/笔</span>' +
+      '</div>' + rows.join('') + '</section>';
+  }
+
+  var departureRows = summary.departures.map(function(row) {
+    var reason = row.reason === 'draft_cut' ? '选秀后裁员' : row.reason === 'superstar_roster_clear' ? '为签约腾出名额' : '合同到期/未续约';
+    return renderRow('↗', playerName(row), reason, row.ovr != null ? 'OVR ' + row.ovr : '', 'rgba(230,57,70,.12)');
+  });
+  summary.retired.forEach(function(row) {
+    departureRows.push(renderRow('⏹', playerName(row), '退役离开联盟', row.ovr != null ? 'OVR ' + row.ovr : '', 'rgba(120,120,120,.14)'));
+  });
+
+  var signingRows = summary.signings.map(function(row) {
+    var detail = row.returned ? '自由市场回签' : '自由球员签约';
+    if (row.years) detail += ' · ' + row.years + ' 年合同';
+    return renderRow('↙', row.name || row.playerId, detail, row.ovr != null ? 'OVR ' + row.ovr : '', 'rgba(46,196,182,.14)');
+  });
+  summary.renewals.forEach(function(row) {
+    var detail = '球队续约';
+    if (row.years) detail += ' · ' + row.years + ' 年合同';
+    signingRows.push(renderRow('↻', row.name || row.playerId, detail, '', 'rgba(46,196,182,.14)'));
+  });
+  summary.rookies.forEach(function(row) {
+    var detail = row.undrafted ? '落选秀补充' : (row.pick ? '首轮第 ' + row.pick + ' 顺位' : '选秀加入');
+    signingRows.push(renderRow('★', row.name || row.playerId, detail, row.ovr != null ? 'OVR ' + row.ovr : '', 'rgba(247,166,0,.16)'));
+  });
+
+  var tradeRows = summary.trades.map(function(row) {
+    var partnerName = getTeamName ? getTeamName(row.partner) : row.partner;
+    return renderRow('⇄', '与 ' + partnerName + ' 完成交易', '送出：' + playerName({ playerId: row.outgoing }, row.outgoing) + ' · 得到：' + playerName({ playerId: row.incoming }, row.incoming), '', 'rgba(247,166,0,.16)');
+  });
+
+  var totalChanges = departureRows.length + signingRows.length + tradeRows.length;
+  var html = '<div class="team-picker-overlay" id="career-team-offseason-changes-modal">';
+  html += '<div class="team-picker-modal" style="max-width:430px;">';
+  html += '<div class="team-picker-header"><span>📋 我的球队人员变化</span><span style="font-size:10px;color:var(--text-muted);">自由市场结束</span></div>';
+  html += '<div style="display:flex;align-items:center;gap:9px;padding:10px 12px;border-bottom:1px solid var(--border-light);">' + getTeamLogo(summary.teamId, 32) + '<div><strong style="display:block;font-size:15px;">' + text(teamName) + '</strong><small style="color:var(--text-dim);font-size:11px;">本次休赛期共 ' + totalChanges + ' 项人员变化</small></div></div>';
+  html += '<div style="padding:8px 12px;max-height:58vh;overflow-y:auto;">';
+  html += renderSection('离队', '↗', departureRows);
+  html += renderSection('签约 / 新加入', '↙', signingRows);
+  html += renderSection('交易', '⇄', tradeRows);
+  if (!totalChanges) html += '<div style="text-align:center;padding:24px 8px;color:var(--text-muted);font-size:12px;">本次自由市场没有影响我球队的人员变化</div>';
+  html += '</div><div style="padding:10px 12px 14px;text-align:center;border-top:1px solid var(--border-light);">';
+  html += '<button class="btn btn-primary btn-sm" id="careerTeamOffseasonChangesContinue" style="width:100%;">继续</button>';
+  html += '</div></div></div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+  document.getElementById('careerTeamOffseasonChangesContinue').onclick = function() {
+    var modal = document.getElementById('career-team-offseason-changes-modal');
+    if (modal) modal.remove();
+    callback();
+  };
+}
+
 function showRosterReview() {
   showScreen('screen-roster-review');
   clearLineupCache();

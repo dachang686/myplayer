@@ -9,7 +9,10 @@ const makePlayer = (id, offset) => {
   ATTR_KEYS.forEach((key, index) => { player[key] = 60 + offset + index; });
   return player;
 };
-const league = { A: [makePlayer('A1', 0), makePlayer('A2', 1)], B: [makePlayer('B1', 2), makePlayer('B2', 3)] };
+const league = {
+  A: Array.from({ length: 15 }, (_, index) => makePlayer(`A${index + 1}`, index)),
+  B: Array.from({ length: 15 }, (_, index) => makePlayer(`B${index + 1}`, index + 15)),
+};
 let ovrCalls = 0;
 const context = vm.createContext({
   console,
@@ -53,6 +56,7 @@ function startBuild() {
 }
 
 const build = startBuild();
+const selectedSourceIds = new Set();
 const tierPlan = [
   ...Array(4).fill('core'),
   ...Array(4).fill('strong'),
@@ -62,9 +66,15 @@ const tierPlan = [
 ATTR_KEYS.forEach((attr, index) => {
   assert(build.currentPlayers.length === 2, `第${index + 1}轮候选人数不是2`);
   assert(new Set(build.currentPlayers.map(item => item.id)).size === 2, `第${index + 1}轮候选串状态`);
+  const selectedSourceId = build.selectedSourcePlayerId;
+  assert(!selectedSourceIds.has(selectedSourceId), `第${index + 1}轮重复出现已选球员`);
   build.selectedAttr = attr;
   build.selectedTier = tierPlan[index];
   context.confirmPlayerBuildRound();
+  selectedSourceIds.add(selectedSourceId);
+  if (index < ATTR_KEYS.length - 1) {
+    assert(build.currentPlayers.every(item => !selectedSourceIds.has(item.id)), `第${index + 2}轮再次出现已选球员`);
+  }
 });
 assert(build.status === 'complete', '14轮后建人未完成');
 assert(build.picks.length === 14, '建人轮数不是14');
@@ -83,5 +93,5 @@ console.log(JSON.stringify({
   rounds: build.picks.length,
   tiers: build.tiers,
   rerollsUsed: rerollBuild.rerollsUsed,
-  checks: ['14-rounds', 'two-candidates', 'unique-attributes', '4433', 'deadlock-safe', 'cross-round-rerolls', 'central-ovr'],
+  checks: ['14-rounds', 'two-candidates', 'unique-source-players', 'unique-attributes', '4433', 'deadlock-safe', 'cross-round-rerolls', 'central-ovr'],
 }));
