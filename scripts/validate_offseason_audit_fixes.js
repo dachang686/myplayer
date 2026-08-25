@@ -79,6 +79,31 @@ const context = {
 vm.createContext(context);
 vm.runInContext(source, context, { filename: 'js/offseason.js' });
 
+// 同一球员先进入自由市场、随后被原球队签回时，汇总应只显示回签，不能同时显示离队。
+context.STATE._leagueChanges = {
+  freeAgents: [
+    { playerId: 'BARNES', name: '巴恩斯', team: 'A', reason: 'contract_expired' },
+    { playerId: 'OTHER-BARNES', name: '巴恩斯', team: 'A', reason: 'contract_expired' },
+  ],
+  freeSignings: [
+    { playerId: 'BARNES', name: '巴恩斯', from: 'A', to: 'A', returned: true, years: 1 },
+  ],
+  stayed: [],
+  retired: [],
+  rookies: [],
+  trades: [],
+};
+const careerTeamChanges = context.getCareerTeamOffseasonChanges('A');
+if (careerTeamChanges.departures.some((row) => row.playerId === 'BARNES')) {
+  failures.push('母队回签的巴恩斯仍被重复显示为离队');
+}
+if (!careerTeamChanges.departures.some((row) => row.playerId === 'OTHER-BARNES')) {
+  failures.push('同名但不同 ID 的巴恩斯被错误合并');
+}
+if (!careerTeamChanges.signings.some((row) => row.playerId === 'BARNES')) {
+  failures.push('母队回签的巴恩斯没有显示为签约');
+}
+
 // 历史不续约次数不能让以后的球队自动愿意续约，且同队同季的决定必须稳定。
 if (context.getTeamRenewalWillingness()) failures.push('历史不续约次数错误导致当前球队自动续约');
 randomValue = 0;

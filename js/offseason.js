@@ -1018,6 +1018,15 @@ function getCareerTeamOffseasonChanges(teamId) {
   var changes = STATE._leagueChanges || {};
   var team = String(teamId || '');
   var sameTeam = function(value) { return String(value || '') === team; };
+  var stayedByPlayerId = {};
+  (changes.stayed || []).forEach(function(row) {
+    if (sameTeam(row.team) && row.playerId) stayedByPlayerId[String(row.playerId)] = true;
+  });
+  var returnedByPlayerId = {};
+  (changes.freeSignings || []).forEach(function(row) {
+    if (!sameTeam(row.to) || !row.playerId) return;
+    if (row.returned || sameTeam(row.from)) returnedByPlayerId[String(row.playerId)] = true;
+  });
   var trades = (changes.trades || []).filter(function(trade) {
     return sameTeam(trade.from) || sameTeam(trade.to);
   }).map(function(trade) {
@@ -1031,7 +1040,12 @@ function getCareerTeamOffseasonChanges(teamId) {
 
   return {
     teamId: team,
-    departures: (changes.freeAgents || []).filter(function(row) { return sameTeam(row.team); }),
+    departures: (changes.freeAgents || []).filter(function(row) {
+      if (!sameTeam(row.team)) return false;
+      var playerId = row.playerId ? String(row.playerId) : '';
+      // 同一休赛期先到期、后被母队回签时，最终状态是留队，不能再显示为离队。
+      return !stayedByPlayerId[playerId] && !returnedByPlayerId[playerId];
+    }),
     retired: (changes.retired || []).filter(function(row) { return sameTeam(row.team) && !isHiddenRetiredPlayer(row); }),
     signings: (changes.freeSignings || []).filter(function(row) { return sameTeam(row.to); }),
     renewals: (changes.stayed || []).filter(function(row) { return sameTeam(row.team); }),

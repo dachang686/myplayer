@@ -307,6 +307,121 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 #screen-career .br-slot-label{margin-bottom:10px;color:var(--orange);font:750 13px var(--font-body)}
 #screen-career .br-slot-actions{flex-direction:row;flex-wrap:wrap;justify-content:center}
 #screen-career .br-slot-actions .slot-btn{min-height:38px;padding:8px 12px}
+/* ── 生涯球队随机台：广播控制台式抽签 UI ── */
+#screen-career .section-title{display:none}
+#screen-career.screen.active{padding:0 16px 30px;background:var(--bg)}
+.career-draw-screen{--career-accent:oklch(.79 .14 166);--career-accent-soft:oklch(.79 .14 166 / .12);--career-panel:oklch(.19 .022 185);--career-panel-raised:oklch(.235 .028 185);--career-line:oklch(.37 .035 185);--career-muted:oklch(.69 .025 185);position:relative;isolation:isolate;width:100%;max-width:720px;min-height:calc(100dvh - 32px - var(--safe-t) - var(--safe-b));margin:0 auto;display:flex;flex-direction:column;padding:24px 0 30px;overflow:hidden;container:career-draw / inline-size}
+.career-draw-screen::before{content:'';position:absolute;z-index:-1;top:50px;right:-110px;width:280px;height:280px;border:1px solid color-mix(in oklab,var(--career-accent) 22%,transparent);border-radius:50%;opacity:.65}
+.career-draw-screen::after{content:'';position:absolute;z-index:-1;left:-150px;bottom:18px;width:290px;height:290px;border:1px solid color-mix(in oklab,var(--career-accent) 12%,transparent);border-radius:50%;opacity:.7}
+.career-draw-topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:16px;border-bottom:1px solid var(--career-line);color:var(--career-muted);font-size:10px;font-weight:800;letter-spacing:1.5px}
+.career-draw-brand{display:inline-flex;align-items:center;gap:8px;color:var(--career-accent)}
+.career-draw-brand::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--career-accent);box-shadow:0 0 0 5px var(--career-accent-soft)}
+.career-draw-index{padding:5px 8px;border:1px solid var(--career-line);border-radius:999px;color:var(--text-muted);font-size:9px;letter-spacing:1px}
+.career-draw-layout{display:grid;grid-template-columns:minmax(0,.85fr) minmax(300px,1.15fr);gap:24px;align-items:start;flex:1;margin:26px 0 24px}
+.career-brief{display:flex;flex-direction:column;justify-content:space-between;min-width:0;padding:12px 2px 10px}
+.career-brief-mark{display:grid;place-items:center;width:52px;height:52px;margin-bottom:24px;border:1px solid var(--career-line);border-radius:16px;background:var(--career-accent-soft);color:var(--career-accent);font-size:24px;box-shadow:0 10px 28px rgba(0,0,0,.18)}
+.career-brief-kicker{display:block;margin-bottom:10px;color:var(--career-accent);font-size:10px;font-weight:850;letter-spacing:1.7px}
+.career-brief h1{max-width:290px;color:var(--text);font:800 34px/1.08 var(--font-display);letter-spacing:-1.5px}
+.career-brief p{max-width:320px;margin-top:14px;color:var(--career-muted);font-size:13px;line-height:1.7}
+.career-brief-facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:28px}
+.career-brief-fact{padding:11px 10px;border-top:1px solid var(--career-line);color:var(--career-muted);font-size:10px;line-height:1.45}
+.career-brief-fact strong{display:block;margin-bottom:3px;color:var(--text);font:800 14px var(--font-display)}
+.career-brief-fact strong span{color:var(--career-accent)}
+.career-draw-panel{position:relative;display:flex;flex-direction:column;min-width:0;padding:20px;border:1px solid var(--career-line);border-radius:22px;background:var(--career-panel);box-shadow:0 18px 46px rgba(0,0,0,.22)}
+.career-draw-panel-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:16px}
+.career-draw-panel-kicker{display:block;margin-bottom:4px;color:var(--career-accent);font-size:9px;font-weight:850;letter-spacing:1.4px}
+.career-draw-panel-title{color:var(--text);font:800 19px/1.2 var(--font-body)}
+.career-draw-panel-rule{max-width:112px;color:var(--career-muted);font-size:9px;line-height:1.45;text-align:right}
+.career-slot-machine{position:relative;width:100%;max-width:none;height:190px;overflow:hidden;border:1px solid var(--career-line);border-radius:16px;background:oklch(.145 .018 185);box-shadow:inset 0 5px 20px rgba(0,0,0,.28)}
+.career-slot-machine::before{content:'';position:absolute;z-index:2;left:10px;right:10px;top:76px;height:38px;border:1px solid color-mix(in oklab,var(--career-accent) 60%,transparent);border-radius:9px;background:var(--career-accent-soft);box-shadow:0 0 22px color-mix(in oklab,var(--career-accent) 13%,transparent);pointer-events:none}
+.career-slot-machine::after{content:'›';position:absolute;z-index:3;right:12px;top:78px;color:var(--career-accent);font:800 28px/34px var(--font-body);pointer-events:none}
+.career-slot-reel{transition:transform 2.8s cubic-bezier(.15,.85,.25,1);will-change:transform}
+.career-slot-reel.spinning{transition:transform 2.8s cubic-bezier(.1,.7,.1,1)}
+.career-slot-reel .br-slot-item{display:flex;align-items:center;justify-content:space-between;height:38px;padding:0 34px 0 16px;color:var(--text-muted);font:650 13px var(--font-body);letter-spacing:.1px}
+.career-slot-reel .br-slot-item::before{content:'◦';margin-right:8px;color:var(--career-line);font-size:18px;line-height:1}
+.career-slot-reel .br-slot-item.highlight{color:var(--text);font-size:16px;font-weight:850}
+.career-slot-reel .br-slot-item.highlight::before{content:'●';color:var(--career-accent);font-size:9px}
+.career-slot-index{margin-left:auto;color:var(--text-muted);font:700 9px var(--font-body);letter-spacing:1px}
+.career-slot-caption{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px;color:var(--text-muted);font-size:9px}
+.career-slot-caption strong{color:var(--career-accent);font-size:10px}
+.career-draw-actions{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:9px;margin-top:18px}
+.career-draw-action{display:flex;align-items:center;justify-content:center;min-height:48px;padding:10px 12px;border:1px solid var(--career-line);border-radius:12px;font:800 12px var(--font-body);cursor:pointer;transition:transform .18s cubic-bezier(.16,1,.3,1),border-color .18s cubic-bezier(.16,1,.3,1),background .18s cubic-bezier(.16,1,.3,1),box-shadow .18s cubic-bezier(.16,1,.3,1)}
+.career-draw-action:hover{transform:translateY(-2px)}
+.career-draw-action:active{transform:translateY(1px)}
+.career-draw-action:focus-visible{outline:3px solid var(--career-accent-soft);outline-offset:2px}
+.career-draw-primary{border-color:var(--career-accent);background:var(--career-accent);color:oklch(.18 .025 185);box-shadow:0 4px 0 oklch(.45 .095 166),0 8px 18px color-mix(in oklab,var(--career-accent) 16%,transparent)}
+.career-draw-secondary{background:transparent;color:var(--text)}
+.career-draw-secondary:hover{border-color:var(--career-accent);background:var(--career-accent-soft)}
+.career-draw-foot{min-height:16px;margin:12px 2px 0;color:var(--career-muted);font-size:9px;line-height:1.5;text-align:center}
+.career-draw-footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:14px;border-top:1px solid var(--career-line);color:var(--text-muted);font-size:9px}
+.career-draw-footer span{display:inline-flex;align-items:center;gap:7px}
+.career-draw-footer span::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--career-accent)}
+/* ── 自选球队弹窗：与生涯随机台共用薄荷绿控制台语言 ── */
+.career-team-picker-overlay{background:oklch(.08 .018 185 / .78);padding:16px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.career-team-picker-modal{--career-picker-accent:oklch(.79 .14 166);--career-picker-soft:oklch(.79 .14 166 / .1);--career-picker-line:oklch(.37 .035 185);width:100%;max-width:520px;max-height:min(86vh,660px);overflow:hidden;border:1px solid var(--career-picker-line);border-radius:22px;background:oklch(.16 .021 185);box-shadow:0 24px 70px rgba(0,0,0,.45);animation:slideUp .25s cubic-bezier(.16,1,.3,1)}
+.career-team-picker-header{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:18px 18px 15px;border-bottom:1px solid var(--career-picker-line)}
+.career-team-picker-heading{min-width:0}
+.career-team-picker-kicker{display:block;margin-bottom:5px;color:var(--career-picker-accent);font-size:9px;font-weight:850;letter-spacing:1.4px}
+.career-team-picker-title{display:block;color:var(--text);font:800 19px/1.2 var(--font-body)}
+.career-team-picker-close{flex:0 0 34px;width:34px;height:34px;border:1px solid var(--career-picker-line);border-radius:10px;background:transparent;color:var(--text-muted);font-size:15px;cursor:pointer;transition:background .18s,border-color .18s,color .18s,transform .18s}
+.career-team-picker-close:hover,.career-team-picker-close:focus-visible{border-color:var(--career-picker-accent);background:var(--career-picker-soft);color:var(--career-picker-accent);outline:none}
+.career-team-picker-close:active{transform:scale(.95)}
+.career-team-picker-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;border-bottom:1px solid var(--career-picker-line);background:var(--career-picker-soft)}
+.career-team-picker-subline{min-width:0;color:var(--text-dim);font-size:10px;line-height:1.45}
+.career-team-picker-ad{flex:0 0 auto;min-height:36px;padding:8px 12px;border:1px solid var(--career-picker-accent);border-radius:10px;background:var(--career-picker-accent);color:oklch(.17 .025 185);font:800 11px var(--font-body);cursor:pointer;box-shadow:0 3px 0 oklch(.45 .095 166);transition:transform .18s cubic-bezier(.16,1,.3,1),box-shadow .18s,border-color .18s,opacity .18s}
+.career-team-picker-ad:hover,.career-team-picker-ad:focus-visible{border-color:var(--career-picker-accent);outline:2px solid var(--career-picker-soft);outline-offset:2px}
+.career-team-picker-ad:active{transform:translateY(2px);box-shadow:0 1px 0 oklch(.45 .095 166)}
+.career-team-picker-ad:disabled{opacity:.6;cursor:wait}
+.career-team-picker-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 18px 2px;color:var(--text-muted);font-size:9px}
+.career-team-picker-meta strong{color:var(--career-picker-accent);font:800 9px var(--font-body);letter-spacing:1px}
+.career-team-picker-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:12px 14px 16px;overflow-y:auto;scrollbar-color:var(--career-picker-line) transparent}
+.career-team-picker-grid .team-pick-card{display:grid;grid-template-columns:34px minmax(0,1fr);grid-template-rows:auto auto;align-items:center;gap:2px 9px;min-width:0;min-height:62px;padding:9px 10px;border:1px solid var(--career-picker-line);border-radius:12px;background:oklch(.19 .023 185);text-align:left;transition:transform .18s cubic-bezier(.16,1,.3,1),border-color .18s cubic-bezier(.16,1,.3,1),background .18s cubic-bezier(.16,1,.3,1),box-shadow .18s cubic-bezier(.16,1,.3,1)}
+.career-team-picker-grid .team-pick-card:hover,.career-team-picker-grid .team-pick-card:focus-visible{border-color:var(--career-picker-accent);background:var(--career-picker-soft);box-shadow:0 8px 20px rgba(0,0,0,.16);outline:none;transform:translateY(-1px)}
+.career-team-picker-grid .team-pick-card:active{transform:translateY(1px) scale(.98)}
+.career-team-picker-grid .team-pick-card img{grid-row:1 / span 2;width:32px;height:32px;margin:0;object-fit:contain;border-radius:7px}
+.career-team-picker-grid .team-pick-card .tpc-abbr{min-width:0;overflow:hidden;color:var(--text);font:800 12px/1.25 var(--font-body);letter-spacing:0;white-space:nowrap;text-overflow:ellipsis}
+.career-team-picker-grid .team-pick-card .tpc-name{min-width:0;overflow:hidden;max-width:none;color:var(--text-muted);font:500 9px/1.2 var(--font-body);white-space:nowrap;text-overflow:ellipsis}
+@media(max-width:640px){
+  #screen-career.screen.active{padding-left:14px;padding-right:14px}
+  .career-draw-screen{padding-top:18px}
+  .career-draw-layout{grid-template-columns:1fr;gap:12px;margin:22px 0 18px}
+  .career-brief{padding:4px 2px 0}
+  .career-brief-mark{width:44px;height:44px;margin-bottom:16px;border-radius:13px;font-size:20px}
+  .career-brief h1{max-width:340px;font-size:31px}
+  .career-brief p{max-width:430px;margin-top:10px;font-size:12px;line-height:1.55}
+  .career-brief-facts{margin-top:17px}
+  .career-brief-fact{padding:9px 8px}
+  .career-draw-panel{padding:16px;border-radius:18px}
+  .career-draw-footer{justify-content:flex-start;flex-wrap:wrap;gap:8px 18px}
+  .career-team-picker-overlay{padding:12px}
+  .career-team-picker-modal{max-height:88vh;border-radius:19px}
+  .career-team-picker-header{padding:16px 15px 13px}
+  .career-team-picker-toolbar{padding:10px 15px}
+  .career-team-picker-meta{padding-left:15px;padding-right:15px}
+  .career-team-picker-grid{padding-left:12px;padding-right:12px}
+}
+@container career-draw (max-width:640px){
+  .career-draw-screen{padding-top:18px}
+  .career-draw-layout{grid-template-columns:1fr;gap:12px;margin:22px 0 18px}
+  .career-brief{padding:4px 2px 0}
+  .career-brief-mark{width:44px;height:44px;margin-bottom:16px;border-radius:13px;font-size:20px}
+  .career-brief h1{max-width:340px;font-size:31px}
+  .career-brief p{max-width:430px;margin-top:10px;font-size:12px;line-height:1.55}
+  .career-brief-facts{margin-top:17px}
+  .career-brief-fact{padding:9px 8px}
+  .career-draw-panel{padding:16px;border-radius:18px}
+  .career-draw-footer{justify-content:flex-start;flex-wrap:wrap;gap:8px 18px}
+}
+@media(max-width:390px){
+  .career-draw-topbar{padding-bottom:12px;font-size:9px}
+  .career-draw-panel-head{margin-bottom:12px}
+  .career-draw-panel-title{font-size:17px}
+  .career-draw-panel-rule{max-width:100px;font-size:8px}
+  .career-draw-actions{grid-template-columns:1fr}
+  .career-draw-action{min-height:44px}
+  .career-team-picker-toolbar{align-items:flex-start;flex-direction:column;gap:8px}
+  .career-team-picker-ad{width:100%}
+}
 @media(max-width:480px){#screen-build.screen.active,#screen-build-legacy.screen.active{padding:18px 12px 30px}.build-header{align-items:flex-start;margin-bottom:14px}.build-header h1{font-size:23px}.build-identity{max-width:58%;font-size:10px}.build-split{grid-template-columns:1fr}.build-right{order:1}.build-left{order:2}.bl-attrs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:0 7px 8px}.ba-slot+.ba-slot{border-top-color:transparent}.ba-slot{border-color:var(--border);min-height:40px}.br-slot-layout{grid-template-columns:minmax(0,1fr) 122px}.br-roster-instruction{max-width:110px}.br-player{min-height:54px}.br-player .bp-headshot{width:29px;height:29px}.br-player .bp-name{font-size:10px}}
 #build-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:100;display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none}
 .build-toast-msg{background:var(--bg-card);border:2px solid var(--orange);border-radius:14px;padding:10px 20px;font-family:var(--font-display);font-size:14px;font-weight:600;color:var(--text);animation:slideUp .25s ease,fadeOut .3s ease 1.2s forwards;box-shadow:var(--shadow-lg)}
@@ -3428,30 +3543,53 @@ function renderCareerSpin() {
   }
   
   let itemsHtml = '';
-  allItems.forEach(t => {
+  allItems.forEach((t, index) => {
     const cn = SIM_CONFIG.TEAM_NAMES[t] || t;
-    itemsHtml += `<div class="br-slot-item" data-team="${t}">${cn}</div>`;
+    const slotNumber = String((index % sorted.length) + 1).padStart(2, '0');
+    itemsHtml += `<div class="br-slot-item" data-team="${t}"><span>${cn}</span><span class="career-slot-index">${slotNumber}</span></div>`;
   });
   
   html('career-area').innerHTML = `
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 100px);padding:12px 12px;">
-      <div class="br-slot-area" style="max-width:320px;width:100%;">
-        <div class="br-slot-label">🎰 选择我的生涯球队</div>
-      <div class="br-slot-wrapper">
-        <div class="br-slot-machine career-slot">
-          <div class="br-slot-reel" id="career-slot-reel">
-            ${itemsHtml}
+    <div class="career-draw-screen">
+      <div class="career-draw-topbar">
+        <span class="career-draw-brand">CAREER ASSIGNMENT</span>
+        <span class="career-draw-index">ROOKIE ROUTE · 01</span>
+      </div>
+      <div class="career-draw-layout">
+        <section class="career-brief" aria-labelledby="career-draw-title">
+          <div>
+            <div class="career-brief-mark" aria-hidden="true">🏀</div>
+            <span class="career-brief-kicker">FIRST CONTRACT</span>
+            <h1 id="career-draw-title">你的第一站，<br>由命运落笔。</h1>
+            <p>抽签决定你的新秀起点。球队会影响首发竞争、队友组合与整个赛季的故事走向。</p>
           </div>
-        </div>
+          <div class="career-brief-facts" aria-label="球队池信息">
+            <div class="career-brief-fact"><strong><span>${sorted.length}</span> 支</strong>当前抽签池</div>
+            <div class="career-brief-fact"><strong><span>01</span> 次</strong>新秀落点</div>
+          </div>
+        </section>
+        <section class="career-draw-panel" aria-labelledby="career-draw-panel-title">
+          <div class="career-draw-panel-head">
+            <div>
+              <span class="career-draw-panel-kicker">RANDOM DRAW</span>
+              <h2 id="career-draw-panel-title" class="career-draw-panel-title">等待落点确认</h2>
+            </div>
+            <span class="career-draw-panel-rule">中央高亮项<br>就是你的球队</span>
+          </div>
+          <div class="career-slot-machine career-slot">
+            <div class="career-slot-reel" id="career-slot-reel">
+              ${itemsHtml}
+            </div>
+          </div>
+          <div class="career-slot-caption"><span>抽签池 · 已载入</span><strong>MOVE WHEN READY</strong></div>
+          <div class="career-draw-actions">
+            <button class="career-draw-action career-draw-primary" type="button" onclick="pullCareerHandle()">🎲 开始随机</button>
+            <button class="career-draw-action career-draw-secondary" type="button" onclick="showCareerTeamPicker()">🎯 自选球队</button>
+          </div>
+          <p class="career-draw-foot" aria-live="polite">随机结果将在滚动停止后自动确认。你也可以打开球队池，选择想去的城市。</p>
+        </section>
       </div>
-      <div class="br-slot-actions" style="margin-top:12px;">
-        <button class="btn btn-sm slot-btn" onclick="pullCareerHandle()" style="background:var(--orange);color:var(--on-accent);">
-          🎲 随机球队
-        </button>
-        <button class="btn btn-sm slot-btn" onclick="showCareerTeamPicker()" style="background:var(--bg-card);color:var(--text);">
-          🎯 自选球队
-        </button>
-      </div>
+      <div class="career-draw-footer"><span>SIMULATION READY</span><span>本地存档已开启</span></div>
     </div>
   `;
   
@@ -3719,27 +3857,31 @@ function showCareerTeamPicker(teamList) {
     var cn = SIM_CONFIG.TEAM_NAMES[t] || t;
     var city = window.TEAM_CITY[t] || '';
     var logo = getTeamLogo(t, 36);
-    gridHtml += '<div class="team-pick-card" data-team="' + t + '" onclick="selectCareerTeamFromPicker(\'' + t + '\')">' +
+    gridHtml += '<button type="button" class="team-pick-card" data-team="' + t + '" onclick="selectCareerTeamFromPicker(\'' + t + '\')">' +
       logo +
       '<span class="tpc-abbr">' + cn + '</span>' +
       '<span class="tpc-name">' + city + '</span>' +
-    '</div>';
+    '</button>';
   });
   
   var overlay = document.createElement('div');
-  overlay.className = 'team-picker-overlay';
+  overlay.className = 'team-picker-overlay career-team-picker-overlay';
   overlay.id = 'team-picker-overlay';
   overlay.innerHTML = 
-    '<div class="team-picker-modal">' +
-      '<div class="team-picker-header">' +
-        '<span>' + (isFull ? '🎉 自选喜欢的球队' : '🎯 选择生涯球队') + '</span>' +
-        '<button id="adTeamPickBtn" onclick="watchAdToPickTeam()" style="min-height:30px;padding:5px 10px;border:none;border-radius:8px;background:linear-gradient(135deg,#ff6b35,#ff8a5c);color:#fff;font-family:var(--font-display);font-size:11px;font-weight:600;cursor:pointer;box-shadow:0 2px 0 #c94d1e;">自选球队</button>' +
-        '<button class="team-picker-close" onclick="closeCareerTeamPicker()">✕</button>' +
+    '<div class="team-picker-modal career-team-picker-modal" role="dialog" aria-modal="true" aria-labelledby="career-team-picker-title">' +
+      '<div class="career-team-picker-header">' +
+        '<div class="career-team-picker-heading">' +
+          '<span class="career-team-picker-kicker">TEAM POOL · ' + (isFull ? 'FULL ACCESS' : 'OPEN OPTIONS') + '</span>' +
+          '<strong id="career-team-picker-title" class="career-team-picker-title">' + (isFull ? '选择你喜欢的球队' : '挑一支球队出发') + '</strong>' +
+        '</div>' +
+        '<button class="team-picker-close career-team-picker-close" onclick="closeCareerTeamPicker()" aria-label="关闭球队选择">✕</button>' +
       '</div>' +
-      '<div class="team-picker-header" style="border-bottom:none;padding:4px 14px 8px;justify-content:center;">' +
-        '<span style="' + (isFull ? '' : 'display:none;') + 'font-size:11px;color:var(--text-dim);font-weight:400;">' + subLine + '</span>' +
+      '<div class="career-team-picker-toolbar">' +
+        '<span class="career-team-picker-subline">' + subLine + '</span>' +
+        '<button id="adTeamPickBtn" class="career-team-picker-ad" onclick="watchAdToPickTeam()">解锁全部球队</button>' +
       '</div>' +
-      '<div class="team-picker-grid">' + gridHtml + '</div>' +
+      '<div class="career-team-picker-meta"><span>点击球队卡片立即确认落点</span><strong>' + allTeams.length + ' AVAILABLE</strong></div>' +
+      '<div class="team-picker-grid career-team-picker-grid">' + gridHtml + '</div>' +
     '</div>';
   
   // 点击遮罩关闭
@@ -7827,7 +7969,7 @@ function showSeasonTeamModal(teamOverride) {
   var lineup = calcTeamLineup(team);
   var posOrder = ['PG', 'SG', 'SF', 'PF', 'C'];
   var starters = posOrder.map(function(pos) { return lineup.starters[pos]; }).filter(Boolean);
-  var bench = (lineup.bench || []).slice(0, 7);
+  var bench = lineup.bench || [];
   var lineupOvr = getTeamLineupOvr(team);
   var battlePower = getTeamBattlePower(team);
   var standing = STATE.season.standings && STATE.season.standings[team] || { wins: 0, losses: 0 };
