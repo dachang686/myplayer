@@ -1,3 +1,17 @@
+// 休赛期默认不输出逐候选日志，避免交易组合较多时阻塞主线程。
+// 调试时可在控制台执行：window.__DEBUG_OFFSEASON__ = true
+var OFFSEASON_DEBUG_PAIR_LIMIT = 24;
+
+function isOffseasonDebugEnabled() {
+  return (typeof window !== 'undefined' && window.__DEBUG_OFFSEASON__ === true)
+    || (typeof STATE !== 'undefined' && STATE && STATE._debugOffseason === true);
+}
+
+function offseasonDebugLog() {
+  if (!isOffseasonDebugEnabled() || typeof console === 'undefined' || typeof console.log !== 'function') return;
+  console.log.apply(console, arguments);
+}
+
 // ==================== 玩家流动性（被交易/被裁/不被续约） ====================
 function getMobility() {
   var c = STATE.career;
@@ -2478,7 +2492,7 @@ function assignFreeAgents() {
   if (!STATE._leagueChanges.freeSignings) STATE._leagueChanges.freeSignings = [];
   if (!STATE._leagueChanges.freeAgents) STATE._leagueChanges.freeAgents = [];
 
-  console.log('[FA] 自由球员分配:', pool.length, '人');
+  offseasonDebugLog('[FA] 自由球员分配:', pool.length, '人');
 
   var st = STATE._prevStandings;
   var teams = LEAGUE_TEAM_IDS.slice();
@@ -2543,7 +2557,7 @@ function assignFreeAgents() {
       round: round + 1,
       loyaltyChange: loyaltyChange
     });
-    if (returnedToOriginalTeam) console.log('[FA] 自由市场回签:', (fa.cname || fa.id), offer.teamId, '忠诚度', getPlayerLoyalty(fa));
+    if (returnedToOriginalTeam) offseasonDebugLog('[FA] 自由市场回签:', (fa.cname || fa.id), offer.teamId, '忠诚度', getPlayerLoyalty(fa));
     if (offer.teamId === STATE.careerTeam) {
       if (!STATE._leagueChanges.teamChanges) STATE._leagueChanges.teamChanges = {};
       STATE._leagueChanges.teamChanges[offer.teamId] = STATE._leagueChanges.teamChanges[offer.teamId] || { retired: [], rookies: [] };
@@ -2562,7 +2576,7 @@ function assignFreeAgents() {
 
     candidates.forEach(function(fa) {
       if (signedIds[String(fa.id || fa.cname)]) return;
-      if (!fa._origTeam) console.log('[FA] 无_origTeam:', (fa.cname || fa.id), 'ovr:', fa.ovr);
+      if (!fa._origTeam) offseasonDebugLog('[FA] 无_origTeam:', (fa.cname || fa.id), 'ovr:', fa.ovr);
       var offers = teams.map(function(teamId) {
         return buildFreeAgentOffer(fa, teamId, round, st);
       }).filter(Boolean).sort(function(a, b) {
@@ -2745,11 +2759,18 @@ function processTrades() {
     needs[t] = getTeamTradeNeed(t);
   });
 
-  console.log('[Trade] 需求:', JSON.stringify(needs));
+  var debugOffseason = isOffseasonDebugEnabled();
+  offseasonDebugLog('[Trade] 需求:', needs);
 
   var tradedPlayers = new Set();
   var tradedTeams = new Map(); // 改用 Map 支持计数
-  var tradePairLogs = [];
+  var tradePairLogs = debugOffseason ? [] : null;
+  var tradePairStats = {
+    considered: 0,
+    succeeded: 0,
+    salaryRejected: 0,
+    ovrRejected: 0
+  };
 
   // 打乱球队顺序，让交易分布更随机
   var shuffled = LEAGUE_TEAM_IDS.slice().sort(function() { return rngNext() - 0.5; });
@@ -2806,14 +2827,18 @@ function processTrades() {
       var playerForA = findTradeCandidate(rosterB, needA, null, tradedPlayers);
 
       if (playerForA && playerForB) {
+        tradePairStats.considered++;
         var diff = Math.abs(playerForA.ovr - playerForB.ovr);
-        var pairLog = a + ' ' + needA + ' vs ' + b + ' ' + needB
-          + ' 候选人: ' + (playerForA.cname || playerForA.id) + ' ' + playerForA.ovr
-          + ' / ' + (playerForB.cname || playerForB.id) + ' ' + playerForB.ovr
-          + ' diff: ' + diff;
+        var pairLog = debugOffseason && tradePairLogs.length < OFFSEASON_DEBUG_PAIR_LIMIT
+          ? a + ' ' + needA + ' vs ' + b + ' ' + needB
+            + ' 候选人: ' + (playerForA.cname || playerForA.id) + ' ' + playerForA.ovr
+            + ' / ' + (playerForB.cname || playerForB.id) + ' ' + playerForB.ovr
+            + ' diff: ' + diff
+          : null;
         if (diff <= 15) { // 放宽至 <= 15，允许弱队出售大牌换潜力股
           if (swapRosterPlayers(a, b, playerForA, playerForB)) {
-            tradePairLogs.push(pairLog + ' ✅成功');
+            tradePairStats.succeeded++;
+            if (pairLog) tradePairLogs.push(pairLog + ' ✅成功');
             tradedPlayers.add(playerForA);
             tradedPlayers.add(playerForB);
             tradedTeams.set(a, (tradedTeams.get(a) || 0) + 1);
@@ -2824,14 +2849,24 @@ function processTrades() {
             needs[b] = getTeamTradeNeed(b);
             break;
           }
-          tradePairLogs.push(pairLog + ' ❌未成交（薪资或交易校验失败）');
+          tradePairStats.salaryRejected++;
+          if (pairLog) tradePairLogs.push(pairLog + ' ❌未成交（薪资或交易校验失败）');
         } else {
-          tradePairLogs.push(pairLog + ' ⏭️未通过 OVR 差距');
+          tradePairStats.ovrRejected++;
+          if (pairLog) tradePairLogs.push(pairLog + ' ⏭️未通过 OVR 差距');
         }
       }
     }
   }
-  console.log('[Trade] 配对汇总:', tradePairLogs.length ? tradePairLogs.join(' | ') : '无候选组合');
+  if (debugOffseason) {
+    offseasonDebugLog('[Trade] 配对汇总:', {
+      considered: tradePairStats.considered,
+      succeeded: tradePairStats.succeeded,
+      salaryRejected: tradePairStats.salaryRejected,
+      ovrRejected: tradePairStats.ovrRejected,
+      samples: tradePairLogs
+    });
+  }
   if (typeof enforceLeagueRosterCapacity === 'function') enforceLeagueRosterCapacity(null, { reason: 'post_trade_capacity' });
 }
 

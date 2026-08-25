@@ -11,6 +11,7 @@ const draftText = fs.existsSync(path.join(root, 'js/draft.js'))
 const offseasonRosterText = `${offseasonText}\n${draftText}`;
 const playerText = fs.readFileSync(path.join(root, 'js/data/league_players.js'), 'utf8');
 const failures = [];
+const runtimeLogs = [];
 
 const pipelineMatch = indexText.match(/function continueCareerAfterTraining\(\)[\s\S]*?\n\}/);
 if (!pipelineMatch || !/clearPreviousOffseasonTransactionFlags\(\);\s*\n\s*evolveLeague\(\);/.test(pipelineMatch[0])) {
@@ -27,7 +28,7 @@ const rookieProtectionCount = (offseasonRosterText.match(/(?:rookie|rk|player)\.
 if (rookieProtectionCount < 2) failures.push('选秀新秀和补位新秀没有完整设置当届保护');
 
 const context = {
-  console: { log() {} },
+  console: { log(...args) { runtimeLogs.push(args); } },
   Set,
   Map,
   Object,
@@ -63,12 +64,15 @@ context.rngNext = () => {
 
 const lineupStart = indexText.indexOf('function getPlayerPositions');
 const lineupEnd = indexText.indexOf('function getTeamLineupOvr', lineupStart);
+const debugStart = offseasonText.indexOf('var OFFSEASON_DEBUG_PAIR_LIMIT');
+const debugEnd = offseasonText.indexOf('// ==================== 玩家流动性', debugStart);
 const tradeStart = offseasonText.indexOf('function clearPreviousOffseasonTransactionFlags');
 const tradeEnd = offseasonText.indexOf('function calcOVR', tradeStart);
-if (lineupStart < 0 || lineupEnd < 0 || tradeStart < 0 || tradeEnd < 0) {
+if (lineupStart < 0 || lineupEnd < 0 || debugStart < 0 || debugEnd < 0 || tradeStart < 0 || tradeEnd < 0) {
   failures.push('无法提取交易回归测试所需函数');
 } else {
   vm.runInContext(indexText.slice(lineupStart, lineupEnd), context, { filename: 'index-lineup.js' });
+  vm.runInContext(offseasonText.slice(debugStart, debugEnd), context, { filename: 'offseason-debug.js' });
   vm.runInContext(offseasonText.slice(tradeStart, tradeEnd), context, { filename: 'offseason-trades.js' });
 
   vm.runInContext(
@@ -85,6 +89,7 @@ if (lineupStart < 0 || lineupEnd < 0 || tradeStart < 0 || tradeEnd < 0) {
   const nextOffseasonTradeCount = context.STATE._leagueChanges.trades.length;
   if (nextOffseasonTradeCount <= 0) failures.push('解除上一年保护后仍无法产生交易');
   if (nextOffseasonTradeCount > 16) failures.push(`交易数超过单次休赛期上限：${nextOffseasonTradeCount}`);
+  if (runtimeLogs.length !== 0) failures.push(`默认休赛期不应输出调试日志，实际 ${runtimeLogs.length} 条`);
 
   const remainingFlags = vm.runInContext(
     'LEAGUE_TEAM_IDS.reduce((sum, team) => sum + LEAGUE_PLAYER_DATA[team].filter(player => player._justSigned).length, 0)',
@@ -102,6 +107,17 @@ if (lineupStart < 0 || lineupEnd < 0 || tradeStart < 0 || tradeEnd < 0) {
   if (generatedRookieLifecycle.protectedCandidate !== null || !generatedRookieLifecycle.veteranEligible) {
     failures.push('程序生成新秀没有在保护期结束后进入交易候选池');
   }
+
+  context.STATE._debugOffseason = true;
+  runtimeLogs.length = 0;
+  vm.runInContext('processTrades();', context);
+  const debugSummary = runtimeLogs.find(args => args[0] === '[Trade] 配对汇总:');
+  const debugSamples = debugSummary && debugSummary[1] && Array.isArray(debugSummary[1].samples)
+    ? debugSummary[1].samples
+    : null;
+  if (!debugSummary || !debugSamples) failures.push('调试模式没有输出结构化交易汇总');
+  if (debugSamples && debugSamples.length > 24) failures.push(`调试候选样本超过上限：${debugSamples.length}`);
+  context.STATE._debugOffseason = false;
 }
 
 if (failures.length) {
