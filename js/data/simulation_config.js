@@ -339,6 +339,22 @@ const SIM_CONFIG = {
       eliteExcess: 0.087269
     }
   },
+  /**
+   * 统一比赛评分模型。OVR、球队战力和经理模式都以这套可解释的比赛能力为来源：
+   * 投射、终结、组织、防守、篮板与运动能力各只计算一次；CLU 仅保留很小的情境权重。
+   */
+  PLAYER_RATING_MODEL: {
+    version: 3,
+    overall: { offense: 0.55, defense: 0.38, athletic: 0.07 },
+    scale: { linear: 1.23 },
+    positions: {
+      PG: { offense: { shooting: 0.29, rim: 0.13, creation: 0.42, athletic: 0.14, clutch: 0.02 }, defense: { perimeter: 0.62, interior: 0.07, rebounding: 0.18, athletic: 0.13 } },
+      SG: { offense: { shooting: 0.39, rim: 0.25, creation: 0.20, athletic: 0.14, clutch: 0.02 }, defense: { perimeter: 0.58, interior: 0.10, rebounding: 0.18, athletic: 0.14 } },
+      SF: { offense: { shooting: 0.30, rim: 0.27, creation: 0.22, athletic: 0.19, clutch: 0.02 }, defense: { perimeter: 0.44, interior: 0.24, rebounding: 0.21, athletic: 0.11 } },
+      PF: { offense: { shooting: 0.18, rim: 0.38, creation: 0.15, athletic: 0.27, clutch: 0.02 }, defense: { perimeter: 0.24, interior: 0.46, rebounding: 0.23, athletic: 0.07 } },
+      C: { offense: { shooting: 0.10, rim: 0.42, creation: 0.13, athletic: 0.33, clutch: 0.02 }, defense: { perimeter: 0.08, interior: 0.60, rebounding: 0.27, athletic: 0.05 } }
+    }
+  },
   // ============================================================
   // 4. 赛季模拟参数 — 你可以随意调整
   // ============================================================
@@ -790,6 +806,79 @@ const SIM_CONFIG = {
     complacencyFactor: 0.92
   }
 };
+
+function getUnifiedPlayerRatingPosition(position) {
+  var valid = SIM_CONFIG.PLAYER_RATING_MODEL && SIM_CONFIG.PLAYER_RATING_MODEL.positions || {};
+  var primary = String(position || 'SF').split('/')[0].trim();
+  return valid[primary] ? primary : 'SF';
+}
+
+function getUnifiedPlayerRatingAttribute(player, key) {
+  var value = Number(player && player[key]);
+  if (!Number.isFinite(value)) value = 50;
+  return Math.max(25, Math.min(99, value));
+}
+
+/**
+ * 统一球员比赛能力出口。保持在配置层，供生涯模式、经理模式、OVR 计算和球队战力共同调用。
+ * 返回值均为 25~99 量表；全 50 属性必然得到 50，避免隐藏基准偏移。
+ */
+function getUnifiedPlayerRating(player, position) {
+  var model = SIM_CONFIG.PLAYER_RATING_MODEL;
+  var pos = getUnifiedPlayerRatingPosition(position || (player && player.pos));
+  var profile = model.positions[pos];
+  function attr(key) { return getUnifiedPlayerRatingAttribute(player, key); }
+  function weighted(weights) {
+    return Object.keys(weights).reduce(function(sum, key) { return sum + attr(key) * weights[key]; }, 0);
+  }
+  var shooting = attr('threePT') * 0.60 + attr('MID') * 0.40;
+  var rim = weighted({ FIN: 0.55, DNK: 0.20, ATH: 0.13, STR: 0.12 });
+  var creation = attr('HAN') * 0.50 + attr('PAS') * 0.33 + Math.max(shooting, rim) * 0.12 + attr('ATH') * 0.05;
+  var perimeter = weighted({ PDEF: 0.55, STL: 0.25, ATH: 0.20 });
+  var interior = weighted({ IDEF: 0.48, BLK: 0.32, STR: 0.12, REB: 0.08 });
+  var rebounding = weighted({ REB: 0.70, STR: 0.15, IDEF: 0.15 });
+  var athletic = attr('ATH');
+  var clutch = attr('CLU');
+  var offense = shooting * profile.offense.shooting
+    + rim * profile.offense.rim
+    + creation * profile.offense.creation
+    + athletic * profile.offense.athletic
+    + clutch * profile.offense.clutch;
+  var defense = perimeter * profile.defense.perimeter
+    + interior * profile.defense.interior
+    + rebounding * profile.defense.rebounding
+    + athletic * profile.defense.athletic;
+  var rawOverall = offense * model.overall.offense
+    + defense * model.overall.defense
+    + athletic * model.overall.athletic;
+  // 统一评分先按比赛影响合成，再用同一条连续标尺映射到 OVR 区间。
+  // 不再对“高属性”“前四属性”等项目二次奖励，避免把同一强项重复放大。
+  var scale = model.scale;
+  var overall = 50 + (rawOverall - 50) * scale.linear;
+  function clampRating(value) { return Math.max(25, Math.min(99, value)); }
+  return {
+    position: pos,
+    shooting: clampRating(shooting),
+    rim: clampRating(rim),
+    creation: clampRating(creation),
+    perimeterDefense: clampRating(perimeter),
+    interiorDefense: clampRating(interior),
+    rebounding: clampRating(rebounding),
+    athletic: clampRating(athletic),
+    clutch: clampRating(clutch),
+    offense: clampRating(offense),
+    defense: clampRating(defense),
+    overall: clampRating(overall),
+  };
+}
+
+function getUnifiedPlayerOvr(player, position) {
+  return Math.round(getUnifiedPlayerRating(player, position).overall);
+}
+
+// 同时挂到配置对象，供 Node/VM 校验环境在只传递 SIM_CONFIG 时复用同一实现。
+SIM_CONFIG.getUnifiedPlayerRating = getUnifiedPlayerRating;
+SIM_CONFIG.getUnifiedPlayerOvr = getUnifiedPlayerOvr;
 
 // 确保 SIM_CONFIG 全局可用
 if (typeof module !== "undefined" && module.exports) {

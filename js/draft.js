@@ -1000,7 +1000,8 @@
         }
         player._justSigned = true;
         player._rookieSeason = getCurrentLeagueSeasonNumber();
-        player.contract = 1 + Math.floor(rngNext() * 2);
+        // 未选秀补充球员若已达到主力级别，同样给足三年合同以建立母队续约权。
+        player.contract = Number(player.ovr) >= 84 ? 3 : 1 + Math.floor(rngNext() * 2);
         player.loyalty = getRookieContractLoyalty(player.contract);
         roster.push(player);
         STATE._leagueChanges.rookies.push({ name: player.cname, playerId: player.id, team: team, undrafted: true });

@@ -31,17 +31,26 @@
     return typeof SIM_CONFIG !== 'undefined' ? SIM_CONFIG : (global.SIM_CONFIG || {});
   }
 
+  function playerRating(player) {
+    var config = getConfig();
+    var calculate = typeof global.getUnifiedPlayerRating === 'function'
+      ? global.getUnifiedPlayerRating
+      : config.getUnifiedPlayerRating;
+    return typeof calculate === 'function' ? calculate(player, player && player.pos) : null;
+  }
+
+  function playerOvr(player) {
+    var config = getConfig();
+    var calculate = typeof global.getUnifiedPlayerOvr === 'function'
+      ? global.getUnifiedPlayerOvr
+      : config.getUnifiedPlayerOvr;
+    return typeof calculate === 'function' ? calculate(player, player && player.pos) : (Number(player && player.ovr) || 70);
+  }
+
   function positionScore(player, offense) {
-    var base = Number(player && player.ovr) || 70;
-    var finishing = Number(player && player.FIN) || 60;
-    var shooting = Number(player && player.threePT) || 60;
-    var passing = Number(player && player.PAS) || 60;
-    var defense = (Number(player && player.PDEF) || 60) * 0.38
-      + (Number(player && player.STL) || 60) * 0.22
-      + (Number(player && player.IDEF) || 60) * 0.40;
-    var rebounding = Number(player && player.REB) || 60;
-    if (offense) return base * 0.52 + finishing * 0.16 + shooting * 0.16 + passing * 0.10 + rebounding * 0.06;
-    return base * 0.48 + defense * 0.25 + rebounding * 0.17 + (Number(player && player.ATH) || 60) * 0.10;
+    var rating = playerRating(player);
+    if (rating) return offense ? rating.offense : rating.defense;
+    return playerOvr(player);
   }
 
   function rosterPower(state, teamId) {
@@ -50,7 +59,7 @@
     var ranked = roster.slice().sort(function(a, b) {
       var aMinutes = rotation && rotation[a.id] ? Number(rotation[a.id].minutes) : 0;
       var bMinutes = rotation && rotation[b.id] ? Number(rotation[b.id].minutes) : 0;
-      return (bMinutes - aMinutes) || ((Number(b.ovr) || 0) - (Number(a.ovr) || 0));
+      return (bMinutes - aMinutes) || (playerOvr(b) - playerOvr(a));
     });
     var selected = rotation
       ? ranked.filter(function(player) { return rotation[player.id] && Number(rotation[player.id].minutes) > 0; }).slice(0, 11)
@@ -80,12 +89,11 @@
   var MAX_ROSTER_SIZE = 25;
 
   function playerTradeValue(player) {
-    var overall = Number(player && player.ovr) || 0;
-    var skills = ['threePT', 'FIN', 'PAS', 'PDEF', 'STL', 'IDEF', 'REB'].reduce(function(sum, key) {
-      return sum + (Number(player && player[key]) || 0);
-    }, 0) / 7;
+    var rating = playerRating(player);
+    var overall = playerOvr(player);
     var coreValue = Math.pow(Math.max(0, overall - 55), 1.35) * 1.2;
-    return Math.round((coreValue + skills * 0.12) * 10) / 10;
+    var twoWayValue = rating ? (rating.offense + rating.defense) * 0.06 : 0;
+    return Math.round((coreValue + twoWayValue) * 10) / 10;
   }
 
   function packageTradeValue(players) {
@@ -140,9 +148,9 @@
 
   function positionNeed(roster, player) {
     var options = roster.filter(function(candidate) { return sharesPosition(candidate, player); }).sort(function(a, b) {
-      return (Number(b.ovr) || 0) - (Number(a.ovr) || 0);
+      return playerOvr(b) - playerOvr(a);
     });
-    var quality = options.slice(0, 3).reduce(function(sum, candidate) { return sum + (Number(candidate.ovr) || 0); }, 0) / Math.max(1, Math.min(3, options.length));
+    var quality = options.slice(0, 3).reduce(function(sum, candidate) { return sum + playerOvr(candidate); }, 0) / Math.max(1, Math.min(3, options.length));
     var depthNeed = Math.max(0, 3 - options.length) * 2;
     return Math.round((Math.max(0, 78 - quality) * 0.18 + depthNeed) * 10) / 10;
   }
@@ -166,7 +174,7 @@
       id: player.id,
       name: player.cname || player.name || player.id,
       pos: player.pos || '',
-      ovr: Number(player.ovr) || 0
+      ovr: playerOvr(player)
     };
   }
 
@@ -308,10 +316,10 @@
     var outgoingByRole = outgoingPlayers.slice().sort(function(first, second) {
       var firstRole = previous[first.id] || {};
       var secondRole = previous[second.id] || {};
-      return Number(secondRole.starter) - Number(firstRole.starter) || (Number(secondRole.minutes) || 0) - (Number(firstRole.minutes) || 0) || (Number(second.ovr) || 0) - (Number(first.ovr) || 0);
+      return Number(secondRole.starter) - Number(firstRole.starter) || (Number(secondRole.minutes) || 0) - (Number(firstRole.minutes) || 0) || playerOvr(second) - playerOvr(first);
     });
     var incomingAssignments = {};
-    incomingPlayers.slice().sort(function(first, second) { return (Number(second.ovr) || 0) - (Number(first.ovr) || 0); }).forEach(function(player, index) {
+    incomingPlayers.slice().sort(function(first, second) { return playerOvr(second) - playerOvr(first); }).forEach(function(player, index) {
       var source = outgoingByRole[Math.min(index, outgoingByRole.length - 1)];
       incomingAssignments[player.id] = source ? previous[source.id] : null;
     });
@@ -399,7 +407,7 @@
       roster.sort(function(a, b) {
         var aMinutes = state.rotation[a.id] ? Number(state.rotation[a.id].minutes) || 0 : 0;
         var bMinutes = state.rotation[b.id] ? Number(state.rotation[b.id].minutes) || 0 : 0;
-        return bMinutes - aMinutes || (Number(b.ovr) || 0) - (Number(a.ovr) || 0);
+        return bMinutes - aMinutes || playerOvr(b) - playerOvr(a);
       });
       return roster.filter(function(player) {
         return state.rotation[player.id] && Number(state.rotation[player.id].minutes) > 0;
@@ -407,7 +415,7 @@
         return { player: player, minutes: Number(state.rotation[player.id].minutes) || 0 };
       });
     }
-    roster.sort(function(a, b) { return (Number(b.ovr) || 0) - (Number(a.ovr) || 0); });
+    roster.sort(function(a, b) { return playerOvr(b) - playerOvr(a); });
     return roster.slice(0, 10).map(function(player, index) {
       return { player: player, minutes: defaultMinutes[index] };
     });
@@ -416,7 +424,8 @@
   function allocatePoints(entries, teamScore) {
     var weights = entries.map(function(entry) {
       var player = entry.player;
-      var scoring = (Number(player.ovr) || 70) * 0.52 + (Number(player.FIN) || 60) * 0.20 + (Number(player.threePT) || 60) * 0.18 + (Number(player.PAS) || 60) * 0.10;
+      var rating = playerRating(player);
+      var scoring = rating ? rating.offense : playerOvr(player);
       return Math.max(1, entry.minutes * scoring);
     });
     var totalWeight = weights.reduce(function(sum, weight) { return sum + weight; }, 0) || 1;

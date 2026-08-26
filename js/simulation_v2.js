@@ -926,9 +926,8 @@
     var biasA = homeA + recordFormBias + Number(seedBonus || 0) * 0.003 + activeEventEdge * 0.004 + seasonEdge * 0.004 - first.fatigue * 0.012;
     var biasB = homeB - recordFormBias - activeEventEdge * 0.004 - seasonEdge * 0.004 - second.fatigue * 0.012;
 
-    // V2 的事件层继续使用自己的专项攻防模型，但球队的基础层级必须和
-    // 排名页/V1 使用同一套轮换实力。这里只消费 OVR 与巨星集中度，不能
-    // 再把 structureRating 叠加一次，否则会重复放大攻防属性。
+    // V2 的事件层逐回合读取统一属性模型。球队汇总项只保留小量校准残差，
+    // 表达同样属性在完整轮换中形成的执行质量；不再叠加攻防 structure。
     var powerA = typeof calcTeamPowerWithPlayer === 'function'
       ? calcTeamPowerWithPlayer(teamA, { preparedRotation: options._preparedRotations[teamA] })
       : null;
@@ -945,15 +944,12 @@
     var rawStarEdge = Number(competitiveA.star) - Number(competitiveB.star);
     if (!Number.isFinite(rawRosterEdge)) rawRosterEdge = 0;
     if (!Number.isFinite(rawStarEdge)) rawStarEdge = 0;
-    // 先限制共同模型的总边际，再以 65% 进入 V2 赛前分差；这使 V2
-    // 接受排行榜的强弱层级，但不会覆盖专项攻防和比赛随机性。
     var rosterStarEdge = clamp(rawRosterEdge + rawStarEdge, -12, 12);
-    var rosterStarMarginEdge = rosterStarEdge * 0.65;
+    var rosterStarMarginEdge = rosterStarEdge * 0.50;
     var rawCombinedEdge = rawRosterEdge + rawStarEdge;
     var rosterEdge = rawCombinedEdge === 0 ? 0 : rosterStarMarginEdge * rawRosterEdge / rawCombinedEdge;
     var starEdge = rawCombinedEdge === 0 ? 0 : rosterStarMarginEdge - rosterEdge;
-    // 这部分同时进入命中质量，确保“预计优势”不会只存在于诊断字段。
-    var rosterStarBias = rosterStarEdge * 0.0030;
+    var rosterStarBias = rosterStarEdge * 0.0028;
     biasA += rosterStarBias;
     biasB -= rosterStarBias;
     var basePace = clamp(Math.round(

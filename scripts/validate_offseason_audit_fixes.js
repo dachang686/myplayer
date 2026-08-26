@@ -158,7 +158,7 @@ for (const teamId of context.LEAGUE_TEAM_IDS) {
 if (rookieIndex !== 3 || capacityCalls !== 1) failures.push('选秀没有为每队加入一名新秀并统一执行阵容容量校验');
 const draftCapacityCalls = capacityCalls;
 
-// 高薪球队无法提供常规报价时，可以提供仍在一土豪线内的一年底薪合同。
+// 高薪球队仍可提供正常报价；工资空间不再把玩家推入底薪兜底。
 context.STATE.careerTeam = 'A';
 context.STATE.finalOVR = 90;
 context.STATE.position = 'PG';
@@ -175,15 +175,14 @@ context.calcTeamLineup = (teamId) => ({
   bench: [],
 });
 const emergencyOffers = context.generateContractOffers();
-if (emergencyOffers.length === 0) failures.push('常规报价全部非法时没有生成合法底薪兜底');
+if (emergencyOffers.length === 0) failures.push('高薪球队没有生成任何正常合同报价');
 for (const offer of emergencyOffers) {
-  if (offer.round !== 4 || offer.salary !== 1 || offer.years !== 1 || !offer.contractOffer.emergencyMinimum) failures.push('底薪兜底报价的年限/薪资/轮次标记不正确');
-  if (offer.payrollAfterSigning > context.FREE_AGENT_MARKET.firstApron + 0.001) failures.push('底薪兜底报价越过一土豪线');
+  if (offer.round >= 4 || offer.salary <= 1 || offer.contractOffer.emergencyMinimum) failures.push('高薪球队错误降级为底薪兜底报价');
   const rebuilt = context.buildCareerContractOffer(offer.team, offer.years, offer.round);
-  if (!rebuilt || rebuilt.salary !== 1 || rebuilt.years !== 1 || rebuilt.round !== 4) failures.push('用户选择底薪报价时无法重建同一份合法合同');
+  if (!rebuilt || rebuilt.salary !== offer.salary || rebuilt.years !== offer.years || rebuilt.round !== offer.round) failures.push('用户选择正常报价时无法重建同一份合同');
 }
 
-// Bird 只能突破软帽，签约后不能突破本游戏的二土豪线硬上限。
+// Bird 状态仍影响合同年限，但工资帽不再阻止签约。
 const birdPlayer = rosterPlayer('BIRD-PLAYER', 'PG', 0);
 birdPlayer.contract = 0;
 context.LEAGUE_PLAYER_DATA.B = [rosterPlayer('B-PAYROLL', 'SF', 130)];
@@ -200,8 +199,8 @@ const birdAtApron = context.buildContractOffer(birdPlayer, 'B', {
   salary: 5,
   years: 2,
 });
-if (birdOverApron) failures.push('Bird 签约后 135 超过二土豪线仍被判定为合法');
-if (!birdAtApron || Math.abs(birdAtApron.payrollAfterSigning - 134) > 0.001) failures.push('Bird 签约后正好 134 被错误拒绝');
+if (!birdOverApron || Math.abs(birdOverApron.payrollAfterSigning - 135) > 0.001) failures.push('工资帽仍错误阻止 Bird 签约');
+if (!birdAtApron || Math.abs(birdAtApron.payrollAfterSigning - 134) > 0.001) failures.push('正常 Bird 签约被错误拒绝');
 
 // 统一交易展示规约：playerB 从 from 前往 to，playerA 反向前往 from。
 context.getTeamName = (teamId) => teamId;

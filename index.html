@@ -3800,7 +3800,7 @@ function previewTeamRosterModal(team, onConfirmSign, offerYears, confirmActionTe
   overlay.innerHTML =
     '<div class="team-picker-modal" style="max-width:380px;">' +
       '<div class="team-picker-header">' +
-        '<div style="display:flex;align-items:center;gap:8px;">' + logo + '<div><div style="font-size:15px;font-weight:700;">' + cn + '</div><div style="font-size:11px;color:var(--text-dim);font-weight:400;">' + city + ' · 战力评分 ' + Math.round(power.depth || 50) + '</div></div></div>' +
+        '<div style="display:flex;align-items:center;gap:8px;">' + logo + '<div><div style="font-size:15px;font-weight:700;">' + cn + '</div><div style="font-size:11px;color:var(--text-dim);font-weight:400;">' + city + ' · 战力评分 ' + getTeamBattlePower(team).toFixed(1) + '</div></div></div>' +
         '<button class="team-picker-close" onclick="document.getElementById(\'team-roster-preview-overlay\').remove()">✕</button>' +
       '</div>' +
       rosterHtml +
@@ -5003,7 +5003,11 @@ function calcTeamLineup(team, gameOptions) {
 function getTeamLineupOvr(team) {
   const lineup = calcTeamLineup(team);
   const averageOvr = function(players) {
-    const values = (players || []).map(function(player) { return parseInt(player.ovr) || 0; }).filter(function(value) { return value > 0; });
+    const values = (players || []).map(function(player) {
+      return typeof getUnifiedPlayerOvr === 'function'
+        ? getUnifiedPlayerOvr(player, player.pos)
+        : (parseInt(player.ovr) || 0);
+    }).filter(function(value) { return value > 0; });
     if (!values.length) return 0;
     return Math.round(values.reduce(function(sum, value) { return sum + value; }, 0) / values.length);
   };
@@ -5052,15 +5056,19 @@ function calcTeamPowerWithPlayer(team, gameOptions) {
   }
 
   const overall = minuteWeighted('overall');
-  const topImpacts = impacts
-    .map(function(impact) { return Number(impact.overall) || 50; })
-    .sort(function(a, b) { return b - a; })
-    .slice(0, 3);
-  const starConcentration = Math.max(0,
-    ((topImpacts[0] || overall) - overall) * 0.45
-    + ((topImpacts[1] || overall) - overall) * 0.30
-    + ((topImpacts[2] || overall) - overall) * 0.15
-  );
+  // 球星额外价值必须随实际出场时间衰减，不能让低分钟高 OVR 替补获得完整加成。
+  const starConcentration = impacts.reduce(function(sum, impact, index) {
+    const minuteShare = (Number(minutes[index]) || 0) / totalMinutes;
+    return sum + Math.max(0, (Number(impact.overall) || overall) - overall) * minuteShare;
+  }, 0);
+  const benchMinutes = minutes.reduce(function(sum, value, index) {
+    return sum + (index >= 5 ? (Number(value) || 0) : 0);
+  }, 0);
+  const benchOverall = benchMinutes > 0
+    ? impacts.reduce(function(sum, impact, index) {
+      return index >= 5 ? sum + (Number(impact.overall) || 50) * (Number(minutes[index]) || 0) / benchMinutes : sum;
+    }, 0)
+    : overall;
   return {
     offense: minuteWeighted('offense'),
     defense: minuteWeighted('defense'),
@@ -5068,27 +5076,24 @@ function calcTeamPowerWithPlayer(team, gameOptions) {
     clutch: minuteWeighted('clutch'),
     overall: overall,
     starConcentration: starConcentration,
-    // 保留 depth 字段供旧存档/UI/验证脚本读取；其含义改为分钟加权阵容总评。
-    depth: overall,
+    // depth 只描述替补强度；球队总战力由 overall 单独负责，避免重复计权。
+    depth: benchOverall,
     rotationMinutes: minutes.slice(),
   };
 }
 
 /**
- * overall 表示主体阵容实力；绝对攻防能力只提供小额结构加成，
- * 避免攻防与 OVR 解耦后，高 OVR 球队因“距离自身 OVR 更远”反而被扣分。
+ * 球队战力由同一套分钟加权球员影响力得出。攻防是可解释的拆分字段，
+ * 不再与 overall、球星集中度重复相加。
  */
 function getTeamCompetitiveRating(power) {
   const overall = Number.isFinite(power && power.overall) ? power.overall : 50;
   const offense = Number(power && power.offense) || overall;
   const defense = Number(power && power.defense) || overall;
-  // 80 OVR 是中性锚点；让阵容总评差异完整进入球队竞争力，
-  // 避免 82 场赛季中顶级阵容被随机性过度压平。
-  const rosterRating = 80 + (overall - 80) * 1.00;
-  // 80 + 80 是中性展示基准，双方 structure 相减时会抵消，不影响比赛分差。
-  const structureRating = (offense + defense - 160) * 0.20;
-  // 提高核心集中度的边际价值，不改变攻防专项校准。
-  const starRating = (Number(power && power.starConcentration) || 0) * 1.05;
+  const rosterRating = overall;
+  const structureRating = 0;
+  // 核心价值已随分钟进入 overall；仅保留极小残差，表示高使用率核心的稳定性。
+  const starRating = Math.min(1.2, Math.max(0, Number(power && power.starConcentration) || 0) * 0.15);
   return {
     overall: overall,
     roster: rosterRating,
@@ -5750,6 +5755,20 @@ function getLeagueDefensiveAnchor(player) {
  * 运动和关键球继续沿用各自现有结构。
  */
 function getPlayerGameImpact(player) {
+  const unifiedRating = typeof getUnifiedPlayerRating === 'function'
+    ? getUnifiedPlayerRating
+    : (SIM_CONFIG && SIM_CONFIG.getUnifiedPlayerRating);
+  if (typeof unifiedRating === 'function') {
+    const rating = unifiedRating(player, player && player.pos);
+    return {
+      overall: rating.overall,
+      offense: rating.offense,
+      defense: rating.defense,
+      athletic: rating.athletic,
+      clutch: rating.clutch,
+      defensiveAnchorBonus: 0,
+    };
+  }
   function toRating(value) {
     var normalized = leagueStatClamp(Number(value) || 0, 0, 1);
     return leagueStatClamp(25 + 74 * Math.pow(normalized, 1 / 1.275), 25, 99);

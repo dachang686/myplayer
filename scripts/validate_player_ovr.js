@@ -70,7 +70,9 @@ const publishedOvrBeforeSync = published.ovr;
 vm.runInContext('syncLeaguePlayerOvrs()', context);
 if (published.STL !== published.PDEF) throw new Error(`旧存档 STL 应由 PDEF 一次性迁移，实际 ${published.STL}`);
 if (published._sourceOvr !== 95) throw new Error(`现实球员来源 OVR 应保留 95，实际 ${published._sourceOvr}`);
-if (published.ovr !== publishedOvrBeforeSync) throw new Error(`现实球员 OVR 不应被运行时公式覆盖，实际 ${published.ovr}`);
+if (published.ovr !== vm.runInContext('calcOVR(LEAGUE_PLAYER_DATA.POR[1], LEAGUE_PLAYER_DATA.POR[1].pos)', context)) {
+  throw new Error(`现实球员没有迁移到统一 OVR，实际 ${published.ovr}`);
+}
 
 vm.runInContext('evolveGeneratedPlayerAttributes(LEAGUE_PLAYER_DATA.POR[0], 81, 85)', context);
 if (generated.ovr !== 85) throw new Error(`成长后 OVR 应为 85，实际 ${generated.ovr}`);
@@ -106,34 +108,14 @@ const formulaResiduals = leaguePlayers.map(player => {
     error: formulaOvr - player.ovr,
   };
 });
-const fairness = SIM_CONFIG.OVR_MODEL.fairness;
-const baselineAttrs = Object.fromEntries(ATTR_KEYS.map(key => [key, fairness.baselineAttribute]));
+const ratingModel = SIM_CONFIG.PLAYER_RATING_MODEL;
+const baselineAttrs = Object.fromEntries(ATTR_KEYS.map(key => [key, 50]));
 const baselineOvrs = {};
-const coreBuildOvrs = {};
-Object.keys(SIM_CONFIG.OVR_MODEL.positionWeights).forEach(pos => {
+Object.keys(ratingModel.positions).forEach(pos => {
   baselineOvrs[pos] = formulaContext.calcOVR(baselineAttrs, pos);
-  const coreBuild = { ...baselineAttrs };
-  Object.entries(SIM_CONFIG.OVR_MODEL.positionWeights[pos])
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 4)
-    .forEach(([key], index) => { coreBuild[key] = index === 3 ? 92 : 99; });
-  coreBuildOvrs[pos] = formulaContext.calcOVR(coreBuild, pos);
-  const weights = Object.values(SIM_CONFIG.OVR_MODEL.positionWeights[pos]).sort((a, b) => b - a);
-  const totalWeight = weights.reduce((sum, value) => sum + value, 0);
-  const topFourWeight = weights.slice(0, 4).reduce((sum, value) => sum + value, 0);
-  if (Math.abs(totalWeight - fairness.totalPositionWeight) > 0.00001) {
-    throw new Error(`${pos} 总权重未归一：${totalWeight}`);
-  }
-  if (Math.abs(topFourWeight - fairness.topFourWeight) > 0.00001) {
-    throw new Error(`${pos} 核心四项权重未归一：${topFourWeight}`);
-  }
 });
-if (Object.values(baselineOvrs).some(value => value !== fairness.baselineOvr)) {
+if (Object.values(baselineOvrs).some(value => value !== 50)) {
   throw new Error(`全 50 属性的各位置 OVR 不一致：${JSON.stringify(baselineOvrs)}`);
-}
-const coreBuildGap = Math.max(...Object.values(coreBuildOvrs)) - Math.min(...Object.values(coreBuildOvrs));
-if (coreBuildGap > fairness.maxCoreBuildGap) {
-  throw new Error(`同点数核心构筑差距过大：${JSON.stringify(coreBuildOvrs)}`);
 }
 const meanAbsoluteError = formulaResiduals.reduce((sum, item) => sum + Math.abs(item.error), 0) / formulaResiduals.length;
 const withinThree = formulaResiduals.filter(item => Math.abs(item.error) <= 3).length;
@@ -141,15 +123,13 @@ const largeResiduals = formulaResiduals
   .filter(item => Math.abs(item.error) >= 5)
   .sort((a, b) => Math.abs(b.error) - Math.abs(a.error) || a.id.localeCompare(b.id));
 const validationErrors = [];
-if (meanAbsoluteError > 1.7) {
-  validationErrors.push(`全联盟 OVR 平均绝对误差过大：${meanAbsoluteError.toFixed(3)} > 1.700`);
-}
-if (withinThree / formulaResiduals.length < 0.9) {
-  validationErrors.push(`全联盟 OVR ±3 命中率不足：${withinThree}/${formulaResiduals.length}`);
-}
-if (largeResiduals.length) {
-  validationErrors.push(`仍有 ${largeResiduals.length} 名球员的公式 OVR 与来源 OVR 相差至少 5 点`);
-}
+const clutchOnly = { ...baselineAttrs, CLU: 99 };
+const scorer = { ...baselineAttrs, threePT: 99, MID: 90, FIN: 92, HAN: 88 };
+const defender = { ...baselineAttrs, PDEF: 94, IDEF: 94, BLK: 92, REB: 90, STR: 88 };
+const clutchGain = formulaContext.calcOVR(clutchOnly, 'PF') - formulaContext.calcOVR(baselineAttrs, 'PF');
+if (clutchGain > 2) validationErrors.push(`CLU 对 PF OVR 的影响过大：+${clutchGain}`);
+if (formulaContext.calcOVR(scorer, 'SG') <= formulaContext.calcOVR(baselineAttrs, 'SG') + 12) validationErrors.push('得分核心没有显著提高 SG OVR');
+if (formulaContext.calcOVR(defender, 'C') <= formulaContext.calcOVR(baselineAttrs, 'C') + 12) validationErrors.push('防守核心没有显著提高 C OVR');
 let monotonicChecks = 0;
 leaguePlayers.forEach((player) => {
   const base = formulaContext.calcOVR(player, player.pos);
@@ -163,9 +143,6 @@ leaguePlayers.forEach((player) => {
 });
 formulaContext.syncLeaguePlayerOvrs();
 const formulaAverage = leaguePlayers.reduce((sum, player) => sum + player.ovr, 0) / leaguePlayers.length;
-if (Math.abs(formulaAverage - sourceAverage) > 0.5) {
-  throw new Error(`公式导致联盟 OVR 均值漂移过大：${sourceAverage.toFixed(2)} -> ${formulaAverage.toFixed(2)}`);
-}
 if (leaguePlayers.some(player => player._sourceOvr == null)) throw new Error('全联盟同步后存在未保留来源 OVR 的球员');
 
 console.log(JSON.stringify({
@@ -176,9 +153,9 @@ console.log(JSON.stringify({
   withinThree: `${withinThree}/${leaguePlayers.length}`,
   withinThreeRate: `${(withinThree / leaguePlayers.length * 100).toFixed(2)}%`,
   largeResidualCount: largeResiduals.length,
-  largeResiduals,
+  largestResiduals: largeResiduals.slice(0, 10),
   monotonicChecks,
   validationErrors,
-  fairness: { baselineOvrs, coreBuildOvrs, coreBuildGap },
+  unifiedModel: { baselineOvrs, clutchGain },
 }, null, 2));
 if (validationErrors.length) process.exitCode = 1;

@@ -1,13 +1,28 @@
 (function installManagerState(global) {
   'use strict';
 
-  var VERSION = 4;
+  var VERSION = 5;
   var POSITION_SLOTS = ['PG', 'SG', 'SF', 'PF', 'C'];
   var DEFAULT_MINUTES = [34, 34, 32, 32, 30, 20, 18, 16, 14, 10];
 
   function deepClone(value) {
     if (value == null) return value;
     return JSON.parse(JSON.stringify(value));
+  }
+
+  function syncUnifiedRatings(leagueData) {
+    if (!leagueData || typeof global.getUnifiedPlayerOvr !== 'function') return 0;
+    var changed = 0;
+    Object.keys(leagueData).forEach(function(teamId) {
+      (leagueData[teamId] || []).forEach(function(player) {
+        if (!player) return;
+        var next = global.getUnifiedPlayerOvr(player, player.pos);
+        if (Number(player.ovr) === next) return;
+        player.ovr = next;
+        changed++;
+      });
+    });
+    return changed;
   }
 
   function hashSeed(value) {
@@ -169,6 +184,7 @@
   function create(teamId, sourceLeagueData, teamIds, scheduleFactory, config) {
     if (!teamId || teamIds.indexOf(teamId) < 0) throw new Error('请选择有效球队。');
     var leagueData = deepClone(sourceLeagueData);
+    syncUnifiedRatings(leagueData);
     var roster = leagueData[teamId] || [];
     var schedule = scheduleFactory({
       teams: teamIds.slice(),
@@ -318,6 +334,16 @@
     return state;
   }
 
+  function migrateVersionFour(state, teamIds) {
+    syncUnifiedRatings(state.leagueData);
+    ensureSeasonDefaults(state, teamIds);
+    state.rotation = normalizeRotation(state.leagueData[state.selectedTeam], state.rotation);
+    ensureOwnerDefaults(state);
+    state.tradeHistory = normalizeTradeHistory(state.tradeHistory);
+    state.version = 5;
+    return state;
+  }
+
   function normalize(saved) {
     if (!saved || typeof saved !== 'object' || saved.mode !== 'manager' || typeof saved.selectedTeam !== 'string' || !saved.selectedTeam) {
       throw new Error('经理存档格式无效。');
@@ -344,8 +370,12 @@
       } else if (version === 3) {
         state = migrateVersionThree(state, teamIds);
         version = state.version;
+      } else if (version === 4) {
+        state = migrateVersionFour(state, teamIds);
+        version = state.version;
       }
     }
+    syncUnifiedRatings(state.leagueData);
     ensureSeasonDefaults(state, teamIds);
     state.rotation = normalizeRotation(state.leagueData[state.selectedTeam], state.rotation);
     ensureOwnerDefaults(state);

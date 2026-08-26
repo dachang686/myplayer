@@ -463,7 +463,9 @@ function getTeamPowerScore(team) {
   if (typeof calcTeamPowerWithPlayer !== 'function') return 0;
   var p = calcTeamPowerWithPlayer(team);
   if (!p || typeof p === 'number') return p || 0;
-  return ((p.offense || 0) * 0.35 + (p.defense || 0) * 0.35 + (p.depth || 0) * 0.3);
+  return typeof getTeamCompetitiveRating === 'function'
+    ? getTeamCompetitiveRating(p).total
+    : (p.overall || 0);
 }
 
 function generateContractOffers() {
@@ -1389,7 +1391,8 @@ function applyDraftClass2026() {
         type: '新秀',
         ovr: ovr,
         _age: 19 + Math.floor(Math.random() * 3),
-        contract: pk.pick <= 14 ? 3 : (pk.pick <= 30 ? 2 : 1),
+        // 所有选秀球员至少有三年新秀合同，避免尚未取得母队续约权就过早失业。
+        contract: pk.pick <= 14 ? 4 : 3,
         loyalty: inferPlayerLoyalty('D26-' + pad),
         _awardStreak: {},
         _justSigned: true,
@@ -1458,9 +1461,8 @@ function processDraft() {
       applyRookieAttributeProfile(rookie, targetOvr, rngNext);
     }
     // 新秀合同
-    if (idx < 5) rookie.contract = 3 + Math.floor(rngNext() * 2);
-    else if (idx < 14) rookie.contract = 2 + Math.floor(rngNext() * 3);
-    else rookie.contract = 1 + Math.floor(rngNext() * 3);
+    if (idx < 5) rookie.contract = 4;
+    else rookie.contract = 3;
     rookie.loyalty = getRookieContractLoyalty(rookie.contract);
 
     var roster = LEAGUE_PLAYER_DATA[t];
@@ -1473,8 +1475,8 @@ function processDraft() {
 }
 
 // ==================== 自由球员系统 ====================
-// 这是一个隐藏的薪资单位，而不是现实货币。它只负责把“阵容名额、工资帽、
-// 球员市场价值”放进同一个可解释的自由市场决策里。
+// 这是一个隐藏的薪资单位，而不是现实货币。工资用于体现市场价值和球队成本，
+// 但不会作为自由市场签约/续约的硬性资格门槛；阵容名额仍然严格限制。
 var FREE_AGENT_MARKET = {
   rosterLimit: 18,
   softCap: 100,
@@ -1695,6 +1697,16 @@ function getFreeAgentRound(player) {
   return 3;
 }
 
+// 简化版受限制自由球员：年轻主力即使母队不主动续约，也不会在自由市场结束后
+// 因为阵容算法而直接失业。母队保有最后的回签机会。
+function isYoungCoreFreeAgent(player) {
+  if (!player) return false;
+  var age = typeof getLeaguePlayerAge === 'function'
+    ? getLeaguePlayerAge(player)
+    : Number(player._age) || 99;
+  return age <= 24 && (Number(player.ovr) || 0) >= 84;
+}
+
 function getCareerTeamTenure() {
   if (typeof STATE === 'undefined' || !STATE || !STATE.career) return 0;
   var team = STATE.careerTeam;
@@ -1748,7 +1760,6 @@ function buildContractOffer(player, teamId, options) {
   var rosterTarget = Math.max(0, getLeagueRosterNpcLimit(teamId) - userIncomingCount);
   var incomingNpcCount = player._isUser ? 0 : 1;
   var minimumRoster = Math.min(rosterTarget, 12);
-  var marketValue = getPlayerMarketValue(player);
   var cutCandidates = [];
   if (!isRetention) {
     var preferredCandidates = getFreeAgentRosterCutCandidates(teamId, false);
@@ -1766,13 +1777,6 @@ function buildContractOffer(player, teamId, options) {
     return roster.length - rosterCuts.length + incomingNpcCount > rosterTarget;
   }
 
-  function capAllows(payroll) {
-    var total = payroll + salary;
-    if (birdRights) return total <= FREE_AGENT_MARKET.secondApron + 0.001;
-    if (total <= FREE_AGENT_MARKET.softCap + 0.001) return true;
-    return salary <= 6 && total <= FREE_AGENT_MARKET.firstApron + 0.001;
-  }
-
   function takeNextRosterCutCandidate() {
     if (!player._isUser) return cutCandidates.shift();
     var eligibleIndices = [];
@@ -1781,26 +1785,15 @@ function buildContractOffer(player, teamId, options) {
       if ((Number(candidate && candidate.ovr) || 0) < 88) eligibleIndices.push(index);
     });
     if (!eligibleIndices.length) return null;
-    if (capAllows(payrollAfterCut)) return cutCandidates.splice(eligibleIndices[0], 1)[0];
-
-    var bestIndex = eligibleIndices[0];
-    for (var i = 1; i < eligibleIndices.length; i++) {
-      var candidateIndex = eligibleIndices[i];
-      var candidateSalary = getPlayerSalary(cutCandidates[candidateIndex]);
-      var bestSalary = getPlayerSalary(cutCandidates[bestIndex]);
-      if (candidateSalary > bestSalary
-          || (candidateSalary === bestSalary
-            && getPlayerMarketValue(cutCandidates[candidateIndex]) < getPlayerMarketValue(cutCandidates[bestIndex]))) {
-        bestIndex = candidateIndex;
-      }
-    }
-    return cutCandidates.splice(bestIndex, 1)[0];
+    return cutCandidates.splice(eligibleIndices[0], 1)[0];
   }
 
-  while (!isRetention && (rosterNeedsCut() || !capAllows(payrollAfterCut))) {
+  // 工资帽不再阻断报价；只有球队满员时才会腾出阵容位置。
+  while (!isRetention && rosterNeedsCut()) {
     var candidate = takeNextRosterCutCandidate();
     if (!candidate) break;
-    if (!player._isUser && marketValue <= getPlayerMarketValue(candidate) + 8) break;
+    // 不为签下一名同等或更低评分的球员裁掉现有球员。
+    if (!player._isUser && (Number(candidate.ovr) || 0) >= (Number(player.ovr) || 0)) break;
     if (roster.length - rosterCuts.length - 1 < minimumRoster) break;
     rosterCuts.push(candidate);
     payrollAfterCut -= getPlayerSalary(candidate);
@@ -1809,20 +1802,6 @@ function buildContractOffer(player, teamId, options) {
   if (!isRetention && rosterNeedsCut()) return null;
 
   var totalAfterSigning = payrollAfterCut + salary;
-  var capLegal;
-  if (source === 'career_retention' && birdRights) {
-    // 简化 Bird 规则：母队可以超过工资帽续约长期效力的玩家；土豪线只作为球队成本，
-    // 不再充当续约硬上限。
-    capLegal = true;
-  } else if (birdRights) {
-    // Bird 允许母队超过软帽，但签约后仍受联盟的二土豪线硬上限约束。
-    capLegal = totalAfterSigning <= FREE_AGENT_MARKET.secondApron + 0.001;
-  } else {
-    capLegal = totalAfterSigning <= FREE_AGENT_MARKET.softCap + 0.001;
-    if (!capLegal && salary <= 6 && totalAfterSigning <= FREE_AGENT_MARKET.firstApron + 0.001) capLegal = true;
-  }
-  if (!capLegal) return null;
-
   return {
     teamId: teamId,
     salary: salary,
@@ -1834,6 +1813,7 @@ function buildContractOffer(player, teamId, options) {
     rosterCuts: rosterCuts,
     rosterCut: rosterCuts[0] || null,
     source: source,
+    // 保留这个字段给现有 UI/调用方；工资帽不再决定报价是否合法。
     capLegal: true,
     rosterCount: roster.length
   };
@@ -2701,7 +2681,7 @@ function buildFreeAgentOffer(player, teamId, round, standings) {
     rosterCuts: terms.rosterCuts,
     roleOpportunity: roleOpportunity,
     rosterCut: terms.rosterCut,
-    overTax: terms.payroll > FREE_AGENT_MARKET.taxLine,
+    overTax: terms.payrollAfterSigning > FREE_AGENT_MARKET.taxLine,
     winPct: getTeamHistoricalWinPct(teamId, standings),
   };
   offer.preferenceScore = getFreeAgentPlayerPreferenceScore(player, teamId, standings, offer, (rngNext() - 0.5) * 0.05)
@@ -2838,6 +2818,15 @@ function assignFreeAgents(options) {
   }
 
   function finishFreeAgentAssignment() {
+    // 年轻核心的母队拥有最后回签权。正常四轮市场已给其他球队充分竞争机会；
+    // 若仍无人签下，原队会在不受工资帽阻断的前提下给出市场合同。
+    pool.forEach(function(fa) {
+      if (signedIds[String(fa.id || fa.cname)] || !isYoungCoreFreeAgent(fa)) return;
+      var originalTeam = fa._origTeam;
+      if (teams.indexOf(originalTeam) < 0) return;
+      var returnOffer = buildFreeAgentOffer(fa, originalTeam, 3, st);
+      if (returnOffer) signFreeAgent(fa, returnOffer, 3, 1);
+    });
     pool.forEach(function(fa) {
       if (!signedIds[String(fa.id || fa.cname)]) unsignedPlayers.push(fa);
     });
@@ -3205,6 +3194,10 @@ function calcOvrPositionScore(attrs, pos) {
 }
 
 function calcOVR(attrs, pos) {
+  var unifiedOvr = typeof getUnifiedPlayerOvr === 'function'
+    ? getUnifiedPlayerOvr
+    : (SIM_CONFIG && SIM_CONFIG.getUnifiedPlayerOvr);
+  if (typeof unifiedOvr === 'function') return unifiedOvr(attrs, pos);
   var model = SIM_CONFIG && SIM_CONFIG.OVR_MODEL;
   if (!model) return 50;
   var positions = getOvrPositions(pos);
@@ -3386,7 +3379,7 @@ function evolveGeneratedPlayerAttributes(player, oldOvr, newOvr) {
 function syncGeneratedLeaguePlayerOvr(player) {
   if (!isGeneratedLeaguePlayer(player)) return false;
   var pos = String(player.pos || '').split('/')[0].trim();
-  if (!SIM_CONFIG || !SIM_CONFIG.OVR_WEIGHTS || !SIM_CONFIG.OVR_WEIGHTS[pos]) return false;
+  if (!SIM_CONFIG || !pos || typeof calcOVR !== 'function') return false;
   var nextOvr = calcOVR(player, pos);
   if (player.ovr === nextOvr) return false;
   player.ovr = nextOvr;
@@ -3426,11 +3419,9 @@ function syncLeaguePlayerOvrs() {
       if (isGeneratedLeaguePlayer(player)) {
         rebalanceLegacyGeneratedPlayer(player);
         refreshGeneratedPlayerType(player);
-      } else {
-        // 现实球员的 OVR 由最新 NBA 2K 快照提供；属性公式只用于校验，
-        // 不能在页面初始化时把 2K 的 98/97 等基准重新抬成 99。
-        return;
       }
+      // V3 起 OVR 是所有模式共用的属性摘要。保留 _sourceOvr 仅用于历史对照，
+      // 运行时名单、轮换、交易和页面展示统一读取同一套计算结果。
       var nextOvr = calcOVR(player, player.pos);
       if (player.ovr === nextOvr) return;
       player.ovr = nextOvr;
@@ -3881,7 +3872,7 @@ function evolveLeague() {
         var stayRate = calculateContractStayRate(p, hist, roleContext);
 
         if (rngNext() < stayRate) {
-          // 留队意愿只是第一道门；合同还必须通过同一套工资帽/Bird 合法性判断。
+          // 留队意愿只是第一道门；工资帽不再否决续约，工资仅记录球队成本。
           var retentionOffer = buildContractOffer(p, t, {
             source: 'retention',
             round: 0,
@@ -3893,7 +3884,7 @@ function evolveLeague() {
             delete p.salary;
             freeAgents.push(p);
             STATE._leagueChanges.freeAgents = STATE._leagueChanges.freeAgents || [];
-            STATE._leagueChanges.freeAgents.push({ name: p.cname, playerId: p.id, ovr: p.ovr, team: t, age: age, reason: 'retention_cap_denied' });
+            STATE._leagueChanges.freeAgents.push({ name: p.cname, playerId: p.id, ovr: p.ovr, team: t, age: age, reason: 'retention_unavailable' });
             return;
           }
 

@@ -130,13 +130,13 @@ function runGame(teamA, teamB, prepared, seed) {
 const control = makeSyntheticTeam('V2_CALIBRATION_CONTROL', null, null);
 const scenarios = [
   { label: '基准', offense: null, defense: null, min: 0.48, max: 0.52 },
-  { label: '进攻 +5', offense: 85, defense: null, min: 0.51, max: 0.56 },
-  { label: '进攻 +10', offense: 90, defense: null, min: 0.55, max: 0.60 },
-  { label: '进攻 +15', offense: 95, defense: null, min: 0.58, max: 0.65 },
-  { label: '防守 +5', offense: null, defense: 85, min: 0.50, max: 0.56 },
-  { label: '防守 +10', offense: null, defense: 90, min: 0.53, max: 0.60 },
-  { label: '防守 +15', offense: null, defense: 95, min: 0.56, max: 0.63 },
-  { label: '攻防同时 +10', offense: 90, defense: 90, min: 0.60, max: 0.67 },
+  { label: '进攻 +5', offense: 85, defense: null, min: 0.57, max: 0.66 },
+  { label: '进攻 +10', offense: 90, defense: null, min: 0.65, max: 0.75 },
+  { label: '进攻 +15', offense: 95, defense: null, min: 0.75, max: 0.86 },
+  { label: '防守 +5', offense: null, defense: 85, min: 0.50, max: 0.60 },
+  { label: '防守 +10', offense: null, defense: 90, min: 0.60, max: 0.71 },
+  { label: '防守 +15', offense: null, defense: 95, min: 0.67, max: 0.78 },
+  { label: '攻防同时 +10', offense: 90, defense: 90, min: 0.77, max: 0.88 },
 ];
 
 const report = scenarios.map((scenario, index) => {

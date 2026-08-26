@@ -27,6 +27,11 @@
   }
 
   function teamName(teamId) { return global.ManagerEngine.teamName(teamId); }
+  function playerOvr(player) {
+    return typeof global.getUnifiedPlayerOvr === 'function'
+      ? global.getUnifiedPlayerOvr(player, player && player.pos)
+      : (Number(player && player.ovr) || 0);
+  }
   function leagueData() { return typeof LEAGUE_PLAYER_DATA !== 'undefined' ? LEAGUE_PLAYER_DATA : (global.LEAGUE_PLAYER_DATA || {}); }
   function config() { return typeof SIM_CONFIG !== 'undefined' ? SIM_CONFIG : (global.SIM_CONFIG || {}); }
   function teamIds() { return (typeof LEAGUE_TEAM_IDS !== 'undefined' ? LEAGUE_TEAM_IDS : Object.keys(leagueData())).slice(); }
@@ -101,7 +106,7 @@
       '<div class="manager-section-heading"><span>选择执教球队</span><small>30 支球队 · 2026-27 赛季</small></div>' +
       '<div class="manager-team-grid">' + teamIds().map(function(id) {
         var roster = leagueData()[id] || [];
-        var power = roster.slice().sort(function(a, b) { return (Number(b.ovr) || 0) - (Number(a.ovr) || 0); }).slice(0, 5).reduce(function(sum, player) { return sum + (Number(player.ovr) || 0); }, 0) / Math.max(1, Math.min(5, roster.length));
+        var power = roster.slice().sort(function(a, b) { return playerOvr(b) - playerOvr(a); }).slice(0, 5).reduce(function(sum, player) { return sum + playerOvr(player); }, 0) / Math.max(1, Math.min(5, roster.length));
         return '<button class="manager-team-card" type="button" data-action="select-team" data-team="' + escapeHtml(id) + '">' +
           '<span class="manager-team-code">' + escapeHtml(id) + '</span>' +
           '<span class="manager-team-copy"><strong>' + escapeHtml(teamName(id)) + '</strong><small>核心强度 ' + Math.round(power) + '</small></span>' +
@@ -183,7 +188,7 @@
     var roster = current.leagueData[current.selectedTeam] || [];
     var validation = global.ManagerState.validateRotation(roster, current.rotation);
     var sorted = roster.slice().sort(function(a, b) {
-      return (Number(current.rotation[b.id] && current.rotation[b.id].minutes) || 0) - (Number(current.rotation[a.id] && current.rotation[a.id].minutes) || 0) || ((Number(b.ovr) || 0) - (Number(a.ovr) || 0));
+      return (Number(current.rotation[b.id] && current.rotation[b.id].minutes) || 0) - (Number(current.rotation[a.id] && current.rotation[a.id].minutes) || 0) || (playerOvr(b) - playerOvr(a));
     });
     main.innerHTML = '<section class="manager-page manager-roster-page">' +
       '<div class="manager-page-head"><div><div class="manager-eyebrow">阵容办公室 / ROTATION</div><h1>把每一分钟都安排好。</h1><p>首发必须覆盖五个位置，轮换人数 9 至 11 人，总时间严格为 240 分钟。</p></div></div>' +
@@ -194,7 +199,7 @@
         var positions = escapeHtml(String(player.pos || '').replace(/\s+/g, ' '));
         return '<article class="manager-player-row ' + (assignment.starter ? 'is-starter' : '') + ' ' + (Number(assignment.minutes) > 0 ? 'is-active' : 'is-inactive') + '" data-rotation-player="' + escapeHtml(player.id) + '">' +
           '<div class="manager-player-rank">' + (assignment.starter ? 'S' : (Number(assignment.minutes) > 0 ? 'R' : '—')) + '</div>' +
-          '<div class="manager-player-copy"><strong>' + escapeHtml(player.cname || player.name || '球员') + '</strong><span>' + positions + ' · OVR ' + (Number(player.ovr) || 0) + '</span></div>' +
+          '<div class="manager-player-copy"><strong>' + escapeHtml(player.cname || player.name || '球员') + '</strong><span>' + positions + ' · OVR ' + playerOvr(player) + '</span></div>' +
           '<label class="manager-minute-field"><span>分钟</span><input type="number" min="0" max="48" step="1" value="' + (Number(assignment.minutes) || 0) + '" data-minute-player="' + escapeHtml(player.id) + '"></label>' +
           '<button class="manager-toggle-button" type="button" data-action="toggle-starter" data-player="' + escapeHtml(player.id) + '" aria-pressed="' + (!!assignment.starter) + '">' + (assignment.starter ? '首发' : '轮换') + '</button>' +
         '</article>';
@@ -261,12 +266,12 @@
   function renderTrade() {
     var current = state();
     var roster = (current.leagueData[current.selectedTeam] || []).slice().sort(function(first, second) {
-      return (Number(second.ovr) || 0) - (Number(first.ovr) || 0) || String(first.id).localeCompare(String(second.id));
+      return playerOvr(second) - playerOvr(first) || String(first.id).localeCompare(String(second.id));
     });
     var teams = tradeableTeams(current);
     if (teams.indexOf(tradePartnerTeamId) < 0) tradePartnerTeamId = teams[0] || null;
     var partnerRoster = tradePartnerTeamId ? (current.leagueData[tradePartnerTeamId] || []).slice().sort(function(first, second) {
-      return (Number(second.ovr) || 0) - (Number(first.ovr) || 0) || String(first.id).localeCompare(String(second.id));
+      return playerOvr(second) - playerOvr(first) || String(first.id).localeCompare(String(second.id));
     }) : [];
     tradeOutgoingIds = validTradeSelection(roster, tradeOutgoingIds);
     tradeIncomingIds = validTradeSelection(partnerRoster, tradeIncomingIds);
@@ -281,13 +286,13 @@
     var outgoingChoices = roster.map(function(player) {
       var selected = tradeOutgoingIds.indexOf(player.id) >= 0;
       return '<button type="button" class="manager-trade-player-choice ' + (selected ? 'is-selected' : '') + '" data-action="select-trade-outgoing" data-player="' + escapeHtml(player.id) + '" aria-pressed="' + selected + '"' + (windowOpen ? '' : ' disabled') + '>' +
-        '<span><b>' + escapeHtml(playerName(player)) + '</b><small>' + escapeHtml(player.pos || '位置待定') + '</small></span><strong>' + (Number(player.ovr) || 0) + '</strong>' +
+        '<span><b>' + escapeHtml(playerName(player)) + '</b><small>' + escapeHtml(player.pos || '位置待定') + '</small></span><strong>' + playerOvr(player) + '</strong>' +
       '</button>';
     }).join('');
     var incomingChoices = partnerRoster.map(function(player) {
       var selected = tradeIncomingIds.indexOf(player.id) >= 0;
       return '<button type="button" class="manager-trade-player-choice ' + (selected ? 'is-selected' : '') + '" data-action="select-trade-incoming" data-player="' + escapeHtml(player.id) + '" aria-pressed="' + selected + '"' + (windowOpen ? '' : ' disabled') + '>' +
-        '<span><b>' + escapeHtml(playerName(player)) + '</b><small>' + escapeHtml(player.pos || '位置待定') + '</small></span><strong>' + (Number(player.ovr) || 0) + '</strong>' +
+        '<span><b>' + escapeHtml(playerName(player)) + '</b><small>' + escapeHtml(player.pos || '位置待定') + '</small></span><strong>' + playerOvr(player) + '</strong>' +
       '</button>';
     }).join('');
     var history = (current.tradeHistory || []).slice().reverse().slice(0, 4).map(function(trade) {
@@ -318,7 +323,7 @@
 
   function averageOvr(players) {
     if (!players.length) return 0;
-    return Math.round(players.reduce(function(sum, player) { return sum + (Number(player.ovr) || 0); }, 0) / players.length);
+    return Math.round(players.reduce(function(sum, player) { return sum + playerOvr(player); }, 0) / players.length);
   }
 
   function lineupOvr(current, teamId) {
@@ -327,13 +332,13 @@
       roster.sort(function(a, b) {
         var aAssignment = current.rotation[a.id] || {};
         var bAssignment = current.rotation[b.id] || {};
-        return (Number(bAssignment.minutes) || 0) - (Number(aAssignment.minutes) || 0) || (Number(b.ovr) || 0) - (Number(a.ovr) || 0);
+        return (Number(bAssignment.minutes) || 0) - (Number(aAssignment.minutes) || 0) || playerOvr(b) - playerOvr(a);
       });
       var starters = roster.filter(function(player) { return current.rotation[player.id] && current.rotation[player.id].starter; }).slice(0, 5);
       var rotation = roster.filter(function(player) { return current.rotation[player.id] && Number(current.rotation[player.id].minutes) > 0; }).slice(0, 10);
       return { starter: averageOvr(starters.length === 5 ? starters : roster.slice(0, 5)), rotation: averageOvr(rotation.length ? rotation : roster.slice(0, 10)) };
     }
-    roster.sort(function(a, b) { return (Number(b.ovr) || 0) - (Number(a.ovr) || 0); });
+    roster.sort(function(a, b) { return playerOvr(b) - playerOvr(a); });
     return { starter: averageOvr(roster.slice(0, 5)), rotation: averageOvr(roster.slice(0, 10)) };
   }
 
@@ -365,7 +370,7 @@
         var key = playerId || teamId + ':' + String(player.cname || player.name || '');
         if (seen[key]) return;
         seen[key] = true;
-        var ovr = Number(player.ovr) || 0;
+        var ovr = playerOvr(player);
         if (ovr <= 0) return;
         rows.push({
           playerId: playerId,
