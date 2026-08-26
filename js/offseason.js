@@ -2570,9 +2570,9 @@ function getTeamHistoricalWinPct(teamId, standings) {
   return wins + losses > 0 ? wins / (wins + losses) : 0.5;
 }
 
-function getFreeAgentRoleOpportunityScore(player, teamId) {
+function getFreeAgentRoleOpportunityScore(player, teamId, cachedLineup) {
   if (!player || typeof calcTeamLineup !== 'function') return 0;
-  var lineup = calcTeamLineup(teamId);
+  var lineup = cachedLineup || calcTeamLineup(teamId);
   var positions = ['PG','SG','SF','PF','C'].filter(function(pos) {
     return canPlayPosition(player.pos || '', pos);
   });
@@ -2655,7 +2655,8 @@ function getFreeAgentRosterCutCandidate(teamId, allowJustSigned) {
   return getFreeAgentRosterCutCandidates(teamId, allowJustSigned)[0] || null;
 }
 
-function buildFreeAgentOffer(player, teamId, round, standings) {
+function buildFreeAgentOffer(player, teamId, round, standings, options) {
+  options = options || {};
   var terms = buildContractOffer(player, teamId, {
     source: 'free_agent',
     round: round,
@@ -2664,7 +2665,9 @@ function buildFreeAgentOffer(player, teamId, round, standings) {
   if (!terms) return null;
   var birdRights = terms.birdRights;
   var salary = terms.salary;
-  var roleOpportunity = getFreeAgentRoleOpportunityScore(player, teamId);
+  var roleOpportunity = Number.isFinite(Number(options.roleOpportunity))
+    ? Number(options.roleOpportunity)
+    : getFreeAgentRoleOpportunityScore(player, teamId);
 
   var tier = getPlayerMarketTier(player);
   // 同位置已经有压倒性核心时，球员可能不接受替补角色；这只是角色判断，
@@ -2717,6 +2720,15 @@ function assignFreeAgents(options) {
   var teams = LEAGUE_TEAM_IDS.slice();
   var unsignedPlayers = [];
   var signedIds = {};
+  // 一轮内同一支球队的首发结构不会变化；只有完成签约时才让该队缓存失效。
+  var lineupCache = {};
+
+  function getCachedRoleOpportunity(player, teamId) {
+    if (!Object.prototype.hasOwnProperty.call(lineupCache, teamId)) {
+      lineupCache[teamId] = typeof calcTeamLineup === 'function' ? calcTeamLineup(teamId) : null;
+    }
+    return getFreeAgentRoleOpportunityScore(player, teamId, lineupCache[teamId]);
+  }
 
   function addFreeAgentSummary(player, team, reason) {
     STATE._leagueChanges.freeAgents.push({
@@ -2782,12 +2794,15 @@ function assignFreeAgents(options) {
       STATE._leagueChanges.teamChanges[offer.teamId] = STATE._leagueChanges.teamChanges[offer.teamId] || { retired: [], rookies: [] };
       STATE._leagueChanges.teamChanges[offer.teamId].rookies.push(fa.cname);
     }
+    delete lineupCache[offer.teamId];
     signedIds[String(fa.id || fa.cname)] = true;
   }
 
   function getRoundCandidates(round) {
     return pool.filter(function(fa) {
-      return !signedIds[String(fa.id || fa.cname)] && getFreeAgentRound(fa) <= round;
+      // 工资帽不再造成“第一轮无合法报价、后续降薪重试”的情况；
+      // 每名球员只在所属轮次结算一次，避免四轮重复扫描同一批人。
+      return !signedIds[String(fa.id || fa.cname)] && getFreeAgentRound(fa) === round;
     }).sort(function(a, b) {
       return getPlayerMarketValue(b) - getPlayerMarketValue(a) || (Number(b.ovr) || 0) - (Number(a.ovr) || 0);
     });
@@ -2799,7 +2814,9 @@ function assignFreeAgents(options) {
     var best = null;
     var offersCount = 0;
     teams.forEach(function(teamId) {
-      var offer = buildFreeAgentOffer(fa, teamId, round, st);
+      var offer = buildFreeAgentOffer(fa, teamId, round, st, {
+        roleOpportunity: getCachedRoleOpportunity(fa, teamId)
+      });
       if (!offer) return;
       offersCount++;
       if (!best

@@ -10999,12 +10999,8 @@ function runOffseasonPipelineStage(stage, action) {
 
 function continueCareerAfterLeagueDraft() {
   return runOffseasonPipelineStage('free_agents', function() {
-    return assignFreeAgents({
-      yieldToBrowser: true,
-      onProgress: function(progress) {
-        updateOffseasonPipelineStatus('free_agents', '正在结算自由球员（第 ' + progress.round + '/' + progress.rounds + ' 轮）…');
-      }
-    });
+    // 自由市场已改为单次结算，避免多次定时分批造成明显等待。
+    return assignFreeAgents();
   }).then(function() {
     return runOffseasonPipelineStage('trades', processTrades);
   }).then(function() {

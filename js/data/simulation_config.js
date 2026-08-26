@@ -344,11 +344,9 @@ const SIM_CONFIG = {
    * 投射、终结、组织、防守、篮板与运动能力各只计算一次；CLU 仅保留很小的情境权重。
    */
   PLAYER_RATING_MODEL: {
-    version: 4,
-    mode: 'position-neutral-role-driven',
-    validPositions: ['PG', 'SG', 'SF', 'PF', 'C'],
-    overall: { offense: 0.55, defense: 0.38, athletic: 0.07 },
-    scale: { linear: 1.17 }
+    version: 5,
+    mode: 'primary-secondary-role-impact',
+    validPositions: ['PG', 'SG', 'SF', 'PF', 'C']
   },
   // ============================================================
   // 4. 赛季模拟参数 — 你可以随意调整
@@ -819,7 +817,6 @@ function getUnifiedPlayerRatingAttribute(player, key) {
  * 返回值均为 25~99 量表；全 50 属性必然得到 50，避免隐藏基准偏移。
  */
 function getUnifiedPlayerRating(player, position) {
-  var model = SIM_CONFIG.PLAYER_RATING_MODEL;
   var pos = getUnifiedPlayerRatingPosition(position || (player && player.pos));
   function attr(key) { return getUnifiedPlayerRatingAttribute(player, key); }
   function clampRating(value) { return Math.max(25, Math.min(99, value)); }
@@ -840,6 +837,37 @@ function getUnifiedPlayerRating(player, position) {
       / Math.max(1, (eliteKeys || partnerKeys).length);
     // 50 属性时 base、paired 都是 50，因此没有隐藏基准偏移；顶级组合的额外收益封顶为 3.5 分。
     return clampRating(base * 0.82 + paired * 0.18 + elitePackage * 3.5);
+  }
+  function gmValues(values) {
+    var product = values.reduce(function(result, value) {
+      return result * Math.max(25, Number(value) || 50);
+    }, 1);
+    return Math.pow(product, 1 / values.length);
+  }
+  function roleCeilingBoost(baseRole, attributeKeys, cap, apexValue, apexThreshold, apexWeight) {
+    var eliteExcess = attributeKeys.reduce(function(sum, key) {
+      return sum + Math.max(0, attr(key) - 85);
+    }, 0);
+    var eliteCount = attributeKeys.filter(function(key) {
+      return attr(key) >= 90;
+    }).length;
+    var apexBonus = Number.isFinite(apexValue)
+      ? Math.max(0, apexValue - apexThreshold) * apexWeight
+      : 0;
+    var rawBonus = eliteExcess * 0.10
+      + Math.max(0, eliteCount - 1) * 0.50
+      + apexBonus;
+    // 基础角色未达到合格水平时，单项顶级属性不能制造顶级角色。
+    var gate = Math.max(0, Math.min(1, (baseRole - 76) / 12));
+    return Math.min(cap, rawBonus) * gate;
+  }
+  function adjustedRole(baseRole, keys, cap, apexValue, apexThreshold, apexWeight) {
+    return clampRating(baseRole + roleCeilingBoost(
+      baseRole, keys, cap, apexValue, apexThreshold, apexWeight
+    ));
+  }
+  function roleImpactValue(roleScore, multiplier) {
+    return clampRating(50 + (roleScore - 50) * multiplier);
   }
 
   var shootingGravity = component(weighted({ threePT: 0.68, MID: 0.32 }), ['threePT', 'MID', 'HAN']);
@@ -876,20 +904,159 @@ function getUnifiedPlayerRating(player, position) {
   var shotLoad = clampRating(scorer * 0.55 + shotCreation * 0.30 + rimScoring * 0.15);
   var defensiveLoad = clampRating(pointOfAttackDefense * 0.28 + interiorDefense * 0.27 + rimProtection * 0.25 + rebounding * 0.20);
   var scoringEfficiency = clampRating(shootingGravity * 0.44 + rimScoring * 0.46 + ballSecurity * 0.10);
-  var coreRole = Math.max(primaryCreator, hubCreator);
-  // 中立影响不是按固定位置权重相加：持球核心和组织中轴的附加值来自可承担的角色，
-  // 而非把 PAS 单独线性抬高。
+
+  var roleV5 = {
+    primaryCreator: adjustedRole(
+      primaryCreator, ['HAN', 'PAS', 'threePT', 'FIN'], 6,
+      gmValues([attr('HAN'), attr('PAS'), Math.max(attr('threePT'), attr('MID'), attr('FIN'))]),
+      87, 0.18
+    ),
+    hubCreator: adjustedRole(
+      hubCreator, ['PAS', 'HAN', 'FIN', 'REB', 'MID'], 6,
+      gmValues([attr('PAS'), attr('HAN'), attr('FIN'), attr('REB')]),
+      86, 0.22
+    ),
+    scorer: adjustedRole(
+      scorer, ['threePT', 'MID', 'FIN', 'HAN'], 5,
+      gmValues([attr('HAN'), Math.max(attr('threePT'), attr('MID')), attr('FIN')]),
+      88, 0.16
+    ),
+    rimFinisher: adjustedRole(
+      rimFinisher, ['FIN', 'DNK', 'ATH', 'STR', 'REB'], 5,
+      gmValues([attr('FIN'), attr('REB'), Math.max(attr('DNK'), attr('ATH'), attr('STR'))]),
+      86, 0.20
+    ),
+    secondaryCreator: adjustedRole(
+      secondaryCreator, ['HAN', 'PAS', 'threePT', 'FIN'], 3, NaN, 0, 0
+    ),
+    spacer: adjustedRole(
+      spacer, ['threePT', 'MID', 'HAN'], 2.5, NaN, 0, 0
+    ),
+    perimeterStopper: adjustedRole(
+      perimeterStopper, ['PDEF', 'STL', 'ATH', 'STR'], 4,
+      gmValues([attr('PDEF'), attr('ATH'), attr('STL')]),
+      88, 0.10
+    ),
+    switchDefender: adjustedRole(
+      switchDefender, ['PDEF', 'IDEF', 'ATH', 'STR', 'REB'], 3.5, NaN, 0, 0
+    ),
+    defensiveAnchor: adjustedRole(
+      defensiveAnchor, ['IDEF', 'BLK', 'REB', 'STR'], 8,
+      gmValues([attr('IDEF'), attr('BLK'), attr('REB')]),
+      85, 0.35
+    ),
+  };
+
+  var roleImpact = {
+    primaryCreator: roleImpactValue(roleV5.primaryCreator, 1.05),
+    hubCreator: roleImpactValue(roleV5.hubCreator, 1.00),
+    scorer: roleImpactValue(roleV5.scorer, 0.96),
+    rimFinisher: roleImpactValue(roleV5.rimFinisher, 0.90),
+    secondaryCreator: roleImpactValue(roleV5.secondaryCreator, 0.78),
+    spacer: roleImpactValue(roleV5.spacer, 0.70),
+    perimeterStopper: roleImpactValue(roleV5.perimeterStopper, 0.60),
+    switchDefender: roleImpactValue(roleV5.switchDefender, 0.70),
+    defensiveAnchor: roleImpactValue(roleV5.defensiveAnchor, 1.08),
+  };
+
+  var offensiveCore = [
+    roleImpact.primaryCreator,
+    roleImpact.hubCreator,
+    roleImpact.scorer,
+    roleImpact.rimFinisher,
+  ].sort(function(a, b) { return b - a; });
+  var offensiveSupport = Math.max(roleImpact.secondaryCreator, roleImpact.spacer);
   var offense = clampRating(
-    scoringEfficiency * 0.39 + shotCreation * 0.23 + playmaking * 0.22 + ballSecurity * 0.08 + shootingGravity * 0.08
-      + Math.max(0, coreRole - 50) * 0.14
+    50
+      + (offensiveCore[0] - 50) * 0.76
+      + (offensiveCore[1] - 50) * 0.10
+      + (offensiveSupport - 50) * 0.08
+      + (scoringEfficiency - 50) * 0.06
   );
-  var defense = clampRating(
+  var defenseFoundation = clampRating(
     pointOfAttackDefense * 0.30 + interiorDefense * 0.25 + rimProtection * 0.24 + rebounding * 0.13 + disruption * 0.08
       + Math.max(0, defensiveAnchor - 50) * 0.08
   );
-  var neutralTotal = clampRating(offense * model.overall.offense + defense * model.overall.defense + athletic * model.overall.athletic);
-  var overall = clampRating(50 + (neutralTotal - 50) * model.scale.linear);
-  var rotationValue = clampRating(offense * 0.47 + defense * 0.30 + touchLoad * 0.15 + defensiveLoad * 0.08);
+  var defensiveCore = [
+    roleImpact.defensiveAnchor,
+    roleImpact.switchDefender,
+    roleImpact.perimeterStopper,
+  ].sort(function(a, b) { return b - a; });
+  var defense = clampRating(
+    50
+      + (defensiveCore[0] - 50) * 0.82
+      + (defensiveCore[1] - 50) * 0.12
+      + (defenseFoundation - 50) * 0.06
+  );
+
+  var highImpact = Math.max(offense, defense);
+  var lowImpact = Math.min(offense, defense);
+  var dominantEliteBonus = Math.min(4, Math.max(0, highImpact - 88) * 0.22);
+  var roleNames = Object.keys(roleImpact);
+  var peakRoleName = roleNames.reduce(function(best, key) {
+    return roleImpact[key] > roleImpact[best] ? key : best;
+  }, roleNames[0]);
+  var peakRoleImpact = roleImpact[peakRoleName];
+  var peakRoleBonus = Math.min(2, Math.max(0, peakRoleImpact - 90) * 0.25);
+  // 同一份顶级能力不能在主侧和角色层重复完整加分。
+  var apexBonus = Math.max(dominantEliteBonus, peakRoleBonus);
+  var twoWayBonus = Math.max(0, Math.min(offense, defense) - 80) * 0.25;
+  var overall = clampRating(
+    50
+      + (highImpact - 50) * 0.86
+      + (lowImpact - 50) * 0.20
+      + apexBonus
+      + twoWayBonus
+  );
+
+  // 纯护框角色不能仅凭防守支柱分数得到持球巨星级 OVR。
+  if (peakRoleName === 'defensiveAnchor') {
+    var creationComplement = Math.max(
+      roleImpact.primaryCreator,
+      roleImpact.hubCreator,
+      roleImpact.scorer
+    );
+    var anchorCeiling = 89
+      + Math.max(0, creationComplement - 80) * 0.80
+      + Math.max(0, roleImpact.rimFinisher - 80) * 0.25;
+    overall = Math.min(overall, anchorCeiling);
+  }
+
+  var creationLoadValue = clampRating(
+    roleImpact.primaryCreator * 0.55 + touchLoad * 0.25 + ballSecurity * 0.20
+  );
+  var hubLoadValue = clampRating(
+    roleImpact.hubCreator * 0.55 + touchLoad * 0.25 + playmaking * 0.20
+  );
+  var scoringLoadValue = clampRating(
+    roleImpact.scorer * 0.55 + shotLoad * 0.25 + scoringEfficiency * 0.20
+  );
+  var interiorLoadValue = clampRating(
+    roleImpact.rimFinisher * 0.55 + shotLoad * 0.20 + rebounding * 0.25
+  );
+  var anchorLoadValue = clampRating(
+    roleImpact.defensiveAnchor * 0.55 + defensiveLoad * 0.25 + rebounding * 0.20
+  );
+  var perimeterLoadValue = clampRating(
+    Math.max(roleImpact.perimeterStopper, roleImpact.switchDefender) * 0.55
+      + defensiveLoad * 0.25
+      + athletic * 0.20
+  );
+  var roleLoadValue = Math.max(
+    creationLoadValue,
+    hubLoadValue,
+    scoringLoadValue,
+    interiorLoadValue,
+    anchorLoadValue,
+    perimeterLoadValue
+  );
+  var rotationValue = clampRating(
+    50
+      + (roleLoadValue - 50) * 0.72
+      + (Math.max(offense, defense) - 50) * 0.18
+      + (athletic - 50) * 0.10
+  );
+  var neutralTotal = overall;
 
   return {
     position: pos,
@@ -899,11 +1066,7 @@ function getUnifiedPlayerRating(player, position) {
       pointOfAttackDefense: pointOfAttackDefense, interiorDefense: interiorDefense,
       rimProtection: rimProtection, rebounding: rebounding, disruption: disruption,
     },
-    roles: {
-      primaryCreator: primaryCreator, secondaryCreator: secondaryCreator, hubCreator: hubCreator,
-      scorer: scorer, spacer: spacer, rimFinisher: rimFinisher, perimeterStopper: perimeterStopper,
-      switchDefender: switchDefender, defensiveAnchor: defensiveAnchor,
-    },
+    roles: roleV5,
     capacity: { touchLoad: touchLoad, shotLoad: shotLoad, defensiveLoad: defensiveLoad },
     impact: { offense: offense, defense: defense, neutralTotal: neutralTotal },
     // 保留旧字段，令页面、存档和现有校验可渐进迁移。

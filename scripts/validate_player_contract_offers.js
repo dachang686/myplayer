@@ -246,10 +246,10 @@ if (!result.selectedContract || result.selectedContract.team !== 'ROUND_TEAM'
 if (!result.actualSelectedContract || result.actualSelectedContract.team === 'SAS'
     || result.actualSelectedContract.salary <= 0
     || result.actualSelectedContract.targetRosterAfter > 18
-    || result.actualSelectedContract.rosterCuts < 2) {
+    || result.actualSelectedContract.rosterCuts < 1) {
   failures.push(`真实外队合同选择没有正确落盘：${JSON.stringify(result.actualSelectedContract)}`);
 }
-if (!result.roundOffer || result.roundOffer.round !== 2) failures.push(`玩家合同没有在 Round 0 不合法时降价：${JSON.stringify(result.roundOffer)}`);
+if (!result.roundOffer || result.roundOffer.round !== 0) failures.push(`工资帽已移除但玩家合同仍未在 Round 0 生成：${JSON.stringify(result.roundOffer)}`);
 if (result.birdTenure !== 4 || !result.birdRights) failures.push(`玩家连续效力年限没有恢复 Bird 权利：${JSON.stringify({ tenure: result.birdTenure, bird: result.birdRights })}`);
 if (!result.expiredPayrollReleased) failures.push('玩家合同到期后旧工资仍计入母队 payroll');
 if (result.veteranOfferCount < 1 && !result.veteranRenewal) {

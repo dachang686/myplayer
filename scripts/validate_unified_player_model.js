@@ -76,11 +76,37 @@ const positionProbe = player({ threePT: 84, MID: 81, FIN: 78, HAN: 88, PAS: 91, 
 const positionOvrs = ['PG', 'SG', 'SF', 'PF', 'C'].map(pos => config.getUnifiedPlayerRating(positionProbe, pos).overall);
 assert(positionOvrs.every(value => Math.abs(value - positionOvrs[0]) < 1e-9),
   `角色驱动模型不应保留无效的位置权重：${JSON.stringify(positionOvrs)}`);
-const originalScale = config.PLAYER_RATING_MODEL.scale.linear;
-config.PLAYER_RATING_MODEL.scale.linear = originalScale - 0.10;
-const configuredScaleOvr = config.getUnifiedPlayerRating(positionProbe).overall;
-config.PLAYER_RATING_MODEL.scale.linear = originalScale;
-assert(Math.abs(configuredScaleOvr - positionOvrs[0]) > 0.1, 'PLAYER_RATING_MODEL.scale 必须真实参与 OVR 计算');
+assert(config.PLAYER_RATING_MODEL.version === 5
+  && config.PLAYER_RATING_MODEL.mode === 'primary-secondary-role-impact',
+  `统一评分模型必须使用 V5 主次角色影响公式：${JSON.stringify(config.PLAYER_RATING_MODEL)}`);
+
+const completeCreator = config.getUnifiedPlayerRating(player({
+  threePT: 88, MID: 90, FIN: 92, HAN: 94, PAS: 94,
+}));
+const incompleteCreator = config.getUnifiedPlayerRating(player({
+  threePT: 70, MID: 70, FIN: 70, HAN: 70, PAS: 94,
+}));
+assert(completeCreator.roles.primaryCreator > incompleteCreator.roles.primaryCreator + 15
+  && completeCreator.offense > incompleteCreator.offense + 15,
+`完整持球技能包必须显著高于单项传球：${JSON.stringify({ completeCreator, incompleteCreator })}`);
+
+const offenseSpecialist = config.getUnifiedPlayerRating(player({
+  threePT: 96, MID: 94, FIN: 95, HAN: 96, PAS: 94, ATH: 82,
+  PDEF: 45, IDEF: 35, STL: 45, BLK: 30, REB: 45, STR: 55,
+}));
+assert(offenseSpecialist.offense > offenseSpecialist.defense + 30
+  && offenseSpecialist.overall > 90
+  && offenseSpecialist.impact.neutralTotal === offenseSpecialist.overall,
+`顶级主侧能力不应被另一侧短板线性压低：${JSON.stringify(offenseSpecialist)}`);
+
+const pureAnchor = config.getUnifiedPlayerRating(player({
+  FIN: 62, DNK: 72, HAN: 48, PAS: 45, PDEF: 70, IDEF: 97,
+  STL: 65, BLK: 97, REB: 97, ATH: 78, STR: 94,
+}));
+assert(pureAnchor.roles.defensiveAnchor > 95
+  && pureAnchor.overall <= 89.01
+  && Math.abs(pureAnchor.rotationValue - pureAnchor.overall) > 0.1,
+`纯防守支柱必须受角色上限约束，且轮换价值与 OVR 分离：${JSON.stringify(pureAnchor)}`);
 
 const minutes = [48, 48, 48, 48, 48];
 const skillKeys = ['shootingGravity', 'rimScoring', 'shotCreation', 'playmaking', 'ballSecurity', 'pointOfAttackDefense', 'interiorDefense', 'rimProtection', 'rebounding'];
@@ -113,9 +139,65 @@ const unfitted = rateRotationComposition(minutes, unfittedImpacts);
 assert(fitted.total > unfitted.total + 1.0 && fitted.primaryCreatorCoverage > unfitted.primaryCreatorCoverage,
   `相同平均能力、不同角色结构必须得到不同阵容战力：${JSON.stringify({ fitted, unfitted })}`);
 
+const leagueSource = fs.readFileSync(path.join(root, 'js', 'data', 'league_players.js'), 'utf8');
+const league = new Function(`${leagueSource}\nreturn LEAGUE_PLAYER_DATA;`)();
+const leaguePlayers = Object.values(league).flat();
+const residuals = leaguePlayers.map(row => {
+  const sourceOvr = Number(row.ovr);
+  const formulaOvr = Math.round(config.getUnifiedPlayerRating(row, row.pos).overall);
+  return { row, sourceOvr, formulaOvr, error: formulaOvr - sourceOvr };
+});
+
+function averageRanks(values) {
+  const sorted = values.map((value, index) => ({ value, index })).sort((a, b) => a.value - b.value);
+  const ranks = new Array(values.length);
+  for (let start = 0; start < sorted.length;) {
+    let end = start + 1;
+    while (end < sorted.length && sorted[end].value === sorted[start].value) end++;
+    const rank = (start + end + 1) / 2;
+    for (let index = start; index < end; index++) ranks[sorted[index].index] = rank;
+    start = end;
+  }
+  return ranks;
+}
+
+function pearson(left, right) {
+  const leftMean = left.reduce((sum, value) => sum + value, 0) / left.length;
+  const rightMean = right.reduce((sum, value) => sum + value, 0) / right.length;
+  let covariance = 0;
+  let leftVariance = 0;
+  let rightVariance = 0;
+  left.forEach((value, index) => {
+    const leftDelta = value - leftMean;
+    const rightDelta = right[index] - rightMean;
+    covariance += leftDelta * rightDelta;
+    leftVariance += leftDelta * leftDelta;
+    rightVariance += rightDelta * rightDelta;
+  });
+  return covariance / Math.sqrt(leftVariance * rightVariance);
+}
+
+const residualMetrics = {
+  count: residuals.length,
+  meanAbsoluteError: residuals.reduce((sum, row) => sum + Math.abs(row.error), 0) / residuals.length,
+  withinThree: residuals.filter(row => Math.abs(row.error) <= 3).length,
+  overFive: residuals.filter(row => Math.abs(row.error) > 5).length,
+  spearman: pearson(
+    averageRanks(residuals.map(row => row.sourceOvr)),
+    averageRanks(residuals.map(row => row.formulaOvr))
+  ),
+};
+assert(residualMetrics.count === 525
+  && residualMetrics.meanAbsoluteError <= 3
+  && residualMetrics.withinThree >= 340
+  && residualMetrics.overFive <= 70
+  && residualMetrics.spearman >= 0.74,
+`V5 必须维持 525 人整体校准质量：${JSON.stringify(residualMetrics)}`);
+
 console.log(JSON.stringify({
   baseline: baseline.overall,
   hub: { playmaking: hub.skills.playmaking, hubCreator: hub.roles.hubCreator, touchLoad: hub.capacity.touchLoad },
   defense: { athlete: athlete.defense, stopper: stopper.defense },
   lineup: { fitted: fitted.total, unfitted: unfitted.total },
+  residuals: residualMetrics,
 }, null, 2));
