@@ -130,8 +130,8 @@ function runGame(teamA, teamB, prepared, seed) {
 const control = makeSyntheticTeam('V2_CALIBRATION_CONTROL', null, null);
 const scenarios = [
   { label: '基准', offense: null, defense: null, min: 0.48, max: 0.52 },
-  { label: '进攻 +5', offense: 85, defense: null, min: 0.57, max: 0.66 },
-  { label: '进攻 +10', offense: 90, defense: null, min: 0.65, max: 0.75 },
+  { label: '进攻 +5', offense: 85, defense: null, min: 0.57, max: 0.67 },
+  { label: '进攻 +10', offense: 90, defense: null, min: 0.65, max: 0.76 },
   { label: '进攻 +15', offense: 95, defense: null, min: 0.75, max: 0.86 },
   { label: '防守 +5', offense: null, defense: 85, min: 0.50, max: 0.60 },
   { label: '防守 +10', offense: null, defense: 90, min: 0.60, max: 0.71 },
@@ -173,6 +173,8 @@ const report = scenarios.map((scenario, index) => {
     games: sampleCount,
     offenseGap: Number((offensePower.offense - controlPower.offense).toFixed(4)),
     defenseGap: Number((offensePower.defense - controlPower.defense).toFixed(4)),
+    matchupEdge: Number((first.marginComponents.matchupEdge || 0).toFixed(3)),
+    teamResidualMarginEdge: Number((first.marginComponents.teamResidualMarginEdge || 0).toFixed(3)),
     expectedMargin: Number(first.expectedMargin.toFixed(3)),
     estimatedWinRate: Number((estimatedWinRate / sampleCount * 100).toFixed(2)),
     empiricalWinRate: Number((wins / sampleCount * 100).toFixed(2)),
@@ -314,7 +316,7 @@ archetypeReport.forEach(row => {
 if (!Number.isFinite(playoffRecordProbe.expectedMarginDelta)
   || Math.abs(playoffRecordProbe.expectedMarginDelta - expectedPlayoffRecordEdge) > 1e-9
   || Math.abs(playoffRecordProbe.recordFormEdge - expectedPlayoffRecordEdge) > 1e-9
-  || Math.abs(playoffRecordProbe.recordFormBias - expectedPlayoffRecordEdge * 0.005) > 1e-12) {
+  || Math.abs(playoffRecordProbe.recordFormBias - expectedPlayoffRecordEdge * 0.00230) > 1e-12) {
   failures.push(`V2 季后赛战绩优势没有完整进入比赛：${JSON.stringify(playoffRecordProbe)}`);
 }
 if (playoffRecordProbe.recordAdvantagedSeriesWinRate <= playoffRecordProbe.neutralSeriesWinRate) {

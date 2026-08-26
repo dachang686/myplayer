@@ -5032,7 +5032,69 @@ function syncUserStarterStatus() {
 }
 
 /**
- * 球队比赛实力只聚合统一球员比赛能力，并按赛前预计分钟加权。
+ * 计算整套轮换的角色组合价值。它只读取统一画像，不把 OVR 再写回事件概率。
+ * 返回值是相对分钟加权基础能力的残差，因此全 50 阵容的 structure 必为 0。
+ */
+function rateRotationComposition(minutes, impacts) {
+  var safeMinutes = Array.isArray(minutes) ? minutes : [];
+  var safeImpacts = Array.isArray(impacts) ? impacts : [];
+  var totalMinutes = safeMinutes.reduce(function(sum, value) { return sum + (Number(value) || 0); }, 0) || 240;
+  function weighted(getValue) {
+    return safeImpacts.reduce(function(sum, impact, index) {
+      return sum + (Number(getValue(impact, index)) || 50) * ((Number(safeMinutes[index]) || 0) / totalMinutes);
+    }, 0);
+  }
+  function roleValue(impact, group, key) {
+    return Number(impact && impact[group] && impact[group][key]) || 50;
+  }
+  function coverage(group, key) {
+    var values = safeImpacts.map(function(impact, index) {
+      // 核心只在实际可用分钟内提供覆盖，避免低分钟替补拿到完整阵容加成。
+      var availability = Math.min(1, (Number(safeMinutes[index]) || 0) / 28);
+      // 70 是“可用轮换”门槛：结构加分奖励的是精英覆盖而不是把全队普通能力重复相加。
+      return Math.max(0, roleValue(impact, group, key) - 70) * availability;
+    }).sort(function(a, b) { return b - a; });
+    return (values[0] || 0) + (values[1] || 0) * 0.40 + (values[2] || 0) * 0.15;
+  }
+  function averageSkill(key) { return weighted(function(impact) { return roleValue(impact, 'skills', key); }); }
+  var primaryCoverage = Math.max(coverage('roles', 'primaryCreator'), coverage('roles', 'hubCreator'));
+  var secondaryCoverage = coverage('roles', 'secondaryCreator');
+  var spacing = Math.max(0, averageSkill('shootingGravity') - 70);
+  var rimPressure = Math.max(0, averageSkill('rimScoring') - 70);
+  var teamPlaymaking = Math.max(0, averageSkill('playmaking') - 70);
+  var teamSecurity = Math.max(0, averageSkill('ballSecurity') - 70);
+  var offensiveStructure = primaryCoverage * 0.045 + secondaryCoverage * 0.012
+    + spacing * 0.025 + rimPressure * 0.018 + teamPlaymaking * 0.025 + teamSecurity * 0.012;
+  // 两个强持球点可以互补；只有同时极端高且空间不足时才计算很小的重叠成本。
+  var creatorOverlap = Math.max(0, primaryCoverage - 42) * Math.max(0, secondaryCoverage - 35) / 900;
+  offensiveStructure -= creatorOverlap * Math.max(0, 1 - Math.max(0, spacing) / 24);
+
+  var perimeterCoverage = coverage('roles', 'perimeterStopper');
+  var anchorCoverage = coverage('roles', 'defensiveAnchor');
+  var switchCoverage = coverage('roles', 'switchDefender');
+  var reboundControl = Math.max(0, averageSkill('rebounding') - 70);
+  var perimeterAverage = Math.max(0, averageSkill('pointOfAttackDefense') - 70);
+  var interiorAverage = Math.max(0, averageSkill('interiorDefense') - 70);
+  var defensiveStructure = perimeterCoverage * 0.030 + anchorCoverage * 0.045 + switchCoverage * 0.014
+    + reboundControl * 0.025 + perimeterAverage * 0.012 + interiorAverage * 0.012;
+  var structure = Math.max(-8, Math.min(8, offensiveStructure + defensiveStructure));
+  return {
+    offense: Math.max(-4.5, Math.min(4.5, offensiveStructure)),
+    defense: Math.max(-4.5, Math.min(4.5, defensiveStructure)),
+    total: structure,
+    primaryCreatorCoverage: primaryCoverage,
+    anchorCoverage: anchorCoverage,
+    spacing: spacing,
+  };
+}
+
+// 兼容旧调用名称；当前模型评估整套 240 分钟轮换，不宣称重建真实五人同场组合。
+function rateLineup(players, minutes, impacts) {
+  return rateRotationComposition(minutes, impacts);
+}
+
+/**
+ * 球队比赛实力由分钟加权基础能力和轮换角色组合共同得出。
  * 实战由 simulateGameNew 传入已经确定的轮换；阵容页使用无伤停、无随机波动的预计轮换。
  */
 function calcTeamPowerWithPlayer(team, gameOptions) {
@@ -5044,7 +5106,7 @@ function calcTeamPowerWithPlayer(team, gameOptions) {
   const minutes = prepared && prepared.minutes || [];
 
   if (roster.length === 0) {
-    return { offense: 50, defense: 50, athletic: 50, clutch: 50, overall: 50, depth: 50, starConcentration: 0 };
+    return { offense: 50, defense: 50, athletic: 50, clutch: 50, overall: 50, depth: 50, structure: 0, lineupFit: { total: 0 } };
   }
 
   const impacts = roster.map(getPlayerGameImpact);
@@ -5056,11 +5118,7 @@ function calcTeamPowerWithPlayer(team, gameOptions) {
   }
 
   const overall = minuteWeighted('overall');
-  // 球星额外价值必须随实际出场时间衰减，不能让低分钟高 OVR 替补获得完整加成。
-  const starConcentration = impacts.reduce(function(sum, impact, index) {
-    const minuteShare = (Number(minutes[index]) || 0) / totalMinutes;
-    return sum + Math.max(0, (Number(impact.overall) || overall) - overall) * minuteShare;
-  }, 0);
+  const lineupFit = rateRotationComposition(minutes, impacts);
   const benchMinutes = minutes.reduce(function(sum, value, index) {
     return sum + (index >= 5 ? (Number(value) || 0) : 0);
   }, 0);
@@ -5070,36 +5128,35 @@ function calcTeamPowerWithPlayer(team, gameOptions) {
     }, 0)
     : overall;
   return {
-    offense: minuteWeighted('offense'),
-    defense: minuteWeighted('defense'),
+    offense: minuteWeighted('offense') + lineupFit.offense,
+    defense: minuteWeighted('defense') + lineupFit.defense,
     athletic: minuteWeighted('athletic'),
     clutch: minuteWeighted('clutch'),
     overall: overall,
-    starConcentration: starConcentration,
-    // depth 只描述替补强度；球队总战力由 overall 单独负责，避免重复计权。
+    structure: lineupFit.total,
+    lineupFit: lineupFit,
+    // depth 只描述替补强度；overall 仍是阵容 OVR，structure 是独立的组合战力。
     depth: benchOverall,
     rotationMinutes: minutes.slice(),
   };
 }
 
 /**
- * 球队战力由同一套分钟加权球员影响力得出。攻防是可解释的拆分字段，
- * 不再与 overall、球星集中度重复相加。
+ * 球队战力 = 阵容 OVR + 可解释的角色组合残差；不再单列“球星加分”。
  */
 function getTeamCompetitiveRating(power) {
   const overall = Number.isFinite(power && power.overall) ? power.overall : 50;
   const offense = Number(power && power.offense) || overall;
   const defense = Number(power && power.defense) || overall;
   const rosterRating = overall;
-  const structureRating = 0;
-  // 核心价值已随分钟进入 overall；仅保留极小残差，表示高使用率核心的稳定性。
-  const starRating = Math.min(1.2, Math.max(0, Number(power && power.starConcentration) || 0) * 0.15);
+  const structureRating = Math.max(-8, Math.min(8, Number(power && power.structure) || 0));
   return {
     overall: overall,
     roster: rosterRating,
     structure: structureRating,
-    star: starRating,
-    total: rosterRating + structureRating + starRating,
+    // 为旧诊断字段保留 0；核心价值已包含在 structure 的第一/第二创造点覆盖中。
+    star: 0,
+    total: rosterRating + structureRating,
   };
 }
 
@@ -5751,8 +5808,7 @@ function getLeagueDefensiveAnchor(player) {
 
 /**
  * 唯一的球员比赛能力出口。
- * overall 直接继承分位置 OVR；攻防以真实专项能力为主，只保留少量 overall 兜底；
- * 运动和关键球继续沿用各自现有结构。
+ * 所有对外字段均由统一能力画像派生；OVR 只用于展示，不作为比赛事件的输入。
  */
 function getPlayerGameImpact(player) {
   const unifiedRating = typeof getUnifiedPlayerRating === 'function'
@@ -5766,7 +5822,11 @@ function getPlayerGameImpact(player) {
       defense: rating.defense,
       athletic: rating.athletic,
       clutch: rating.clutch,
-      defensiveAnchorBonus: 0,
+      rotationValue: rating.rotationValue || rating.overall,
+      skills: rating.skills || {},
+      roles: rating.roles || {},
+      capacity: rating.capacity || {},
+      defensiveAnchorBonus: Math.max(0, Number(rating.roles && rating.roles.defensiveAnchor || 50) - 82) * 0.08,
     };
   }
   function toRating(value) {
@@ -5792,6 +5852,8 @@ function getPlayerGameImpact(player) {
     defense: leagueStatClamp(overall * defenseOverallWeight + rawDefense * (1 - defenseOverallWeight) + eliteAnchorBonus, 25, 99),
     athletic: overall * 0.78 + athletic * 0.22,
     clutch: overall * 0.78 + clutch * 0.22,
+    rotationValue: overall,
+    skills: {}, roles: {}, capacity: {},
     defensiveAnchorBonus: eliteAnchorBonus,
   };
 }
@@ -5841,7 +5903,10 @@ function allocateLeagueRotationMinutes(players, roleRanks, rotationOptions) {
   }
   var roles = players.map(function(player, index) { return getRoleProfile(roleRanks[index]); });
   var raw = players.map(function(player, index) {
-    var ovr = getPlayerGameImpact(player).overall;
+    // 分钟读取可承担的比赛负荷，而非展示 OVR，避免评分误差在轮换层被二次放大。
+    var impact = getPlayerGameImpact(player) || {};
+    var ovr = Number(impact.rotationValue);
+    if (!Number.isFinite(ovr)) ovr = Number(impact.overall) || 50;
     var role = roles[index];
     var base = role.base + (ovr - 75) * role.slope;
     return Math.max(4, base + (noiseDeviation ? leagueStatNormal(0, noiseDeviation) : 0));

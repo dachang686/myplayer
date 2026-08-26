@@ -1,0 +1,139 @@
+const fs = require('fs');
+const path = require('path');
+
+const root = path.resolve(__dirname, '..');
+const v2Source = fs.readFileSync(path.join(root, 'js', 'simulation_v2.js'), 'utf8');
+const config = require(path.join(root, 'js', 'data', 'simulation_config.js'));
+const state = {
+  careerTeam: null,
+  season: { schedule: [], standings: {}, isPlayoffs: true, _npcSeasonProfiles: {}, events: { activeEffects: [] } },
+};
+const attributeKeys = ['threePT', 'MID', 'FIN', 'DNK', 'HAN', 'PAS', 'PDEF', 'STL', 'IDEF', 'BLK', 'REB', 'ATH', 'STR', 'CLU'];
+function makeTeam(prefix) {
+  const positions = ['PG', 'SG', 'SF', 'PF', 'C', 'PG', 'SF', 'C', 'SG', 'PF'];
+  const minutes = [32, 32, 30, 30, 28, 24, 20, 18, 14, 12];
+  const players = positions.map((pos, index) => {
+    const row = { id: `${prefix}-${index}`, cname: `${prefix}-${index}`, pos };
+    attributeKeys.forEach(key => { row[key] = 80; });
+    return row;
+  });
+  return { players, minutes, roleRanks: players.map((_, index) => index) };
+}
+const rotations = { A: makeTeam('A'), B: makeTeam('B') };
+const powers = { A: { overall: 80, structure: 0 }, B: { overall: 80, structure: 0 } };
+const runtime = new Function(
+  'SIM_CONFIG', 'STATE', 'prepareLeagueGameRotation', 'calcTeamPowerWithPlayer', 'getTeamCompetitiveRating',
+  'getActiveEventTeamEdge', 'getSeasonModifierTeamEdge', 'getNpcSeasonProfile',
+  `${v2Source}\nreturn globalThis.simulateGameAggregateV2;`,
+)(
+  config,
+  state,
+  team => rotations[team],
+  team => powers[team],
+  power => ({ roster: power.overall, structure: power.structure, star: 0, total: power.overall + power.structure }),
+  () => 0,
+  () => 0,
+  () => ({ scoring: 1, rebounding: 1, playmaking: 1, defense: 1 }),
+);
+
+function assert(condition, message) {
+  if (!condition) throw new Error(message);
+}
+
+function seeded(seed, callback) {
+  const originalRandom = Math.random;
+  let value = seed >>> 0;
+  Math.random = () => {
+    value = (Math.imul(value, 1664525) + 1013904223) >>> 0;
+    return value / 0x100000000;
+  };
+  try { return callback(); } finally { Math.random = originalRandom; }
+}
+
+function setScenario({ overallA = 80, overallB = 80, structureA = 0, structureB = 0, recordA = [41, 41], recordB = [41, 41] } = {}) {
+  powers.A = { overall: overallA, structure: structureA };
+  powers.B = { overall: overallB, structure: structureB };
+  state.season.standings = {
+    A: { wins: recordA[0], losses: recordA[1] },
+    B: { wins: recordB[0], losses: recordB[1] },
+  };
+}
+
+function runGames(label, games, scenario, options = {}, seedBonus = 0) {
+  setScenario(scenario);
+  let wins = 0;
+  let actualMargin = 0;
+  let expectedMargin = 0;
+  let estimatedWinProb = 0;
+  let allV2 = true;
+  for (let game = 0; game < games; game++) {
+    const result = seeded(17000 + game * 97, () => runtime('A', 'B', seedBonus, null, Object.assign({
+      isB2B: false, ignoreNpcAvailability: true,
+    }, options)));
+    wins += result.won ? 1 : 0;
+    actualMargin += result.actualMargin;
+    expectedMargin += result.expectedMargin;
+    estimatedWinProb += result.estimatedWinProb;
+    allV2 = allV2 && result.engineVersion === 'v2';
+  }
+  return {
+    label,
+    games,
+    winRate: wins / games,
+    actualMargin: actualMargin / games,
+    expectedMargin: expectedMargin / games,
+    estimatedWinProb: estimatedWinProb / games,
+    allV2,
+  };
+}
+
+const pairedGames = 5000;
+const neutral = runGames('neutral', pairedGames, {}, { isHomeA: null });
+const home = runGames('home', pairedGames, {}, { isHomeA: true });
+const roster = runGames('roster', pairedGames, { overallA: 84 }, { isHomeA: null });
+const structure = runGames('structure', pairedGames, { structureA: 4 }, { isHomeA: null });
+const record = runGames('record', pairedGames, { recordA: [56, 26], recordB: [48, 34] }, { isHomeA: null });
+
+for (const sample of [neutral, home, roster, structure, record]) {
+  assert(sample.allV2, `${sample.label} 没有直接调用 V2 引擎`);
+  assert(Math.abs(sample.actualMargin - sample.expectedMargin) < 0.65,
+    `${sample.label} 的 expectedMargin 与实际平均分差分裂：${JSON.stringify(sample)}`);
+  assert(Math.abs(sample.winRate - sample.estimatedWinProb) < 0.025,
+    `${sample.label} 的 estimatedWinProb 与实际胜率偏差过大：${JSON.stringify(sample)}`);
+}
+assert(Math.abs(neutral.expectedMargin) < 1e-9 && Math.abs(neutral.actualMargin) < 0.35,
+  `中立同阵容基线不居中：${JSON.stringify(neutral)}`);
+assert(Math.abs(home.expectedMargin - 2.8) < 1e-9, `主场分差口径错误：${JSON.stringify(home)}`);
+assert(Math.abs(roster.expectedMargin - 6) < 1e-9, `阵容画像残差口径错误：${JSON.stringify(roster)}`);
+assert(Math.abs(structure.expectedMargin - 2.6) < 1e-9, `结构残差没有完整进入预期分差：${JSON.stringify(structure)}`);
+const expectedRecordEdge = ((56 / 82) - (48 / 82)) * 7;
+assert(Math.abs(record.expectedMargin - expectedRecordEdge) < 1e-9, `战绩分差口径错误：${JSON.stringify(record)}`);
+
+const homePattern = [true, true, false, false, true, false, true];
+function runSeries(label, count, scenario, seedBonus) {
+  setScenario(scenario);
+  let seriesWins = 0;
+  for (let series = 0; series < count; series++) {
+    let winsA = 0;
+    let winsB = 0;
+    for (let game = 0; game < homePattern.length && winsA < 4 && winsB < 4; game++) {
+      const result = seeded(910000 + series * 31 + game, () => runtime('A', 'B', seedBonus, null, {
+        isHomeA: homePattern[game], isB2B: false, ignoreNpcAvailability: true,
+      }));
+      assert(result.engineVersion === 'v2', `${label} 系列赛绕过了 V2`);
+      if (result.won) winsA++; else winsB++;
+    }
+    if (winsA === 4) seriesWins++;
+  }
+  return { label, series: count, winRate: seriesWins / count };
+}
+const equalSeries = runSeries('equal', 2500, {}, 0);
+const oneVsFour = runSeries('1v4', 2500, { recordA: [56, 26], recordB: [50, 32] }, 1.2);
+const oneVsEight = runSeries('1v8', 2500, { recordA: [56, 26], recordB: [35, 47] }, 2.8);
+assert(equalSeries.winRate >= 0.50 && equalSeries.winRate <= 0.58,
+  `同阵容 2-2-1-1-1 系列赛概率异常：${JSON.stringify(equalSeries)}`);
+assert(oneVsFour.winRate > equalSeries.winRate + 0.04
+  && oneVsEight.winRate > oneVsFour.winRate + 0.06,
+`1v4/1v8 系列赛优势没有连续变化：${JSON.stringify({ equalSeries, oneVsFour, oneVsEight })}`);
+
+console.log(JSON.stringify({ paired: { neutral, home, roster, structure, record }, series: { equalSeries, oneVsFour, oneVsEight } }, null, 2));

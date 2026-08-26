@@ -21,6 +21,11 @@
   var ATTRIBUTE_ANCHOR = (80 - 25) / 74;
   var OFFENSE_EFFECT_SCALE = 0.45;
   var DEFENSE_EFFECT_SCALE = 0.55;
+  // 所有赛外优势先用“预期分差”表示，再由唯一系数转换成双方对称的事件偏置。
+  // 配对校准目标：输入边际 ≈ expectedMargin 增量 ≈ 长期实际平均分差增量。
+  var MARGIN_TO_BIAS_PER_SIDE = 0.00230;
+  var HOME_COURT_MARGIN = 2.8;
+  var WIN_PROB_MARGIN_SCALE = 10.5;
 
   function anchoredMetric(value, scale) {
     return clamp(ATTRIBUTE_ANCHOR + (Number(value) - ATTRIBUTE_ANCHOR) * scale, 0, 1);
@@ -299,24 +304,44 @@
     var rawStl = players.map(function(player) { return playerNorm(player, 'STL'); });
     var rawBlk = players.map(function(player) { return playerNorm(player, 'BLK'); });
     var clu = players.map(function(player) { return playerNorm(player, 'CLU'); });
+    // V2 与页面/球队战力共享同一能力画像。对用户属性减益先应用到副本，
+    // 再计算画像，避免只在事件层局部削弱而产生两套评价。
+    var profileAttributeKeys = ['threePT', 'MID', 'FIN', 'DNK', 'HAN', 'PAS', 'ATH', 'STR', 'REB', 'PDEF', 'IDEF', 'STL', 'BLK', 'CLU'];
+    var unifiedProfiles = players.map(function(player) {
+      var ratingFn = (typeof getUnifiedPlayerRating === 'function' && getUnifiedPlayerRating)
+        || (SIM_CONFIG && SIM_CONFIG.getUnifiedPlayerRating);
+      if (typeof ratingFn !== 'function') return null;
+      var subject = player;
+      if (player && player._isUser && options.userAttributeFactor != null) {
+        var factor = clamp(Number(options.userAttributeFactor), 0.55, 1);
+        subject = Object.assign({}, player);
+        profileAttributeKeys.forEach(function(key) {
+          subject[key] = Math.max(25, (parseInt(player[key], 10) || 50) * factor);
+        });
+      }
+      return ratingFn(subject, player && player.pos);
+    });
+    function profileNorm(index, path, fallback) {
+      var value = unifiedProfiles[index];
+      path.forEach(function(key) { value = value && value[key]; });
+      return Number.isFinite(Number(value)) ? clamp((Number(value) - 25) / 74, 0, 1) : fallback;
+    }
 
     var rawRimAbility = players.map(function(_, index) {
-      return rawFin[index] * 0.55 + rawDnk[index] * 0.20 + ath[index] * 0.13 + rawStr[index] * 0.12;
+      return profileNorm(index, ['skills', 'rimScoring'], rawFin[index] * 0.55 + rawDnk[index] * 0.20 + ath[index] * 0.13 + rawStr[index] * 0.12);
     });
     var rawThreat = players.map(function(_, index) {
-      var regions = [rawThree[index], rawMid[index], rawRimAbility[index]];
-      regions.sort(function(a, b) { return b - a; });
-      return regions[0] * 0.58 + regions[1] * 0.27 + regions[2] * 0.15;
+      return profileNorm(index, ['skills', 'scoringEfficiency'], rawThree[index] * 0.35 + rawMid[index] * 0.20 + rawRimAbility[index] * 0.45);
     });
     var rawCreation = players.map(function(_, index) {
-      return clamp(rawHan[index] * 0.45 + ath[index] * 0.25 + rawThreat[index] * 0.30, 0, 1);
+      return profileNorm(index, ['skills', 'shotCreation'], clamp(rawHan[index] * 0.45 + ath[index] * 0.25 + rawThreat[index] * 0.30, 0, 1));
     });
     var rawAttack = rawThreat.map(function(value, index) {
-      return value * 0.58 + rawCreation[index] * 0.27 + ath[index] * 0.15;
+      return profileNorm(index, ['impact', 'offense'], value * 0.58 + rawCreation[index] * 0.27 + ath[index] * 0.15);
     });
     var rawDefense = players.map(function(_, index) {
-      return rawPdef[index] * 0.32 + rawIdef[index] * 0.28 + rawReb[index] * 0.14
-        + rawBlk[index] * 0.16 + rawStr[index] * 0.10;
+      return profileNorm(index, ['impact', 'defense'], rawPdef[index] * 0.32 + rawIdef[index] * 0.28 + rawReb[index] * 0.14
+        + rawBlk[index] * 0.16 + rawStr[index] * 0.10);
     });
 
     // 出手机会、角色和球员原始攻防评分继续使用原始能力，避免压缩整个
@@ -380,15 +405,25 @@
       return value + shotShapeResidual * 1.20 + rawPas[index] * 0.05;
     });
     var rimAbility = players.map(function(_, index) {
-      return fin[index] * 0.55 + dnk[index] * 0.20 + ath[index] * 0.13 + str[index] * 0.12;
+      return profileNorm(index, ['skills', 'rimScoring'], fin[index] * 0.55 + dnk[index] * 0.20 + ath[index] * 0.13 + str[index] * 0.12);
     });
     var threat = players.map(function(_, index) {
-      var regions = [three[index], mid[index], rimAbility[index]];
-      regions.sort(function(a, b) { return b - a; });
-      return regions[0] * 0.58 + regions[1] * 0.27 + regions[2] * 0.15;
+      return profileNorm(index, ['skills', 'scoringEfficiency'], three[index] * 0.35 + mid[index] * 0.20 + rimAbility[index] * 0.45);
     });
     var creation = players.map(function(_, index) {
-      return clamp(han[index] * 0.45 + ath[index] * 0.25 + threat[index] * 0.30, 0, 1);
+      return profileNorm(index, ['skills', 'shotCreation'], clamp(han[index] * 0.45 + ath[index] * 0.25 + threat[index] * 0.30, 0, 1));
+    });
+    var playmaking = players.map(function(_, index) {
+      return profileNorm(index, ['skills', 'playmaking'], pas[index] * 0.72 + han[index] * 0.28);
+    });
+    var ballSecurity = players.map(function(_, index) {
+      return profileNorm(index, ['skills', 'ballSecurity'], han[index] * 0.68 + pas[index] * 0.20 + ath[index] * 0.12);
+    });
+    var touchLoad = players.map(function(_, index) {
+      return profileNorm(index, ['capacity', 'touchLoad'], creation[index] * 0.45 + playmaking[index] * 0.40 + ballSecurity[index] * 0.15);
+    });
+    var shotLoad = players.map(function(_, index) {
+      return profileNorm(index, ['capacity', 'shotLoad'], threat[index] * 0.62 + creation[index] * 0.38);
     });
     var form = players.map(function(player) {
       if (player._isUser) {
@@ -407,9 +442,8 @@
       }
       return 1;
     });
-    var scoringLoads = players.map(function(_, index) {
-      return threat[index] * 0.62 + creation[index] * 0.38;
-    });
+    // 触球、出手、助攻各有独立权重：高传球中轴可以承担进攻，却不会被迫拥有最高 FGA。
+    var scoringLoads = shotLoad.slice();
     // 进攻角色由实际得分/持球能力决定；rotation.roleRanks 只描述轮换顺序，不能把 PG/SG 槽位当成第一、第二得分手。
     // 相同能力使用相同进攻档位，让阵容数组顺序本身不会制造出手权差异。
     var offensiveRoleRanks = scoringLoads.map(function(scoringLoad) {
@@ -449,6 +483,11 @@
       }
       return baseOpportunity * gameMultiplier;
     });
+    var teamTouchLoad = weightedMean(touchLoad, weights);
+    var touchOpportunity = players.map(function(_, index) {
+      var roleFactor = clamp(1 + (touchLoad[index] - teamTouchLoad) * 1.70, 0.72, 1.36);
+      return Math.max(0.1, weights[index] * roleFactor * (0.38 + touchLoad[index] * 0.82) * form[index]);
+    });
 
     return {
       team: team,
@@ -459,6 +498,7 @@
       positions: positions,
       weights: weights,
       opportunity: opportunity,
+      touchOpportunity: touchOpportunity,
       three: three,
       mid: mid,
       fin: fin,
@@ -492,7 +532,12 @@
       rimAbility: rimAbility,
       threat: threat,
       creation: creation,
+      playmaking: playmaking,
+      ballSecurity: ballSecurity,
+      touchLoad: touchLoad,
+      shotLoad: shotLoad,
       teamCreation: weightedMean(creation, weights),
+      teamTouchLoad: teamTouchLoad,
       // 保留原始攻防评分供赛前 expectedMargin 使用；比赛事件读取下方的
       // 压缩后有效能力，避免同一属性差在多个事件层被重复放大。
       attack: weightedMean(rawAttack, weights),
@@ -522,12 +567,8 @@
       blocking: weightedMean(players.map(function(_, index) {
         return blk[index] * 0.58 + idef[index] * 0.24 + str[index] * 0.18;
       }), weights),
-      passing: weightedMean(players.map(function(_, index) {
-        return pas[index] * 0.72 + han[index] * 0.28;
-      }), weights),
-      handling: weightedMean(players.map(function(_, index) {
-        return han[index] * 0.68 + pas[index] * 0.20 + ath[index] * 0.12;
-      }), weights),
+      passing: weightedMean(playmaking, weights),
+      handling: weightedMean(ballSecurity, weights),
       pace: weightedMean(players.map(function(_, index) {
         return ath[index] * 0.50 + han[index] * 0.25 + creation[index] * 0.25;
       }), weights),
@@ -603,8 +644,8 @@
     });
     // 三分配额与 FGA 一样跨节累计，且逐节硬受 FGA 约束，避免替补分钟跨过整数阈值时突增。
     var threeByPlayer = allocatePeriodQuota(threeA, threeWeights, fgaByPlayer, threeLedger);
-    var ftaWeights = context.players.map(function(_, index) {
-      return context.opportunity[index] * (0.28 + context.volumeRim[index] * 1.55 + context.creation[index] * 0.25);
+      var ftaWeights = context.players.map(function(_, index) {
+        return context.touchOpportunity[index] * (0.28 + context.volumeRim[index] * 1.55 + context.creation[index] * 0.25);
     });
     var ftaTripsByPlayer = weightedRandomAllocation(freeThrowTrips, ftaWeights, fgaByPlayer.map(function(value) {
       return Math.max(1, Math.round(value * 0.50) + 2);
@@ -731,8 +772,9 @@
       if (!assistedMakes) return;
       var passWeights = context.players.map(function(_, index) {
         if (index === shooterIndex) return 0;
-        var passSkill = context.pas[index] * 0.78 + context.han[index] * 0.22;
-        return context.weights[index] * (0.005 + Math.pow(passSkill, 4.2) * 4.3);
+        var passSkill = context.playmaking ? context.playmaking[index] : (context.pas[index] * 0.78 + context.han[index] * 0.22);
+        var touch = context.touchOpportunity ? context.touchOpportunity[index] : context.weights[index];
+        return touch * (0.005 + Math.pow(passSkill, 3.4) * 3.2);
       });
       var assists = weightedRandomAllocation(assistedMakes, passWeights, context.players.map(function() { return 17; }));
       assists.forEach(function(value, index) { quarter.lines[index].ast += value; });
@@ -741,7 +783,9 @@
 
   function addTurnovers(context, quarter) {
     var weights = context.players.map(function(_, index) {
-      return context.opportunity[index] * (0.30 + (1 - context.han[index]) * 1.05 + context.usagePressure * 0.20);
+      var security = context.ballSecurity ? context.ballSecurity[index] : context.han[index];
+      var touch = context.touchOpportunity ? context.touchOpportunity[index] : context.opportunity[index];
+      return touch * (0.30 + (1 - security) * 1.05 + context.usagePressure * 0.20);
     });
     var turnovers = weightedRandomAllocation(quarter.turnovers, weights, context.players.map(function() { return 9; }));
     turnovers.forEach(function(value, index) { quarter.lines[index].tov += value; });
@@ -803,6 +847,7 @@
     return Object.assign({}, context, {
       weights: weights,
       teamCreation: weightedMean(context.creation, weights),
+      teamTouchLoad: weightedMean(context.touchLoad || context.creation, weights),
       attack: weightedMean(context.threat.map(function(value, index) {
         return value * 0.58 + context.creation[index] * 0.27 + context.ath[index] * 0.15;
       }), weights),
@@ -831,12 +876,8 @@
       blocking: weightedMean(context.players.map(function(_, index) {
         return context.blk[index] * 0.58 + context.idef[index] * 0.24 + context.str[index] * 0.18;
       }), weights),
-      passing: weightedMean(context.players.map(function(_, index) {
-        return context.pas[index] * 0.72 + context.han[index] * 0.28;
-      }), weights),
-      handling: weightedMean(context.players.map(function(_, index) {
-        return context.han[index] * 0.68 + context.pas[index] * 0.20 + context.ath[index] * 0.12;
-      }), weights),
+      passing: weightedMean(context.playmaking || context.pas, weights),
+      handling: weightedMean(context.ballSecurity || context.han, weights),
       pace: weightedMean(context.players.map(function(_, index) {
         return context.ath[index] * 0.50 + context.han[index] * 0.25 + context.creation[index] * 0.25;
       }), weights),
@@ -848,10 +889,14 @@
     var opportunity = context.opportunity.map(function(value, index) {
       return value * (Number(periodMinutes[index]) || 0) / Math.max(1, Number(context.minutes[index]) || 0);
     });
+    var touchOpportunity = (context.touchOpportunity || context.opportunity).map(function(value, index) {
+      return value * (Number(periodMinutes[index]) || 0) / Math.max(1, Number(context.minutes[index]) || 0);
+    });
     var periodContext = recomputeTeamAggregates(context, periodMinutes);
     return Object.assign(periodContext, {
       minutes: periodMinutes,
       opportunity: opportunity,
+      touchOpportunity: touchOpportunity,
     });
   }
 
@@ -919,15 +964,14 @@
     var recordFormEdge = hasPlayoffRecords
       ? clamp((((recordA.wins || 0) / gamesA) - ((recordB.wins || 0) / gamesB)) * 7, -1.2, 1.2)
       : 0;
-    // biasA - biasB 每增加 0.01，对应诊断分差增加约 1 分；两侧各分摊一半。
-    var recordFormBias = recordFormEdge * 0.005;
-    var homeA = isHomeA === true ? 0.014 : (isHomeA === false ? -0.014 : 0);
-    var homeB = isHomeA === false ? 0.014 : (isHomeA === true ? -0.014 : 0);
-    var biasA = homeA + recordFormBias + Number(seedBonus || 0) * 0.003 + activeEventEdge * 0.004 + seasonEdge * 0.004 - first.fatigue * 0.012;
-    var biasB = homeB - recordFormBias - activeEventEdge * 0.004 - seasonEdge * 0.004 - second.fatigue * 0.012;
+    var homeCourtEdge = isHomeA === true ? HOME_COURT_MARGIN : (isHomeA === false ? -HOME_COURT_MARGIN : 0);
+    var seedBonusEdge = Number(seedBonus || 0) * 0.5;
+    var eventTeamMarginEdge = activeEventEdge * 0.4;
+    var seasonModifierMarginEdge = seasonEdge * 0.4;
+    var fatigueEdge = second.fatigue - first.fatigue;
 
-    // V2 的事件层逐回合读取统一属性模型。球队汇总项只保留小量校准残差，
-    // 表达同样属性在完整轮换中形成的执行质量；不再叠加攻防 structure。
+    // V2 事件层逐回合读取统一画像；球队层仅以阵容组合的有限残差修正，
+    // 避免把 OVR、球星集中度和属性事件重复相加。
     var powerA = typeof calcTeamPowerWithPlayer === 'function'
       ? calcTeamPowerWithPlayer(teamA, { preparedRotation: options._preparedRotations[teamA] })
       : null;
@@ -936,22 +980,30 @@
       : null;
     var competitiveA = typeof getTeamCompetitiveRating === 'function'
       ? getTeamCompetitiveRating(powerA || {})
-      : { roster: 80, star: 0 };
+      : { roster: 80, structure: 0 };
     var competitiveB = typeof getTeamCompetitiveRating === 'function'
       ? getTeamCompetitiveRating(powerB || {})
-      : { roster: 80, star: 0 };
+      : { roster: 80, structure: 0 };
     var rawRosterEdge = Number(competitiveA.roster) - Number(competitiveB.roster);
-    var rawStarEdge = Number(competitiveA.star) - Number(competitiveB.star);
+    var rawStructureEdge = Number(competitiveA.structure) - Number(competitiveB.structure);
     if (!Number.isFinite(rawRosterEdge)) rawRosterEdge = 0;
-    if (!Number.isFinite(rawStarEdge)) rawStarEdge = 0;
-    var rosterStarEdge = clamp(rawRosterEdge + rawStarEdge, -12, 12);
-    var rosterStarMarginEdge = rosterStarEdge * 0.50;
-    var rawCombinedEdge = rawRosterEdge + rawStarEdge;
-    var rosterEdge = rawCombinedEdge === 0 ? 0 : rosterStarMarginEdge * rawRosterEdge / rawCombinedEdge;
-    var starEdge = rawCombinedEdge === 0 ? 0 : rosterStarMarginEdge - rosterEdge;
-    var rosterStarBias = rosterStarEdge * 0.0028;
-    biasA += rosterStarBias;
-    biasB -= rosterStarBias;
+    if (!Number.isFinite(rawStructureEdge)) rawStructureEdge = 0;
+    // 球员属性事件已经表达大部分强弱；中立阵容战力保留有限校准残差，
+    // 阵容配合以更直接但仍受限的方式参与赛前分差。
+    // 阵容画像残差按真实赛季强弱分层拟合：每 1 点评级差对应 1.5 分，
+    // 单项及合并结果再受限，避免极端阵容无限放大。
+    var rosterEdge = clamp(rawRosterEdge * 1.50, -8, 8);
+    var structureEdge = clamp(rawStructureEdge * 0.65, -3.2, 3.2);
+    var teamResidualMarginEdge = clamp(rosterEdge + structureEdge, -8, 8);
+    var rosterStarEdge = teamResidualMarginEdge;
+    var starEdge = 0;
+    var contextualMarginEdge = teamResidualMarginEdge + recordFormEdge + homeCourtEdge + seedBonusEdge
+      + eventTeamMarginEdge + seasonModifierMarginEdge + fatigueEdge;
+    var contextualBias = contextualMarginEdge * MARGIN_TO_BIAS_PER_SIDE;
+    var biasA = contextualBias;
+    var biasB = -contextualBias;
+    var recordFormBias = recordFormEdge * MARGIN_TO_BIAS_PER_SIDE;
+    var rosterStarBias = teamResidualMarginEdge * MARGIN_TO_BIAS_PER_SIDE;
     var basePace = clamp(Math.round(
       105 + ((first.pace + second.pace) / 2 - 0.50) * 7
         - (first.fatigue + second.fatigue) * 1.5 + normal(0, 1.8),
@@ -1049,23 +1101,21 @@
       delete line._twoA; delete line._twoM; delete line._rimA; delete line._blocked;
       delete line._missedField; delete line._missedFt;
     });
-    var directEdge = (first.pregameAttack - second.pregameAttack) * 23
-      + (first.defense - second.defense) * 13.5;
-    var homeCourtEdge = (homeA - homeB) * 100;
-    var seedBonusEdge = Number(seedBonus || 0) * 0.5;
-    var eventTeamMarginEdge = activeEventEdge * 0.4;
-    var seasonModifierMarginEdge = seasonEdge * 0.4;
-    var fatigueEdge = second.fatigue - first.fatigue;
+    var pregameAttackGap = first.pregameAttack - second.pregameAttack;
+    var pregameDefenseGap = first.defense - second.defense;
+    var rawDirectEdge = pregameAttackGap * 23 + pregameDefenseGap * 13.5;
+    function signedExcessMargin(value, threshold, scale) {
+      if (!value) return 0;
+      return (value < 0 ? -1 : 1) * Math.max(0, Math.abs(value) - threshold) * scale;
+    }
+    // 实测事件曲线在顶级完整进攻包和高端防守端具有额外非线性；
+    // 该项只校准赛前分差诊断，不再向比赛事件重复注入 bias。
+    var eliteSkillMarginEdge = signedExcessMargin(pregameAttackGap, 0.15, 27)
+      + signedExcessMargin(pregameDefenseGap, 0.05, 8);
+    var directEdge = rawDirectEdge + eliteSkillMarginEdge;
     var pregameExpectedMargin = clamp(
       directEdge
-        + rosterEdge
-        + starEdge
-        + recordFormEdge
-        + homeCourtEdge
-        + seedBonusEdge
-        + eventTeamMarginEdge
-        + seasonModifierMarginEdge
-        + fatigueEdge * 1.0,
+        + contextualMarginEdge,
       -18, 18,
     );
     return {
@@ -1090,11 +1140,18 @@
         rosterEdge: rosterEdge,
         rawRosterEdge: rawRosterEdge,
         rosterStarEdge: rosterStarEdge,
-        rawMatchupEdge: directEdge,
+        teamResidualMarginEdge: teamResidualMarginEdge,
+        contextualMarginEdge: contextualMarginEdge,
+        marginToBiasPerSide: MARGIN_TO_BIAS_PER_SIDE,
+        contextualBias: contextualBias,
+        rawMatchupEdge: rawDirectEdge,
         matchupEdge: directEdge,
-        pregameAttackGap: first.pregameAttack - second.pregameAttack,
-        pregameDefenseGap: first.defense - second.defense,
-        rawStarEdge: rawStarEdge,
+        eliteSkillMarginEdge: eliteSkillMarginEdge,
+        pregameAttackGap: pregameAttackGap,
+        pregameDefenseGap: pregameDefenseGap,
+        rawStructureEdge: rawStructureEdge,
+        structureEdge: structureEdge,
+        rawStarEdge: 0,
         starEdge: starEdge,
         seasonFormEdge: recordFormEdge,
         recordFormEdge: recordFormEdge,
@@ -1117,7 +1174,7 @@
         seasonModifierTeamEdge: seasonModifierMarginEdge,
       },
       eventTeamEdge: activeEventEdge,
-      estimatedWinProb: 1 / (1 + Math.exp(-pregameExpectedMargin / 6.5)),
+      estimatedWinProb: 1 / (1 + Math.exp(-pregameExpectedMargin / WIN_PROB_MARGIN_SCALE)),
       boxScore: { [teamA]: totalLinesA, [teamB]: totalLinesB },
       _celebrationGameId: 'v2:' + Date.now() + ':' + Math.random().toString(36).slice(2),
       engineVersion: 'v2',

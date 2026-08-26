@@ -344,16 +344,11 @@ const SIM_CONFIG = {
    * 投射、终结、组织、防守、篮板与运动能力各只计算一次；CLU 仅保留很小的情境权重。
    */
   PLAYER_RATING_MODEL: {
-    version: 3,
+    version: 4,
+    mode: 'position-neutral-role-driven',
+    validPositions: ['PG', 'SG', 'SF', 'PF', 'C'],
     overall: { offense: 0.55, defense: 0.38, athletic: 0.07 },
-    scale: { linear: 1.23 },
-    positions: {
-      PG: { offense: { shooting: 0.29, rim: 0.13, creation: 0.42, athletic: 0.14, clutch: 0.02 }, defense: { perimeter: 0.62, interior: 0.07, rebounding: 0.18, athletic: 0.13 } },
-      SG: { offense: { shooting: 0.39, rim: 0.25, creation: 0.20, athletic: 0.14, clutch: 0.02 }, defense: { perimeter: 0.58, interior: 0.10, rebounding: 0.18, athletic: 0.14 } },
-      SF: { offense: { shooting: 0.30, rim: 0.27, creation: 0.22, athletic: 0.19, clutch: 0.02 }, defense: { perimeter: 0.44, interior: 0.24, rebounding: 0.21, athletic: 0.11 } },
-      PF: { offense: { shooting: 0.18, rim: 0.38, creation: 0.15, athletic: 0.27, clutch: 0.02 }, defense: { perimeter: 0.24, interior: 0.46, rebounding: 0.23, athletic: 0.07 } },
-      C: { offense: { shooting: 0.10, rim: 0.42, creation: 0.13, athletic: 0.33, clutch: 0.02 }, defense: { perimeter: 0.08, interior: 0.60, rebounding: 0.27, athletic: 0.05 } }
-    }
+    scale: { linear: 1.17 }
   },
   // ============================================================
   // 4. 赛季模拟参数 — 你可以随意调整
@@ -808,9 +803,9 @@ const SIM_CONFIG = {
 };
 
 function getUnifiedPlayerRatingPosition(position) {
-  var valid = SIM_CONFIG.PLAYER_RATING_MODEL && SIM_CONFIG.PLAYER_RATING_MODEL.positions || {};
+  var valid = SIM_CONFIG.PLAYER_RATING_MODEL && SIM_CONFIG.PLAYER_RATING_MODEL.validPositions || ['PG', 'SG', 'SF', 'PF', 'C'];
   var primary = String(position || 'SF').split('/')[0].trim();
-  return valid[primary] ? primary : 'SF';
+  return valid.indexOf(primary) >= 0 ? primary : 'SF';
 }
 
 function getUnifiedPlayerRatingAttribute(player, key) {
@@ -826,49 +821,96 @@ function getUnifiedPlayerRatingAttribute(player, key) {
 function getUnifiedPlayerRating(player, position) {
   var model = SIM_CONFIG.PLAYER_RATING_MODEL;
   var pos = getUnifiedPlayerRatingPosition(position || (player && player.pos));
-  var profile = model.positions[pos];
   function attr(key) { return getUnifiedPlayerRatingAttribute(player, key); }
+  function clampRating(value) { return Math.max(25, Math.min(99, value)); }
   function weighted(weights) {
     return Object.keys(weights).reduce(function(sum, key) { return sum + attr(key) * weights[key]; }, 0);
   }
-  var shooting = attr('threePT') * 0.60 + attr('MID') * 0.40;
-  var rim = weighted({ FIN: 0.55, DNK: 0.20, ATH: 0.13, STR: 0.12 });
-  var creation = attr('HAN') * 0.50 + attr('PAS') * 0.33 + Math.max(shooting, rim) * 0.12 + attr('ATH') * 0.05;
-  var perimeter = weighted({ PDEF: 0.55, STL: 0.25, ATH: 0.20 });
-  var interior = weighted({ IDEF: 0.48, BLK: 0.32, STR: 0.12, REB: 0.08 });
-  var rebounding = weighted({ REB: 0.70, STR: 0.15, IDEF: 0.15 });
+  // 几何均值要求一组能力同时成立，避免单项 ATH/STL/BLK 被误当作完整角色。
+  function synergy(keys) {
+    var product = keys.reduce(function(value, key) { return value * attr(key); }, 1);
+    return Math.pow(product, 1 / keys.length);
+  }
+  function elite(key) {
+    return Math.pow(Math.max(0, (attr(key) - 85) / 14), 1.6);
+  }
+  function component(base, partnerKeys, eliteKeys) {
+    var paired = synergy(partnerKeys);
+    var elitePackage = (eliteKeys || partnerKeys).reduce(function(sum, key) { return sum + elite(key); }, 0)
+      / Math.max(1, (eliteKeys || partnerKeys).length);
+    // 50 属性时 base、paired 都是 50，因此没有隐藏基准偏移；顶级组合的额外收益封顶为 3.5 分。
+    return clampRating(base * 0.82 + paired * 0.18 + elitePackage * 3.5);
+  }
+
+  var shootingGravity = component(weighted({ threePT: 0.68, MID: 0.32 }), ['threePT', 'MID', 'HAN']);
+  var rimScoring = component(weighted({ FIN: 0.48, DNK: 0.20, HAN: 0.13, ATH: 0.11, STR: 0.08 }), ['FIN', 'HAN', 'ATH', 'STR']);
+  var shotCreation = component(
+    attr('HAN') * 0.38 + shootingGravity * 0.20 + rimScoring * 0.16 + attr('PAS') * 0.12 + attr('ATH') * 0.14,
+    ['HAN', 'threePT', 'FIN', 'ATH'], ['HAN', 'threePT', 'MID', 'FIN']
+  );
+  var playmaking = component(
+    attr('PAS') * 0.53 + attr('HAN') * 0.22 + shotCreation * 0.15 + shootingGravity * 0.10,
+    ['PAS', 'HAN', 'threePT', 'FIN'], ['PAS', 'HAN', 'threePT', 'MID']
+  );
+  var ballSecurity = component(weighted({ HAN: 0.57, PAS: 0.25, STR: 0.10, ATH: 0.08 }), ['HAN', 'PAS', 'STR']);
+  var pointOfAttackDefense = component(weighted({ PDEF: 0.58, ATH: 0.18, STR: 0.14, STL: 0.10 }), ['PDEF', 'ATH', 'STR']);
+  var interiorDefense = component(weighted({ IDEF: 0.50, STR: 0.18, REB: 0.12, ATH: 0.10, BLK: 0.10 }), ['IDEF', 'STR', 'REB']);
+  var rimProtection = component(weighted({ IDEF: 0.36, BLK: 0.32, STR: 0.14, REB: 0.10, ATH: 0.08 }), ['IDEF', 'BLK', 'STR', 'REB']);
+  var rebounding = component(weighted({ REB: 0.66, STR: 0.16, IDEF: 0.10, ATH: 0.08 }), ['REB', 'STR', 'IDEF']);
+  var disruption = component(weighted({ STL: 0.45, PDEF: 0.32, ATH: 0.15, STR: 0.08 }), ['STL', 'PDEF', 'ATH']);
   var athletic = attr('ATH');
   var clutch = attr('CLU');
-  var offense = shooting * profile.offense.shooting
-    + rim * profile.offense.rim
-    + creation * profile.offense.creation
-    + athletic * profile.offense.athletic
-    + clutch * profile.offense.clutch;
-  var defense = perimeter * profile.defense.perimeter
-    + interior * profile.defense.interior
-    + rebounding * profile.defense.rebounding
-    + athletic * profile.defense.athletic;
-  var rawOverall = offense * model.overall.offense
-    + defense * model.overall.defense
-    + athletic * model.overall.athletic;
-  // 统一评分先按比赛影响合成，再用同一条连续标尺映射到 OVR 区间。
-  // 不再对“高属性”“前四属性”等项目二次奖励，避免把同一强项重复放大。
-  var scale = model.scale;
-  var overall = 50 + (rawOverall - 50) * scale.linear;
-  function clampRating(value) { return Math.max(25, Math.min(99, value)); }
+
+  var primaryCreator = component(shotCreation * 0.42 + playmaking * 0.33 + ballSecurity * 0.15 + shootingGravity * 0.10, ['HAN', 'PAS', 'threePT', 'FIN']);
+  // 篮板是中轴组织的配套条件，不是独立进攻加分；避免纯护框/篮板中锋被误识别成进攻中轴。
+  var hubCreator = component(playmaking * 0.47 + rimScoring * 0.22 + shootingGravity * 0.13 + ballSecurity * 0.10 + rebounding * 0.08, ['PAS', 'HAN', 'FIN', 'REB'], ['PAS', 'HAN', 'FIN', 'MID']);
+  var secondaryCreator = clampRating(shotCreation * 0.45 + playmaking * 0.30 + shootingGravity * 0.15 + ballSecurity * 0.10);
+  var scorer = clampRating(shootingGravity * 0.30 + rimScoring * 0.30 + shotCreation * 0.30 + athletic * 0.10);
+  var spacer = clampRating(shootingGravity * 0.72 + shotCreation * 0.18 + ballSecurity * 0.10);
+  var rimFinisher = clampRating(rimScoring * 0.72 + athletic * 0.16 + rebounding * 0.12);
+  var perimeterStopper = clampRating(pointOfAttackDefense * 0.72 + disruption * 0.18 + athletic * 0.10);
+  var switchDefender = clampRating(pointOfAttackDefense * 0.42 + interiorDefense * 0.30 + athletic * 0.18 + rebounding * 0.10);
+  var defensiveAnchor = clampRating(rimProtection * 0.45 + interiorDefense * 0.30 + rebounding * 0.20 + attr('STR') * 0.05);
+
+  var touchLoad = clampRating(shotCreation * 0.32 + playmaking * 0.34 + ballSecurity * 0.20 + shootingGravity * 0.14);
+  var shotLoad = clampRating(scorer * 0.55 + shotCreation * 0.30 + rimScoring * 0.15);
+  var defensiveLoad = clampRating(pointOfAttackDefense * 0.28 + interiorDefense * 0.27 + rimProtection * 0.25 + rebounding * 0.20);
+  var scoringEfficiency = clampRating(shootingGravity * 0.44 + rimScoring * 0.46 + ballSecurity * 0.10);
+  var coreRole = Math.max(primaryCreator, hubCreator);
+  // 中立影响不是按固定位置权重相加：持球核心和组织中轴的附加值来自可承担的角色，
+  // 而非把 PAS 单独线性抬高。
+  var offense = clampRating(
+    scoringEfficiency * 0.39 + shotCreation * 0.23 + playmaking * 0.22 + ballSecurity * 0.08 + shootingGravity * 0.08
+      + Math.max(0, coreRole - 50) * 0.14
+  );
+  var defense = clampRating(
+    pointOfAttackDefense * 0.30 + interiorDefense * 0.25 + rimProtection * 0.24 + rebounding * 0.13 + disruption * 0.08
+      + Math.max(0, defensiveAnchor - 50) * 0.08
+  );
+  var neutralTotal = clampRating(offense * model.overall.offense + defense * model.overall.defense + athletic * model.overall.athletic);
+  var overall = clampRating(50 + (neutralTotal - 50) * model.scale.linear);
+  var rotationValue = clampRating(offense * 0.47 + defense * 0.30 + touchLoad * 0.15 + defensiveLoad * 0.08);
+
   return {
     position: pos,
-    shooting: clampRating(shooting),
-    rim: clampRating(rim),
-    creation: clampRating(creation),
-    perimeterDefense: clampRating(perimeter),
-    interiorDefense: clampRating(interior),
-    rebounding: clampRating(rebounding),
-    athletic: clampRating(athletic),
-    clutch: clampRating(clutch),
-    offense: clampRating(offense),
-    defense: clampRating(defense),
-    overall: clampRating(overall),
+    skills: {
+      shootingGravity: shootingGravity, rimScoring: rimScoring, shotCreation: shotCreation,
+      playmaking: playmaking, ballSecurity: ballSecurity, scoringEfficiency: scoringEfficiency,
+      pointOfAttackDefense: pointOfAttackDefense, interiorDefense: interiorDefense,
+      rimProtection: rimProtection, rebounding: rebounding, disruption: disruption,
+    },
+    roles: {
+      primaryCreator: primaryCreator, secondaryCreator: secondaryCreator, hubCreator: hubCreator,
+      scorer: scorer, spacer: spacer, rimFinisher: rimFinisher, perimeterStopper: perimeterStopper,
+      switchDefender: switchDefender, defensiveAnchor: defensiveAnchor,
+    },
+    capacity: { touchLoad: touchLoad, shotLoad: shotLoad, defensiveLoad: defensiveLoad },
+    impact: { offense: offense, defense: defense, neutralTotal: neutralTotal },
+    // 保留旧字段，令页面、存档和现有校验可渐进迁移。
+    shooting: shootingGravity, rim: rimScoring, creation: shotCreation,
+    perimeterDefense: pointOfAttackDefense, interiorDefense: interiorDefense,
+    rebounding: rebounding, athletic: athletic, clutch: clutch,
+    offense: offense, defense: defense, rotationValue: rotationValue, overall: overall,
   };
 }
 
