@@ -26,6 +26,7 @@
   var MARGIN_TO_BIAS_PER_SIDE = 0.00230;
   var HOME_COURT_MARGIN = 2.8;
   var WIN_PROB_MARGIN_SCALE = 10.5;
+  var ROSTER_MARGIN_SCALE = 1.82;
   // 疲劳直接作用于失误、投篮/罚球质量和节奏，不再重复注入 contextual bias。
   // 2.45 是移除重复 bias 后，对称配对及多因素组合场景中直接事件机制的分差投影。
   var FATIGUE_EXPECTED_MARGIN_PER_TEAM = 2.45;
@@ -1105,9 +1106,9 @@
     if (!Number.isFinite(rawStructureEdge)) rawStructureEdge = 0;
     // 球员属性事件已经表达大部分强弱；中立阵容战力保留有限校准残差，
     // 阵容配合以更直接但仍受限的方式参与赛前分差。
-    // 阵容画像残差按真实赛季强弱分层拟合：每 1 点评级差对应 1.65 分，
+    // 阵容画像残差按真实赛季强弱分层拟合：每 1 点评级差对应 1.82 分，
     // 单项及合并结果再受限，避免极端阵容无限放大。
-    var rosterEdge = clamp(rawRosterEdge * 1.65, -8, 8);
+    var rosterEdge = clamp(rawRosterEdge * ROSTER_MARGIN_SCALE, -8, 8);
     var structureEdge = clamp(rawStructureEdge * 0.65, -3.2, 3.2);
     var teamResidualMarginEdge = clamp(rosterEdge + structureEdge, -8, 8);
     var rosterStarEdge = teamResidualMarginEdge;
@@ -1249,6 +1250,7 @@
       actualMargin: scoreA - scoreB,
       marginComponents: {
         rosterEdge: rosterEdge,
+        rosterMarginScale: ROSTER_MARGIN_SCALE,
         rawRosterEdge: rawRosterEdge,
         rosterStarEdge: rosterStarEdge,
         teamResidualMarginEdge: teamResidualMarginEdge,

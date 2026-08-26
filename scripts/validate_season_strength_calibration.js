@@ -87,6 +87,8 @@ function getTeamRatings(teams) {
       team,
       power,
       rating: rating.total,
+      rosterRating: rating.roster,
+      structureRating: rating.structure,
     };
   }).sort((a, b) => b.rating - a.rating || a.team.localeCompare(b.team));
 }
@@ -176,6 +178,8 @@ function runSeason(seasonNumber, teams) {
     conference,
     team: ranking[0].team,
     rating: ranking[0].rating,
+    rosterRating: ranking[0].rosterRating,
+    structureRating: ranking[0].structureRating,
     wins: standings[ranking[0].team].wins,
     rank: conferenceRank[ranking[0].team],
   }));
@@ -243,7 +247,13 @@ function summarize(seasons, teams) {
   const leagueTop = seasons.map(season => season.final[0]);
   const leagueBottom = seasons.map(season => season.final[season.final.length - 1]);
   const trackedEntries = Object.entries(seasons[0].conferencePreseason)
-    .flatMap(([conference, ranking]) => ranking.slice(0, 5).map(entry => ({ conference, team: entry.team, rating: entry.rating })));
+    .flatMap(([conference, ranking]) => ranking.slice(0, 5).map(entry => ({
+      conference,
+      team: entry.team,
+      rating: entry.rating,
+      rosterRating: entry.rosterRating,
+      structureRating: entry.structureRating,
+    })));
   const preseasonTeamStats = trackedEntries.map(tracked => {
     const team = tracked.team;
     const entries = seasons.map(season => {
@@ -308,6 +318,8 @@ function summarize(seasons, teams) {
       conference: entry.conference,
       team: entry.team,
       rating: Number(entry.rating.toFixed(2)),
+      rosterRating: Number(entry.rosterRating.toFixed(2)),
+      structureRating: Number(entry.structureRating.toFixed(2)),
     })),
     league: {
       actualFirstAverageWins: mean(leagueTop.map(entry => entry.wins)),

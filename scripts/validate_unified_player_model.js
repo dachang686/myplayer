@@ -165,11 +165,13 @@ const monotonicAttributeKeys = [
   'STR', 'REB', 'PDEF', 'IDEF', 'STL', 'BLK',
 ];
 const monotonicFailures = [];
+let monotonicChecks = 0;
 leaguePlayers.forEach(row => {
   const before = config.getUnifiedPlayerRating(row, row.pos).overall;
   monotonicAttributeKeys.forEach(key => {
     const value = Number(row[key]);
     if (!Number.isFinite(value) || value >= 99) return;
+    monotonicChecks++;
     const after = config.getUnifiedPlayerRating(Object.assign({}, row, { [key]: value + 1 }), row.pos).overall;
     if (after + 1e-9 < before) {
       monotonicFailures.push({ id: row.id, name: row.cname || row.name, key, value, before, after });
@@ -252,5 +254,5 @@ console.log(JSON.stringify({
   residuals: residualMetrics,
   residualsByPosition,
   specialtyResiduals: { balanced: balancedResidual, specialist: specialistResidual },
-  monotonicChecks: leaguePlayers.length * monotonicAttributeKeys.length,
+  monotonicChecks,
 }, null, 2));
