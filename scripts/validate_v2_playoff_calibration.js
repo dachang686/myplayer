@@ -130,7 +130,7 @@ for (const sample of [neutral, home, roster, structure, record, fatigueA, fatigu
 assert(Math.abs(neutral.expectedMargin) < 1e-9 && Math.abs(neutral.actualMargin) < 0.35,
   `中立同阵容基线不居中：${JSON.stringify(neutral)}`);
 assert(Math.abs(home.expectedMargin - 2.8) < 1e-9, `主场分差口径错误：${JSON.stringify(home)}`);
-assert(Math.abs(roster.expectedMargin - 6) < 1e-9, `阵容画像残差口径错误：${JSON.stringify(roster)}`);
+assert(Math.abs(roster.expectedMargin - 6.6) < 1e-9, `阵容画像残差口径错误：${JSON.stringify(roster)}`);
 assert(Math.abs(structure.expectedMargin - 2.6) < 1e-9, `结构残差没有完整进入预期分差：${JSON.stringify(structure)}`);
 const expectedRecordEdge = ((56 / 82) - (48 / 82)) * 7;
 assert(Math.abs(record.expectedMargin - expectedRecordEdge) < 1e-9, `战绩分差口径错误：${JSON.stringify(record)}`);

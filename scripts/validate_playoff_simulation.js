@@ -990,7 +990,7 @@ function runRealRosterSmoke() {
   });
   Object.assign(leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_DEFENSIVE_ANCHOR[4], {
     threePT: 50, MID: 50, FIN: 56, DNK: 50, HAN: 50, PAS: 50,
-    PDEF: 60, STL: 55, IDEF: 97, BLK: 97, REB: 97, ATH: 74, STR: 95, CLU: 70,
+    PDEF: 60, STL: 55, IDEF: 97, BLK: 97, REB: 78, ATH: 74, STR: 95, CLU: 70,
   });
   Object.assign(leagueData.LEAGUE_PLAYER_DATA.SYNTHETIC_DEFENSIVE_BASE[4], {
     threePT: 50, MID: 50, FIN: 56, DNK: 50, HAN: 50, PAS: 50,
@@ -1230,6 +1230,7 @@ function runRealRosterSmoke() {
     });
     const anchorImpact = realEngine.getPlayerGameImpact(anchorCenter);
     const baseCenterImpact = realEngine.getPlayerGameImpact(baseCenter);
+    const reboundCenterImpact = realEngine.getPlayerGameImpact(Object.assign({}, baseCenter, { REB: 97 }));
     const perimeterStopperImpact = realEngine.getPlayerGameImpact(perimeterStopper);
     const offenseProfilePlayer = syntheticPlayer('offense-profile', 'C', 96);
     Object.assign(offenseProfilePlayer, {
@@ -1305,6 +1306,9 @@ function runRealRosterSmoke() {
       baseDefense: baseCenterImpact.defense,
       anchorOffense: anchorImpact.offense,
       baseOffense: baseCenterImpact.offense,
+      reboundOffense: reboundCenterImpact.offense,
+      rimProtectionOffenseDelta: anchorImpact.offense - baseCenterImpact.offense,
+      reboundOffenseDelta: reboundCenterImpact.offense - baseCenterImpact.offense,
       teamDefenseGap: anchorPower.defense - baseDefensePower.defense,
       opponentPpgDelta: defensiveAnchorSeries.opponentPpgDelta,
       anchorCenterFga: defensiveAnchorSeries.anchorCenterFga,
@@ -1485,8 +1489,10 @@ if (!realRosterSmoke.syntheticLineup.marginComponents
 if (realRosterSmoke.defensiveAnchorIsolation.anchorBonus < 0.5
   || realRosterSmoke.defensiveAnchorIsolation.perimeterBonus > 0.01
   || realRosterSmoke.defensiveAnchorIsolation.anchorDefense <= realRosterSmoke.defensiveAnchorIsolation.baseDefense + 2
-  // 篮板会给中轴角色极小的进攻协同，但护框升级不能制造实质性进攻跃升。
-  || Math.abs(realRosterSmoke.defensiveAnchorIsolation.anchorOffense - realRosterSmoke.defensiveAnchorIsolation.baseOffense) > 0.5
+  // IDEF/BLK 必须保持进攻隔离；REB 的二次进攻和角色协同价值另行验证。
+  || Math.abs(realRosterSmoke.defensiveAnchorIsolation.rimProtectionOffenseDelta) > 0.5
+  || realRosterSmoke.defensiveAnchorIsolation.reboundOffenseDelta < 0.5
+  || realRosterSmoke.defensiveAnchorIsolation.reboundOffenseDelta > 1.5
   || realRosterSmoke.defensiveAnchorIsolation.teamDefenseGap < 0.8
   || realRosterSmoke.defensiveAnchorIsolation.opponentPpgDelta < 0.25
   || Math.abs(realRosterSmoke.defensiveAnchorIsolation.anchorCenterFga - realRosterSmoke.defensiveAnchorIsolation.baseCenterFga) > 0.8) {
@@ -1605,7 +1611,7 @@ if (!realRosterSmoke.offensiveRatingIsolation
   failures.push(`基础进攻评级仍被 OVR/CLU 主导或压低真实进攻核心：${JSON.stringify(realRosterSmoke.offensiveRatingIsolation)}`);
 }
 if (!realRosterSmoke.defensiveRatingIsolation
-  || outside(realRosterSmoke.defensiveRatingIsolation.profileDefense, 77, 83)
+  || outside(realRosterSmoke.defensiveRatingIsolation.profileDefense, 82, 85)
   || Math.abs(realRosterSmoke.defensiveRatingIsolation.overallGap) > 0.001) {
   failures.push(`基础防守评级仍被 OVR 主导或错误触发防守支柱奖励：${JSON.stringify(realRosterSmoke.defensiveRatingIsolation)}`);
 }

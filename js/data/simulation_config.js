@@ -1009,18 +1009,17 @@ function getUnifiedPlayerRating(player, position) {
       + twoWayBonus
   );
 
-  // 纯护框角色不能仅凭防守支柱分数得到持球巨星级 OVR。
-  if (peakRoleName === 'defensiveAnchor') {
-    var creationComplement = Math.max(
-      roleImpact.primaryCreator,
-      roleImpact.hubCreator,
-      roleImpact.scorer
-    );
-    var anchorCeiling = 89
-      + Math.max(0, creationComplement - 80) * 0.80
-      + Math.max(0, roleImpact.rimFinisher - 80) * 0.25;
-    overall = Math.min(overall, anchorCeiling);
-  }
+  // 防守支柱上限必须连续生效，不能在最高角色切换时突然压低 OVR。
+  // 完整创造能力和篮下终结会单调抬高上限；纯护框角色仍不能仅凭防守得到持球巨星级 OVR。
+  var creationComplement = Math.max(
+    roleImpact.primaryCreator,
+    roleImpact.hubCreator,
+    roleImpact.scorer
+  );
+  var anchorCeiling = 89
+    + Math.max(0, creationComplement - 80) * 0.80
+    + Math.max(0, roleImpact.rimFinisher - 80) * 0.25;
+  overall = Math.min(overall, anchorCeiling);
 
   var creationLoadValue = clampRating(
     roleImpact.primaryCreator * 0.55 + touchLoad * 0.25 + ballSecurity * 0.20

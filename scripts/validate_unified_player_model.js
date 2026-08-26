@@ -108,6 +108,18 @@ assert(pureAnchor.roles.defensiveAnchor > 95
   && Math.abs(pureAnchor.rotationValue - pureAnchor.overall) > 0.1,
 `纯防守支柱必须受角色上限约束，且轮换价值与 OVR 分离：${JSON.stringify(pureAnchor)}`);
 
+const anchorBoundary = player({
+  pos: 'C', threePT: 50, MID: 50, FIN: 99, DNK: 99, HAN: 50, PAS: 50,
+  ATH: 92, STR: 96, REB: 92, PDEF: 50, IDEF: 90, STL: 50, BLK: 55,
+});
+const anchorBoundaryBefore = config.getUnifiedPlayerRating(anchorBoundary);
+const anchorBoundaryAfter = config.getUnifiedPlayerRating(Object.assign({}, anchorBoundary, { IDEF: 91 }));
+assert(anchorBoundaryAfter.offense >= anchorBoundaryBefore.offense
+  && anchorBoundaryAfter.defense >= anchorBoundaryBefore.defense
+  && anchorBoundaryAfter.rotationValue >= anchorBoundaryBefore.rotationValue
+  && anchorBoundaryAfter.overall >= anchorBoundaryBefore.overall,
+`防守支柱角色切换时属性提升不得降低 OVR：${JSON.stringify({ before: anchorBoundaryBefore, after: anchorBoundaryAfter })}`);
+
 const minutes = [48, 48, 48, 48, 48];
 const skillKeys = ['shootingGravity', 'rimScoring', 'shotCreation', 'playmaking', 'ballSecurity', 'pointOfAttackDefense', 'interiorDefense', 'rimProtection', 'rebounding'];
 const roleKeys = ['primaryCreator', 'secondaryCreator', 'hubCreator', 'perimeterStopper', 'switchDefender', 'defensiveAnchor'];
@@ -148,6 +160,25 @@ const residuals = leaguePlayers.map(row => {
   return { row, sourceOvr, formulaOvr, error: formulaOvr - sourceOvr };
 });
 
+const monotonicAttributeKeys = [
+  'threePT', 'MID', 'FIN', 'DNK', 'HAN', 'PAS', 'ATH',
+  'STR', 'REB', 'PDEF', 'IDEF', 'STL', 'BLK',
+];
+const monotonicFailures = [];
+leaguePlayers.forEach(row => {
+  const before = config.getUnifiedPlayerRating(row, row.pos).overall;
+  monotonicAttributeKeys.forEach(key => {
+    const value = Number(row[key]);
+    if (!Number.isFinite(value) || value >= 99) return;
+    const after = config.getUnifiedPlayerRating(Object.assign({}, row, { [key]: value + 1 }), row.pos).overall;
+    if (after + 1e-9 < before) {
+      monotonicFailures.push({ id: row.id, name: row.cname || row.name, key, value, before, after });
+    }
+  });
+});
+assert(monotonicFailures.length === 0,
+  `真实名单存在属性提升后 OVR 下降：${JSON.stringify(monotonicFailures.slice(0, 10))}`);
+
 function averageRanks(values) {
   const sorted = values.map((value, index) => ({ value, index })).sort((a, b) => a.value - b.value);
   const ranks = new Array(values.length);
@@ -187,12 +218,31 @@ const residualMetrics = {
     averageRanks(residuals.map(row => row.formulaOvr))
   ),
 };
+const residualsByPosition = Object.fromEntries(['PG', 'SG', 'SF', 'PF', 'C'].map(position => {
+  const rows = residuals.filter(entry => String(entry.row.pos || '').split('/')[0].trim() === position);
+  return [position, rows.reduce((sum, entry) => sum + entry.error, 0) / rows.length];
+}));
+const specialtyRows = residuals.map(entry => {
+  const values = monotonicAttributeKeys.map(key => Number(entry.row[key]) || 50);
+  const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+  const spread = Math.sqrt(values.reduce((sum, value) => sum + Math.pow(value - mean, 2), 0) / values.length);
+  return Object.assign({ spread }, entry);
+}).sort((left, right) => left.spread - right.spread);
+const specialtyGroupSize = Math.floor(specialtyRows.length * 0.20);
+const balancedResidual = specialtyRows.slice(0, specialtyGroupSize)
+  .reduce((sum, entry) => sum + entry.error, 0) / specialtyGroupSize;
+const specialistResidual = specialtyRows.slice(-specialtyGroupSize)
+  .reduce((sum, entry) => sum + entry.error, 0) / specialtyGroupSize;
 assert(residualMetrics.count === 525
   && residualMetrics.meanAbsoluteError <= 3
   && residualMetrics.withinThree >= 340
   && residualMetrics.overFive <= 70
   && residualMetrics.spearman >= 0.74,
 `V5 必须维持 525 人整体校准质量：${JSON.stringify(residualMetrics)}`);
+assert(Object.values(residualsByPosition).every(value => Math.abs(value) <= 1.75),
+  `V5 不得保留明显位置系统偏差：${JSON.stringify(residualsByPosition)}`);
+assert(Math.abs(specialistResidual - balancedResidual) <= 1,
+  `V5 不得系统性奖励均衡型或专项型球员：${JSON.stringify({ balancedResidual, specialistResidual })}`);
 
 console.log(JSON.stringify({
   baseline: baseline.overall,
@@ -200,4 +250,7 @@ console.log(JSON.stringify({
   defense: { athlete: athlete.defense, stopper: stopper.defense },
   lineup: { fitted: fitted.total, unfitted: unfitted.total },
   residuals: residualMetrics,
+  residualsByPosition,
+  specialtyResiduals: { balanced: balancedResidual, specialist: specialistResidual },
+  monotonicChecks: leaguePlayers.length * monotonicAttributeKeys.length,
 }, null, 2));

@@ -453,6 +453,7 @@
       return scoringLoads.filter(function(otherLoad) { return otherLoad > scoringLoad + 0.001; }).length;
     });
     var teamScoringLoad = weightedMean(scoringLoads, weights);
+    var legendaryScorerFlags = players.map(function() { return false; });
     var opportunity = players.map(function(player, index) {
       var offensiveRoleRank = offensiveRoleRanks[index];
       var roleFactor = clamp(1 + (scoringLoads[index] - teamScoringLoad) * 1.95, 0.72, 1.32);
@@ -480,6 +481,7 @@
         && scoringLoad >= 0.70
         && Math.random() < (scoringLoad > 0.985 ? 0.00175 : 0.005);
       if (legendaryBurst) {
+        legendaryScorerFlags[index] = true;
         gameMultiplier = 4.00 + Math.random() * 0.70;
       } else if (burstChance > 0 && Math.random() < burstChance) {
         gameMultiplier *= 1.45 + Math.random() * 0.45;
@@ -501,6 +503,7 @@
       positions: positions,
       weights: weights,
       opportunity: opportunity,
+      legendaryScorerFlags: legendaryScorerFlags,
       touchOpportunity: touchOpportunity,
       three: three,
       mid: mid,
@@ -639,7 +642,8 @@
     );
     var threeA = Math.max(0, Math.min(fga, Math.round(fga * threeRate)));
     var fgaCaps = context.players.map(function(_, index) {
-      return Math.max(4, Math.round(fga * (0.30 + context.threat[index] * 0.13)));
+      var legendaryCapBonus = context.legendaryScorerFlags && context.legendaryScorerFlags[index] ? 0.06 : 0;
+      return Math.max(4, Math.round(fga * (0.30 + context.threat[index] * 0.13 + legendaryCapBonus)));
     });
     var fgaByPlayer = allocatePeriodQuota(fga, context.opportunity, fgaCaps, fgaLedger);
     var threeWeights = context.players.map(function(_, index) {
@@ -763,6 +767,113 @@
     };
   }
 
+  // 使用与 makeQuarter 相同的事件概率解析估算单场得分，只服务于赛前分差诊断。
+  // 它不会抽样，也不会反向写入比赛事件，因此能避免用统一 OVR/综合攻防分重复猜测事件结果。
+  function estimateExpectedScore(context, opponent, possessions, bias) {
+    function shares(values) {
+      var total = values.reduce(function(sum, value) { return sum + Math.max(0, Number(value) || 0); }, 0);
+      if (total <= 0) return values.map(function() { return 1 / Math.max(1, values.length); });
+      return values.map(function(value) { return Math.max(0, Number(value) || 0) / total; });
+    }
+
+    function expectedFieldGoals(attempts, threeRate, attemptWeights, threeAttemptWeights) {
+      var fgaShares = shares(attemptWeights);
+      var threeShares = shares(threeAttemptWeights);
+      var points = 0;
+      var makes = 0;
+      context.players.forEach(function(_, index) {
+        var threeAttempts = attempts * threeRate * threeShares[index];
+        var twoAttempts = attempts * (1 - threeRate) * fgaShares[index];
+        var rimShareBase = context.volumeRim[index]
+          / Math.max(0.01, context.volumeRim[index] + context.volumeMid[index]);
+        var rimDeterrence = clamp((opponent.rimProtection - 0.50) * 0.75, -0.15, 0.30);
+        var rimShare = clamp(rimShareBase * (1 - rimDeterrence), 0.15, 0.75);
+        var rimAttempts = twoAttempts * rimShare;
+        var midAttempts = twoAttempts - rimAttempts;
+        var defensePenalty = (opponent.rimProtection - 0.50) * 0.11;
+        var perimeterPenalty = (opponent.perimeterDefense - 0.50) * 0.085;
+        var qualityBias = bias + (context.passing - 0.50) * 0.014;
+        var threePct = clamp(0.255 + context.effectiveThree[index] * 0.210 - perimeterPenalty + qualityBias, 0.20, 0.58);
+        var midPct = clamp(0.300 + context.effectiveMid[index] * 0.170 - perimeterPenalty * 0.55 + qualityBias, 0.23, 0.60);
+        var rimPct = clamp(
+          0.400 + context.effectiveFin[index] * 0.200 + context.effectiveDnk[index] * 0.040
+            + context.ath[index] * 0.025 + context.str[index] * 0.035 - defensePenalty + qualityBias,
+          0.28, 0.72,
+        );
+        var rawBlockProtection = Number(opponent.rawRimProtection);
+        var blockProtection = Number.isFinite(rawBlockProtection)
+          ? rawBlockProtection * 0.70 + opponent.rimProtection * 0.30
+          : opponent.rimProtection;
+        var blockChance = clamp(0.006 + blockProtection * 0.092, 0.004, 0.115);
+        var threeMakes = threeAttempts * threePct;
+        var midMakes = midAttempts * midPct;
+        var rimMakes = rimAttempts * (1 - blockChance) * rimPct;
+        makes += threeMakes + midMakes + rimMakes;
+        points += threeMakes * 3 + (midMakes + rimMakes) * 2;
+      });
+      return { points: points, makes: makes };
+    }
+
+    var weightedThree = weightedMean(context.volumeThree, context.opportunity);
+    var weightedMid = weightedMean(context.volumeMid, context.opportunity);
+    var weightedRim = weightedMean(context.volumeRim, context.opportunity);
+    var turnoverRate = clamp(
+      0.105 + (1 - context.handling) * 0.050
+        + (opponent.perimeterDefense - 0.50) * 0.030
+        + (1 - context.teamCreation) * 0.018,
+      0.080, 0.190,
+    );
+    var effectivePossessions = Math.max(1, possessions * (1 - turnoverRate));
+    var rimAttack = clamp(weightedRim / Math.max(0.01, weightedRim + weightedMid + weightedThree), 0.20, 0.65);
+    var freeThrowRate = clamp(
+      0.095 + rimAttack * 0.070 + context.teamCreation * 0.022
+        - opponent.rimProtection * 0.015,
+      0.075, 0.185,
+    );
+    var freeThrowTrips = effectivePossessions * clamp(freeThrowRate * 0.56, 0.030, 0.14);
+    var fta = freeThrowTrips * 1.88;
+    var ftaWeights = context.players.map(function(_, index) {
+      return context.touchOpportunity[index]
+        * (0.28 + context.volumeRim[index] * 1.55 + context.creation[index] * 0.25);
+    });
+    var ftaShares = shares(ftaWeights);
+    var freeThrowPct = context.players.reduce(function(sum, _, index) {
+      var ftSkill = context.effectiveThree[index] * 0.52 + context.effectiveMid[index] * 0.48;
+      var qualityBias = bias + (context.passing - 0.50) * 0.014;
+      return sum + ftaShares[index] * clamp(0.60 + ftSkill * 0.30 + qualityBias * 0.35, 0.56, 0.94);
+    }, 0);
+    var fga = Math.max(1, effectivePossessions - fta * 0.44);
+    var threeRate = clamp(
+      weightedThree / Math.max(0.01, weightedThree + weightedMid + weightedRim)
+        - (opponent.perimeterDefense - 0.50) * 0.055,
+      0.24, 0.54,
+    );
+    var threeWeights = context.players.map(function(_, index) {
+      return context.opportunity[index] * (0.35 + context.volumeThree[index] * 1.45);
+    });
+    var primary = expectedFieldGoals(fga, threeRate, context.opportunity, threeWeights);
+    var missedField = Math.max(0, fga - primary.makes);
+    var missedFt = fta * (1 - freeThrowPct);
+    var offensiveReboundRate = clamp(
+      0.095 + context.offensiveRebound * 0.100 - opponent.defensiveRebound * 0.035,
+      0.085, 0.180,
+    );
+    var extraAttempts = (missedField + missedFt * 0.45) * offensiveReboundRate;
+    var extraWeights = context.players.map(function(_, index) {
+      return context.opportunity[index] * (0.72 + context.volumeRim[index] * 0.60);
+    });
+    var extraThreeWeights = context.players.map(function(_, index) {
+      return context.opportunity[index] * (0.35 + context.volumeThree[index] * 1.45);
+    });
+    var extra = expectedFieldGoals(
+      extraAttempts,
+      clamp(threeRate * 0.72, 0.16, 0.44),
+      extraWeights,
+      extraThreeWeights,
+    );
+    return primary.points + fta * freeThrowPct + extra.points;
+  }
+
   function addAssists(context, quarter) {
     quarter.lines.forEach(function(shooter, shooterIndex) {
       var probability = clamp(
@@ -825,12 +936,12 @@
     var secondTotal = secondQuarter.offensiveRebounds + Math.max(0, secondReboundable - firstQuarter.offensiveRebounds);
     var firstByPlayer = weightedRandomAllocation(
       firstTotal,
-      firstContext.players.map(function(_, index) { return firstContext.weights[index] * (0.20 + Math.pow(firstContext.reb[index], 1.3) * 1.58); }),
+      firstContext.players.map(function(_, index) { return firstContext.weights[index] * (0.20 + Math.pow(firstContext.reb[index], 1.32) * 1.58); }),
       firstContext.players.map(function() { return 24; }),
     );
     var secondByPlayer = weightedRandomAllocation(
       secondTotal,
-      secondContext.players.map(function(_, index) { return secondContext.weights[index] * (0.20 + Math.pow(secondContext.reb[index], 1.3) * 1.58); }),
+      secondContext.players.map(function(_, index) { return secondContext.weights[index] * (0.20 + Math.pow(secondContext.reb[index], 1.32) * 1.58); }),
       secondContext.players.map(function() { return 24; }),
     );
     firstByPlayer.forEach(function(value, index) { firstQuarter.lines[index].reb += value; });
@@ -994,9 +1105,9 @@
     if (!Number.isFinite(rawStructureEdge)) rawStructureEdge = 0;
     // 球员属性事件已经表达大部分强弱；中立阵容战力保留有限校准残差，
     // 阵容配合以更直接但仍受限的方式参与赛前分差。
-    // 阵容画像残差按真实赛季强弱分层拟合：每 1 点评级差对应 1.5 分，
+    // 阵容画像残差按真实赛季强弱分层拟合：每 1 点评级差对应 1.65 分，
     // 单项及合并结果再受限，避免极端阵容无限放大。
-    var rosterEdge = clamp(rawRosterEdge * 1.50, -8, 8);
+    var rosterEdge = clamp(rawRosterEdge * 1.65, -8, 8);
     var structureEdge = clamp(rawStructureEdge * 0.65, -3.2, 3.2);
     var teamResidualMarginEdge = clamp(rosterEdge + structureEdge, -8, 8);
     var rosterStarEdge = teamResidualMarginEdge;
@@ -1107,16 +1218,11 @@
     });
     var pregameAttackGap = first.pregameAttack - second.pregameAttack;
     var pregameDefenseGap = first.defense - second.defense;
-    var rawDirectEdge = pregameAttackGap * 23 + pregameDefenseGap * 13.5;
-    function signedExcessMargin(value, threshold, scale) {
-      if (!value) return 0;
-      return (value < 0 ? -1 : 1) * Math.max(0, Math.abs(value) - threshold) * scale;
-    }
-    // 实测事件曲线在顶级完整进攻包和高端防守端具有额外非线性；
-    // 该项只校准赛前分差诊断，不再向比赛事件重复注入 bias。
-    var eliteSkillMarginEdge = signedExcessMargin(pregameAttackGap, 0.15, 27)
-      + signedExcessMargin(pregameDefenseGap, 0.05, 8);
-    var directEdge = rawDirectEdge + eliteSkillMarginEdge;
+    var projectedDirectEdge = estimateExpectedScore(first, second, basePace, 0)
+      - estimateExpectedScore(second, first, basePace, 0);
+    // 事件解析投影已经包含顶级技能包在投篮分布、失误、封盖和篮板上的非线性，
+    // 不再叠加基于综合攻防分的经验系数或 elite 奖励。
+    var directEdge = projectedDirectEdge;
     var pregameExpectedMargin = clamp(
       directEdge
         + contextualMarginEdge
@@ -1149,9 +1255,10 @@
         contextualMarginEdge: contextualMarginEdge,
         marginToBiasPerSide: MARGIN_TO_BIAS_PER_SIDE,
         contextualBias: contextualBias,
-        rawMatchupEdge: rawDirectEdge,
+        rawMatchupEdge: projectedDirectEdge,
+        projectedDirectEdge: projectedDirectEdge,
         matchupEdge: directEdge,
-        eliteSkillMarginEdge: eliteSkillMarginEdge,
+        eliteSkillMarginEdge: 0,
         pregameAttackGap: pregameAttackGap,
         pregameDefenseGap: pregameDefenseGap,
         rawStructureEdge: rawStructureEdge,
