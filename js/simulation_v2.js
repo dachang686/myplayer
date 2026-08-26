@@ -26,6 +26,9 @@
   var MARGIN_TO_BIAS_PER_SIDE = 0.00230;
   var HOME_COURT_MARGIN = 2.8;
   var WIN_PROB_MARGIN_SCALE = 10.5;
+  // 疲劳直接作用于失误、投篮/罚球质量和节奏，不再重复注入 contextual bias。
+  // 2.45 是移除重复 bias 后，对称配对及多因素组合场景中直接事件机制的分差投影。
+  var FATIGUE_EXPECTED_MARGIN_PER_TEAM = 2.45;
 
   function anchoredMetric(value, scale) {
     return clamp(ATTRIBUTE_ANCHOR + (Number(value) - ATTRIBUTE_ANCHOR) * scale, 0, 1);
@@ -968,7 +971,8 @@
     var seedBonusEdge = Number(seedBonus || 0) * 0.5;
     var eventTeamMarginEdge = activeEventEdge * 0.4;
     var seasonModifierMarginEdge = seasonEdge * 0.4;
-    var fatigueEdge = second.fatigue - first.fatigue;
+    var fatigueStateEdge = second.fatigue - first.fatigue;
+    var fatigueEdge = fatigueStateEdge * FATIGUE_EXPECTED_MARGIN_PER_TEAM;
 
     // V2 事件层逐回合读取统一画像；球队层仅以阵容组合的有限残差修正，
     // 避免把 OVR、球星集中度和属性事件重复相加。
@@ -998,7 +1002,7 @@
     var rosterStarEdge = teamResidualMarginEdge;
     var starEdge = 0;
     var contextualMarginEdge = teamResidualMarginEdge + recordFormEdge + homeCourtEdge + seedBonusEdge
-      + eventTeamMarginEdge + seasonModifierMarginEdge + fatigueEdge;
+      + eventTeamMarginEdge + seasonModifierMarginEdge;
     var contextualBias = contextualMarginEdge * MARGIN_TO_BIAS_PER_SIDE;
     var biasA = contextualBias;
     var biasB = -contextualBias;
@@ -1115,7 +1119,8 @@
     var directEdge = rawDirectEdge + eliteSkillMarginEdge;
     var pregameExpectedMargin = clamp(
       directEdge
-        + contextualMarginEdge,
+        + contextualMarginEdge
+        + fatigueEdge,
       -18, 18,
     );
     return {
@@ -1170,6 +1175,7 @@
           ? first.appliedUserMinutesFactor
           : second.appliedUserMinutesFactor,
         fatigueEdge: fatigueEdge,
+        fatigueStateEdge: fatigueStateEdge,
         eventTeamEdge: eventTeamMarginEdge,
         seasonModifierTeamEdge: seasonModifierMarginEdge,
       },

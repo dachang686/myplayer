@@ -93,8 +93,34 @@ const home = runGames('home', pairedGames, {}, { isHomeA: true });
 const roster = runGames('roster', pairedGames, { overallA: 84 }, { isHomeA: null });
 const structure = runGames('structure', pairedGames, { structureA: 4 }, { isHomeA: null });
 const record = runGames('record', pairedGames, { recordA: [56, 26], recordB: [48, 34] }, { isHomeA: null });
+const fatigueA = runGames('fatigue-a', pairedGames, {}, { isHomeA: null, isB2BA: true, isB2BB: false });
+const fatigueB = runGames('fatigue-b', pairedGames, {}, { isHomeA: null, isB2BA: false, isB2BB: true });
+const fatigueBoth = runGames('fatigue-both', pairedGames, {}, { isHomeA: null, isB2BA: true, isB2BB: true });
+const combinedScenario = { overallA: 84, structureA: 4, recordA: [56, 26], recordB: [48, 34] };
+const combined = runGames('combined', pairedGames, combinedScenario, { isHomeA: true, isB2BA: false, isB2BB: false }, 2);
+const combinedFatigueA = runGames('combined-fatigue-a', pairedGames, combinedScenario, { isHomeA: true, isB2BA: true, isB2BB: false }, 2);
 
-for (const sample of [neutral, home, roster, structure, record]) {
+function setSharedProfile(patch) {
+  ['A', 'B'].forEach(team => rotations[team].players.forEach(player => {
+    attributeKeys.forEach(key => { player[key] = 80; });
+    Object.assign(player, patch);
+  }));
+}
+function runFatigueProfile(label, patch) {
+  setSharedProfile(patch);
+  return {
+    fatigueA: runGames(`${label}-fatigue-a`, 3000, {}, { isHomeA: null, isB2BA: true, isB2BB: false }),
+    fatigueB: runGames(`${label}-fatigue-b`, 3000, {}, { isHomeA: null, isB2BA: false, isB2BB: true }),
+  };
+}
+const fatigueProfiles = {
+  shooting: runFatigueProfile('shooting', { threePT: 92, MID: 90, FIN: 84, DNK: 78, HAN: 90, PAS: 88, ATH: 86 }),
+  rimPressure: runFatigueProfile('rim-pressure', { threePT: 68, MID: 78, FIN: 94, DNK: 92, HAN: 86, PAS: 80, ATH: 92, STR: 90 }),
+};
+setSharedProfile({});
+const fatigueProfileSamples = Object.values(fatigueProfiles).flatMap(profile => [profile.fatigueA, profile.fatigueB]);
+
+for (const sample of [neutral, home, roster, structure, record, fatigueA, fatigueB, fatigueBoth, combined, combinedFatigueA, ...fatigueProfileSamples]) {
   assert(sample.allV2, `${sample.label} 没有直接调用 V2 引擎`);
   assert(Math.abs(sample.actualMargin - sample.expectedMargin) < 0.65,
     `${sample.label} 的 expectedMargin 与实际平均分差分裂：${JSON.stringify(sample)}`);
@@ -108,6 +134,13 @@ assert(Math.abs(roster.expectedMargin - 6) < 1e-9, `阵容画像残差口径错�
 assert(Math.abs(structure.expectedMargin - 2.6) < 1e-9, `结构残差没有完整进入预期分差：${JSON.stringify(structure)}`);
 const expectedRecordEdge = ((56 / 82) - (48 / 82)) * 7;
 assert(Math.abs(record.expectedMargin - expectedRecordEdge) < 1e-9, `战绩分差口径错误：${JSON.stringify(record)}`);
+assert(fatigueA.expectedMargin < -1.5 && fatigueB.expectedMargin > 1.5
+  && Math.abs(fatigueA.expectedMargin + fatigueB.expectedMargin) < 1e-9,
+`单方疲劳没有以对称的实测分差进入诊断：${JSON.stringify({ fatigueA, fatigueB })}`);
+assert(Math.abs(fatigueBoth.expectedMargin) < 1e-9 && Math.abs(fatigueBoth.actualMargin) < 0.35,
+  `双方疲劳不应制造净分差：${JSON.stringify(fatigueBoth)}`);
+assert(Math.abs((combined.expectedMargin - combinedFatigueA.expectedMargin) + fatigueA.expectedMargin) < 1e-9,
+  `疲劳在组合场景中的分差口径不一致：${JSON.stringify({ combined, combinedFatigueA, fatigueA })}`);
 
 const homePattern = [true, true, false, false, true, false, true];
 function runSeries(label, count, scenario, seedBonus) {
@@ -128,12 +161,17 @@ function runSeries(label, count, scenario, seedBonus) {
   return { label, series: count, winRate: seriesWins / count };
 }
 const equalSeries = runSeries('equal', 2500, {}, 0);
-const oneVsFour = runSeries('1v4', 2500, { recordA: [56, 26], recordB: [50, 32] }, 1.2);
+// 1v4 属于分区半决赛，生产规则不会再给首轮 seedBonus。
+const oneVsFour = runSeries('1v4', 2500, { recordA: [56, 26], recordB: [48, 34] }, 0);
 const oneVsEight = runSeries('1v8', 2500, { recordA: [56, 26], recordB: [35, 47] }, 2.8);
-assert(equalSeries.winRate >= 0.50 && equalSeries.winRate <= 0.58,
+assert(equalSeries.winRate >= 0.52 && equalSeries.winRate <= 0.56,
   `同阵容 2-2-1-1-1 系列赛概率异常：${JSON.stringify(equalSeries)}`);
-assert(oneVsFour.winRate > equalSeries.winRate + 0.04
-  && oneVsEight.winRate > oneVsFour.winRate + 0.06,
-`1v4/1v8 系列赛优势没有连续变化：${JSON.stringify({ equalSeries, oneVsFour, oneVsEight })}`);
+assert(oneVsFour.winRate >= 0.55 && oneVsFour.winRate <= 0.60
+  && oneVsEight.winRate >= 0.64 && oneVsEight.winRate <= 0.71,
+`生产规则下的 1v4/1v8 系列赛概率异常：${JSON.stringify({ equalSeries, oneVsFour, oneVsEight })}`);
 
-console.log(JSON.stringify({ paired: { neutral, home, roster, structure, record }, series: { equalSeries, oneVsFour, oneVsEight } }, null, 2));
+console.log(JSON.stringify({
+  paired: { neutral, home, roster, structure, record, fatigueA, fatigueB, fatigueBoth, combined, combinedFatigueA },
+  fatigueProfiles,
+  series: { equalSeries, oneVsFour, oneVsEight },
+}, null, 2));
