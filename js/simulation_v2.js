@@ -1,5 +1,5 @@
 /* Quarter-level aggregate simulation engine.
- * V1 remains the default until this path passes the long-run comparison gate.
+ * V2 is the default engine; V1 remains available as an explicit classic option.
  * The engine keeps player OVR out of offensive/defensive event probabilities;
  * the shared roster/star rating is consumed only as a limited team-level edge.
  */

@@ -127,7 +127,7 @@ function runSeason(seasonNumber, teams) {
     schedule,
     standings,
     isPlayoffs: false,
-    simulationEngine: engineName === 'v2' ? 'v2' : null,
+    simulationEngine: engineName,
     _npcSeasonProfiles: {},
     events: { activeEffects: [] },
   };
@@ -373,7 +373,7 @@ const modeArg = process.argv.find(arg => arg.startsWith('--mode='));
 const mode = modeArg ? modeArg.slice('--mode='.length) : 'smoke';
 if (!['smoke', 'statistical'].includes(mode)) throw new Error(`不支持的校准模式：${mode}`);
 const engineArg = process.argv.find(arg => arg.startsWith('--engine='));
-const engineName = engineArg ? engineArg.slice('--engine='.length).toLowerCase() : 'v1';
+const engineName = engineArg ? engineArg.slice('--engine='.length).toLowerCase() : 'v2';
 if (!['v1', 'v2'].includes(engineName)) throw new Error(`不支持的比赛引擎：${engineName}，可选 v1/v2`);
 const seasonsArg = process.argv.find(arg => arg.startsWith('--seasons='));
 const seasons = seasonsArg

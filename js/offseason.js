@@ -1231,8 +1231,9 @@ function resetForNewSeason() {
   delete STATE.offseasonDraft;
   _rngState = null;
   var oldTeam = STATE.careerTeam;
-  var simulationEngine = (STATE.season && STATE.season.simulationEngine) || STATE.simulationEngine || null;
-  if (simulationEngine) STATE.simulationEngine = simulationEngine;
+  var configuredEngine = (STATE.season && STATE.season.simulationEngine) || STATE.simulationEngine;
+  var simulationEngine = configuredEngine === 'v1' ? 'v1' : 'v2';
+  STATE.simulationEngine = simulationEngine;
   var seasonMods = typeof consumeNextSeasonMods === 'function'
     ? consumeNextSeasonMods()
     : getNextSeasonMods();

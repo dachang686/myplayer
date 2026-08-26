@@ -10,6 +10,8 @@
     "test:calibration": "node scripts/validate_v2_win_calibration.js --mode=statistical",
     "test:calibration:season": "node scripts/validate_season_strength_calibration.js --mode=smoke",
     "test:calibration:season:statistical": "node scripts/validate_season_strength_calibration.js --mode=statistical",
+    "test:calibration:season:v1": "node scripts/validate_season_strength_calibration.js --engine=v1 --mode=smoke",
+    "test:calibration:season:v1:statistical": "node scripts/validate_season_strength_calibration.js --engine=v1 --mode=statistical",
     "test:calibration:season:v2": "node scripts/validate_season_strength_calibration.js --engine=v2 --mode=smoke",
     "test:calibration:season:v2:statistical": "node scripts/validate_season_strength_calibration.js --engine=v2 --mode=statistical",
     "test:unified-player-model": "node scripts/validate_unified_player_model.js",

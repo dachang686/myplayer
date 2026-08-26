@@ -1347,7 +1347,7 @@ var Storage = {
 // ==================== 游戏状态 ====================
 const STATE = {
   mode: null,           // 'current' | 'legend'
-  simulationEngine: null, // null = V1（默认） | 'v2' = V2
+  simulationEngine: 'v2', // 'v2' = 默认正式引擎 | 'v1' = 经典引擎
   position: null,       // 'PG' | 'SG' | 'SF' | 'PF' | 'C'
   playerName: '',       // 用户创建的球员名字
   
@@ -1382,6 +1382,7 @@ const STATE = {
   
   // 赛季
   season: {
+    simulationEngine: 'v2',
     games: [],          // 所有比赛结果
     wins: 0,
     losses: 0,
@@ -2007,7 +2008,7 @@ function initGame() {
   _rookieNameSeq = 0;
   // 重置状态（保留 gameId 持久不变，直到下一次显式重置）
   Object.assign(STATE, {
-    simulationEngine: null,
+    simulationEngine: 'v2',
     mode: null, position: null, playerName: '',
     attrs: {}, attrSlots: {}, lockedCount: 0,
     usedPlayers: [], _mustLockAfterSpin: false,
@@ -2019,7 +2020,7 @@ function initGame() {
     careerTeam: null,
     gameId: generateGameId(),
     career: createFreshCareer(),
-  season: { games: [], wins: 0, losses: 0, playerStats: {}, leaguePlayerSeasonStats: {}, leaguePlayerGameStats: [], _recordedLeagueGameIds: {}, playoffStats: { pts:0, reb:0, ast:0, stl:0, blk:0, tov:0, fgm:0, fga:0, ftm:0, fta:0, threeM:0, threeA:0, mins:0, games:0 }, awards: [], playoffResult: null, playoffEliminated: false, standings: {}, isPlayoffs: false, playoffBracket: null, otherBracket: null, _viewConf: null, events: createSeasonEventState(0) },
+  season: { simulationEngine: 'v2', games: [], wins: 0, losses: 0, playerStats: {}, leaguePlayerSeasonStats: {}, leaguePlayerGameStats: [], _recordedLeagueGameIds: {}, playoffStats: { pts:0, reb:0, ast:0, stl:0, blk:0, tov:0, fgm:0, fga:0, ftm:0, fta:0, threeM:0, threeA:0, mins:0, games:0 }, awards: [], playoffResult: null, playoffEliminated: false, standings: {}, isPlayoffs: false, playoffBracket: null, otherBracket: null, _viewConf: null, events: createSeasonEventState(0) },
   });
   delete STATE._tpPending;
   delete STATE._careerSaved;
@@ -2116,7 +2117,8 @@ function helpGoTo(idx) {
 // ==================== 1. 模式选择 ====================
 function applyNewCareerSimulationEngineChoice() {
   var choice = document.querySelector('input[name="new-career-engine"]:checked');
-  STATE.simulationEngine = choice && choice.value === 'v2' ? 'v2' : null;
+  STATE.simulationEngine = choice && choice.value === 'v1' ? 'v1' : 'v2';
+  if (STATE.season) STATE.season.simulationEngine = STATE.simulationEngine;
   return STATE.simulationEngine;
 }
 
@@ -2136,17 +2138,17 @@ function renderModeSelect() {
         <legend>比赛模拟引擎</legend>
         <div class="home-engine-options">
           <label class="home-engine-option">
-            <input type="radio" name="new-career-engine" value="v1" checked>
+            <input type="radio" name="new-career-engine" value="v2" checked>
             <span class="home-engine-copy">
-              <span class="home-engine-title">V1 稳定版</span>
-              <small>当前默认，沿用原有比赛模型</small>
+              <span class="home-engine-title">V2 正式版 <span class="home-engine-badge">默认</span></span>
+              <small>轮换、伤病与 Box Score 同源</small>
             </span>
           </label>
           <label class="home-engine-option">
-            <input type="radio" name="new-career-engine" value="v2">
+            <input type="radio" name="new-career-engine" value="v1">
             <span class="home-engine-copy">
-              <span class="home-engine-title">V2 新引擎 <span class="home-engine-badge">可选</span></span>
-              <small>轮换、伤病与 Box Score 同源</small>
+              <span class="home-engine-title">V1 经典版</span>
+              <small>沿用原有比赛模型</small>
             </span>
           </label>
         </div>
@@ -4158,8 +4160,9 @@ function getConferenceSorted(conf) {
 function startSeason() {
   clearLineupCache();
   var currentStarterStatus = STATE.careerTeam && STATE.finalOVR ? !!calcTeamLineup(STATE.careerTeam).isUserStarter : true;
-  var simulationEngine = (STATE.season && STATE.season.simulationEngine) || STATE.simulationEngine || null;
-  if (simulationEngine) STATE.simulationEngine = simulationEngine;
+  var configuredEngine = (STATE.season && STATE.season.simulationEngine) || STATE.simulationEngine;
+  var simulationEngine = configuredEngine === 'v1' ? 'v1' : 'v2';
+  STATE.simulationEngine = simulationEngine;
   var seasonMods = consumeNextSeasonMods();
   if (STATE.career && STATE.career.flags && STATE.career.flags.startBench) currentStarterStatus = false;
   STATE.season = {
@@ -5257,7 +5260,11 @@ function simulateGameNew(teamA, teamB, seedBonus, probMultiplier, gameOptions) {
       }
     }
   }
-  var selectedEngine = requestedOptions.engineVersion || (STATE.season && STATE.season.simulationEngine);
+  var requestedEngine = requestedOptions.engineVersion;
+  var configuredEngine = (STATE.season && STATE.season.simulationEngine) || STATE.simulationEngine;
+  var selectedEngine = requestedEngine === 'v1' || requestedEngine === 'v2'
+    ? requestedEngine
+    : (configuredEngine === 'v1' ? 'v1' : 'v2');
   if (selectedEngine === 'v2' && typeof simulateGameAggregateV2 === 'function') {
     return simulateGameAggregateV2(teamA, teamB, seedBonus, probMultiplier, requestedOptions);
   }
@@ -10522,6 +10529,11 @@ function manualLoadGame(slot, options) {
         // STATE 与 LEAGUE_PLAYER_DATA 是 const，只能原地清空后填充，保证所有引用仍然有效
         Object.keys(STATE).forEach(function(k) { delete STATE[k]; });
         Object.assign(STATE, snap.state);
+        // 旧版用 null/缺失表示 V1；读取时固定为显式 V1，避免 V2 默认化改变既有生涯。
+        var restoredEngine = (STATE.season && STATE.season.simulationEngine) || STATE.simulationEngine;
+        restoredEngine = restoredEngine === 'v2' ? 'v2' : 'v1';
+        STATE.simulationEngine = restoredEngine;
+        if (STATE.season) STATE.season.simulationEngine = restoredEngine;
         repairCareerAggregateStats();
         var savedProfile = snap.localPlayerProfile && typeof snap.localPlayerProfile === 'object'
           ? snap.localPlayerProfile

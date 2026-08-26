@@ -75,11 +75,18 @@ const buildApplyEngineChoice = new Function(
 const engineChoiceState = {};
 const selectV2 = buildApplyEngineChoice(engineChoiceState, { querySelector: () => ({ value: 'v2' }) })();
 const selectV1 = buildApplyEngineChoice(engineChoiceState, { querySelector: () => ({ value: 'v1' }) })();
+const selectDefault = buildApplyEngineChoice(engineChoiceState, { querySelector: () => null })();
 const engineChoiceUiPath = selectV2 === 'v2'
-  && selectV1 === null
-  && engineChoiceState.simulationEngine === null
-  && /name="new-career-engine" value="v1" checked/.test(indexSource)
-  && /name="new-career-engine" value="v2"/.test(indexSource);
+  && selectV1 === 'v1'
+  && selectDefault === 'v2'
+  && engineChoiceState.simulationEngine === 'v2'
+  && /name="new-career-engine" value="v2" checked/.test(indexSource)
+  && /name="new-career-engine" value="v1"/.test(indexSource)
+  && /V2 正式版[\s\S]*home-engine-badge">默认/.test(indexSource);
+const defaultPromotionPath = /simulationEngine: 'v2', \/\/ 'v2' = 默认正式引擎/.test(indexSource)
+  && /configuredEngine === 'v1' \? 'v1' : 'v2'/.test(indexSource)
+  && /restoredEngine = restoredEngine === 'v2' \? 'v2' : 'v1'/.test(indexSource)
+  && /configuredEngine === 'v1' \? 'v1' : 'v2'/.test(offseasonSource);
 
 function seeded(seed, callback) {
   const originalRandom = Math.random;
@@ -197,6 +204,17 @@ const validationGames = validationSeasons * gamesPerSeason;
 
 if (validationMode === 'smoke') {
   const smokeFailures = [];
+  const defaultResult = seeded(6999, () => dispatcher(allTeams[0], allTeams[1], 0, null, {
+    ignoreNpcAvailability: true,
+  }));
+  const classicResult = seeded(6998, () => dispatcher(allTeams[0], allTeams[1], 0, null, {
+    engineVersion: 'v1',
+    ignoreNpcAvailability: true,
+  }));
+  if (!defaultResult || defaultResult.engineVersion !== 'v2') smokeFailures.push('default-engine');
+  if (!classicResult || classicResult.engineVersion === 'v2') smokeFailures.push('explicit-v1-engine');
+  if (!engineChoiceUiPath) smokeFailures.push('engine-choice-ui');
+  if (!defaultPromotionPath) smokeFailures.push('default-promotion-path');
   for (let game = 0; game < 8; game++) {
     const teamA = allTeams[game % allTeams.length];
     const teamB = allTeams[(game + 1) % allTeams.length];
@@ -1080,6 +1098,7 @@ const specialistStats = {
   emergencyReplacementPath,
   seededStateRestored,
   engineChoiceUiPath,
+  defaultPromotionPath,
   enginePersistencePath,
   diagnosticsFailClosed,
   emptyRotationThrows,
@@ -1283,6 +1302,7 @@ if (result.full99PlayerPpg - result.partial99PlayerPpg < 1.5
   || !specialistStats.emergencyReplacementPath
   || !specialistStats.seededStateRestored
   || !specialistStats.engineChoiceUiPath
+  || !specialistStats.defaultPromotionPath
   || !specialistStats.diagnosticsFailClosed
   || !specialistStats.dispatcherIntegration
   || !specialistStats.v2ModifierPath
