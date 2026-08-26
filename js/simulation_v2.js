@@ -907,10 +907,24 @@
     var isHomeA = typeof options.isHomeA === 'boolean' ? options.isHomeA : null;
     var activeEventEdge = typeof getActiveEventTeamEdge === 'function' ? getActiveEventTeamEdge(teamA, teamB) : 0;
     var seasonEdge = typeof getSeasonModifierTeamEdge === 'function' ? getSeasonModifierTeamEdge(teamA, teamB) : 0;
+    // 常规赛战绩是季后赛球队实力的额外样本，不能只用于生成种子和主场。
+    // V1 已经在赛前分差中使用同口径的修正；V2 也必须同时写入事件偏置，
+    // 否则预期分差即使显示出优势，实际比分也不会受到影响。
+    var standings = STATE && STATE.season && STATE.season.standings || {};
+    var recordA = standings[teamA];
+    var recordB = standings[teamB];
+    var gamesA = (recordA && recordA.wins || 0) + (recordA && recordA.losses || 0);
+    var gamesB = (recordB && recordB.wins || 0) + (recordB && recordB.losses || 0);
+    var hasPlayoffRecords = !!(STATE && STATE.season && STATE.season.isPlayoffs && gamesA > 0 && gamesB > 0);
+    var recordFormEdge = hasPlayoffRecords
+      ? clamp((((recordA.wins || 0) / gamesA) - ((recordB.wins || 0) / gamesB)) * 7, -1.2, 1.2)
+      : 0;
+    // biasA - biasB 每增加 0.01，对应诊断分差增加约 1 分；两侧各分摊一半。
+    var recordFormBias = recordFormEdge * 0.005;
     var homeA = isHomeA === true ? 0.014 : (isHomeA === false ? -0.014 : 0);
     var homeB = isHomeA === false ? 0.014 : (isHomeA === true ? -0.014 : 0);
-    var biasA = homeA + Number(seedBonus || 0) * 0.003 + activeEventEdge * 0.004 + seasonEdge * 0.004 - first.fatigue * 0.012;
-    var biasB = homeB - activeEventEdge * 0.004 - seasonEdge * 0.004 - second.fatigue * 0.012;
+    var biasA = homeA + recordFormBias + Number(seedBonus || 0) * 0.003 + activeEventEdge * 0.004 + seasonEdge * 0.004 - first.fatigue * 0.012;
+    var biasB = homeB - recordFormBias - activeEventEdge * 0.004 - seasonEdge * 0.004 - second.fatigue * 0.012;
 
     // V2 的事件层继续使用自己的专项攻防模型，但球队的基础层级必须和
     // 排名页/V1 使用同一套轮换实力。这里只消费 OVR 与巨星集中度，不能
@@ -1050,6 +1064,7 @@
       directEdge
         + rosterEdge
         + starEdge
+        + recordFormEdge
         + homeCourtEdge
         + seedBonusEdge
         + eventTeamMarginEdge
@@ -1085,7 +1100,9 @@
         pregameDefenseGap: first.defense - second.defense,
         rawStarEdge: rawStarEdge,
         starEdge: starEdge,
-        seasonFormEdge: 0,
+        seasonFormEdge: recordFormEdge,
+        recordFormEdge: recordFormEdge,
+        recordFormBias: recordFormBias,
         homeCourtEdge: homeCourtEdge,
         seedBonusEdge: seedBonusEdge,
         userAttributeFactorA: STATE && STATE.careerTeam === teamA ? Number(options.userAttributeFactor) || 1 : 1,

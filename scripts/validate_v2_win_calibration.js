@@ -226,6 +226,70 @@ const archetypeReport = isStatistical ? archetypeScenarios.map((scenario, index)
   };
 }) : [];
 
+// 回归门禁：季后赛 1 号种子的常规赛战绩优势必须进入 V2 的实际比赛路径。
+// 两队使用完全相同的阵容，因而唯一变量就是 56-26 对 48-34 的战绩差；
+// 这能避免首轮 seedBonus 或阵容属性差掩盖战绩修正是否失效。
+const playoffHigh = makeSyntheticTeam('V2_PLAYOFF_RECORD_HIGH', null, null);
+const playoffLow = makeSyntheticTeam('V2_PLAYOFF_RECORD_LOW', null, null);
+const playoffPrepared = { [playoffHigh]: fixedRotation(playoffHigh), [playoffLow]: fixedRotation(playoffLow) };
+const playoffHomePattern = [true, true, false, false, true, false, true];
+const playoffSeriesTrials = isStatistical ? 1200 : 400;
+function runPlayoffRecordSeries(highRecord, lowRecord, seriesSeed) {
+  state.season = {
+    schedule: [],
+    isPlayoffs: true,
+    standings: { [playoffHigh]: highRecord, [playoffLow]: lowRecord },
+    _npcSeasonProfiles: {},
+    _usageBias: 1,
+    events: { activeEffects: [] },
+  };
+  let highWins = 0;
+  let lowWins = 0;
+  let firstGame = null;
+  for (let game = 0; game < 7 && highWins < 4 && lowWins < 4; game++) {
+    state.season._npcSeasonProfiles = {};
+    state.season._usageBias = 1;
+    const result = seeded(seriesSeed * 11 + game, () => runtime(playoffHigh, playoffLow, 0, null, {
+      isHomeA: playoffHomePattern[game],
+      isB2B: false,
+      isB2BA: false,
+      isB2BB: false,
+      ignoreNpcAvailability: true,
+      _preparedRotations: playoffPrepared,
+    }));
+    if (!firstGame) firstGame = result;
+    if (result.won) highWins++; else lowWins++;
+  }
+  return { won: highWins === 4, firstGame };
+}
+const neutralRecord = { wins: 52, losses: 30 };
+const strongRecord = { wins: 56, losses: 26 };
+const lowerRecord = { wins: 48, losses: 34 };
+let neutralSeriesWins = 0;
+let recordSeriesWins = 0;
+let neutralFirstGame = null;
+let recordFirstGame = null;
+for (let series = 0; series < playoffSeriesTrials; series++) {
+  const neutral = runPlayoffRecordSeries(neutralRecord, neutralRecord, 900000 + series);
+  const recordAdvantaged = runPlayoffRecordSeries(strongRecord, lowerRecord, 900000 + series);
+  if (neutral.won) neutralSeriesWins++;
+  if (recordAdvantaged.won) recordSeriesWins++;
+  if (!neutralFirstGame) neutralFirstGame = neutral.firstGame;
+  if (!recordFirstGame) recordFirstGame = recordAdvantaged.firstGame;
+}
+const expectedPlayoffRecordEdge = ((strongRecord.wins / (strongRecord.wins + strongRecord.losses))
+  - (lowerRecord.wins / (lowerRecord.wins + lowerRecord.losses))) * 7;
+const playoffRecordProbe = {
+  series: playoffSeriesTrials,
+  neutralSeriesWinRate: neutralSeriesWins / playoffSeriesTrials,
+  recordAdvantagedSeriesWinRate: recordSeriesWins / playoffSeriesTrials,
+  expectedMarginDelta: (recordFirstGame && neutralFirstGame)
+    ? recordFirstGame.expectedMargin - neutralFirstGame.expectedMargin
+    : NaN,
+  recordFormEdge: recordFirstGame && recordFirstGame.marginComponents && recordFirstGame.marginComponents.recordFormEdge,
+  recordFormBias: recordFirstGame && recordFirstGame.marginComponents && recordFirstGame.marginComponents.recordFormBias,
+};
+
 const failures = [];
 report.forEach(row => {
   const scenario = scenarios.find(item => item.label === row.label);
@@ -247,6 +311,15 @@ archetypeReport.forEach(row => {
     failures.push(`${row.label} 类型校准偏差过大：${row.estimatedWinRate}% vs ${row.empiricalWinRate}%`);
   }
 });
+if (!Number.isFinite(playoffRecordProbe.expectedMarginDelta)
+  || Math.abs(playoffRecordProbe.expectedMarginDelta - expectedPlayoffRecordEdge) > 1e-9
+  || Math.abs(playoffRecordProbe.recordFormEdge - expectedPlayoffRecordEdge) > 1e-9
+  || Math.abs(playoffRecordProbe.recordFormBias - expectedPlayoffRecordEdge * 0.005) > 1e-12) {
+  failures.push(`V2 季后赛战绩优势没有完整进入比赛：${JSON.stringify(playoffRecordProbe)}`);
+}
+if (playoffRecordProbe.recordAdvantagedSeriesWinRate <= playoffRecordProbe.neutralSeriesWinRate) {
+  failures.push(`V2 季后赛战绩优势没有提高系列赛胜率：${JSON.stringify(playoffRecordProbe)}`);
+}
 const monotonicGroups = [
   report.filter(row => row.label.startsWith('进攻 ')),
   report.filter(row => row.label.startsWith('防守 ')),
@@ -261,7 +334,7 @@ if (isStatistical) {
   });
 }
 
-console.log(JSON.stringify({ mode, gamesPerOrientation: games, report, archetypeReport }, null, 2));
+console.log(JSON.stringify({ mode, gamesPerOrientation: games, report, archetypeReport, playoffRecordProbe }, null, 2));
 if (failures.length) {
   throw new Error(`V2 攻防胜率校准失败：${failures.join('；')}`);
 }
