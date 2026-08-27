@@ -85,6 +85,31 @@ context.syncUserStarterStatus = () => {};
 context.initStandings = () => {};
 context.buildRealSchedule = () => {};
 context.syncNarrativeAfterPlayerTeamChange = () => {};
+let freeAgencyTeamChangeHtml = '';
+const freeAgencyContinueButton = {};
+context.getTeamName = team => `球队${team}`;
+context.getTeamLogo = () => '';
+context.getSeasonLabel = seasonNum => `第${seasonNum}季`;
+context.renderHonorBadge = label => label;
+context.document = {
+  body: { insertAdjacentHTML(position, value) { freeAgencyTeamChangeHtml = value; } },
+  getElementById(id) {
+    if (id === 'player-age-data') return { textContent: html.slice(ageJsonStart, ageJsonEnd) };
+    if (id === 'faTeamChangeContinue') return freeAgencyContinueButton;
+    return null;
+  },
+};
+context.STATE.career.seasons = [{
+  seasonNum: 3, team: 'SAS', wins: 50, losses: 32, playoffResult: '西部决赛',
+  playerStats: { games: 82, pts: 2460, reb: 820, ast: 410, stl: 82, blk: 164, mins: 2800 },
+  awards: [],
+}];
+context.STATE.career.honors = [];
+context.showFreeAgencyTeamChangeModal('SAS', 'LAC', () => {});
+const freeAgencyDescriptionValid = freeAgencyTeamChangeHtml.includes('您选择在球队LAC开启自己的生涯新篇章')
+  && freeAgencyTeamChangeHtml.includes('离开球队SAS之前')
+  && freeAgencyTeamChangeHtml.includes('球队SAS常规赛队内累计')
+  && !/undefined|null|NaN|\[object Object\]/.test(freeAgencyTeamChangeHtml);
 context.showFreeAgencyTeamChangeModal = (oldTeam, newTeam, done) => { if (done) done(); };
 context.maybeShowCityFarewell = () => false;
 context.showOffSeasonModals = () => {};
@@ -232,6 +257,7 @@ const result = vm.runInContext(`(() => {
 })()`, context);
 
 const failures = [];
+if (!freeAgencyDescriptionValid) failures.push('玩家自由签约换队后的新球队、老球队或生涯回顾文字不正确');
 if (result.displayedCount !== Math.min(4, result.legalTeams.length)) {
   failures.push(`玩家合同 UI 链路丢失合法报价：${JSON.stringify(result)}`);
 }
@@ -282,4 +308,5 @@ console.log(JSON.stringify({
   capStressOffers: result.capStressOfferTeams,
   capStressRenewal: result.capStressRenewal,
   capStressCoreCut: result.capStressCoreCut,
+  freeAgencyTeamChangeDescription: freeAgencyDescriptionValid,
 }, null, 2));

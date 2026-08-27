@@ -12,6 +12,7 @@ const offseasonRosterText = `${offseasonText}\n${draftText}`;
 const playerText = fs.readFileSync(path.join(root, 'js/data/league_players.js'), 'utf8');
 const failures = [];
 const runtimeLogs = [];
+let auditedTradeCount = 0;
 
 const pipelineMatch = indexText.match(/function continueCareerAfterTraining\(\)[\s\S]*?\n\}/);
 if (!pipelineMatch || !/clearPreviousOffseasonTransactionFlags\(\);\s*\n\s*evolveLeague\(\);/.test(pipelineMatch[0])) {
@@ -85,11 +86,52 @@ if (lineupStart < 0 || lineupEnd < 0 || debugStart < 0 || debugEnd < 0 || tradeS
 
   context.STATE._lineupCache = {};
   context.STATE._leagueChanges.trades = [];
+  const rosterCountsBefore = Object.fromEntries(context.LEAGUE_TEAM_IDS.map(team => [team, context.LEAGUE_PLAYER_DATA[team].length]));
+  const playerStateBefore = new Map();
+  context.LEAGUE_TEAM_IDS.forEach(team => {
+    context.LEAGUE_PLAYER_DATA[team].forEach(player => {
+      const id = String(player.id);
+      if (playerStateBefore.has(id)) failures.push(`交易前球员ID重复：${id}`);
+      playerStateBefore.set(id, { team, contract: player.contract, salary: player.salary, ovr: player.ovr });
+    });
+  });
   vm.runInContext('clearPreviousOffseasonTransactionFlags(); processTrades();', context);
   const nextOffseasonTradeCount = context.STATE._leagueChanges.trades.length;
+  auditedTradeCount = nextOffseasonTradeCount;
   if (nextOffseasonTradeCount <= 0) failures.push('解除上一年保护后仍无法产生交易');
   if (nextOffseasonTradeCount > 16) failures.push(`交易数超过单次休赛期上限：${nextOffseasonTradeCount}`);
   if (runtimeLogs.length !== 0) failures.push(`默认休赛期不应输出调试日志，实际 ${runtimeLogs.length} 条`);
+
+  const ownersAfter = new Map();
+  context.LEAGUE_TEAM_IDS.forEach(team => {
+    if (context.LEAGUE_PLAYER_DATA[team].length !== rosterCountsBefore[team]) {
+      failures.push(`${team} 的一换一交易改变了名单人数：${rosterCountsBefore[team]} -> ${context.LEAGUE_PLAYER_DATA[team].length}`);
+    }
+    context.LEAGUE_PLAYER_DATA[team].forEach(player => {
+      const id = String(player.id);
+      if (!ownersAfter.has(id)) ownersAfter.set(id, []);
+      ownersAfter.get(id).push(team);
+      const beforeState = playerStateBefore.get(id);
+      if (!beforeState) failures.push(`交易后出现未知球员：${id}`);
+      else if (player.contract !== beforeState.contract || player.salary !== beforeState.salary || player.ovr !== beforeState.ovr) {
+        failures.push(`NPC 换队时合同、工资或 OVR 被意外修改：${id}`);
+      }
+    });
+  });
+  playerStateBefore.forEach((beforeState, id) => {
+    const owners = ownersAfter.get(id) || [];
+    if (owners.length !== 1) failures.push(`NPC 交易后球员归属不是唯一球队：${id} -> ${owners.join(',') || 'missing'}`);
+  });
+  context.STATE._leagueChanges.trades.forEach(trade => {
+    const playerABefore = playerStateBefore.get(String(trade.playerA));
+    const playerBBefore = playerStateBefore.get(String(trade.playerB));
+    const playerAAfter = ownersAfter.get(String(trade.playerA)) || [];
+    const playerBAfter = ownersAfter.get(String(trade.playerB)) || [];
+    if (!playerABefore || !playerBBefore || playerABefore.team !== trade.to || playerBBefore.team !== trade.from ||
+        playerAAfter.length !== 1 || playerAAfter[0] !== trade.from || playerBAfter.length !== 1 || playerBAfter[0] !== trade.to) {
+      failures.push(`NPC 交易日志与实际名单流向不一致：${JSON.stringify(trade)}`);
+    }
+  });
 
   const remainingFlags = vm.runInContext(
     'LEAGUE_TEAM_IDS.reduce((sum, team) => sum + LEAGUE_PLAYER_DATA[team].filter(player => player._justSigned).length, 0)',
@@ -120,9 +162,86 @@ if (lineupStart < 0 || lineupEnd < 0 || debugStart < 0 || debugEnd < 0 || tradeS
   context.STATE._debugOffseason = false;
 }
 
+// NPC 交易数据正确之外，联盟交易弹窗和“我的球队人员变化”也必须把送出/得到方向写对。
+let renderedLeagueTrades = '';
+const leagueTradeModal = { querySelector() { return {}; }, remove() {} };
+const leagueTradeDocument = {
+  createElement() {
+    return {
+      set innerHTML(value) { renderedLeagueTrades = value; },
+      get firstElementChild() { return leagueTradeModal; },
+    };
+  },
+  body: { appendChild() {} },
+  getElementById() { return leagueTradeModal; },
+};
+const tradeModalStart = offseasonText.indexOf('function showTradesModal');
+const tradeModalEnd = offseasonText.indexOf('function getCareerTeamOffseasonChanges', tradeModalStart);
+if (tradeModalStart < 0 || tradeModalEnd < 0) {
+  failures.push('无法提取 NPC 联盟交易描述');
+} else {
+  const tradeTextState = { _leagueChanges: { trades: [{ from: 'AAA', to: 'BBB', playerA: 'BBB-IN', playerB: 'AAA-OUT' }] } };
+  const tradeTextNames = { 'BBB-IN': '乙队入队球员', 'AAA-OUT': '甲队离队球员' };
+  const tradeModalFns = new Function(
+    'STATE', 'getTeamName', 'getPlayerDisplayName', 'document',
+    `${offseasonText.slice(tradeModalStart, tradeModalEnd)}\nreturn { showTradesModal };`,
+  )(tradeTextState, team => `球队${team}`, id => tradeTextNames[id] || id, leagueTradeDocument);
+  tradeModalFns.showTradesModal(() => {});
+  if (!renderedLeagueTrades.includes('球队AAA ⇄ 球队BBB') ||
+      !renderedLeagueTrades.includes('甲队离队球员 → 球队BBB') ||
+      !renderedLeagueTrades.includes('乙队入队球员 → 球队AAA') ||
+      /undefined|null|\[object Object\]/.test(renderedLeagueTrades)) {
+    failures.push('NPC 联盟交易弹窗把球队或球员流向描述错误');
+  }
+}
+
+let renderedCareerTeamChanges = '';
+const careerContinueButton = {};
+const careerChangesDocument = {
+  body: { insertAdjacentHTML(position, value) { renderedCareerTeamChanges = value; } },
+  getElementById(id) {
+    if (id === 'careerTeamOffseasonChangesContinue') return careerContinueButton;
+    return null;
+  },
+};
+const careerChangesStart = offseasonText.indexOf('function getCareerTeamOffseasonChanges');
+const careerChangesEnd = offseasonText.indexOf('function showRosterReview', careerChangesStart);
+if (careerChangesStart < 0 || careerChangesEnd < 0) {
+  failures.push('无法提取玩家球队 NPC 变化描述');
+} else {
+  const careerTextState = {
+    careerTeam: 'AAA',
+    _leagueChanges: {
+      trades: [{ from: 'AAA', to: 'BBB', playerA: 'BBB-IN', playerB: 'AAA-OUT' }],
+      freeAgents: [], freeSignings: [], stayed: [], retired: [], rookies: [],
+    },
+  };
+  const careerChangeFns = new Function(
+    'STATE', 'getTeamName', 'getPlayerDisplayName', 'escapeSeasonUiText', 'getTeamLogo', 'document', 'isHiddenRetiredPlayer',
+    `${offseasonText.slice(careerChangesStart, careerChangesEnd)}\nreturn { getCareerTeamOffseasonChanges, showCareerTeamOffseasonChangesModal };`,
+  )(
+    careerTextState,
+    team => `球队${team}`,
+    id => ({ 'BBB-IN': '乙队入队球员', 'AAA-OUT': '甲队离队球员' })[id] || id,
+    value => String(value == null ? '' : value),
+    () => '',
+    careerChangesDocument,
+    row => !!(row && row.hidden),
+  );
+  const careerSummary = careerChangeFns.getCareerTeamOffseasonChanges('AAA');
+  careerChangeFns.showCareerTeamOffseasonChangesModal(() => {});
+  const tradeSummary = careerSummary.trades[0];
+  if (!tradeSummary || tradeSummary.partner !== 'BBB' || tradeSummary.incoming !== 'BBB-IN' || tradeSummary.outgoing !== 'AAA-OUT' ||
+      !renderedCareerTeamChanges.includes('与 球队BBB 完成交易') ||
+      !renderedCareerTeamChanges.includes('送出：甲队离队球员 · 得到：乙队入队球员') ||
+      /undefined|null|\[object Object\]/.test(renderedCareerTeamChanges)) {
+    failures.push('玩家球队的 NPC 交易摘要把送出、得到或交易对象描述错误');
+  }
+}
+
 if (failures.length) {
   console.error(failures.join('\n'));
   process.exit(1);
 }
 
-console.log(`Offseason trade validation passed: current signings protected, next offseason produced ${context.STATE._leagueChanges.trades.length} trades.`);
+console.log(`Offseason trade validation passed: ${auditedTradeCount} NPC trades preserved ownership/contracts and both transaction descriptions were directionally correct.`);

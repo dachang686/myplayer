@@ -8,6 +8,10 @@ const offseasonSource = fs.readFileSync(path.join(root, 'js', 'offseason.js'), '
 const branchSource = fs.readFileSync(path.join(root, 'js', 'career_branch_data.js'), 'utf8');
 
 const failures = [];
+let registryCount = 0;
+let eventDescriptionCount = 0;
+let eventChoiceResultCount = 0;
+let teamChangeDescriptionCount = 0;
 const inlineScripts = [...indexSource.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
   .map(match => match[1])
   .filter(Boolean);
@@ -108,10 +112,11 @@ if (registryStart < 0 || registryEnd < 0) {
     'getCareerProfile',
     'getBondedTeammateName',
     'ensureSeasonEventState',
-    `${indexSource.slice(registryStart, registryEnd)}\nreturn { EVENT_REGISTRY, checkRandomEvents, getRandomEventLane, getEventNoiseLevel, getEventNoiseTheme, getEventNoiseThemeCooldown, isRandomEventNoiseEligible, shouldPresentRandomEvent, initializeSeasonNarrative, canTriggerEventByLifecycle, recordEventLifecycle, meetsCareerEventIdentity, recordNarrativePlayoffSeries, finalizeSeasonNarrativeAtSeasonEnd, commitDirectorThreadChoice, resolveDirectorThread, getNarrativeThreadOutcome, getSeasonThemeEventWeight, chooseSeasonNarrativeTheme, chooseNarrativeThemeVariant, getSeasonThemeStoryline, getSeasonNarrativeTeammate, getNarrativeFormerTeammates, getDirectorThreadOpening, queueGameDrivenPressureThread, getActiveNarrativeThreadCount, selectNarrativeFormerTeammate, checkSeasonNarrativeDirector, consumeActiveEventEffectsForCareerGame, afterCareerTeamGame, findNarrativePlayer, syncNarrativeReunitedTeammates, syncNarrativeAfterPlayerTeamChange, isNarrativeThreadInCurrentTeamContext };`,
+    `${indexSource.slice(registryStart, registryEnd)}\nreturn { EVENT_REGISTRY, checkRandomEvents, resolveEventVars, getRandomEventLane, getEventNoiseLevel, getEventNoiseTheme, getEventNoiseThemeCooldown, isRandomEventNoiseEligible, shouldPresentRandomEvent, initializeSeasonNarrative, canTriggerEventByLifecycle, recordEventLifecycle, meetsCareerEventIdentity, recordNarrativePlayoffSeries, finalizeSeasonNarrativeAtSeasonEnd, commitDirectorThreadChoice, resolveDirectorThread, getNarrativeThreadOutcome, getSeasonThemeEventWeight, chooseSeasonNarrativeTheme, chooseNarrativeThemeVariant, getSeasonThemeStoryline, getSeasonNarrativeTeammate, getNarrativeFormerTeammates, getDirectorThreadOpening, queueGameDrivenPressureThread, getActiveNarrativeThreadCount, selectNarrativeFormerTeammate, checkSeasonNarrativeDirector, consumeActiveEventEffectsForCareerGame, afterCareerTeamGame, findNarrativePlayer, syncNarrativeReunitedTeammates, syncNarrativeAfterPlayerTeamChange, isNarrativeThreadInCurrentTeamContext };`,
   )({}, state, leagueData, addProfileDelta, profile, () => '测试队友', ensureEventState);
 
   const registry = eventModule.EVENT_REGISTRY;
+  registryCount = registry.length;
   const flightDelayEventFixture = registry.find(event => event.id === 'flight_delay');
   leagueData._draftClass2026Applied = true;
   const narrativePlayerWithMetadata = eventModule.findNarrativePlayer('active-rival');
@@ -523,6 +528,13 @@ if (registryStart < 0 || registryEnd < 0) {
   if (!migratedCarry || migratedCarry.kind !== 'former_teammate' || migratedCarry.choice !== 'welcome' || sameNpcThreads.length !== 1) {
     failures.push('休赛期转会后，跨季队友线程没有迁移成唯一的旧友线程');
   } else {
+    const migratedCarryOpening = eventModule.getDirectorThreadOpening(migratedCarry);
+    if (!migratedCarryOpening?.body.includes(`${carryNpc.cname}离队后`) || migratedCarryOpening.body.includes('你换上新球衣后') ||
+        migratedCarryOpening.choices?.some(choice => choice.label.includes('回来'))) {
+      failures.push('NPC 队友换队后的旧友事件仍使用玩家离队或“回归”语境');
+    } else {
+      teamChangeDescriptionCount += 1;
+    }
     const activeMateBefore = Number(state.career.flags.storyTeammate?.affinity) || 0;
     const formerBefore = Number(eventModule.getNarrativeFormerTeammates().find(mate => mate.id === carryNpc.id)?.affinity) || 0;
     eventModule.resolveDirectorThread(migratedCarry);
@@ -565,6 +577,11 @@ if (registryStart < 0 || registryEnd < 0) {
       state.career.flags.storyTeammate.id !== occupiedNpc.id) {
     failures.push('旧友重新加盟时，CarryOver 没有转成独立重聚线或错误抢占当前队友槽');
   } else {
+    if (!returnedOpening.body.includes(`${returnedNpc.cname}在离队多年后重新加入球队`) || returnedOpening.body.includes('你来到了他所在的球队')) {
+      failures.push('NPC 旧友回归后的事件文字错误写成玩家加盟该队');
+    } else {
+      teamChangeDescriptionCount += 1;
+    }
     eventModule.commitDirectorThreadChoice(returnedCarry, 'welcome');
     eventModule.resolveDirectorThread(returnedCarry);
     const reunitedRecord = state.career.flags.reunitedStoryTeammates?.find(mate => mate.id === returnedNpc.id);
@@ -619,8 +636,13 @@ if (registryStart < 0 || registryEnd < 0) {
   };
   const leftAgainSeason = eventModule.initializeSeasonNarrative();
   const leftAgainThread = leftAgainSeason.storyThreads.find(thread => thread.payload?.teammateId === rosterReturnNpc.id);
+  const leftAgainOpening = leftAgainThread && eventModule.getDirectorThreadOpening(leftAgainThread);
   if (!leftAgainThread || leftAgainThread.kind !== 'former_teammate' || leftAgainThread.state !== 'queued' || leftAgainThread.payload?.previousChoice !== 'welcome') {
     failures.push('未结重聚线中的球员再次离队后，剧情身份没有迁回旧友并重新开放选择');
+  } else if (!leftAgainOpening?.body.includes(`${rosterReturnNpc.cname}离队后`) || leftAgainOpening.body.includes('你换上新球衣后')) {
+    failures.push('NPC 旧友再次离队后的事件文字错误写成玩家自己换队');
+  } else {
+    teamChangeDescriptionCount += 1;
   }
 
   // 已结算重聚线没有 CarryOver，也必须继续根据名单同步；再次离队后应重新进入旧友池。
@@ -677,8 +699,11 @@ if (registryStart < 0 || registryEnd < 0) {
   const staleTeamContextActive = staleTeamThreads.some(thread => thread.state !== 'resolved' || !thread.cancelledByTeamChange);
   const currentTeamThreads = state.season.events.storyThreads.filter(thread => thread.state !== 'resolved' && ['role', 'team', 'locker_room', 'teammate', 'reunited_teammate'].includes(thread.kind));
   if (!migratedPlayerLeft || migratedPlayerLeft.kind !== 'former_teammate' || migratedPlayerLeft.payload?.separationCause !== 'player_left' ||
-      !migratedPlayerLeftOpening?.body.includes('你换上新球衣后') || migratedPlayerLeftOpening?.choices?.some(choice => choice.label === '主动替他承担压力')) {
+      !migratedPlayerLeftOpening?.body.includes('你换上新球衣后') || migratedPlayerLeftOpening.body.includes(`${playerLeftMate.cname}离队后`) ||
+      migratedPlayerLeftOpening?.choices?.some(choice => choice.label === '主动替他承担压力' || choice.label.includes('回来'))) {
     failures.push('玩家主动转会后，原队友线程仍使用当前队友或“队友离队”语境');
+  } else {
+    teamChangeDescriptionCount += 1;
   }
   if (staleTeamContextActive || !currentTeamThreads.length || currentTeamThreads.some(thread => thread.payload?.teamAtBinding !== 'PLAYER_NEW') ||
       state.season.events.narrativeTeam !== 'PLAYER_NEW' || state.season.events.seasonTheme?.id !== 'new_city') {
@@ -738,6 +763,8 @@ if (registryStart < 0 || registryEnd < 0) {
       !joinedFormerThread.title.includes('在新球队重逢') || !joinedFormerOpening?.body.includes('这次不是他回归') ||
       /返回|重新加入/.test(joinedFormerThread.title + joinedFormerOpening?.body) || joinedFormerRecord?.reunionCause !== 'player_joined_teammate') {
     failures.push('玩家加盟前队友所在球队时，仍错误提示前队友返回或重新加盟');
+  } else {
+    teamChangeDescriptionCount += 1;
   }
 
   state.careerTeam = 'HOME';
@@ -956,6 +983,78 @@ if (registryStart < 0 || registryEnd < 0) {
     failures.push('赛季导演冷却结束后无法继续推进排队剧情');
   }
 
+  // 全量执行注册表，确保最终展示的标题、正文、摘要、选择和结算文字都能正确解析。
+  const auditStateSnapshot = JSON.parse(JSON.stringify(state));
+  state.finalOVR = 96;
+  state.careerTeam = 'HOME';
+  state.position = 'PG';
+  state.career = {
+    seasonCount: 8, currentAge: 29, contract: 2, teamTenure: 4,
+    profile: { fame: 20, leadership: 12, coachTrust: 12, lockerRoomTrust: 12 },
+    flags: {
+      eventRivalry: { playerId: 'active-rival', playerName: '现役宿敌', team: 'AWAY', active: true, sinceGame: 1 },
+      majorInjuryInstance: 1,
+      majorInjuryPendingComeback: { id: 1 },
+    },
+    seasons: [{ team: 'HOME', wins: 50, losses: 32 }],
+  };
+  state.season = {
+    games: Array.from({ length: 60 }, () => ({ game: { opponent: 'AWAY' } })),
+    schedule: [{ opponent: 'AWAY', gameNum: 61 }], wins: 42, losses: 18,
+    isPlayoffs: false, isUserStarter: true,
+    playerStats: { games: 60, pts: 1800, reb: 480, ast: 600 },
+    playoffStats: { games: 0 }, events: createEventState(0),
+  };
+  const descriptionCtx = {
+    game: { opponent: 'AWAY' }, result: { won: true, scoreA: 122, scoreB: 110 },
+    stats: { pts: 55, reb: 16, ast: 18, stl: 4, blk: 4, tov: 2, fgm: 20, fga: 30, threeM: 8, threeA: 12, ftm: 7, fta: 8 },
+  };
+  function validatePlayerFacingText(eventId, field, value, data) {
+    if (typeof value !== 'string' || !value.trim()) {
+      failures.push(`${eventId} 的${field}为空或不是文本`);
+      return '';
+    }
+    const resolved = eventModule.resolveEventVars(value, descriptionCtx, data);
+    if (/\{[^}]+\}/.test(resolved) || /undefined|null|NaN|\[object Object\]/.test(resolved)) {
+      failures.push(`${eventId} 的${field}含未解析变量或无效值：${resolved.slice(0, 120)}`);
+    }
+    return resolved;
+  }
+  registry.forEach(def => {
+    let data;
+    try {
+      data = def.execute(descriptionCtx);
+    } catch (error) {
+      failures.push(`${def.id} 的事件描述生成失败：${error.message}`);
+      return;
+    }
+    if (!data || typeof data !== 'object') {
+      failures.push(`${def.id} 没有生成事件描述对象`);
+      return;
+    }
+    validatePlayerFacingText(def.id, '标题', data.title, data);
+    validatePlayerFacingText(def.id, '正文', data.body, data);
+    validatePlayerFacingText(def.id, '摘要', data.desc, data);
+    eventDescriptionCount += 1;
+    (data.choices || []).forEach((choice, choiceIndex) => {
+      validatePlayerFacingText(def.id, `第${choiceIndex + 1}个选择标签`, choice.label, data);
+      validatePlayerFacingText(def.id, `第${choiceIndex + 1}个选择提示`, choice.hint, data);
+      if (typeof choice.apply !== 'function') {
+        failures.push(`${def.id} 的第${choiceIndex + 1}个选择没有结算函数`);
+        return;
+      }
+      try {
+        const resultText = choice.apply();
+        validatePlayerFacingText(def.id, `第${choiceIndex + 1}个选择结果`, resultText, data);
+        eventChoiceResultCount += 1;
+      } catch (error) {
+        failures.push(`${def.id} 的第${choiceIndex + 1}个选择结算失败：${error.message}`);
+      }
+    });
+  });
+  Object.keys(state).forEach(key => { delete state[key]; });
+  Object.assign(state, auditStateSnapshot);
+
   registry.splice(0, registry.length,
     {
       id: 'validation_suspension',
@@ -1164,7 +1263,7 @@ return { calcTeamLineup, calcTeamPowerWithPlayer };`,
   const unavailablePower = lineupFns.calcTeamPowerWithPlayer('HOME', { userAvailable: false });
   const unavailablePlayers = Object.values(unavailableLineup.starters).concat(unavailableLineup.bench || []);
   if (!availableLineup.allPlayers.some(player => player._isUser) || unavailablePlayers.some(player => player._isUser) ||
-      !(availablePower.depth > unavailablePower.depth)) {
+      !(availablePower.overall > unavailablePower.overall)) {
     failures.push('伤停用户仍进入球队阵容或球队战力');
   }
 
@@ -1398,6 +1497,10 @@ if (failures.length) {
 } else {
   console.log(JSON.stringify({
     inlineScripts: inlineScripts.length,
+    registryCount,
+    eventDescriptionCount,
+    eventChoiceResultCount,
+    teamChangeDescriptionCount,
     registryValidated: true,
     legacySaveRepair: true,
     suspensionFlow: true,
