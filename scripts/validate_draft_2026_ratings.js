@@ -75,14 +75,17 @@ ratingIds.forEach((id) => {
     context.ratingProbe = { pos: rating.pos, ovr: rating.ovr, ...attributes };
     const directCalculated = vm.runInContext('calcOVR(ratingProbe, ratingProbe.pos)', context);
     if (Math.abs(directCalculated - rating.ovr) > 2) errors.push(`${id} 公平公式实算偏差超过 2：${directCalculated} / ${rating.ovr}`);
-    vm.runInContext(`normalizeRookieAttributesToOvr(ratingProbe, ${Number(rating.ovr)})`, context);
-    const calculated = vm.runInContext('calcOVR(ratingProbe, ratingProbe.pos)', context);
-    if (calculated !== rating.ovr) errors.push(`${id} 新公式归一失败：目标 ${rating.ovr}，实算 ${calculated}`);
+    vm.runInContext('syncAuthoredRookieOvr(ratingProbe)', context);
+    const authoredAfter = JSON.stringify(Object.fromEntries(attrKeys.map((key) => [key, context.ratingProbe[key]])));
+    const expectedAttributes = JSON.stringify(Object.fromEntries(attrKeys.map((key) => [key, attributes[key]])));
+    if (authoredAfter !== expectedAttributes) errors.push(`${id} 运行时改写了固定属性`);
+    if (context.ratingProbe.ovr !== directCalculated) errors.push(`${id} 运行时 OVR 未由固定属性计算：${context.ratingProbe.ovr} / ${directCalculated}`);
   }
 });
 
 if (!/fixedRating\.attributes\[key\]/.test(offseasonSource)) errors.push('休赛期未读取固定新秀属性');
-if (!/normalizeRookieAttributesToOvr\(rookie, fixedRating\.ovr\)/.test(offseasonSource)) errors.push('2026 固定新秀未按审核 OVR 归一属性');
+if (!/syncAuthoredRookieOvr\(rookie\)/.test(offseasonSource)) errors.push('2026 固定新秀未直接使用 authored 属性计算 OVR');
+if (/normalizeRookieAttributesToOvr/.test(offseasonSource)) errors.push('仍残留固定新秀目标 OVR 反推属性逻辑');
 
 console.log(JSON.stringify({
   officialProfiles: profiles.length,

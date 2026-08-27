@@ -1405,7 +1405,7 @@ function applyDraftClass2026() {
         ATTR_KEYS.forEach(function(key) {
           rookie[key] = fixedRating.attributes[key];
         });
-        normalizeRookieAttributesToOvr(rookie, fixedRating.ovr);
+        syncAuthoredRookieOvr(rookie);
       } else {
         applyRookieAttributeProfile(rookie, ovr, Math.random);
       }
@@ -1455,7 +1455,7 @@ function processDraft() {
     rookie._justSigned = true;
     var targetOvr = ovrRange.min + Math.floor(rngNext() * (ovrRange.max - ovrRange.min + 1));
     if (rookie._fixedProspectRating) {
-      normalizeRookieAttributesToOvr(rookie, rookie.ovr);
+      syncAuthoredRookieOvr(rookie);
       rookie._rookieSeason = getCurrentLeagueSeasonNumber();
     } else {
       rookie.ovr = targetOvr;
@@ -1942,120 +1942,68 @@ function getLeagueAttributeKeys() {
   return ['threePT', 'MID', 'FIN', 'DNK', 'HAN', 'PAS', 'ATH', 'STR', 'REB', 'PDEF', 'IDEF', 'STL', 'BLK', 'CLU'];
 }
 
-/**
- * 只对已经完成成长/衰退比例调整的基础球员做逐点微调，
- * 让属性重新计算出的 OVR 命中目标；不重新生成属性分布。
- */
-function normalizeLeaguePlayerAttributesToOvr(player, targetOvr) {
-  if (!player || typeof calcOVR !== 'function') return Number(player && player.ovr) || 0;
+var LEAGUE_POSITION_DEVELOPMENT = {
+  PG: { primary: ['HAN','PAS','threePT','MID','ATH'], slow: ['IDEF','BLK','REB','STR'] },
+  SG: { primary: ['threePT','MID','FIN','HAN','ATH','PDEF','STL'], slow: ['IDEF','BLK','REB','PAS'] },
+  SF: { primary: ['FIN','PDEF','STL','ATH','STR','threePT'], slow: ['BLK','PAS'] },
+  PF: { primary: ['FIN','IDEF','REB','STR','PDEF','MID'], slow: ['HAN','PAS','threePT'] },
+  C:  { primary: ['FIN','IDEF','BLK','REB','STR'], slow: ['threePT','MID','HAN','PAS','PDEF'] }
+};
 
-  var target = Math.max(55, Math.min(99, Math.round(Number(targetOvr) || 55)));
-  var current = Number(calcOVR(player, player.pos));
-  if (!Number.isFinite(current) || current === target) return current;
-
-  var attributeKeys = getLeagueAttributeKeys();
-  var originalValues = {};
-  attributeKeys.forEach(function(key) {
-    var value = Number(player[key]);
-    if (Number.isFinite(value)) originalValues[key] = value;
-  });
-
-  function walkTowardTarget() {
-    var nextCurrent = Number(calcOVR(player, player.pos));
-    var guard = 0;
-    while (nextCurrent !== target && guard++ < 320) {
-      var step = nextCurrent < target ? 1 : -1;
-      var changed = false;
-
-      for (var i = 0; i < attributeKeys.length; i++) {
-        var key = attributeKeys[i];
-        if (player[key] == null) continue;
-
-        var before = Number(player[key]);
-        if (!Number.isFinite(before)) continue;
-
-        var next = Math.max(25, Math.min(99, before + step));
-        if (next === before) continue;
-
-        player[key] = next;
-        var candidate = Number(calcOVR(player, player.pos));
-        var staysOnTargetSide = step > 0
-          ? candidate <= target
-          : candidate >= target;
-
-        if (staysOnTargetSide) {
-          nextCurrent = candidate;
-          changed = true;
-          break;
-        }
-
-        player[key] = before;
-      }
-
-      if (!changed) break;
-    }
-    return Number(calcOVR(player, player.pos));
+function getLeaguePlayerDevelopmentProfile(player) {
+  if (isGeneratedLeaguePlayer(player) && typeof getRookieProfile === 'function') {
+    var rookieProfile = getRookieProfile(player);
+    return { primary: rookieProfile.strengths.slice(), slow: rookieProfile.weaknesses.slice() };
   }
-
-  current = walkTowardTarget();
-  if (current === target) return current;
-
-  // 离散 OVR 台阶无法直接命中时，回滚后做一次有限的统一校准，
-  // 再回到逐点逼近；这只处理不可达的边界案例。
-  attributeKeys.forEach(function(key) {
-    if (Object.prototype.hasOwnProperty.call(originalValues, key)) {
-      player[key] = originalValues[key];
-    }
-  });
-  current = Number(calcOVR(player, player.pos));
-  var correction = target - current;
-  if (correction) {
-    attributeKeys.forEach(function(key) {
-      if (player[key] == null) return;
-      var value = Number(player[key]);
-      if (!Number.isFinite(value)) return;
-      player[key] = Math.max(25, Math.min(99, Math.round(value + correction)));
-    });
-  }
-  return walkTowardTarget();
+  var pos = String(player && player.pos || '').split('/')[0].trim();
+  return LEAGUE_POSITION_DEVELOPMENT[pos] || LEAGUE_POSITION_DEVELOPMENT.SF;
 }
 
+/**
+ * 目标 OVR 只用于表达本季成长方向和强度。属性先按位置/角色显式演变，
+ * 最终 OVR 始终由演变后的属性计算，不再为了命中目标反向改写属性。
+ */
 function applyLeaguePlayerOvrChange(player, oldOvr, newOvr) {
   if (!player) return Number(newOvr) || 0;
-  var before = Number(oldOvr) || Number(player.ovr) || 60;
-  var target = Math.max(55, Math.min(99, Math.round(Number(newOvr) || before)));
-  if (target === before) {
-    player.ovr = target;
-    return target;
-  }
-
-  if (typeof evolveGeneratedPlayerAttributes === 'function'
-      && typeof ATTR_KEYS !== 'undefined'
-      && isGeneratedLeaguePlayer(player)
-      && evolveGeneratedPlayerAttributes(player, before, target)) {
-    player.ovr = Math.max(55, Math.min(99, Number(player.ovr) || target));
+  var before = Math.round(Number(oldOvr) || Number(player.ovr) || 60);
+  var requested = Math.round(Number(newOvr) || before);
+  var direction = Math.sign(requested - before);
+  if (!direction) {
+    player.ovr = typeof calcOVR === 'function' ? calcOVR(player, player.pos) : before;
     return player.ovr;
   }
 
-  var baseRatio = target / Math.max(1, before);
-  var decayFast = ['ATH', 'STR', 'PDEF', 'STL'];
-  var decayResist = ['threePT', 'MID', 'PAS', 'HAN', 'CLU'];
-  getLeagueAttributeKeys().forEach(function(attrKey) {
-    if (player[attrKey] == null) return;
-    var ratio = baseRatio;
-    if (baseRatio < 1) {
-      if (decayFast.indexOf(attrKey) >= 0) ratio = 1 - (1 - baseRatio) * 1.5;
-      if (decayResist.indexOf(attrKey) >= 0) ratio = 1 - (1 - baseRatio) * 0.3;
-    }
-    player[attrKey] = Math.max(25, Math.min(99, Math.round(Number(player[attrKey]) * ratio)));
-  });
-  var calculated = typeof calcOVR === 'function' && typeof SIM_CONFIG !== 'undefined'
-    ? Number(calcOVR(player, player.pos))
-    : target;
-  if (calculated !== target && typeof normalizeLeaguePlayerAttributesToOvr === 'function') {
-    calculated = normalizeLeaguePlayerAttributesToOvr(player, target);
+  if (isGeneratedLeaguePlayer(player) && typeof migrateLegacyGeneratedPlayerAttributes === 'function') {
+    migrateLegacyGeneratedPlayerAttributes(player);
   }
-  player.ovr = Number.isFinite(calculated) && calculated >= 40 ? Math.round(calculated) : target;
+
+  var age = Number(player._age) || 27;
+  var requestedMagnitude = Math.max(1, Math.abs(requested - before));
+  var cap = direction > 0 && age <= 23 && requestedMagnitude >= 2 ? 3 : 2;
+  var magnitude = Math.min(cap, requestedMagnitude);
+  var profile = getLeaguePlayerDevelopmentProfile(player);
+  var declineFast = ['ATH','STR','PDEF','STL','DNK'];
+  var declineResist = ['threePT','MID','PAS','HAN','CLU'];
+
+  getLeagueAttributeKeys().forEach(function(attrKey) {
+    var current = Number(player[attrKey]);
+    if (!Number.isFinite(current)) return;
+    var attrMagnitude;
+    if (direction > 0) {
+      if (profile.primary.indexOf(attrKey) >= 0) attrMagnitude = Math.min(cap, magnitude + (cap === 3 ? 1 : 0));
+      else if (profile.slow.indexOf(attrKey) >= 0) attrMagnitude = Math.max(0, magnitude - 1);
+      else attrMagnitude = Math.max(0, magnitude - 1);
+    } else {
+      if (age >= 29 && declineFast.indexOf(attrKey) >= 0) attrMagnitude = Math.min(2, magnitude + 1);
+      else if (declineResist.indexOf(attrKey) >= 0) attrMagnitude = Math.max(0, magnitude - 1);
+      else attrMagnitude = magnitude;
+    }
+    player[attrKey] = Math.max(25, Math.min(99, Math.round(current + direction * attrMagnitude)));
+  });
+
+  player.ovr = typeof calcOVR === 'function'
+    ? calcOVR(player, player.pos)
+    : Math.max(55, Math.min(99, requested));
   return player.ovr;
 }
 
@@ -3243,7 +3191,7 @@ function isGeneratedLeaguePlayer(player) {
   return !!player._prospectId || /^R\d+$/.test(id) || /^D\d{2}-\d+$/.test(id);
 }
 
-var ROOKIE_ATTRIBUTE_PROFILE_VERSION = 2;
+var ROOKIE_ATTRIBUTE_PROFILE_VERSION = 3;
 var ROOKIE_ATTRIBUTE_PROFILES = {
   PG: [
     { id: 'playmaker', label: '组织核心', strengths: ['HAN','PAS','ATH'], weaknesses: ['IDEF','BLK','REB','STR'] },
@@ -3285,38 +3233,31 @@ function clampLeagueAttribute(value) {
   return Math.max(25, Math.min(99, Math.round(value)));
 }
 
-function normalizeRookieAttributesToOvr(player, targetOvr) {
+function syncAuthoredRookieOvr(player) {
+  if (!player) return 0;
+  var pos = getGeneratedPlayerMainPos(player);
+  player.ovr = calcOVR(player, pos);
+  return player.ovr;
+}
+
+/** 随机新秀只允许做有限统一平移；强弱项顺序不会翻转，也不要求精确命中目标。 */
+function calibrateGeneratedRookieAttributes(player, targetOvr, maxAdjustment) {
   var pos = getGeneratedPlayerMainPos(player);
   var target = Math.max(55, Math.min(99, Math.round(Number(targetOvr) || 55)));
-  var current = calcOVR(player, pos);
-  var correction = target - current;
-  if (correction) {
-    ATTR_KEYS.forEach(function(key) {
-      player[key] = clampLeagueAttribute((Number(player[key]) || 50) + correction);
-    });
-  }
-  var guard = 0;
-  current = calcOVR(player, pos);
-  while (current !== target && guard++ < 320) {
-    var step = current < target ? 1 : -1;
-    var changed = false;
-    for (var i = 0; i < ATTR_KEYS.length; i++) {
-      var key = ATTR_KEYS[i];
-      var before = Number(player[key]) || 50;
-      var next = clampLeagueAttribute(before + step);
-      if (next === before) continue;
-      player[key] = next;
-      var candidate = calcOVR(player, pos);
-      var staysOnTargetSide = step > 0 ? candidate <= target : candidate >= target;
-      if (staysOnTargetSide) {
-        current = candidate;
-        changed = true;
-        break;
-      }
-      player[key] = before;
+  var cap = Math.max(0, Math.min(3, Math.round(Number(maxAdjustment) || 3)));
+  var original = {};
+  ATTR_KEYS.forEach(function(key) { original[key] = Number(player[key]) || 50; });
+  var bestShift = 0;
+  var bestDistance = Infinity;
+  for (var shift = -cap; shift <= cap; shift++) {
+    ATTR_KEYS.forEach(function(key) { player[key] = clampLeagueAttribute(original[key] + shift); });
+    var distance = Math.abs(calcOVR(player, pos) - target);
+    if (distance < bestDistance || (distance === bestDistance && Math.abs(shift) < Math.abs(bestShift))) {
+      bestDistance = distance;
+      bestShift = shift;
     }
-    if (!changed) break;
   }
+  ATTR_KEYS.forEach(function(key) { player[key] = clampLeagueAttribute(original[key] + bestShift); });
   player.ovr = calcOVR(player, pos);
   return player.ovr;
 }
@@ -3338,17 +3279,38 @@ function refreshGeneratedPlayerType(player) {
 function applyRookieAttributeProfile(player, targetOvr, randomFn) {
   var random = typeof randomFn === 'function' ? randomFn : Math.random;
   var profile = getRookieProfile(player, random);
+  var target = Math.max(55, Math.min(99, Math.round(Number(targetOvr) || 55)));
   player._rookieProfile = profile.id;
   player._rookieGenerationVersion = ROOKIE_ATTRIBUTE_PROFILE_VERSION;
   if (!player._rookieSeason) player._rookieSeason = getCurrentLeagueSeasonNumber();
+  var offsets = {};
   ATTR_KEYS.forEach(function(key) {
     var offset;
     if (profile.strengths.indexOf(key) >= 0) offset = 7 + Math.floor(random() * 5);
     else if (profile.weaknesses.indexOf(key) >= 0) offset = -(10 + Math.floor(random() * 6));
     else offset = Math.floor(random() * 7) - 3;
-    player[key] = clampLeagueAttribute((Number(targetOvr) || 55) + offset);
+    offsets[key] = offset;
   });
-  normalizeRookieAttributesToOvr(player, targetOvr);
+  // 目标只选择最接近的模板基准，不覆盖已生成的强弱项；落地后仍只允许 ±3 有限校准。
+  var bestAttributes = null;
+  var bestDistance = Infinity;
+  var bestBaseDistance = Infinity;
+  for (var base = target - 12; base <= target + 12; base++) {
+    var candidateAttributes = {};
+    ATTR_KEYS.forEach(function(key) {
+      candidateAttributes[key] = clampLeagueAttribute(base + offsets[key]);
+      player[key] = candidateAttributes[key];
+    });
+    var distance = Math.abs(calcOVR(player, getGeneratedPlayerMainPos(player)) - target);
+    var baseDistance = Math.abs(base - target);
+    if (distance < bestDistance || (distance === bestDistance && baseDistance < bestBaseDistance)) {
+      bestAttributes = candidateAttributes;
+      bestDistance = distance;
+      bestBaseDistance = baseDistance;
+    }
+  }
+  ATTR_KEYS.forEach(function(key) { player[key] = bestAttributes[key]; });
+  calibrateGeneratedRookieAttributes(player, target, 3);
   refreshGeneratedPlayerType(player);
   return player;
 }
@@ -3366,31 +3328,36 @@ function createGeneratedPlayerMigrationRandom(player) {
   };
 }
 
-function rebalanceLegacyGeneratedPlayer(player) {
+function migrateLegacyGeneratedPlayerAttributes(player) {
   if (!isGeneratedLeaguePlayer(player) || player._rookieGenerationVersion >= ROOKIE_ATTRIBUTE_PROFILE_VERSION) return false;
   var targetOvr = Math.max(55, Math.min(99, Math.round(Number(player.ovr) || 70)));
   if (!player._rookieSeason) {
     var age = Number(player._age) || 20;
     player._rookieSeason = Math.max(1, getCurrentLeagueSeasonNumber() - Math.max(0, age - 20));
   }
-  applyRookieAttributeProfile(player, targetOvr, createGeneratedPlayerMigrationRandom(player));
+  var random = createGeneratedPlayerMigrationRandom(player);
+  var profile = getRookieProfile(player, random);
+  player._rookieProfile = profile.id;
+  ATTR_KEYS.forEach(function(key) {
+    if (Number.isFinite(Number(player[key]))) return;
+    var offset;
+    if (profile.strengths.indexOf(key) >= 0) offset = 7 + Math.floor(random() * 5);
+    else if (profile.weaknesses.indexOf(key) >= 0) offset = -(10 + Math.floor(random() * 6));
+    else offset = Math.floor(random() * 7) - 3;
+    player[key] = clampLeagueAttribute(targetOvr + offset);
+  });
+  player._rookieGenerationVersion = ROOKIE_ATTRIBUTE_PROFILE_VERSION;
+  syncAuthoredRookieOvr(player);
+  refreshGeneratedPlayerType(player);
   return true;
 }
 
 function evolveGeneratedPlayerAttributes(player, oldOvr, newOvr) {
   if (!isGeneratedLeaguePlayer(player)) return false;
-  if (player._rookieGenerationVersion < ROOKIE_ATTRIBUTE_PROFILE_VERSION) rebalanceLegacyGeneratedPlayer(player);
-  var profile = getRookieProfile(player);
   var delta = Math.round(newOvr) - Math.round(oldOvr);
   if (!delta) return false;
-  ATTR_KEYS.forEach(function(key) {
-    var attrDelta = delta;
-    if (delta > 0 && profile.strengths.indexOf(key) >= 0) attrDelta = delta + 1;
-    else if (delta > 0 && profile.weaknesses.indexOf(key) >= 0) attrDelta = Math.max(0, delta - 1);
-    else if (delta < 0 && profile.weaknesses.indexOf(key) >= 0) attrDelta = delta - 1;
-    player[key] = clampLeagueAttribute((Number(player[key]) || 50) + attrDelta);
-  });
-  normalizeRookieAttributesToOvr(player, newOvr);
+  migrateLegacyGeneratedPlayerAttributes(player);
+  applyLeaguePlayerOvrChange(player, oldOvr, newOvr);
   return true;
 }
 
@@ -3409,7 +3376,7 @@ function syncGeneratedLeaguePlayerOvrs() {
   var changed = 0;
   LEAGUE_TEAM_IDS.forEach(function(teamId) {
     (LEAGUE_PLAYER_DATA[teamId] || []).forEach(function(player) {
-      var playerChanged = rebalanceLegacyGeneratedPlayer(player);
+      var playerChanged = migrateLegacyGeneratedPlayerAttributes(player);
       if (refreshGeneratedPlayerType(player)) playerChanged = true;
       if (syncGeneratedLeaguePlayerOvr(player)) playerChanged = true;
       if (playerChanged) changed++;
@@ -3435,7 +3402,7 @@ function syncLeaguePlayerOvrs() {
         }
       }
       if (isGeneratedLeaguePlayer(player)) {
-        rebalanceLegacyGeneratedPlayer(player);
+        migrateLegacyGeneratedPlayerAttributes(player);
         refreshGeneratedPlayerType(player);
       }
       // V3 起 OVR 是所有模式共用的属性摘要。保留 _sourceOvr 仅用于历史对照，

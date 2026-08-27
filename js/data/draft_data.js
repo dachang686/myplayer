@@ -259,7 +259,7 @@ var DRAFT_CLASS_2026_RATINGS = {
     attributes: { threePT: 72, MID: 85, FIN: 85, DNK: 83, HAN: 83, PAS: 75, PDEF: 75, STL: 70, IDEF: 63, BLK: 59, REB: 71, ATH: 85, STR: 73, CLU: 79 }
   },
   "D26-02": {
-    pos: "SG", profile: "perimeter_scorer", ovr: 81,
+    pos: "SG", profile: "perimeter_scorer", ovr: 78,
     attributes: { threePT: 80, MID: 87, FIN: 81, DNK: 75, HAN: 83, PAS: 70, PDEF: 75, STL: 72, IDEF: 45, BLK: 39, REB: 55, ATH: 81, STR: 69, CLU: 81 }
   },
   "D26-03": {
@@ -331,7 +331,7 @@ var DRAFT_CLASS_2026_RATINGS = {
     attributes: { threePT: 82, MID: 74, FIN: 80, DNK: 78, HAN: 74, PAS: 70, PDEF: 78, STL: 75, IDEF: 70, BLK: 64, REB: 76, ATH: 76, STR: 70, CLU: 72 }
   },
   "D26-20": {
-    pos: "C", profile: "rim_protector", ovr: 76,
+    pos: "C", profile: "rim_protector", ovr: 81,
     attributes: { threePT: 44, MID: 57, FIN: 77, DNK: 81, HAN: 59, PAS: 55, PDEF: 69, STL: 63, IDEF: 81, BLK: 85, REB: 79, ATH: 77, STR: 81, CLU: 69 }
   },
   "D26-21": {
@@ -355,7 +355,7 @@ var DRAFT_CLASS_2026_RATINGS = {
     attributes: { threePT: 77, MID: 77, FIN: 69, DNK: 57, HAN: 81, PAS: 83, PDEF: 77, STL: 64, IDEF: 41, BLK: 33, REB: 51, ATH: 73, STR: 61, CLU: 73 }
   },
   "D26-26": {
-    pos: "C", profile: "rim_protector", ovr: 79,
+    pos: "C", profile: "rim_protector", ovr: 82,
     attributes: { threePT: 42, MID: 55, FIN: 81, DNK: 79, HAN: 61, PAS: 65, PDEF: 71, STL: 61, IDEF: 81, BLK: 83, REB: 83, ATH: 71, STR: 83, CLU: 73 }
   },
   "D26-27": {
@@ -427,7 +427,7 @@ var DRAFT_CLASS_2026_RATINGS = {
     attributes: { threePT: 66, MID: 74, FIN: 74, DNK: 66, HAN: 72, PAS: 76, PDEF: 66, STL: 58, IDEF: 70, BLK: 62, REB: 68, ATH: 66, STR: 68, CLU: 72 }
   },
   "D26-44": {
-    pos: "PF", profile: "interior_forward", ovr: 75,
+    pos: "PF", profile: "interior_forward", ovr: 78,
     attributes: { threePT: 61, MID: 67, FIN: 75, DNK: 71, HAN: 71, PAS: 77, PDEF: 77, STL: 63, IDEF: 81, BLK: 79, REB: 73, ATH: 75, STR: 71, CLU: 75 }
   },
   "D26-45": {
@@ -455,7 +455,7 @@ var DRAFT_CLASS_2026_RATINGS = {
     attributes: { threePT: 82, MID: 78, FIN: 74, DNK: 56, HAN: 80, PAS: 80, PDEF: 74, STL: 71, IDEF: 32, BLK: 25, REB: 52, ATH: 78, STR: 74, CLU: 76 }
   },
   "D26-51": {
-    pos: "C", profile: "rim_protector", ovr: 78,
+    pos: "C", profile: "rim_protector", ovr: 81,
     attributes: { threePT: 32, MID: 53, FIN: 85, DNK: 81, HAN: 59, PAS: 57, PDEF: 75, STL: 72, IDEF: 81, BLK: 79, REB: 87, ATH: 73, STR: 75, CLU: 73 }
   },
   "D26-52": {
@@ -463,7 +463,7 @@ var DRAFT_CLASS_2026_RATINGS = {
     attributes: { threePT: 85, MID: 79, FIN: 87, DNK: 75, HAN: 67, PAS: 69, PDEF: 65, STL: 58, IDEF: 73, BLK: 71, REB: 81, ATH: 65, STR: 69, CLU: 73 }
   },
   "D26-53": {
-    pos: "C", profile: "rim_protector", ovr: 76,
+    pos: "C", profile: "rim_protector", ovr: 80,
     attributes: { threePT: 56, MID: 58, FIN: 70, DNK: 76, HAN: 54, PAS: 48, PDEF: 74, STL: 62, IDEF: 84, BLK: 92, REB: 74, ATH: 82, STR: 70, CLU: 70 }
   },
   "D26-54": {
@@ -479,7 +479,7 @@ var DRAFT_CLASS_2026_RATINGS = {
     attributes: { threePT: 87, MID: 81, FIN: 75, DNK: 65, HAN: 75, PAS: 71, PDEF: 79, STL: 72, IDEF: 63, BLK: 51, REB: 67, ATH: 71, STR: 75, CLU: 73 }
   },
   "D26-57": {
-    pos: "C", profile: "rim_protector", ovr: 81,
+    pos: "C", profile: "rim_protector", ovr: 84,
     attributes: { threePT: 54, MID: 60, FIN: 80, DNK: 78, HAN: 56, PAS: 62, PDEF: 64, STL: 58, IDEF: 84, BLK: 86, REB: 88, ATH: 66, STR: 84, CLU: 72 }
   },
   "D26-58": {
@@ -503,7 +503,7 @@ var FUTURE_PROSPECT_RATINGS = {
     attributes: { threePT: 79, MID: 83, FIN: 85, DNK: 77, HAN: 83, PAS: 79, PDEF: 83, STL: 86, IDEF: 39, BLK: 29, REB: 61, ATH: 83, STR: 77, CLU: 79 }
   },
   "D002": {
-    pos: "SF", height: "6'8\"", profile: "point_forward", ovr: 84,
+    pos: "SF", height: "6'8\"", profile: "point_forward", ovr: 81,
     attributes: { threePT: 70, MID: 76, FIN: 84, DNK: 82, HAN: 80, PAS: 80, PDEF: 80, STL: 86, IDEF: 74, BLK: 68, REB: 82, ATH: 82, STR: 80, CLU: 78 }
   },
   "D003": {
@@ -511,7 +511,7 @@ var FUTURE_PROSPECT_RATINGS = {
     attributes: { threePT: 80, MID: 84, FIN: 82, DNK: 72, HAN: 82, PAS: 78, PDEF: 74, STL: 71, IDEF: 62, BLK: 54, REB: 68, ATH: 76, STR: 64, CLU: 82 }
   },
   "D004": {
-    pos: "SF", height: "6'7\"", profile: "two_way_wing", ovr: 82,
+    pos: "SF", height: "6'7\"", profile: "two_way_wing", ovr: 79,
     attributes: { threePT: 72, MID: 76, FIN: 80, DNK: 84, HAN: 78, PAS: 74, PDEF: 84, STL: 76, IDEF: 72, BLK: 72, REB: 82, ATH: 86, STR: 70, CLU: 74 }
   },
   "D005": {
@@ -547,15 +547,15 @@ var FUTURE_PROSPECT_RATINGS = {
     attributes: { threePT: 54, MID: 66, FIN: 80, DNK: 78, HAN: 56, PAS: 64, PDEF: 64, STL: 61, IDEF: 84, BLK: 86, REB: 84, ATH: 70, STR: 82, CLU: 78 }
   },
   "D013": {
-    pos: "C", height: "7'0\"", profile: "rim_protector", ovr: 73,
+    pos: "C", height: "7'0\"", profile: "rim_protector", ovr: 77,
     attributes: { threePT: 49, MID: 61, FIN: 77, DNK: 83, HAN: 55, PAS: 57, PDEF: 63, STL: 59, IDEF: 77, BLK: 77, REB: 75, ATH: 73, STR: 77, CLU: 65 }
   },
   "D014": {
-    pos: "PF", height: "6'8\"", profile: "interior_forward", ovr: 78,
+    pos: "PF", height: "6'8\"", profile: "interior_forward", ovr: 82,
     attributes: { threePT: 59, MID: 67, FIN: 77, DNK: 83, HAN: 63, PAS: 59, PDEF: 73, STL: 65, IDEF: 81, BLK: 83, REB: 81, ATH: 79, STR: 79, CLU: 73 }
   },
   "D015": {
-    pos: "SG", height: "6'5\"", profile: "two_way_slasher", ovr: 82,
+    pos: "SG", height: "6'5\"", profile: "two_way_slasher", ovr: 78,
     attributes: { threePT: 79, MID: 79, FIN: 83, DNK: 85, HAN: 77, PAS: 71, PDEF: 79, STL: 77, IDEF: 47, BLK: 57, REB: 67, ATH: 85, STR: 77, CLU: 79 }
   },
   "D016": {
@@ -579,7 +579,7 @@ var FUTURE_PROSPECT_RATINGS = {
     attributes: { threePT: 54, MID: 64, FIN: 76, DNK: 78, HAN: 56, PAS: 62, PDEF: 62, STL: 59, IDEF: 78, BLK: 80, REB: 78, ATH: 68, STR: 78, CLU: 80 }
   },
   "D021": {
-    pos: "C", height: "6'10\"", profile: "rim_protector", ovr: 83,
+    pos: "C", height: "6'10\"", profile: "rim_protector", ovr: 86,
     attributes: { threePT: 41, MID: 57, FIN: 77, DNK: 79, HAN: 51, PAS: 49, PDEF: 65, STL: 63, IDEF: 87, BLK: 83, REB: 89, ATH: 73, STR: 87, CLU: 81 }
   },
   "D022": {
@@ -591,7 +591,7 @@ var FUTURE_PROSPECT_RATINGS = {
     attributes: { threePT: 77, MID: 83, FIN: 85, DNK: 81, HAN: 81, PAS: 73, PDEF: 79, STL: 72, IDEF: 79, BLK: 79, REB: 77, ATH: 81, STR: 75, CLU: 81 }
   },
   "D024": {
-    pos: "SG", height: "6'5\"", profile: "two_way_slasher", ovr: 82,
+    pos: "SG", height: "6'5\"", profile: "two_way_slasher", ovr: 79,
     attributes: { threePT: 70, MID: 80, FIN: 84, DNK: 88, HAN: 78, PAS: 66, PDEF: 84, STL: 79, IDEF: 46, BLK: 50, REB: 74, ATH: 88, STR: 84, CLU: 82 }
   },
   "D025": {
@@ -603,7 +603,7 @@ var FUTURE_PROSPECT_RATINGS = {
     attributes: { threePT: 69, MID: 71, FIN: 79, DNK: 81, HAN: 57, PAS: 59, PDEF: 67, STL: 62, IDEF: 83, BLK: 91, REB: 79, ATH: 75, STR: 81, CLU: 77 }
   },
   "D027": {
-    pos: "SF", height: "6'10\"", profile: "point_forward", ovr: 80,
+    pos: "SF", height: "6'10\"", profile: "point_forward", ovr: 77,
     attributes: { threePT: 74, MID: 80, FIN: 82, DNK: 80, HAN: 78, PAS: 74, PDEF: 78, STL: 80, IDEF: 72, BLK: 66, REB: 74, ATH: 80, STR: 60, CLU: 78 }
   },
   "D028": {
@@ -623,11 +623,11 @@ var FUTURE_PROSPECT_RATINGS = {
     attributes: { threePT: 77, MID: 79, FIN: 81, DNK: 77, HAN: 77, PAS: 73, PDEF: 73, STL: 68, IDEF: 67, BLK: 55, REB: 77, ATH: 75, STR: 65, CLU: 77 }
   },
   "D032": {
-    pos: "C", height: "7'0\"", profile: "rim_protector", ovr: 76,
+    pos: "C", height: "7'0\"", profile: "rim_protector", ovr: 80,
     attributes: { threePT: 52, MID: 62, FIN: 74, DNK: 82, HAN: 52, PAS: 52, PDEF: 60, STL: 57, IDEF: 80, BLK: 86, REB: 80, ATH: 70, STR: 80, CLU: 70 }
   },
   "D033": {
-    pos: "SG", height: "6'4\"", profile: "two_way_slasher", ovr: 82,
+    pos: "SG", height: "6'4\"", profile: "two_way_slasher", ovr: 78,
     attributes: { threePT: 82, MID: 82, FIN: 82, DNK: 72, HAN: 78, PAS: 74, PDEF: 80, STL: 82, IDEF: 40, BLK: 28, REB: 64, ATH: 78, STR: 60, CLU: 86 }
   },
   "D034": {
@@ -635,7 +635,7 @@ var FUTURE_PROSPECT_RATINGS = {
     attributes: { threePT: 91, MID: 85, FIN: 75, DNK: 61, HAN: 71, PAS: 59, PDEF: 69, STL: 67, IDEF: 57, BLK: 45, REB: 61, ATH: 63, STR: 67, CLU: 85 }
   },
   "D035": {
-    pos: "SG", height: "6'5\"", profile: "two_way_slasher", ovr: 83,
+    pos: "SG", height: "6'5\"", profile: "two_way_slasher", ovr: 79,
     attributes: { threePT: 76, MID: 80, FIN: 82, DNK: 84, HAN: 80, PAS: 74, PDEF: 82, STL: 81, IDEF: 44, BLK: 34, REB: 70, ATH: 86, STR: 72, CLU: 80 }
   },
   "D036": {
@@ -683,7 +683,7 @@ var FUTURE_PROSPECT_RATINGS = {
     attributes: { threePT: 61, MID: 69, FIN: 83, DNK: 93, HAN: 67, PAS: 63, PDEF: 81, STL: 75, IDEF: 69, BLK: 59, REB: 75, ATH: 93, STR: 85, CLU: 75 }
   },
   "D047": {
-    pos: "SG", height: "6'4\"", profile: "perimeter_scorer", ovr: 82,
+    pos: "SG", height: "6'4\"", profile: "perimeter_scorer", ovr: 78,
     attributes: { threePT: 85, MID: 83, FIN: 81, DNK: 71, HAN: 79, PAS: 71, PDEF: 77, STL: 72, IDEF: 37, BLK: 25, REB: 73, ATH: 79, STR: 77, CLU: 85 }
   },
   "D048": {
@@ -695,7 +695,7 @@ var FUTURE_PROSPECT_RATINGS = {
     attributes: { threePT: 58, MID: 84, FIN: 86, DNK: 76, HAN: 78, PAS: 64, PDEF: 72, STL: 68, IDEF: 64, BLK: 50, REB: 74, ATH: 78, STR: 76, CLU: 82 }
   },
   "D050": {
-    pos: "SG", height: "6'5\"", profile: "perimeter_scorer", ovr: 75,
+    pos: "SG", height: "6'5\"", profile: "perimeter_scorer", ovr: 72,
     attributes: { threePT: 89, MID: 79, FIN: 73, DNK: 65, HAN: 71, PAS: 57, PDEF: 67, STL: 65, IDEF: 35, BLK: 27, REB: 61, ATH: 71, STR: 61, CLU: 79 }
   },
   "D051": {
@@ -703,11 +703,11 @@ var FUTURE_PROSPECT_RATINGS = {
     attributes: { threePT: 69, MID: 71, FIN: 81, DNK: 79, HAN: 69, PAS: 69, PDEF: 75, STL: 69, IDEF: 83, BLK: 87, REB: 83, ATH: 75, STR: 79, CLU: 75 }
   },
   "D052": {
-    pos: "PG", height: "6'0\"", profile: "playmaker", ovr: 84,
+    pos: "PG", height: "6'0\"", profile: "playmaker", ovr: 80,
     attributes: { threePT: 76, MID: 80, FIN: 76, DNK: 62, HAN: 84, PAS: 86, PDEF: 86, STL: 85, IDEF: 32, BLK: 25, REB: 52, ATH: 84, STR: 60, CLU: 86 }
   },
   "D053": {
-    pos: "SF", height: "6'7\"", profile: "two_way_wing", ovr: 82,
+    pos: "SF", height: "6'7\"", profile: "two_way_wing", ovr: 78,
     attributes: { threePT: 81, MID: 85, FIN: 85, DNK: 77, HAN: 79, PAS: 69, PDEF: 77, STL: 72, IDEF: 61, BLK: 51, REB: 81, ATH: 79, STR: 71, CLU: 85 }
   },
   "D054": {
@@ -727,7 +727,7 @@ var FUTURE_PROSPECT_RATINGS = {
     attributes: { threePT: 68, MID: 72, FIN: 76, DNK: 78, HAN: 76, PAS: 78, PDEF: 80, STL: 74, IDEF: 72, BLK: 68, REB: 78, ATH: 82, STR: 72, CLU: 76 }
   },
   "D058": {
-    pos: "SF", height: "6'6\"", profile: "two_way_wing", ovr: 85,
+    pos: "SF", height: "6'6\"", profile: "two_way_wing", ovr: 81,
     attributes: { threePT: 72, MID: 78, FIN: 86, DNK: 84, HAN: 76, PAS: 72, PDEF: 80, STL: 80, IDEF: 70, BLK: 62, REB: 88, ATH: 84, STR: 84, CLU: 82 }
   },
   "D059": {
@@ -767,7 +767,7 @@ var FUTURE_PROSPECT_RATINGS = {
     attributes: { threePT: 81, MID: 79, FIN: 83, DNK: 77, HAN: 67, PAS: 67, PDEF: 69, STL: 61, IDEF: 75, BLK: 79, REB: 77, ATH: 71, STR: 75, CLU: 73 }
   },
   "D068": {
-    pos: "SG", height: "6'7\"", profile: "two_way_slasher", ovr: 82,
+    pos: "SG", height: "6'7\"", profile: "two_way_slasher", ovr: 79,
     attributes: { threePT: 63, MID: 77, FIN: 85, DNK: 81, HAN: 83, PAS: 81, PDEF: 81, STL: 78, IDEF: 53, BLK: 41, REB: 83, ATH: 85, STR: 79, CLU: 79 }
   },
   "D069": {
@@ -787,7 +787,7 @@ var FUTURE_PROSPECT_RATINGS = {
     attributes: { threePT: 79, MID: 81, FIN: 77, DNK: 67, HAN: 83, PAS: 83, PDEF: 77, STL: 75, IDEF: 35, BLK: 25, REB: 57, ATH: 79, STR: 77, CLU: 81 }
   },
   "D073": {
-    pos: "SG", height: "6'4\"", profile: "perimeter_scorer", ovr: 82,
+    pos: "SG", height: "6'4\"", profile: "perimeter_scorer", ovr: 77,
     attributes: { threePT: 87, MID: 77, FIN: 75, DNK: 77, HAN: 75, PAS: 73, PDEF: 81, STL: 76, IDEF: 37, BLK: 27, REB: 65, ATH: 79, STR: 73, CLU: 81 }
   },
   "D074": {
@@ -823,7 +823,7 @@ var FUTURE_PROSPECT_RATINGS = {
     attributes: { threePT: 86, MID: 80, FIN: 80, DNK: 82, HAN: 74, PAS: 68, PDEF: 76, STL: 70, IDEF: 70, BLK: 58, REB: 80, ATH: 82, STR: 78, CLU: 80 }
   },
   "D082": {
-    pos: "PG", height: "6'5\"", profile: "playmaker", ovr: 86,
+    pos: "PG", height: "6'5\"", profile: "playmaker", ovr: 82,
     attributes: { threePT: 79, MID: 77, FIN: 77, DNK: 71, HAN: 85, PAS: 87, PDEF: 87, STL: 83, IDEF: 45, BLK: 29, REB: 69, ATH: 81, STR: 77, CLU: 83 }
   },
   "D083": {
@@ -831,7 +831,7 @@ var FUTURE_PROSPECT_RATINGS = {
     attributes: { threePT: 64, MID: 72, FIN: 74, DNK: 78, HAN: 76, PAS: 74, PDEF: 78, STL: 72, IDEF: 66, BLK: 44, REB: 74, ATH: 82, STR: 76, CLU: 72 }
   },
   "D084": {
-    pos: "SG", height: "6'3\"", profile: "perimeter_scorer", ovr: 87,
+    pos: "SG", height: "6'3\"", profile: "perimeter_scorer", ovr: 83,
     attributes: { threePT: 77, MID: 87, FIN: 89, DNK: 81, HAN: 87, PAS: 79, PDEF: 79, STL: 74, IDEF: 37, BLK: 25, REB: 75, ATH: 85, STR: 83, CLU: 87 }
   },
   "D085": {
@@ -839,7 +839,7 @@ var FUTURE_PROSPECT_RATINGS = {
     attributes: { threePT: 80, MID: 80, FIN: 82, DNK: 78, HAN: 64, PAS: 72, PDEF: 66, STL: 61, IDEF: 80, BLK: 82, REB: 80, ATH: 64, STR: 78, CLU: 78 }
   },
   "D086": {
-    pos: "C", height: "6'10\"", profile: "skilled_big", ovr: 84,
+    pos: "C", height: "6'10\"", profile: "skilled_big", ovr: 79,
     attributes: { threePT: 72, MID: 82, FIN: 90, DNK: 80, HAN: 70, PAS: 76, PDEF: 64, STL: 62, IDEF: 78, BLK: 70, REB: 80, ATH: 66, STR: 82, CLU: 84 }
   },
   "D087": {
@@ -847,11 +847,11 @@ var FUTURE_PROSPECT_RATINGS = {
     attributes: { threePT: 71, MID: 77, FIN: 83, DNK: 77, HAN: 63, PAS: 71, PDEF: 67, STL: 63, IDEF: 81, BLK: 81, REB: 85, ATH: 71, STR: 83, CLU: 79 }
   },
   "D088": {
-    pos: "C", height: "6'11\"", profile: "rim_protector", ovr: 84,
+    pos: "C", height: "6'11\"", profile: "rim_protector", ovr: 89,
     attributes: { threePT: 32, MID: 44, FIN: 88, DNK: 88, HAN: 48, PAS: 56, PDEF: 66, STL: 63, IDEF: 86, BLK: 90, REB: 82, ATH: 84, STR: 90, CLU: 76 }
   },
   "D089": {
-    pos: "PG", height: "6'1\"", profile: "playmaker", ovr: 85,
+    pos: "PG", height: "6'1\"", profile: "playmaker", ovr: 82,
     attributes: { threePT: 80, MID: 78, FIN: 78, DNK: 64, HAN: 86, PAS: 88, PDEF: 80, STL: 79, IDEF: 30, BLK: 25, REB: 58, ATH: 82, STR: 64, CLU: 88 }
   },
   "D090": {
@@ -867,7 +867,7 @@ var FUTURE_PROSPECT_RATINGS = {
     attributes: { threePT: 33, MID: 49, FIN: 83, DNK: 85, HAN: 53, PAS: 55, PDEF: 65, STL: 61, IDEF: 81, BLK: 85, REB: 85, ATH: 79, STR: 81, CLU: 73 }
   },
   "D093": {
-    pos: "PG", height: "6'1\"", profile: "scoring_guard", ovr: 87,
+    pos: "PG", height: "6'1\"", profile: "scoring_guard", ovr: 82,
     attributes: { threePT: 85, MID: 85, FIN: 85, DNK: 69, HAN: 85, PAS: 83, PDEF: 75, STL: 73, IDEF: 27, BLK: 25, REB: 61, ATH: 83, STR: 67, CLU: 87 }
   },
   "D094": {
@@ -887,7 +887,7 @@ var FUTURE_PROSPECT_RATINGS = {
     attributes: { threePT: 85, MID: 71, FIN: 75, DNK: 81, HAN: 71, PAS: 69, PDEF: 79, STL: 72, IDEF: 71, BLK: 53, REB: 69, ATH: 85, STR: 75, CLU: 71 }
   },
   "D098": {
-    pos: "PG", height: "6'1\"", profile: "scoring_guard", ovr: 85,
+    pos: "PG", height: "6'1\"", profile: "scoring_guard", ovr: 81,
     attributes: { threePT: 80, MID: 82, FIN: 82, DNK: 74, HAN: 86, PAS: 82, PDEF: 74, STL: 75, IDEF: 28, BLK: 25, REB: 58, ATH: 86, STR: 64, CLU: 84 }
   },
   "D099": {
@@ -895,7 +895,7 @@ var FUTURE_PROSPECT_RATINGS = {
     attributes: { threePT: 44, MID: 54, FIN: 82, DNK: 84, HAN: 58, PAS: 64, PDEF: 80, STL: 76, IDEF: 86, BLK: 86, REB: 80, ATH: 82, STR: 86, CLU: 82 }
   },
   "D100": {
-    pos: "PF", height: "6'10\"", profile: "stretch_four", ovr: 75,
+    pos: "PF", height: "6'10\"", profile: "stretch_four", ovr: 72,
     attributes: { threePT: 80, MID: 76, FIN: 72, DNK: 74, HAN: 66, PAS: 64, PDEF: 68, STL: 65, IDEF: 70, BLK: 56, REB: 78, ATH: 68, STR: 74, CLU: 76 }
   }
 };

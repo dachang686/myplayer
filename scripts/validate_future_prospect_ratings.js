@@ -77,9 +77,11 @@ Object.keys(ratings).forEach((id) => {
     context.ratingProbe = { pos: rating.pos, ovr: rating.ovr, ...rating.attributes };
     const directCalculated = vm.runInContext('calcOVR(ratingProbe, ratingProbe.pos)', context);
     if (Math.abs(directCalculated - rating.ovr) > 2) errors.push(`${id} 公平公式实算偏差超过 2：${directCalculated} / ${rating.ovr}`);
-    vm.runInContext(`normalizeRookieAttributesToOvr(ratingProbe, ${Number(rating.ovr)})`, context);
-    const calculated = vm.runInContext('calcOVR(ratingProbe, ratingProbe.pos)', context);
-    if (calculated !== rating.ovr) errors.push(`${id} 新公式归一失败：目标 ${rating.ovr}，实算 ${calculated}`);
+    const authoredBefore = JSON.stringify(Object.fromEntries(attrKeys.map((key) => [key, context.ratingProbe[key]])));
+    vm.runInContext('syncAuthoredRookieOvr(ratingProbe)', context);
+    const authoredAfter = JSON.stringify(Object.fromEntries(attrKeys.map((key) => [key, context.ratingProbe[key]])));
+    if (authoredAfter !== authoredBefore) errors.push(`${id} 运行时改写了固定属性`);
+    if (context.ratingProbe.ovr !== directCalculated) errors.push(`${id} 运行时 OVR 未由固定属性计算：${context.ratingProbe.ovr} / ${directCalculated}`);
   }
 });
 
@@ -99,8 +101,8 @@ if (!/height:\s*fixedRating\s*\?\s*fixedRating\.height/.test(indexSource)) error
 if (!/_usedRookieCandidateNames\[pick\.ratingId\]\s*=\s*true/.test(indexSource)) errors.push('明星评级身份未同步去重，可能重复生成');
 const fixedBranches = rookieFlowSource.match(/(?:rookie|rk|player)\._fixedProspectRating/g) || [];
 if (fixedBranches.length < 2) errors.push('正常选秀或补位流程仍可能覆盖固定评级');
-if (!/normalizeRookieAttributesToOvr\((?:rookie|player), (?:rookie|player)\.ovr\)/.test(rookieFlowSource)) errors.push('未来固定新秀未按审核 OVR 归一属性');
-if (!/normalizeRookieAttributesToOvr\((?:rk|player), (?:rk|player)\.ovr\)/.test(rookieFlowSource)) errors.push('补位固定新秀未按审核 OVR 归一属性');
+if ((rookieFlowSource.match(/syncAuthoredRookieOvr\((?:rookie|player)\)/g) || []).length < 2) errors.push('未来固定新秀流程未直接使用 authored 属性计算 OVR');
+if (/normalizeRookieAttributesToOvr/.test(rookieFlowSource)) errors.push('未来新秀流程仍残留目标 OVR 反推属性逻辑');
 
 console.log(JSON.stringify({
   fixedFutureRatings: Object.keys(ratings).length,

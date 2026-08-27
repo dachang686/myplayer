@@ -624,7 +624,7 @@
     for (var i = 0; i < 30; i++) {
       var player = generateRookie();
       if (player._fixedProspectRating) {
-        normalizeRookieAttributesToOvr(player, player.ovr);
+        syncAuthoredRookieOvr(player);
       } else {
         applyRookieAttributeProfile(player, player.ovr, rngNext);
       }
@@ -992,7 +992,7 @@
         if (typeof getLeagueRosterNpcLimit === 'function' && roster.length >= getLeagueRosterNpcLimit(team)) break;
         var player = generateRookie();
         if (player._fixedProspectRating) {
-          normalizeRookieAttributesToOvr(player, player.ovr);
+          syncAuthoredRookieOvr(player);
         } else {
           var targetOvr = 60 + Math.floor(rngNext() * 8);
           player.ovr = targetOvr;

@@ -10,7 +10,7 @@ const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const SIM_CONFIG = new Function(`${configSource}\nreturn SIM_CONFIG;`)();
 const LEAGUE_PLAYER_DATA = new Function(`${leagueSource}\nreturn LEAGUE_PLAYER_DATA;`)();
 const ATTR_KEYS = SIM_CONFIG.ATTR_LIST;
-const start = offseasonSource.indexOf('function getOvrPositions');
+const start = offseasonSource.indexOf('function getLeagueAttributeKeys');
 const end = offseasonSource.indexOf('// ==================== 联盟演变', start);
 
 if (start < 0 || end < 0) throw new Error('无法提取 OVR 同步函数');
@@ -55,15 +55,15 @@ const generated = { id: 'R000005', _prospectId: 'S005', pos: 'PF', ovr: 81, _age
 const published = { id: 'P0156', pos: 'PG / SG', ovr: 95, ...attributes };
 delete published.STL;
 context.LEAGUE_PLAYER_DATA.POR = [generated, published];
+const generatedAttributesBefore = Object.fromEntries(ATTR_KEYS.map(key => [key, generated[key]]));
+const expectedMigratedOvr = vm.runInContext('calcOVR(LEAGUE_PLAYER_DATA.POR[0], LEAGUE_PLAYER_DATA.POR[0].pos)', context);
 
 const changed = vm.runInContext('syncGeneratedLeaguePlayerOvrs()', context);
 if (changed !== 1) throw new Error(`应只同步 1 名生成球员，实际 ${changed}`);
-if (generated.ovr !== 81) throw new Error(`旧存档迁移应保留原 OVR 81，实际 ${generated.ovr}`);
-if (generated._rookieGenerationVersion !== 2) throw new Error('旧生成球员未迁移到新版属性模型');
+if (generated.ovr !== expectedMigratedOvr) throw new Error(`旧存档应由原属性重算 OVR，实际 ${generated.ovr} / ${expectedMigratedOvr}`);
+if (generated._rookieGenerationVersion !== 3) throw new Error('旧生成球员未迁移到属性保真模型');
 if (generated.type === '新秀') throw new Error('多年球员不应继续显示为新秀');
-const migratedValues = ATTR_KEYS.map(key => generated[key]);
-if (Math.max(...migratedValues) - Math.min(...migratedValues) < 14) throw new Error('生成球员仍缺少明确强弱项');
-if (migratedValues.filter(value => value <= 75).length < 3) throw new Error('81 OVR 球员至少应有 3 项明显短板');
+if (ATTR_KEYS.some(key => generated[key] !== generatedAttributesBefore[key])) throw new Error('旧存档完整属性在迁移时被改写');
 if (published.ovr !== 95) throw new Error(`现实球员人工 OVR 不应改变，实际 ${published.ovr}`);
 
 const publishedOvrBeforeSync = published.ovr;
@@ -74,15 +74,21 @@ if (published.ovr !== vm.runInContext('calcOVR(LEAGUE_PLAYER_DATA.POR[1], LEAGUE
   throw new Error(`现实球员没有迁移到统一 OVR，实际 ${published.ovr}`);
 }
 
-vm.runInContext('evolveGeneratedPlayerAttributes(LEAGUE_PLAYER_DATA.POR[0], 81, 85)', context);
-if (generated.ovr !== 85) throw new Error(`成长后 OVR 应为 85，实际 ${generated.ovr}`);
-const evolvedValues = ATTR_KEYS.map(key => generated[key]);
-if (Math.max(...evolvedValues) - Math.min(...evolvedValues) < 12) throw new Error('成长后球员强弱差异被抹平');
+const growthPlayer = { id: 'R000007', _prospectId: 'S007', _rookieGenerationVersion: 3, _rookieProfile: 'interior_forward', pos: 'PF', ovr: 75, _age: 22 };
+ATTR_KEYS.forEach(key => { growthPlayer[key] = key === 'FIN' || key === 'IDEF' || key === 'REB' || key === 'STR' ? 80 : 68; });
+context.growthPlayer = growthPlayer;
+const growthBefore = Object.fromEntries(ATTR_KEYS.map(key => [key, growthPlayer[key]]));
+vm.runInContext('evolveGeneratedPlayerAttributes(growthPlayer, 75, 76)', context);
+if (growthPlayer.ovr !== vm.runInContext('calcOVR(growthPlayer, growthPlayer.pos)', context)) throw new Error('成长后 OVR 未由属性重算');
+ATTR_KEYS.forEach(key => {
+  const delta = growthPlayer[key] - growthBefore[key];
+  if (delta < 0 || delta > 2) throw new Error(`普通成长 ${key} 出现反向或越界变化：${delta}`);
+});
 
 const filler = { id: 'R000006', _prospectId: 'S006', pos: 'PF', ovr: 85, _age: 20, type: '新秀' };
 context.filler = filler;
 vm.runInContext('applyRookieAttributeProfile(filler, 68, () => 0.5)', context);
-if (filler.ovr !== 68) throw new Error(`补位新秀应按目标 OVR 68 生成，实际 ${filler.ovr}`);
+if (Math.abs(filler.ovr - 68) > 3) throw new Error(`补位新秀偏离生成区间过大：目标 68，实际 ${filler.ovr}`);
 const fillerValues = ATTR_KEYS.map(key => filler[key]);
 if (Math.max(...fillerValues) - Math.min(...fillerValues) < 14) throw new Error('补位新秀没有形成位置相关强弱项');
 if (Math.max(...fillerValues) >= 85) throw new Error('补位新秀错误继承了明星新秀的 85 级属性');
@@ -108,10 +114,10 @@ const formulaResiduals = leaguePlayers.map(player => {
     error: formulaOvr - player.ovr,
   };
 });
-const ratingModel = SIM_CONFIG.PLAYER_RATING_MODEL;
+const ratingModel = SIM_CONFIG.OVR_MODEL;
 const baselineAttrs = Object.fromEntries(ATTR_KEYS.map(key => [key, 50]));
 const baselineOvrs = {};
-Object.keys(ratingModel.positions).forEach(pos => {
+Object.keys(ratingModel.positionWeights).forEach(pos => {
   baselineOvrs[pos] = formulaContext.calcOVR(baselineAttrs, pos);
 });
 if (Object.values(baselineOvrs).some(value => value !== 50)) {

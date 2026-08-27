@@ -11681,7 +11681,7 @@ function generateRookie() {
   if (fixedRating) {
     p._fixedProspectRating = true;
     p._rookieProfile = fixedRating.profile;
-    p._rookieGenerationVersion = 2;
+    p._rookieGenerationVersion = 3;
     Object.keys(fixedRating.attributes).forEach(function(key) {
       p[key] = fixedRating.attributes[key];
     });
