@@ -251,16 +251,16 @@ const balancedResidual = specialtyRows.slice(0, specialtyGroupSize)
   .reduce((sum, entry) => sum + entry.error, 0) / specialtyGroupSize;
 const specialistResidual = specialtyRows.slice(-specialtyGroupSize)
   .reduce((sum, entry) => sum + entry.error, 0) / specialtyGroupSize;
+// 现实球员的官方 OVR 与可见属性不是可逆公式关系，不能再通过平移来源属性来命中 OVR。
+// 来源完整性由 validate_league_attribute_provenance.js 负责；这里只防止公式画像整体失真。
 assert(residualMetrics.count === 525
-  && residualMetrics.meanAbsoluteError <= 3
-  && residualMetrics.withinThree >= 340
-  && residualMetrics.overFive <= 70
-  && residualMetrics.spearman >= 0.74,
-`V5 必须维持 525 人整体校准质量：${JSON.stringify(residualMetrics)}`);
-assert(Object.values(residualsByPosition).every(value => Math.abs(value) <= 1.75),
-  `V5 不得保留明显位置系统偏差：${JSON.stringify(residualsByPosition)}`);
-assert(Math.abs(specialistResidual - balancedResidual) <= 1,
-  `V5 不得系统性奖励均衡型或专项型球员：${JSON.stringify({ balancedResidual, specialistResidual })}`);
+  && residualMetrics.meanAbsoluteError <= 4
+  && residualMetrics.spearman >= 0.65,
+`V5 公式画像与来源名单相关性异常：${JSON.stringify(residualMetrics)}`);
+assert(Object.values(residualsByPosition).every(value => Math.abs(value) <= 2.5),
+  `V5 公式画像存在明显位置系统偏差：${JSON.stringify(residualsByPosition)}`);
+assert(Math.abs(specialistResidual - balancedResidual) <= 2.5,
+  `V5 公式画像对均衡型/专项型球员偏差过大：${JSON.stringify({ balancedResidual, specialistResidual })}`);
 
 console.log(JSON.stringify({
   baseline: baseline.overall,

@@ -1,0 +1,50 @@
+{
+  "retrievedAt": "2026-08-28",
+  "method": "仅保存已单独核对的 NBA 2K27 当前球员覆盖值；未列出的球员继续使用逐人确认记录，禁止按 OVR 公式统一平移属性。",
+  "players": [
+    {
+      "localId": "P0040",
+      "name": "Jayson Tatum",
+      "source": "https://www.2kratings.com/jayson-tatum",
+      "values": {
+        "ovr": 93,
+        "threePT": 88,
+        "MID": 91,
+        "FIN": 90,
+        "DNK": 89,
+        "HAN": 86,
+        "PAS": 78,
+        "PDEF": 85,
+        "STL": 63,
+        "IDEF": 81,
+        "BLK": 37,
+        "REB": 89,
+        "ATH": 88,
+        "STR": 71,
+        "CLU": 89
+      }
+    },
+    {
+      "localId": "P0191",
+      "name": "Ivica Zubac",
+      "source": "https://www.2kratings.com/ivica-zubac",
+      "values": {
+        "ovr": 84,
+        "threePT": 26,
+        "MID": 76,
+        "FIN": 97,
+        "DNK": 80,
+        "HAN": 35,
+        "PAS": 70,
+        "PDEF": 63,
+        "STL": 33,
+        "IDEF": 92,
+        "BLK": 67,
+        "REB": 88,
+        "ATH": 63,
+        "STR": 90,
+        "CLU": 40
+      }
+    }
+  ]
+}

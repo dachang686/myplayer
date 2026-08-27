@@ -1249,6 +1249,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 </div>
 
 <script src="js/data/player_attribute_schema.js"></script>
+<script src="js/data/league_attribute_source_migration.js"></script>
 <script src="js/data/league_players.js"></script>
 <script src="js/data/player_loyalty.js"></script>
 <script src="js/data/league_schedule.js"></script>
@@ -1797,6 +1798,7 @@ const ATTR_KEYS = SIM_CONFIG.ATTR_LIST;
 const ATTR_CN = SIM_CONFIG.ATTR_CN;
 ATTR_CN.HAN = PLAYER_ATTRIBUTE_SCHEMA.fields.HAN.label;
 const ATTR_DESC = SIM_CONFIG.ATTR_DESC;
+ATTR_DESC.HAN = PLAYER_ATTRIBUTE_SCHEMA.fields.HAN.meaning + '（NBA 2K Ball Handle，不是 Hands）';
 const GRADE = SIM_CONFIG.GRADE;
 
 function attrCN(key) { return ATTR_CN[key] || key; }
@@ -10566,6 +10568,9 @@ function manualLoadGame(slot, options) {
           STATE.season._processedDays = new Set((Array.isArray(STATE.season._processedDays) ? STATE.season._processedDays : []).map(Number));
         }
         if (snap.league && typeof LEAGUE_PLAYER_DATA !== 'undefined') {
+          // 旧存档会覆盖运行时名单；覆盖前先保留当前版本的官方属性/OVR 基线，
+          // 供 HAN 语义迁移和官方 OVR 锚点重建使用。
+          captureBaseLeagueRoster();
           Object.keys(LEAGUE_PLAYER_DATA).forEach(function(k) { delete LEAGUE_PLAYER_DATA[k]; });
           Object.assign(LEAGUE_PLAYER_DATA, snap.league);
           normalizeLegacyGeneratedRookieLabels();

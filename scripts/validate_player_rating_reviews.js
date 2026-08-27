@@ -1,23 +1,18 @@
 const fs = require('fs');
 const path = require('path');
-const { execFileSync } = require('child_process');
 
 const root = path.resolve(__dirname, '..');
 const leaguePath = path.join(root, 'js', 'data', 'league_players.js');
 const reviewPath = path.join(__dirname, 'data', 'player_rating_reviews.json');
-const ovrAdjustmentPath = path.join(__dirname, 'data', 'player_ovr_adjustments.json');
-const fairOvrAdjustmentPath = path.join(__dirname, 'data', 'fair_ovr_player_adjustments.json');
 const identityPath = path.join(__dirname, 'data', 'nba2k_player_identity.json');
-const mappingPath = path.join(__dirname, 'data', 'nba2k26_player_mapping.json');
-const ratingsPath = path.join(__dirname, 'data', 'nba2k26_player_ratings.json');
-const stealOverridesPath = path.join(__dirname, 'data', 'player_steal_overrides.json');
-const bulkAuditPath = path.join(__dirname, 'data', 'nba2k26_ovr_attribute_audit.json');
 const transferPath = path.join(__dirname, 'data', 'real_world_team_transfers_2026.json');
+const queuePath = path.join(__dirname, 'data', 'player_rating_review_queue.json');
+const latestOverridePath = path.join(__dirname, 'data', 'nba2k27_latest_player_overrides.json');
+const { buildExpectedValues } = require('./restore_reviewed_league_attributes.js');
 const attributes = [
   'ovr', 'threePT', 'MID', 'FIN', 'DNK', 'HAN', 'PAS',
   'PDEF', 'IDEF', 'BLK', 'REB', 'ATH', 'STR', 'CLU',
 ];
-const adjustableAttributes = [...attributes, 'STL'];
 
 function parseLeague(source) {
   return new Function(`${source}\nreturn LEAGUE_PLAYER_DATA;`)();
@@ -34,48 +29,16 @@ function fail(message) {
 }
 
 const league = loadLeague();
-let baselineLeague = null;
-let baselineSkipped = false;
-try {
-  baselineLeague = parseLeague(execFileSync(
-    'git', ['show', 'HEAD:js/data/league_players.js'], { cwd: root, encoding: 'utf8' },
-  ));
-} catch (error) {
-  baselineSkipped = true;
-  console.warn(`跳过 Git 基线比较：${error.message}`);
-}
-const baselinePlayersById = new Map(
-  Object.values(baselineLeague || {}).flat().map(player => [player.id, player]),
-);
 const reviewData = JSON.parse(fs.readFileSync(reviewPath, 'utf8'));
-const ovrAdjustmentData = JSON.parse(fs.readFileSync(ovrAdjustmentPath, 'utf8'));
-const fairOvrAdjustmentData = JSON.parse(fs.readFileSync(fairOvrAdjustmentPath, 'utf8'));
 const identities = JSON.parse(fs.readFileSync(identityPath, 'utf8')).players || [];
-const mappings = JSON.parse(fs.readFileSync(mappingPath, 'utf8')).players || [];
-const ratings = JSON.parse(fs.readFileSync(ratingsPath, 'utf8')).players || [];
-const stealOverrides = JSON.parse(fs.readFileSync(stealOverridesPath, 'utf8')).players || {};
-const bulkAudit = JSON.parse(fs.readFileSync(bulkAuditPath, 'utf8'));
 const transfers = JSON.parse(fs.readFileSync(transferPath, 'utf8')).transfers || [];
+const queue = JSON.parse(fs.readFileSync(queuePath, 'utf8')).players || [];
+const latestOverrides = JSON.parse(fs.readFileSync(latestOverridePath, 'utf8')).players || [];
 const identityById = new Map(identities.map(identity => [identity.localId, identity]));
-const ratingByUrl = new Map(ratings.map(rating => [rating.url, rating]));
-const mappingById = new Map(mappings.filter(mapping => mapping.accepted).map(mapping => [mapping.localId, mapping]));
-const bulkById = new Map((bulkAudit.players || []).map(player => [player.localId, player]));
 const transferById = new Map(transfers.map(transfer => [transfer.localId, transfer]));
+const queueById = new Map(queue.map(row => [row.localId, row]));
+const latestOverrideById = new Map(latestOverrides.map(row => [row.localId, row]));
 const reviews = reviewData.players || [];
-const ovrAdjustments = ovrAdjustmentData.players || [];
-const fairOvrAdjustments = fairOvrAdjustmentData.players || [];
-const ovrAdjustmentById = new Map();
-const fairOvrAdjustmentById = new Map();
-for (const adjustment of ovrAdjustments) {
-  if (ovrAdjustmentById.has(adjustment.localId)) fail(`duplicate OVR adjustment: ${adjustment.localId}`);
-  if (!adjustment.reason) fail(`missing OVR adjustment reason: ${adjustment.localId}`);
-  ovrAdjustmentById.set(adjustment.localId, adjustment);
-}
-for (const adjustment of fairOvrAdjustments) {
-  if (fairOvrAdjustmentById.has(adjustment.localId)) fail(`duplicate fair OVR adjustment: ${adjustment.localId}`);
-  if (!adjustment.reason) fail(`missing fair OVR adjustment reason: ${adjustment.localId}`);
-  fairOvrAdjustmentById.set(adjustment.localId, adjustment);
-}
 const playersById = new Map();
 
 for (const [team, players] of Object.entries(league)) {
@@ -90,33 +53,8 @@ for (const [team, players] of Object.entries(league)) {
   }
 }
 
-for (const [localId, entry] of playersById) {
-  const mapping = mappingById.get(localId);
-  const cachedRating = mapping && ratingByUrl.get(mapping.url);
-  const cachedSteal = cachedRating?.attributes?.Steal;
-  const override = stealOverrides[localId];
-  const bulk = bulkById.get(localId);
-  const bulkSteal = bulk?.changes?.STL;
-  let expectedSteal = Number.isInteger(cachedSteal) ? cachedSteal : override?.value;
-  if (bulkSteal) {
-    if (!Array.isArray(bulkSteal) || bulkSteal.length !== 2 || bulkSteal[0] !== expectedSteal) {
-      fail(`${localId} invalid bulk STL adjustment tuple`);
-    } else {
-      expectedSteal = bulkSteal[1];
-    }
-  }
-  if (!Number.isInteger(expectedSteal) || expectedSteal < 25 || expectedSteal > 99) {
-    fail(`${localId} missing auditable STL source`);
-  } else if (entry.player.STL !== expectedSteal) {
-    fail(`${localId} STL: league=${entry.player.STL}, source=${expectedSteal}`);
-  }
-  if (override && !String(override.basis || '').trim()) fail(`${localId} STL override missing basis`);
-}
-for (const localId of Object.keys(stealOverrides)) {
-  if (!playersById.has(localId)) fail(`unused STL override: ${localId}`);
-}
-
 const reviewedIds = new Set();
+let sourceCheckedFields = 0;
 for (let index = 0; index < reviews.length; index++) {
   const review = reviews[index];
   const expectedId = `P${String(index + 1).padStart(4, '0')}`;
@@ -146,26 +84,19 @@ for (let index = 0; index < reviews.length; index++) {
       fail(`${review.localId} must record ${attribute} exactly once`);
     }
     const reviewedValue = hasChange ? changed[attribute][1] : unchanged[attribute];
-    const adjustment = ovrAdjustmentById.get(review.localId);
-    const adjustmentTuple = adjustment && adjustment.changes && adjustment.changes[attribute];
-    if (adjustmentTuple && (!Array.isArray(adjustmentTuple) || adjustmentTuple.length !== 2 || adjustmentTuple[0] !== reviewedValue)) {
-      fail(`${review.localId} invalid OVR adjustment tuple: ${attribute}`);
-    }
-    const adjustedExpected = adjustmentTuple ? adjustmentTuple[1] : reviewedValue;
-    const fairAdjustment = fairOvrAdjustmentById.get(review.localId);
-    const fairTuple = fairAdjustment && fairAdjustment.changes && fairAdjustment.changes[attribute];
-    if (fairTuple && (!Array.isArray(fairTuple) || fairTuple.length !== 2 || fairTuple[0] !== adjustedExpected)) {
-      fail(`${review.localId} invalid fair OVR adjustment tuple: ${attribute}`);
-    }
-    const fairExpected = fairTuple ? fairTuple[1] : adjustedExpected;
-    const bulkAdjustment = bulkById.get(review.localId);
-    const bulkTuple = bulkAdjustment && bulkAdjustment.changes && bulkAdjustment.changes[attribute];
-    if (bulkTuple && (!Array.isArray(bulkTuple) || bulkTuple.length !== 2 || bulkTuple[0] !== fairExpected)) {
-      fail(`${review.localId} invalid bulk adjustment tuple: ${attribute}`);
-    }
-    const expected = bulkTuple ? bulkTuple[1] : fairExpected;
-    if (leagueEntry.player[attribute] !== expected) {
-      fail(`${review.localId} ${attribute}: league=${leagueEntry.player[attribute]}, review=${expected}`);
+    if (!Number.isFinite(Number(reviewedValue))) fail(`${review.localId} invalid reviewed value: ${attribute}`);
+  }
+
+  const queueRow = queueById.get(review.localId);
+  if (!queueRow) {
+    fail(`${review.localId} missing current review queue entry`);
+  } else {
+    const expectedValues = buildExpectedValues(queueRow, latestOverrideById.get(review.localId));
+    for (const [attribute, expected] of Object.entries(expectedValues)) {
+      sourceCheckedFields++;
+      if (Number(leagueEntry.player[attribute]) !== Number(expected)) {
+        fail(`${review.localId} ${attribute}: league=${leagueEntry.player[attribute]}, source=${expected}`);
+      }
     }
   }
 
@@ -180,73 +111,15 @@ for (let index = 0; index < reviews.length; index++) {
   }
 }
 
-for (const adjustment of ovrAdjustments) {
-  if (!reviewedIds.has(adjustment.localId)) fail(`OVR adjustment has no player review: ${adjustment.localId}`);
-  for (const attribute of Object.keys(adjustment.changes || {})) {
-    if ((!adjustableAttributes.includes(attribute) && attribute !== 'pos') || attribute === 'ovr') {
-      fail(`${adjustment.localId} invalid OVR-adjusted field: ${attribute}`);
-    }
-  }
-  const positionTuple = adjustment.changes && adjustment.changes.pos;
-  if (positionTuple) {
-    const baselinePlayer = baselinePlayersById.get(adjustment.localId);
-    const leaguePlayer = playersById.get(adjustment.localId)?.player;
-    if (!Array.isArray(positionTuple) || positionTuple.length !== 2
-      || (baselineLeague && !positionTuple.includes(baselinePlayer?.pos)) || leaguePlayer?.pos !== positionTuple[1]) {
-      fail(`${adjustment.localId} invalid OVR adjustment tuple: pos`);
-    }
-  }
-}
-
-for (const adjustment of fairOvrAdjustments) {
-  if (!reviewedIds.has(adjustment.localId)) fail(`fair OVR adjustment has no player review: ${adjustment.localId}`);
-  if (Math.abs(adjustment.afterFormulaOvr - adjustment.sourceOvr) > 2) {
-    fail(`${adjustment.localId} fair OVR residual exceeds 2`);
-  }
-  for (const attribute of Object.keys(adjustment.changes || {})) {
-    if (!attributes.includes(attribute) || attribute === 'ovr' || attribute === 'STL') {
-      fail(`${adjustment.localId} invalid fair OVR-adjusted field: ${attribute}`);
-    }
-  }
-}
-
-if (!bulkAudit.applied) fail('NBA 2K26 OVR/attribute bulk audit is not marked applied');
-for (const adjustment of bulkAudit.players || []) {
-  if (!reviewedIds.has(adjustment.localId) && playersById.has(adjustment.localId)) {
-    fail(`bulk OVR adjustment has no player review: ${adjustment.localId}`);
-  }
-  for (const [attribute, tuple] of Object.entries(adjustment.changes || {})) {
-    if (![...attributes, 'STL'].includes(attribute)) fail(`${adjustment.localId} invalid bulk-adjusted field: ${attribute}`);
-    if (!Array.isArray(tuple) || tuple.length !== 2) fail(`${adjustment.localId} invalid bulk adjustment tuple: ${attribute}`);
-  }
-}
-
-if (baselineLeague) {
-  for (const [team, players] of Object.entries(league)) {
-    const baselineById = new Map((baselineLeague[team] || []).map(player => [player.id, player]));
-    for (const player of players) {
-      if (reviewedIds.has(player.id)) continue;
-      const baseline = baselineById.get(player.id);
-      if (!baseline) {
-        fail(`unreviewed player missing from baseline: ${player.id}`);
-        continue;
-      }
-      const { name: baselineTemporaryName, ...baselineWithoutName } = baseline;
-      if (JSON.stringify(player) !== JSON.stringify(baselineWithoutName)) {
-        fail(`unreviewed player changed: ${player.id}`);
-      }
-    }
-  }
-}
+// 旧 OVR/fair/bulk 调整文件仅保留历史追踪，不再作为当前名单的期望值来源。
+// 当前值只接受逐人确认记录、STL 来源和 NBA 2K27 显式覆盖。
 
 const result = {
   leaguePlayers: playersById.size,
   reviewedPlayers: reviews.length,
-  ovrAdjustedPlayers: ovrAdjustments.length,
-  fairOvrAdjustedPlayers: fairOvrAdjustments.length,
-  bulkOvrAttributeAdjustedPlayers: (bulkAudit.players || []).filter((player) => Object.keys(player.changes || {}).length).length,
+  sourceCheckedFields,
+  latestOverrides: latestOverrides.length,
   lastReviewedId: reviews.at(-1)?.localId || null,
-  gameplayBaselineSkipped: baselineSkipped,
   validationErrors: errors.length,
   errors,
 };

@@ -1973,8 +1973,9 @@ function getLeaguePlayerDevelopmentProfile(player) {
 }
 
 /**
- * 目标 OVR 只用于表达本季成长方向和强度。属性先按位置/角色显式演变，
- * 最终 OVR 始终由演变后的属性计算，不再为了命中目标反向改写属性。
+ * 目标 OVR 只用于表达本季成长方向和强度。属性先按位置/角色显式演变；
+ * 现实球员以官方初始 OVR 为锚点，只叠加本次属性变化产生的公式增量，
+ * 生成球员继续由属性公式直接计算。两者都不为命中目标反向改写属性。
  */
 function applyLeaguePlayerOvrChange(player, oldOvr, newOvr) {
   if (!player) return Number(newOvr) || 0;
@@ -1982,7 +1983,7 @@ function applyLeaguePlayerOvrChange(player, oldOvr, newOvr) {
   var requested = Math.round(Number(newOvr) || before);
   var direction = Math.sign(requested - before);
   if (!direction) {
-    player.ovr = typeof calcOVR === 'function' ? calcOVR(player, player.pos) : before;
+    player.ovr = before;
     return player.ovr;
   }
 
@@ -1998,6 +1999,7 @@ function applyLeaguePlayerOvrChange(player, oldOvr, newOvr) {
   var declineFast = ['ATH','STR','PDEF','STL','DNK'];
   var declineResist = ['threePT','MID','PAS','HAN','CLU'];
 
+  var beforeFormulaOvr = typeof calcOVR === 'function' ? calcOVR(player, player.pos) : before;
   getLeagueAttributeKeys().forEach(function(attrKey) {
     var current = Number(player[attrKey]);
     if (!Number.isFinite(current)) return;
@@ -2014,9 +2016,14 @@ function applyLeaguePlayerOvrChange(player, oldOvr, newOvr) {
     player[attrKey] = Math.max(25, Math.min(99, Math.round(current + direction * attrMagnitude)));
   });
 
-  player.ovr = typeof calcOVR === 'function'
-    ? calcOVR(player, player.pos)
-    : Math.max(55, Math.min(99, requested));
+  if (typeof calcOVR === 'function') {
+    var afterFormulaOvr = calcOVR(player, player.pos);
+    player.ovr = isGeneratedLeaguePlayer(player)
+      ? afterFormulaOvr
+      : Math.max(55, Math.min(99, before + afterFormulaOvr - beforeFormulaOvr));
+  } else {
+    player.ovr = Math.max(55, Math.min(99, requested));
+  }
   return player.ovr;
 }
 
@@ -3399,33 +3406,114 @@ function syncGeneratedLeaguePlayerOvrs() {
   return changed;
 }
 
+var LEAGUE_OVR_ANCHOR_VERSION = 1;
+var LEAGUE_ATTRIBUTE_SCHEMA_VERSION = 2;
+var LEAGUE_ATTRIBUTE_SOURCE_VERSION = 1;
+
+function getCanonicalLeaguePlayer(playerId) {
+  if (!playerId || typeof _baseLeagueRosterSnapshot === 'undefined' || !_baseLeagueRosterSnapshot) return null;
+  var teams = typeof LEAGUE_TEAM_IDS !== 'undefined' ? LEAGUE_TEAM_IDS : Object.keys(_baseLeagueRosterSnapshot);
+  for (var teamIndex = 0; teamIndex < teams.length; teamIndex++) {
+    var roster = _baseLeagueRosterSnapshot[teams[teamIndex]] || [];
+    for (var playerIndex = 0; playerIndex < roster.length; playerIndex++) {
+      if (roster[playerIndex] && roster[playerIndex].id === playerId) return roster[playerIndex];
+    }
+  }
+  return null;
+}
+
+function medianLeagueAttributeDelta(player, canonical) {
+  var deltas = getLeagueAttributeKeys().filter(function(key) { return key !== 'HAN'; }).map(function(key) {
+    return Number(player[key]) - Number(canonical[key]);
+  }).filter(Number.isFinite).sort(function(left, right) { return left - right; });
+  if (!deltas.length) return 0;
+  var middle = Math.floor(deltas.length / 2);
+  return deltas.length % 2 ? deltas[middle] : (deltas[middle - 1] + deltas[middle]) / 2;
+}
+
+function migrateRealPlayerAttributeSource(player, canonical) {
+  if (!player || !canonical || isGeneratedLeaguePlayer(player)) return false;
+  if (Number(player._attributeSourceVersion) >= LEAGUE_ATTRIBUTE_SOURCE_VERSION) return false;
+  var migration = typeof LEAGUE_ATTRIBUTE_SOURCE_MIGRATION !== 'undefined'
+    ? LEAGUE_ATTRIBUTE_SOURCE_MIGRATION
+    : null;
+  var keys = migration && Array.isArray(migration.attributeKeys) ? migration.attributeKeys : [];
+  var legacyValues = migration && migration.legacyById ? migration.legacyById[player.id] : null;
+  if (legacyValues && legacyValues.length === keys.length) {
+    var canonicalDistance = 0;
+    var legacyDistance = 0;
+    keys.forEach(function(key, index) {
+      canonicalDistance += Math.abs(Number(player[key]) - Number(canonical[key]));
+      legacyDistance += Math.abs(Number(player[key]) - Number(legacyValues[index]));
+    });
+    if (legacyDistance < canonicalDistance) {
+      keys.forEach(function(key, index) {
+        var developmentDelta = Number(player[key]) - Number(legacyValues[index]);
+        player[key] = clampLeagueAttribute(Number(canonical[key]) + developmentDelta);
+      });
+    }
+  }
+  player._attributeSourceVersion = LEAGUE_ATTRIBUTE_SOURCE_VERSION;
+  return true;
+}
+
+function migrateRealPlayerAttributeSchema(player, canonical) {
+  if (!player || !canonical || isGeneratedLeaguePlayer(player)) return false;
+  if (Number(player._attributeSchemaVersion) >= LEAGUE_ATTRIBUTE_SCHEMA_VERSION) return false;
+  var developmentDelta = medianLeagueAttributeDelta(player, canonical);
+  player.HAN = clampLeagueAttribute(Number(canonical.HAN) + developmentDelta);
+  player._attributeSchemaVersion = LEAGUE_ATTRIBUTE_SCHEMA_VERSION;
+  return true;
+}
+
 function syncLeaguePlayerOvrs() {
   if (typeof LEAGUE_PLAYER_DATA === 'undefined' || typeof LEAGUE_TEAM_IDS === 'undefined') return 0;
   var changed = 0;
-  LEAGUE_TEAM_IDS.forEach(function(teamId) {
-    (LEAGUE_PLAYER_DATA[teamId] || []).forEach(function(player) {
-      if (!player || !player.pos) return;
-      // 旧存档没有独立抢断属性时，以外防作为一次性迁移基准；新名单和新秀均保存独立 STL。
-      if (!Number.isFinite(Number(player.STL))) player.STL = calcOvrAttribute(player, 'PDEF');
-      if (!Object.prototype.hasOwnProperty.call(player, '_sourceOvr')) {
-        try {
-          Object.defineProperty(player, '_sourceOvr', { value: Number(player.ovr) || 50, writable: true, configurable: true, enumerable: true });
-        } catch (error) {
-          player._sourceOvr = Number(player.ovr) || 50;
-        }
-      }
-      if (isGeneratedLeaguePlayer(player)) {
-        migrateLegacyGeneratedPlayerAttributes(player);
-        refreshGeneratedPlayerType(player);
-      }
-      // V3 起 OVR 是所有模式共用的属性摘要。保留 _sourceOvr 仅用于历史对照，
-      // 运行时名单、轮换、交易和页面展示统一读取同一套计算结果。
-      var nextOvr = calcOVR(player, player.pos);
-      if (player.ovr === nextOvr) return;
-      player.ovr = nextOvr;
+  var syncedPlayers = new Set();
+  function syncPlayer(player) {
+    if (!player || !player.pos || syncedPlayers.has(player)) return;
+    syncedPlayers.add(player);
+    // 旧存档没有独立抢断属性时，以外防作为一次性迁移基准；新名单和新秀均保存独立 STL。
+    if (!Number.isFinite(Number(player.STL))) player.STL = calcOvrAttribute(player, 'PDEF');
+    if (isGeneratedLeaguePlayer(player)) {
+      migrateLegacyGeneratedPlayerAttributes(player);
+      refreshGeneratedPlayerType(player);
+      var generatedOvr = calcOVR(player, player.pos);
+      if (player.ovr === generatedOvr) return;
+      player.ovr = generatedOvr;
       changed++;
-    });
+      return;
+    }
+    var canonical = getCanonicalLeaguePlayer(player.id);
+    var realPlayerChanged = false;
+    if (migrateRealPlayerAttributeSource(player, canonical)) realPlayerChanged = true;
+    if (migrateRealPlayerAttributeSchema(player, canonical)) realPlayerChanged = true;
+    if (Number(player._ovrAnchorVersion) >= LEAGUE_OVR_ANCHOR_VERSION) {
+      if (realPlayerChanged) changed++;
+      return;
+    }
+    var sourceOvr = Number(player._sourceOvr)
+      || Number(canonical && canonical.ovr)
+      || Number(player.ovr)
+      || 50;
+    var currentFormulaOvr = calcOVR(player, player.pos);
+    var canonicalFormulaOvr = canonical ? calcOVR(canonical, canonical.pos) : currentFormulaOvr;
+    var nextOvr = Math.max(55, Math.min(99,
+      Math.round(sourceOvr + currentFormulaOvr - canonicalFormulaOvr)
+    ));
+    player._sourceOvr = sourceOvr;
+    player._sourceFormulaOvr = canonicalFormulaOvr;
+    player._ovrAnchorVersion = LEAGUE_OVR_ANCHOR_VERSION;
+    realPlayerChanged = true;
+    if (player.ovr !== nextOvr) player.ovr = nextOvr;
+    if (realPlayerChanged) changed++;
+  }
+  LEAGUE_TEAM_IDS.forEach(function(teamId) {
+    (LEAGUE_PLAYER_DATA[teamId] || []).forEach(syncPlayer);
   });
+  if (typeof STATE !== 'undefined' && Array.isArray(STATE._freeAgentPool)) {
+    STATE._freeAgentPool.forEach(syncPlayer);
+  }
   if (changed && typeof clearLineupCache === 'function') clearLineupCache();
   return changed;
 }

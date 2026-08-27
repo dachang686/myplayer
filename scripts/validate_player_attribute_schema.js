@@ -8,6 +8,7 @@ const queuePath = path.join(__dirname, 'data', 'player_rating_review_queue.json'
 const adjustmentPath = path.join(__dirname, 'data', 'player_ovr_adjustments.json');
 const auditPath = path.join(__dirname, 'data', 'han_ball_handle_migration.json');
 const schema = require(schemaPath);
+const simulationConfig = require(path.join(root, 'js', 'data', 'simulation_config.js'));
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -21,12 +22,16 @@ assert(schema.version === 2, `unexpected attribute schema version: ${schema.vers
 assert(schema.fields.HAN.nba2kAttribute === 'Ball Handle', 'HAN must map to NBA 2K Ball Handle');
 assert(schema.fields.HAN.excludedNba2kAttribute === 'Hands', 'HAN schema must explicitly exclude Hands');
 assert(schema.NBA2K_ATTRIBUTE_MAP.HAN === 'Ball Handle', 'shared NBA 2K map is inconsistent');
+assert(simulationConfig.ATTR_CN.HAN === schema.fields.HAN.label, 'UI config HAN label is inconsistent with schema');
+assert(simulationConfig.ATTR_DESC.HAN.includes('Ball Handle') && simulationConfig.ATTR_DESC.HAN.includes('不是 Hands'),
+  'UI config HAN description must distinguish Ball Handle from Hands');
 
 const indexSource = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const schemaScriptIndex = indexSource.indexOf('js/data/player_attribute_schema.js');
 const leagueScriptIndex = indexSource.indexOf('js/data/league_players.js');
 assert(schemaScriptIndex >= 0 && schemaScriptIndex < leagueScriptIndex, 'attribute schema must load before league data');
 assert(indexSource.includes('ATTR_CN.HAN = PLAYER_ATTRIBUTE_SCHEMA.fields.HAN.label;'), 'UI HAN label bypasses schema');
+assert(indexSource.includes("ATTR_DESC.HAN = PLAYER_ATTRIBUTE_SCHEMA.fields.HAN.meaning"), 'UI HAN description bypasses schema');
 
 for (const fileName of [
   'sync_nba2k_player_ratings.js',

@@ -98,13 +98,16 @@ const beforeAssignment = vm.runInContext(`(() => {
   const freeAgents = STATE._freeAgentPool || [];
   const retired = (STATE._leagueChanges && STATE._leagueChanges.retired) || [];
   const ids = players.map(player => player.id).concat(freeAgents.map(player => player.id), retired.map(row => row.playerId));
-  const ovrConsistency = freeAgents.every(player => Math.round(calcOVR(player, player.pos)) === Math.round(player.ovr));
+  const ovrConsistency = freeAgents.every(player => isGeneratedLeaguePlayer(player)
+    ? Math.round(calcOVR(player, player.pos)) === Math.round(player.ovr)
+    : player._ovrAnchorVersion === LEAGUE_OVR_ANCHOR_VERSION
+      && Number.isFinite(Number(player._sourceOvr)));
   return { roster: players.length, freeAgents: freeAgents.length, retired: retired.length, unique: new Set(ids).size, ids: ids.length, ovrConsistency };
 })()`, context);
 
 const failures = [];
 if (beforeAssignment.ids !== beforeAssignment.unique) failures.push(`第二赛季演变后存在重复身份：${JSON.stringify(beforeAssignment)}`);
-if (!beforeAssignment.ovrConsistency) failures.push('FA OVR 与 14 项属性重新计算结果不一致');
+if (!beforeAssignment.ovrConsistency) failures.push('FA 未遵守现实球员 OVR 锚点/生成球员属性直算规则');
 
 vm.runInContext('assignFreeAgents();', context);
 const afterAssignment = vm.runInContext(`(() => {
