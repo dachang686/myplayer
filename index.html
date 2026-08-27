@@ -10963,7 +10963,10 @@ function confirmTraining() {
   STATE.finalOVR = calcOVR(STATE.attrs);
 
   // 合同扣减
-  career.contract--;
+  var remainingContractYears = Number(career.contract);
+  career.contract = Number.isFinite(remainingContractYears)
+    ? Math.max(0, Math.floor(remainingContractYears) - 1)
+    : 0;
 
   // 如果生涯还没保存（赛季结束未进生涯页面），这里补保存
   saveCurrentSeasonToCareer();

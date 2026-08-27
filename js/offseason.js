@@ -1853,22 +1853,35 @@ function getBestCareerContractOffer(teamId, years, maxRound) {
 }
 
 function applyCareerContractOffer(teamId, offer, oldTeam) {
-  if (!offer || !STATE.career) return false;
+  if (!offer || !STATE.career || !teamId || offer.teamId !== teamId) return false;
+  var salary = Number(offer.salary);
+  var years = Number(offer.years);
+  if (!Number.isFinite(salary) || salary < 1 || !Number.isInteger(years) || years < 1) return false;
+  var maxYears = offer.birdRights ? 5 : 4;
+  if ((Number(STATE.career.currentAge) || 0) >= 34) maxYears = Math.min(maxYears, 3);
+  if (years > maxYears) return false;
+
+  var roster = LEAGUE_PLAYER_DATA[teamId];
+  if (!Array.isArray(roster)) return false;
   var rosterCuts = Array.isArray(offer.rosterCuts)
     ? offer.rosterCuts.slice()
     : (offer.rosterCut ? [offer.rosterCut] : []);
   if (rosterCuts.length) {
-    var roster = LEAGUE_PLAYER_DATA[teamId] || [];
-    if (rosterCuts.some(function(player) { return roster.indexOf(player) < 0; })) return false;
+    var validatedCuts = [];
+    if (rosterCuts.some(function(player) {
+      if (!player || roster.indexOf(player) < 0 || validatedCuts.indexOf(player) >= 0) return true;
+      validatedCuts.push(player);
+      return false;
+    })) return false;
     rosterCuts.forEach(function(player) {
       roster.splice(roster.indexOf(player), 1);
       player._waived = true;
       addPlayerToFreeAgentPool(player, 'career_contract_capacity', teamId);
     });
   }
-  STATE.career.salary = offer.salary;
+  STATE.career.salary = salary;
   STATE.career._salaryVersion = FREE_AGENT_MARKET.salaryVersion;
-  STATE.career.contract = offer.years;
+  STATE.career.contract = years;
   if (teamId !== oldTeam) STATE.career.teamTenure = 1;
   else STATE.career.teamTenure = Math.max(1, getCareerTeamTenure()) + 1;
   if (typeof clearLineupCache === 'function') clearLineupCache();
@@ -3847,8 +3860,9 @@ function evolveLeague() {
     if (!roster) return;
     var newRoster = [];
     roster.forEach(function(p) {
-      if (p.contract === undefined) p.contract = 4;
-      p.contract--;
+      var remainingContractYears = p.contract === undefined ? 4 : Number(p.contract);
+      if (!Number.isFinite(remainingContractYears)) remainingContractYears = 0;
+      p.contract = Math.max(0, Math.floor(remainingContractYears) - 1);
       if (p.contract <= 0) {
         // 留队判定
         var age = getLeaguePlayerAge(p);

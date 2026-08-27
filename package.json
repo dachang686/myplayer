@@ -30,6 +30,8 @@
     "test:offseason-audit": "node scripts/validate_offseason_audit_fixes.js",
     "test:player-trade-payroll": "node scripts/validate_player_trade_payroll.js",
     "test:player-contract-offers": "node scripts/validate_player_contract_offers.js",
+    "test:contracts:extremes": "node scripts/validate_contract_lifecycle_extremes.js",
+    "test:contracts": "npm run test:free-agents && npm run test:player-contract-offers && npm run test:player-trade-payroll && npm run test:contracts:extremes",
     "test:retirement": "node scripts/validate_retirement_summary.js",
     "test:training": "node scripts/validate_training_budget.js",
     "test:narratives": "node scripts/validate_career_narratives.js",
