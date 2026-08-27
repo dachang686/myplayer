@@ -72,7 +72,7 @@
 
   function allocateTotal(total, weights, caps) {
     total = Math.max(0, Math.round(Number(total) || 0));
-    var safeWeights = weights.map(function(weight) { return Math.max(0.0001, Number(weight) || 0); });
+    var safeWeights = weights.map(function(weight) { return Math.max(0, Number(weight) || 0); });
     var safeCaps = (caps || safeWeights.map(function() { return total; })).map(function(cap) {
       return Math.max(0, Math.floor(Number(cap) || 0));
     });
@@ -112,7 +112,7 @@
   // 不会因逐节整数化而清零，深度替补可在后续节自然兑现累计机会。
   function allocatePeriodQuota(total, weights, caps, ledger) {
     total = Math.max(0, Math.round(Number(total) || 0));
-    var safeWeights = weights.map(function(weight) { return Math.max(0.0001, Number(weight) || 0); });
+    var safeWeights = weights.map(function(weight) { return Math.max(0, Number(weight) || 0); });
     var safeCaps = caps.map(function(cap) { return Math.max(0, Math.floor(Number(cap) || 0)); });
     var state = ledger && typeof ledger === 'object' ? ledger : {};
     var quotaCarry = Array.isArray(state.quotaCarry) ? state.quotaCarry : safeWeights.map(function() { return 0; });
@@ -500,10 +500,13 @@
       var eliteLoadFactor = scoringLoad > 0.985
         ? 1
         : 1 + Math.max(0, scoringLoad - 0.80) * 0.08;
-      var baseOpportunity = Math.max(
-        0.1,
-        weights[index] * roleFactor * participationFactor * eliteLoadFactor * form[index]
-      );
+      // 0 分钟球员必须完全退出事件分配；机会底座只用于仍在轮换中的球员。
+      var baseOpportunity = weights[index] > 0
+        ? Math.max(
+          0.1,
+          weights[index] * roleFactor * participationFactor * eliteLoadFactor * form[index]
+        )
+        : 0;
       var isCoreScorer = offensiveRoleRank < 2 && weights[index] >= 28 && scoringLoad >= 0.62;
       // 爆发保留稀有长尾；上限和 legendary 档位避免 50+/60+ 在联盟生态中泛滥。
       var gameMultiplier = weights[index] >= 28
@@ -531,7 +534,9 @@
     var teamTouchLoad = weightedMean(touchLoad, weights);
     var touchOpportunity = players.map(function(_, index) {
       var roleFactor = clamp(1 + (touchLoad[index] - teamTouchLoad) * 1.70, 0.72, 1.36);
-      return Math.max(0.1, weights[index] * roleFactor * (0.38 + touchLoad[index] * 0.82) * form[index]);
+      return weights[index] > 0
+        ? Math.max(0.1, weights[index] * roleFactor * (0.38 + touchLoad[index] * 0.82) * form[index])
+        : 0;
     });
 
     return {
@@ -656,6 +661,7 @@
   }
 
   function freeThrowOpportunityWeight(context, index) {
+    if (!(Number(context.weights[index]) > 0)) return 0;
     var touchOpportunity = Math.max(0.1, Number(context.touchOpportunity[index]) || 0);
     var scoringOpportunity = Math.max(0.1, Number(context.opportunity[index]) || 0);
     var rimPressure = clamp(Number(context.rimAbility[index]) || 0, 0, 1);
@@ -1187,8 +1193,13 @@
     var teamResidualMarginEdge = clamp(rosterEdge + structureEdge, -8, 8);
     var rosterStarEdge = teamResidualMarginEdge;
     var starEdge = 0;
-    var contextualMarginEdge = teamResidualMarginEdge + recordFormEdge + homeCourtEdge + seedBonusEdge
-      + eventTeamMarginEdge + seasonModifierMarginEdge;
+    // 所有赛前上下文只形成一个有界分差来源，保证实际事件偏置与 expectedMargin 使用同一上限。
+    var contextualMarginEdge = clamp(
+      teamResidualMarginEdge + recordFormEdge + homeCourtEdge + seedBonusEdge
+        + eventTeamMarginEdge + seasonModifierMarginEdge,
+      -18,
+      18
+    );
     var contextualBias = contextualMarginEdge * MARGIN_TO_BIAS_PER_SIDE;
     var biasA = contextualBias;
     var biasB = -contextualBias;
