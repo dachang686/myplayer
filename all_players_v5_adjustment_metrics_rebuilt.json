@@ -1,0 +1,830 @@
+{
+  "current": {
+    "n": 525,
+    "mae": 2.8323809523809524,
+    "rawMae": 2.831306989634915,
+    "within3": 350,
+    "gt5": 59,
+    "mean": 0.07047619047619047,
+    "spearman": 0.7549049330331666,
+    "position": {
+      "PF": {
+        "n": 96,
+        "mean": -0.10416666666666667,
+        "mae": 2.7916666666666665
+      },
+      "SG": {
+        "n": 105,
+        "mean": -0.4666666666666667,
+        "mae": 2.6952380952380954
+      },
+      "SF": {
+        "n": 107,
+        "mean": 1.5514018691588785,
+        "mae": 3.439252336448598
+      },
+      "PG": {
+        "n": 105,
+        "mean": -0.9904761904761905,
+        "mae": 2.2285714285714286
+      },
+      "C": {
+        "n": 112,
+        "mean": 0.30357142857142855,
+        "mae": 2.982142857142857
+      }
+    }
+  },
+  "adjusted": {
+    "n": 525,
+    "mae": 2.603809523809524,
+    "rawMae": 2.6097033084361385,
+    "within3": 384,
+    "gt5": 49,
+    "mean": -0.08190476190476191,
+    "spearman": 0.7898438175662243,
+    "position": {
+      "PF": {
+        "n": 96,
+        "mean": -0.59375,
+        "mae": 2.53125
+      },
+      "SG": {
+        "n": 105,
+        "mean": -0.009523809523809525,
+        "mae": 2.7333333333333334
+      },
+      "SF": {
+        "n": 107,
+        "mean": 0.6542056074766355,
+        "mae": 2.953271028037383
+      },
+      "PG": {
+        "n": 105,
+        "mean": -0.12380952380952381,
+        "mae": 2.1619047619047618
+      },
+      "C": {
+        "n": 112,
+        "mean": -0.375,
+        "mae": 2.625
+      }
+    }
+  },
+  "attributeChanges": {
+    "playersChanged": 458,
+    "cellsChanged": 5202,
+    "totalAbsChange": 6278,
+    "meanAbsPerChangedPlayer": 13.707423580786026,
+    "maxSingleCellChange": 5,
+    "byAttribute": {
+      "CLU": {
+        "cells": 372,
+        "sum": -68,
+        "abs": 448,
+        "min": -2,
+        "max": 3
+      },
+      "threePT": {
+        "cells": 419,
+        "sum": -57,
+        "abs": 571,
+        "min": -4,
+        "max": 4
+      },
+      "MID": {
+        "cells": 366,
+        "sum": -63,
+        "abs": 435,
+        "min": -2,
+        "max": 2
+      },
+      "FIN": {
+        "cells": 370,
+        "sum": -61,
+        "abs": 439,
+        "min": -2,
+        "max": 2
+      },
+      "DNK": {
+        "cells": 371,
+        "sum": -85,
+        "abs": 455,
+        "min": -3,
+        "max": 2
+      },
+      "HAN": {
+        "cells": 366,
+        "sum": -65,
+        "abs": 433,
+        "min": -3,
+        "max": 2
+      },
+      "PAS": {
+        "cells": 373,
+        "sum": -60,
+        "abs": 450,
+        "min": -3,
+        "max": 3
+      },
+      "PDEF": {
+        "cells": 367,
+        "sum": -64,
+        "abs": 434,
+        "min": -3,
+        "max": 2
+      },
+      "STL": {
+        "cells": 366,
+        "sum": -63,
+        "abs": 431,
+        "min": -2,
+        "max": 2
+      },
+      "IDEF": {
+        "cells": 366,
+        "sum": -82,
+        "abs": 448,
+        "min": -5,
+        "max": 4
+      },
+      "BLK": {
+        "cells": 363,
+        "sum": -67,
+        "abs": 427,
+        "min": -2,
+        "max": 2
+      },
+      "REB": {
+        "cells": 370,
+        "sum": -61,
+        "abs": 443,
+        "min": -3,
+        "max": 4
+      },
+      "ATH": {
+        "cells": 367,
+        "sum": -61,
+        "abs": 433,
+        "min": -2,
+        "max": 2
+      },
+      "STR": {
+        "cells": 366,
+        "sum": -63,
+        "abs": 431,
+        "min": -2,
+        "max": 2
+      }
+    }
+  },
+  "displayOvrShifts": {
+    "increased": 172,
+    "decreased": 219,
+    "unchanged": 134,
+    "largest": [
+      {
+        "id": "P0264",
+        "name": "阿德托昆博",
+        "team": "MIA",
+        "target": 97,
+        "before": 91,
+        "after": 97,
+        "delta": 6,
+        "rawBefore": 91.03552103041066,
+        "rawAfter": 96.9897783480005,
+        "rankBefore": 15,
+        "rankAfter": 2
+      },
+      {
+        "id": "P0452",
+        "name": "文班亚马",
+        "team": "SAS",
+        "target": 97,
+        "before": 93,
+        "after": 97,
+        "delta": 4,
+        "rawBefore": 92.92341396510683,
+        "rawAfter": 96.51404834433902,
+        "rankBefore": 11,
+        "rankAfter": 4
+      },
+      {
+        "id": "P0208",
+        "name": "加兰",
+        "team": "LAC",
+        "target": 85,
+        "before": 86,
+        "after": 89,
+        "delta": 3,
+        "rawBefore": 86.48973909984412,
+        "rawAfter": 88.69875823784817,
+        "rankBefore": 36,
+        "rankAfter": 30
+      },
+      {
+        "id": "P0379",
+        "name": "詹姆斯",
+        "team": "PHI",
+        "target": 92,
+        "before": 91,
+        "after": 94,
+        "delta": 3,
+        "rawBefore": 91.47266469381003,
+        "rawAfter": 93.69075382558128,
+        "rankBefore": 12,
+        "rankAfter": 10
+      },
+      {
+        "id": "P0455",
+        "name": "哈珀",
+        "team": "SAS",
+        "target": 81,
+        "before": 80,
+        "after": 83,
+        "delta": 3,
+        "rawBefore": 80.42699480131137,
+        "rawAfter": 82.90757340142049,
+        "rankBefore": 127,
+        "rankAfter": 69
+      },
+      {
+        "id": "P0084",
+        "name": "威廉姆斯",
+        "team": "CHI",
+        "target": 75,
+        "before": 77,
+        "after": 74,
+        "delta": -3,
+        "rawBefore": 76.60687910430624,
+        "rawAfter": 74.44194087239528,
+        "rankBefore": 273,
+        "rankAfter": 367
+      },
+      {
+        "id": "P0100",
+        "name": "汤姆林",
+        "team": "CLE",
+        "target": 74,
+        "before": 74,
+        "after": 71,
+        "delta": -3,
+        "rawBefore": 73.63644857095778,
+        "rawAfter": 71.47137755927679,
+        "rankBefore": 405,
+        "rankAfter": 479
+      },
+      {
+        "id": "P0180",
+        "name": "卡佩拉",
+        "team": "HOU",
+        "target": 77,
+        "before": 86,
+        "after": 83,
+        "delta": -3,
+        "rawBefore": 85.90224436324156,
+        "rawAfter": 83.12181338081976,
+        "rankBefore": 40,
+        "rankAfter": 65
+      },
+      {
+        "id": "P0196",
+        "name": "内史密斯",
+        "team": "IND",
+        "target": 80,
+        "before": 84,
+        "after": 81,
+        "delta": -3,
+        "rawBefore": 83.88750453453201,
+        "rawAfter": 80.8149356584228,
+        "rankBefore": 63,
+        "rankAfter": 120
+      },
+      {
+        "id": "P0235",
+        "name": "克内克特",
+        "team": "LAL",
+        "target": 74,
+        "before": 80,
+        "after": 77,
+        "delta": -3,
+        "rawBefore": 80.01565982608557,
+        "rawAfter": 77.44291911911583,
+        "rankBefore": 138,
+        "rankAfter": 221
+      },
+      {
+        "id": "P0236",
+        "name": "卢尼",
+        "team": "LAL",
+        "target": 74,
+        "before": 80,
+        "after": 77,
+        "delta": -3,
+        "rawBefore": 79.70771856944948,
+        "rawAfter": 77.36350216662123,
+        "rankBefore": 146,
+        "rankAfter": 226
+      },
+      {
+        "id": "P0238",
+        "name": "蒂米",
+        "team": "LAL",
+        "target": 72,
+        "before": 73,
+        "after": 70,
+        "delta": -3,
+        "rawBefore": 72.55465985979338,
+        "rawAfter": 70.29756204622632,
+        "rankBefore": 441,
+        "rankAfter": 497
+      },
+      {
+        "id": "P0382",
+        "name": "恩比德",
+        "team": "PHI",
+        "target": 92,
+        "before": 94,
+        "after": 91,
+        "delta": -3,
+        "rawBefore": 93.79194299464719,
+        "rawAfter": 91.08524203523184,
+        "rankBefore": 7,
+        "rankAfter": 16
+      },
+      {
+        "id": "P0410",
+        "name": "马卢阿奇",
+        "team": "PHX",
+        "target": 75,
+        "before": 77,
+        "after": 74,
+        "delta": -3,
+        "rawBefore": 76.55899040417466,
+        "rawAfter": 74.3970939960763,
+        "rankBefore": 276,
+        "rankAfter": 371
+      },
+      {
+        "id": "P0449",
+        "name": "麦克德莫特",
+        "team": "SAC",
+        "target": 71,
+        "before": 81,
+        "after": 78,
+        "delta": -3,
+        "rawBefore": 80.7549716862934,
+        "rawAfter": 77.82066337423768,
+        "rankBefore": 119,
+        "rankAfter": 204
+      },
+      {
+        "id": "P0464",
+        "name": "奥利尼克",
+        "team": "SAS",
+        "target": 75,
+        "before": 81,
+        "after": 78,
+        "delta": -3,
+        "rawBefore": 81.10292231371186,
+        "rawAfter": 78.2955348932548,
+        "rankBefore": 111,
+        "rankAfter": 186
+      },
+      {
+        "id": "P0525",
+        "name": "吉尔",
+        "team": "WAS",
+        "target": 74,
+        "before": 75,
+        "after": 72,
+        "delta": -3,
+        "rawBefore": 74.58005119686102,
+        "rawAfter": 72.3912198464896,
+        "rankBefore": 363,
+        "rankAfter": 451
+      },
+      {
+        "id": "P0017",
+        "name": "丹尼斯",
+        "team": "ATL",
+        "target": 71,
+        "before": 72,
+        "after": 74,
+        "delta": 2,
+        "rawBefore": 71.93899663434524,
+        "rawAfter": 73.94702088226897,
+        "rankBefore": 466,
+        "rankAfter": 388
+      },
+      {
+        "id": "P0030",
+        "name": "曼",
+        "team": "BKN",
+        "target": 76,
+        "before": 73,
+        "after": 75,
+        "delta": 2,
+        "rawBefore": 73.29607676808715,
+        "rawAfter": 75.46110260960056,
+        "rankBefore": 420,
+        "rankAfter": 307
+      },
+      {
+        "id": "P0036",
+        "name": "艾蒂安",
+        "team": "BKN",
+        "target": 72,
+        "before": 70,
+        "after": 72,
+        "delta": 2,
+        "rawBefore": 69.71705442889052,
+        "rawAfter": 71.72345638742857,
+        "rankBefore": 507,
+        "rankAfter": 468
+      },
+      {
+        "id": "P0037",
+        "name": "史密斯",
+        "team": "BKN",
+        "target": 72,
+        "before": 72,
+        "after": 74,
+        "delta": 2,
+        "rawBefore": 72.39405479701922,
+        "rawAfter": 74.39913374795172,
+        "rankBefore": 450,
+        "rankAfter": 370
+      },
+      {
+        "id": "P0056",
+        "name": "舒尔加",
+        "team": "BOS",
+        "target": 68,
+        "before": 70,
+        "after": 72,
+        "delta": 2,
+        "rawBefore": 70.33272013129134,
+        "rawAfter": 72.33568740987906,
+        "rankBefore": 498,
+        "rankAfter": 454
+      },
+      {
+        "id": "P0079",
+        "name": "琼斯",
+        "team": "CHI",
+        "target": 81,
+        "before": 79,
+        "after": 81,
+        "delta": 2,
+        "rawBefore": 79.29036868502803,
+        "rawAfter": 80.68161069596867,
+        "rankBefore": 159,
+        "rankAfter": 124
+      },
+      {
+        "id": "P0105",
+        "name": "欧文",
+        "team": "DAL",
+        "target": 90,
+        "before": 89,
+        "after": 91,
+        "delta": 2,
+        "rawBefore": 88.82703694701078,
+        "rawAfter": 90.9272901164954,
+        "rankBefore": 24,
+        "rankAfter": 17
+      },
+      {
+        "id": "P0109",
+        "name": "华盛顿",
+        "team": "DAL",
+        "target": 80,
+        "before": 78,
+        "after": 80,
+        "delta": 2,
+        "rawBefore": 78.43936917427772,
+        "rawAfter": 79.7046732011123,
+        "rankBefore": 192,
+        "rankAfter": 144
+      },
+      {
+        "id": "P0111",
+        "name": "莱夫利",
+        "team": "DAL",
+        "target": 79,
+        "before": 78,
+        "after": 80,
+        "delta": 2,
+        "rawBefore": 78.4695967259894,
+        "rawAfter": 79.66958423247813,
+        "rankBefore": 188,
+        "rankAfter": 145
+      },
+      {
+        "id": "P0122",
+        "name": "戈登",
+        "team": "DEN",
+        "target": 84,
+        "before": 81,
+        "after": 83,
+        "delta": 2,
+        "rawBefore": 81.33411310978639,
+        "rawAfter": 82.91931241595253,
+        "rankBefore": 105,
+        "rankAfter": 68
+      },
+      {
+        "id": "P0124",
+        "name": "布劳恩",
+        "team": "DEN",
+        "target": 81,
+        "before": 77,
+        "after": 79,
+        "delta": 2,
+        "rawBefore": 77.41750125284015,
+        "rawAfter": 78.71538533198583,
+        "rankBefore": 238,
+        "rankAfter": 169
+      },
+      {
+        "id": "P0137",
+        "name": "琼斯",
+        "team": "DEN",
+        "target": 68,
+        "before": 70,
+        "after": 72,
+        "delta": 2,
+        "rawBefore": 69.90706138661677,
+        "rawAfter": 71.90123448793499,
+        "rankBefore": 506,
+        "rankAfter": 465
+      },
+      {
+        "id": "P0140",
+        "name": "杜伦",
+        "team": "DET",
+        "target": 89,
+        "before": 88,
+        "after": 90,
+        "delta": 2,
+        "rawBefore": 87.73566485845204,
+        "rawAfter": 89.65819669944865,
+        "rankBefore": 29,
+        "rankAfter": 23
+      }
+    ]
+  },
+  "wembanyama": {
+    "before": {
+      "overall": 92.92341396510683,
+      "display": 93,
+      "rank": 11,
+      "offense": 83.84681533036036,
+      "defense": 90.25755421281522,
+      "rotation": 87.46550126265383,
+      "attrs": {
+        "threePT": 77,
+        "MID": 76,
+        "FIN": 91,
+        "DNK": 78,
+        "HAN": 95,
+        "PAS": 69,
+        "PDEF": 76,
+        "STL": 67,
+        "IDEF": 92,
+        "BLK": 97,
+        "REB": 95,
+        "ATH": 68,
+        "STR": 58,
+        "CLU": 93
+      }
+    },
+    "after": {
+      "overall": 96.51404834433902,
+      "display": 97,
+      "rank": 4,
+      "offense": 87.4926024568444,
+      "defense": 94.77717188506179,
+      "rotation": 91.39554977033161,
+      "attrs": {
+        "threePT": 79,
+        "MID": 78,
+        "FIN": 93,
+        "DNK": 80,
+        "HAN": 97,
+        "PAS": 71,
+        "PDEF": 78,
+        "STL": 69,
+        "IDEF": 96,
+        "BLK": 99,
+        "REB": 97,
+        "ATH": 70,
+        "STR": 60,
+        "CLU": 95
+      }
+    }
+  },
+  "top20": [
+    {
+      "rank": 1,
+      "id": "P0120",
+      "name": "约基奇",
+      "team": "DEN",
+      "sourceOvr": 98,
+      "v5": 99,
+      "display": 99,
+      "error": 1
+    },
+    {
+      "rank": 2,
+      "id": "P0264",
+      "name": "阿德托昆博",
+      "team": "MIA",
+      "sourceOvr": 97,
+      "v5": 96.99,
+      "display": 97,
+      "error": 0
+    },
+    {
+      "rank": 3,
+      "id": "P0347",
+      "name": "亚历山大",
+      "team": "OKC",
+      "sourceOvr": 98,
+      "v5": 96.861,
+      "display": 97,
+      "error": -1
+    },
+    {
+      "rank": 4,
+      "id": "P0452",
+      "name": "文班亚马",
+      "team": "SAS",
+      "sourceOvr": 97,
+      "v5": 96.514,
+      "display": 97,
+      "error": 0
+    },
+    {
+      "rank": 5,
+      "id": "P0172",
+      "name": "杜兰特",
+      "team": "HOU",
+      "sourceOvr": 93,
+      "v5": 96.394,
+      "display": 96,
+      "error": 3
+    },
+    {
+      "rank": 6,
+      "id": "P0225",
+      "name": "东契奇",
+      "team": "LAL",
+      "sourceOvr": 97,
+      "v5": 96.322,
+      "display": 96,
+      "error": -1
+    },
+    {
+      "rank": 7,
+      "id": "P0156",
+      "name": "库里",
+      "team": "GSW",
+      "sourceOvr": 95,
+      "v5": 94.698,
+      "display": 95,
+      "error": 0
+    },
+    {
+      "rank": 8,
+      "id": "P0330",
+      "name": "布伦森",
+      "team": "NYK",
+      "sourceOvr": 93,
+      "v5": 94.224,
+      "display": 94,
+      "error": 1
+    },
+    {
+      "rank": 9,
+      "id": "P0138",
+      "name": "坎宁安",
+      "team": "DET",
+      "sourceOvr": 95,
+      "v5": 93.732,
+      "display": 94,
+      "error": -1
+    },
+    {
+      "rank": 10,
+      "id": "P0379",
+      "name": "詹姆斯",
+      "team": "PHI",
+      "sourceOvr": 92,
+      "v5": 93.691,
+      "display": 94,
+      "error": 2
+    },
+    {
+      "rank": 11,
+      "id": "P0091",
+      "name": "米切尔",
+      "team": "CLE",
+      "sourceOvr": 95,
+      "v5": 93.192,
+      "display": 93,
+      "error": -2
+    },
+    {
+      "rank": 12,
+      "id": "P0189",
+      "name": "哈利伯顿",
+      "team": "IND",
+      "sourceOvr": 93,
+      "v5": 92.459,
+      "display": 92,
+      "error": -1
+    },
+    {
+      "rank": 13,
+      "id": "P0398",
+      "name": "布克",
+      "team": "PHX",
+      "sourceOvr": 93,
+      "v5": 91.763,
+      "display": 92,
+      "error": -1
+    },
+    {
+      "rank": 14,
+      "id": "P0296",
+      "name": "爱德华兹",
+      "team": "MIN",
+      "sourceOvr": 96,
+      "v5": 91.667,
+      "display": 92,
+      "error": -4
+    },
+    {
+      "rank": 15,
+      "id": "P0471",
+      "name": "伦纳德",
+      "team": "LAC",
+      "sourceOvr": 95,
+      "v5": 91.143,
+      "display": 91,
+      "error": -4
+    },
+    {
+      "rank": 16,
+      "id": "P0382",
+      "name": "恩比德",
+      "team": "PHI",
+      "sourceOvr": 92,
+      "v5": 91.085,
+      "display": 91,
+      "error": -1
+    },
+    {
+      "rank": 17,
+      "id": "P0105",
+      "name": "欧文",
+      "team": "DAL",
+      "sourceOvr": 90,
+      "v5": 90.927,
+      "display": 91,
+      "error": 1
+    },
+    {
+      "rank": 18,
+      "id": "P0381",
+      "name": "马克西",
+      "team": "PHI",
+      "sourceOvr": 93,
+      "v5": 90.441,
+      "display": 90,
+      "error": -3
+    },
+    {
+      "rank": 19,
+      "id": "P0510",
+      "name": "杨",
+      "team": "WAS",
+      "sourceOvr": 89,
+      "v5": 90.085,
+      "display": 90,
+      "error": 1
+    },
+    {
+      "rank": 20,
+      "id": "P0157",
+      "name": "巴特勒",
+      "team": "GSW",
+      "sourceOvr": 88,
+      "v5": 90.044,
+      "display": 90,
+      "error": 2
+    }
+  ]
+}
