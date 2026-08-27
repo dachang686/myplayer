@@ -72,20 +72,53 @@ const buildApplyEngineChoice = new Function(
   'document',
   indexSource.slice(engineChoiceStart, engineChoiceEnd) + '\nreturn applyNewCareerSimulationEngineChoice;',
 );
-const engineChoiceState = {};
-const selectV2 = buildApplyEngineChoice(engineChoiceState, { querySelector: () => ({ value: 'v2' }) })();
-const selectV1 = buildApplyEngineChoice(engineChoiceState, { querySelector: () => ({ value: 'v1' }) })();
-const selectDefault = buildApplyEngineChoice(engineChoiceState, { querySelector: () => null })();
+const v2ChoiceState = { season: {} };
+const v1ChoiceState = { season: {} };
+const defaultChoiceState = { season: {} };
+const selectV2 = buildApplyEngineChoice(v2ChoiceState, { querySelector: () => ({ value: 'v2' }) })();
+const selectV1 = buildApplyEngineChoice(v1ChoiceState, { querySelector: () => ({ value: 'v1' }) })();
+const selectDefault = buildApplyEngineChoice(defaultChoiceState, { querySelector: () => null })();
 const engineChoiceUiPath = selectV2 === 'v2'
   && selectV1 === 'v1'
   && selectDefault === 'v2'
-  && engineChoiceState.simulationEngine === 'v2'
+  && v2ChoiceState.simulationEngine === 'v2'
+  && v2ChoiceState.season.simulationEngine === 'v2'
+  && v1ChoiceState.simulationEngine === 'v1'
+  && v1ChoiceState.season.simulationEngine === 'v1'
+  && defaultChoiceState.simulationEngine === 'v2'
+  && defaultChoiceState.season.simulationEngine === 'v2'
   && /name="new-career-engine" value="v2" checked/.test(indexSource)
   && /name="new-career-engine" value="v1"/.test(indexSource)
   && /V2 正式版[\s\S]*home-engine-badge">默认/.test(indexSource);
+
+const restoredEngineStart = indexSource.indexOf('var restoredEngine = (STATE.season && STATE.season.simulationEngine) || STATE.simulationEngine;');
+const restoredEngineEnd = indexSource.indexOf('repairCareerAggregateStats();', restoredEngineStart);
+if (restoredEngineStart < 0 || restoredEngineEnd < 0) throw new Error('无法定位旧存档引擎迁移逻辑');
+const restoreSavedEngine = new Function(
+  'STATE',
+  indexSource.slice(restoredEngineStart, restoredEngineEnd) + '\nreturn STATE.simulationEngine;',
+);
+function restoreEngineProbe(savedState) {
+  const restoredState = JSON.parse(JSON.stringify(savedState));
+  return {
+    engine: restoreSavedEngine(restoredState),
+    state: restoredState,
+  };
+}
+const missingEngineRestore = restoreEngineProbe({ season: {} });
+const nullEngineRestore = restoreEngineProbe({ simulationEngine: null, season: { simulationEngine: null } });
+const explicitV1Restore = restoreEngineProbe({ simulationEngine: 'v1', season: { simulationEngine: 'v1' } });
+const explicitV2Restore = restoreEngineProbe({ simulationEngine: 'v2', season: { simulationEngine: 'v2' } });
+const legacySaveEnginePath = missingEngineRestore.engine === 'v1'
+  && missingEngineRestore.state.season.simulationEngine === 'v1'
+  && nullEngineRestore.engine === 'v1'
+  && nullEngineRestore.state.season.simulationEngine === 'v1'
+  && explicitV1Restore.engine === 'v1'
+  && explicitV1Restore.state.season.simulationEngine === 'v1'
+  && explicitV2Restore.engine === 'v2'
+  && explicitV2Restore.state.season.simulationEngine === 'v2';
 const defaultPromotionPath = /simulationEngine: 'v2', \/\/ 'v2' = 默认正式引擎/.test(indexSource)
   && /configuredEngine === 'v1' \? 'v1' : 'v2'/.test(indexSource)
-  && /restoredEngine = restoredEngine === 'v2' \? 'v2' : 'v1'/.test(indexSource)
   && /configuredEngine === 'v1' \? 'v1' : 'v2'/.test(offseasonSource);
 
 function seeded(seed, callback) {
@@ -215,6 +248,7 @@ if (validationMode === 'smoke') {
   if (!classicResult || classicResult.engineVersion === 'v2') smokeFailures.push('explicit-v1-engine');
   if (!engineChoiceUiPath) smokeFailures.push('engine-choice-ui');
   if (!defaultPromotionPath) smokeFailures.push('default-promotion-path');
+  if (!legacySaveEnginePath) smokeFailures.push('legacy-save-engine-path');
   for (let game = 0; game < 8; game++) {
     const teamA = allTeams[game % allTeams.length];
     const teamB = allTeams[(game + 1) % allTeams.length];
@@ -1099,6 +1133,7 @@ const specialistStats = {
   seededStateRestored,
   engineChoiceUiPath,
   defaultPromotionPath,
+  legacySaveEnginePath,
   enginePersistencePath,
   diagnosticsFailClosed,
   emptyRotationThrows,
@@ -1303,6 +1338,7 @@ if (result.full99PlayerPpg - result.partial99PlayerPpg < 1.5
   || !specialistStats.seededStateRestored
   || !specialistStats.engineChoiceUiPath
   || !specialistStats.defaultPromotionPath
+  || !specialistStats.legacySaveEnginePath
   || !specialistStats.diagnosticsFailClosed
   || !specialistStats.dispatcherIntegration
   || !specialistStats.v2ModifierPath
