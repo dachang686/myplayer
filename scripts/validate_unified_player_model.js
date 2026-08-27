@@ -108,6 +108,13 @@ assert(pureAnchor.roles.defensiveAnchor > 95
   && Math.abs(pureAnchor.rotationValue - pureAnchor.overall) > 0.1,
 `纯防守支柱必须受角色上限约束，且轮换价值与 OVR 分离：${JSON.stringify(pureAnchor)}`);
 
+const interiorFinisher = config.getUnifiedPlayerRating(player({
+  pos: 'C', threePT: 35, MID: 50, FIN: 99, DNK: 95, HAN: 65, PAS: 60,
+  ATH: 90, STR: 95, REB: 95, PDEF: 65, IDEF: 95, STL: 55, BLK: 95,
+}));
+assert(interiorFinisher.capacity.interiorUsageLoad > interiorFinisher.capacity.shotLoad + 8,
+  `强力篮下终结手必须拥有独立于外线创造的进攻负荷：${JSON.stringify(interiorFinisher)}`);
+
 const anchorBoundary = player({
   pos: 'C', threePT: 50, MID: 50, FIN: 99, DNK: 99, HAN: 50, PAS: 50,
   ATH: 92, STR: 96, REB: 92, PDEF: 50, IDEF: 90, STL: 50, BLK: 55,
@@ -250,6 +257,10 @@ console.log(JSON.stringify({
   baseline: baseline.overall,
   hub: { playmaking: hub.skills.playmaking, hubCreator: hub.roles.hubCreator, touchLoad: hub.capacity.touchLoad },
   defense: { athlete: athlete.defense, stopper: stopper.defense },
+  interiorUsage: {
+    shotLoad: interiorFinisher.capacity.shotLoad,
+    interiorUsageLoad: interiorFinisher.capacity.interiorUsageLoad,
+  },
   lineup: { fitted: fitted.total, unfitted: unfitted.total },
   residuals: residualMetrics,
   residualsByPosition,

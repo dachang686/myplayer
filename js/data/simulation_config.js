@@ -902,6 +902,10 @@ function getUnifiedPlayerRating(player, position) {
 
   var touchLoad = clampRating(shotCreation * 0.32 + playmaking * 0.34 + ballSecurity * 0.20 + shootingGravity * 0.14);
   var shotLoad = clampRating(scorer * 0.55 + shotCreation * 0.30 + rimScoring * 0.15);
+  // 吃饼、顺下、低位和二次进攻同样可以形成高使用率；不能要求内线先具备外线式持球创造。
+  var interiorUsageLoad = clampRating(
+    rimScoring * 0.40 + rimFinisher * 0.35 + shotCreation * 0.15 + touchLoad * 0.10
+  );
   var defensiveLoad = clampRating(pointOfAttackDefense * 0.28 + interiorDefense * 0.27 + rimProtection * 0.25 + rebounding * 0.20);
   var scoringEfficiency = clampRating(shootingGravity * 0.44 + rimScoring * 0.46 + ballSecurity * 0.10);
 
@@ -1031,7 +1035,7 @@ function getUnifiedPlayerRating(player, position) {
     roleImpact.scorer * 0.55 + shotLoad * 0.25 + scoringEfficiency * 0.20
   );
   var interiorLoadValue = clampRating(
-    roleImpact.rimFinisher * 0.55 + shotLoad * 0.20 + rebounding * 0.25
+    roleImpact.rimFinisher * 0.55 + interiorUsageLoad * 0.20 + rebounding * 0.25
   );
   var anchorLoadValue = clampRating(
     roleImpact.defensiveAnchor * 0.55 + defensiveLoad * 0.25 + rebounding * 0.20
@@ -1066,7 +1070,12 @@ function getUnifiedPlayerRating(player, position) {
       rimProtection: rimProtection, rebounding: rebounding, disruption: disruption,
     },
     roles: roleV5,
-    capacity: { touchLoad: touchLoad, shotLoad: shotLoad, defensiveLoad: defensiveLoad },
+    capacity: {
+      touchLoad: touchLoad,
+      shotLoad: shotLoad,
+      interiorUsageLoad: interiorUsageLoad,
+      defensiveLoad: defensiveLoad,
+    },
     impact: { offense: offense, defense: defense, neutralTotal: neutralTotal },
     // 保留旧字段，令页面、存档和现有校验可渐进迁移。
     shooting: shootingGravity, rim: rimScoring, creation: shotCreation,

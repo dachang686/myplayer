@@ -123,10 +123,10 @@
       || quotaCarry.some(function(value) { return !Number.isFinite(Number(value)) || Number(value) < 0; })) {
       throw new Error('[V2] 出手配额账本无效或容量不足');
     }
-    // 60% 比例配额跨节结转，剩余 40% 保留原核心优先的残余竞争规则。
+    // 65% 比例配额跨节结转，剩余 35% 保留核心优先的残余竞争规则。
     // 这样小权重替补会累计到一次出手，而核心球员原有的残余竞争逻辑不被平均化。
     var quotas = safeWeights.map(function(weight, index) {
-      var quota = total * weight / weightSum * 0.60 + Number(quotaCarry[index]);
+      var quota = total * weight / weightSum * 0.65 + Number(quotaCarry[index]);
       if (!Number.isFinite(quota) || quota < 0) throw new Error('[V2] 出手配额账本计算无效');
       return quota;
     });
@@ -429,6 +429,13 @@
     var shotLoad = players.map(function(_, index) {
       return profileNorm(index, ['capacity', 'shotLoad'], threat[index] * 0.62 + creation[index] * 0.38);
     });
+    var interiorUsageLoad = players.map(function(_, index) {
+      return profileNorm(
+        index,
+        ['capacity', 'interiorUsageLoad'],
+        rimAbility[index] * 0.75 + creation[index] * 0.15 + touchLoad[index] * 0.10
+      );
+    });
     var form = players.map(function(player) {
       if (player._isUser) {
         var baseForm = typeof getSeasonUsageBias === 'function'
@@ -447,7 +454,9 @@
       return 1;
     });
     // 触球、出手、助攻各有独立权重：高传球中轴可以承担进攻，却不会被迫拥有最高 FGA。
-    var scoringLoads = shotLoad.slice();
+    var scoringLoads = shotLoad.map(function(value, index) {
+      return Math.max(value, interiorUsageLoad[index]);
+    });
     // 进攻角色由实际得分/持球能力决定；rotation.roleRanks 只描述轮换顺序，不能把 PG/SG 槽位当成第一、第二得分手。
     // 相同能力使用相同进攻档位，让阵容数组顺序本身不会制造出手权差异。
     var offensiveRoleRanks = scoringLoads.map(function(scoringLoad) {
@@ -459,13 +468,23 @@
       var offensiveRoleRank = offensiveRoleRanks[index];
       var roleFactor = clamp(1 + (scoringLoads[index] - teamScoringLoad) * 1.95, 0.72, 1.32);
       var creationFactor = 0.58 + creation[index] * 0.85;
+      // 只有内线负荷显著高于常规 shotLoad 时才打开额外通道；完整外线得分包不重复获益。
+      var interiorParticipationFactor = 0.40 + interiorUsageLoad[index] * 0.95
+        + Math.max(0, interiorUsageLoad[index] - shotLoad[index]) * 1.50;
       var threatFactor = 0.54 + threat[index] * 0.90;
       var scoringLoad = scoringLoads[index];
       // 低技术球员仍需参与半场进攻；软底座避免 creation/threat 相乘后把长时间上场者压到几乎零出手。
       // 补偿随 scoringLoad 平方衰减，中高端球员基本保持原有机会分配。
-      var participationFactor = creationFactor * threatFactor
+      var participationFactor = Math.max(creationFactor, interiorParticipationFactor) * threatFactor
         + 0.18 * Math.pow(1 - scoringLoad, 2);
-      var baseOpportunity = Math.max(0.1, weights[index] * roleFactor * participationFactor * form[index]);
+      // 顶级得分负荷在内线机会重新分配后保留少量稳定承载，避免头部得分完全依赖爆发抽样。
+      var eliteLoadFactor = scoringLoad > 0.985
+        ? 1
+        : 1 + Math.max(0, scoringLoad - 0.80) * 0.08;
+      var baseOpportunity = Math.max(
+        0.1,
+        weights[index] * roleFactor * participationFactor * eliteLoadFactor * form[index]
+      );
       var isCoreScorer = offensiveRoleRank < 2 && weights[index] >= 28 && scoringLoad >= 0.62;
       // 爆发保留稀有长尾；上限和 legendary 档位避免 50+/60+ 在联盟生态中泛滥。
       var gameMultiplier = weights[index] >= 28
@@ -477,13 +496,14 @@
         ? clamp(0.018 + Math.max(0, scoringLoad - 0.60) * 0.18, 0.018, 0.070)
         : 0;
       // 满技能包已经拥有稳定效率和机会优势，不再叠加同等幅度的爆发概率。
-      if (scoringLoad > 0.985) burstChance *= 0.35;
+      if (scoringLoad > 0.985) burstChance *= 0.05;
       var legendaryBurst = weights[index] >= 30
         && scoringLoad >= 0.70
-        && Math.random() < (scoringLoad > 0.985 ? 0.00175 : 0.005);
+        && Math.random() < (scoringLoad > 0.985 ? 0.00175 : 0.0045);
       if (legendaryBurst) {
         legendaryScorerFlags[index] = true;
-        gameMultiplier = 4.00 + Math.random() * 0.70;
+        // 内线使用率修复后有更多真实核心进入长尾池，略收窄单次爆发以维持联盟稀有分布。
+        gameMultiplier = 3.85 + Math.random() * 0.65;
       } else if (burstChance > 0 && Math.random() < burstChance) {
         gameMultiplier *= 1.45 + Math.random() * 0.45;
       }
@@ -543,6 +563,7 @@
       ballSecurity: ballSecurity,
       touchLoad: touchLoad,
       shotLoad: shotLoad,
+      interiorUsageLoad: interiorUsageLoad,
       teamCreation: weightedMean(creation, weights),
       teamTouchLoad: teamTouchLoad,
       // 保留原始攻防评分供赛前 expectedMargin 使用；比赛事件读取下方的
@@ -600,6 +621,45 @@
     };
   }
 
+  function rimAttemptShare(context, opponent, index) {
+    var rimShareBase = context.volumeRim[index]
+      / Math.max(0.01, context.volumeRim[index] + context.volumeMid[index]);
+    var rimDeterrence = clamp((opponent.rimProtection - 0.50) * 0.75, -0.15, 0.30);
+    // 普通球员仍保留 75% 上限；只有篮下倾向显著高于中投倾向的球员才连续开放到最多 90%。
+    var interiorSpecialization = clamp(
+      (context.volumeRim[index] - context.volumeMid[index]) / 0.55,
+      0,
+      1
+    );
+    var rimShareCeiling = 0.75 + interiorSpecialization * 0.15;
+    return clamp(rimShareBase * (1 - rimDeterrence), 0.15, rimShareCeiling);
+  }
+
+  function freeThrowOpportunityWeight(context, index) {
+    var touchOpportunity = Math.max(0.1, Number(context.touchOpportunity[index]) || 0);
+    var scoringOpportunity = Math.max(0.1, Number(context.opportunity[index]) || 0);
+    var rimPressure = clamp(Number(context.rimAbility[index]) || 0, 0, 1);
+    // 罚球来自实际进攻终结和身体接触；低持球内线不能再因 touchLoad 较低被二次压制。
+    var foulOpportunity = Math.max(
+      touchOpportunity,
+      scoringOpportunity * (0.80 + rimPressure * 0.30)
+    );
+    return foulOpportunity * (
+      0.20
+      + context.volumeRim[index] * 1.55
+      + rimPressure * 0.55
+      + context.creation[index] * 0.15
+    );
+  }
+
+  function threePointOpportunityWeight(context, index) {
+    var threeVolume = clamp(Number(context.volumeThree[index]) || 0, 0, 1);
+    var baseWeight = 0.35 + threeVolume * 1.45;
+    // 只压低明确缺乏外线倾向的球员；中高档射手之间沿用原分布，避免三分过度集中到单一核心。
+    var lowVolumeGate = clamp((threeVolume - 0.20) / 0.25, 0, 1);
+    return context.opportunity[index] * baseWeight * (0.25 + lowVolumeGate * 0.75);
+  }
+
   function makeQuarter(context, opponent, possessions, bias, isClutch, fgaLedger, threeLedger) {
     var weightedThree = weightedMean(context.volumeThree, context.opportunity);
     var weightedMid = weightedMean(context.volumeMid, context.opportunity);
@@ -620,7 +680,7 @@
       0.075, 0.185,
     );
     // 罚球先按“造犯规回合”抽样，再按 1/2/3 罚决定实际 FTA；这样单节可以自然出现 0 次或较高罚球量。
-    var freeThrowTripRate = clamp(freeThrowRate * 0.56, 0.030, 0.14);
+    var freeThrowTripRate = clamp(freeThrowRate * 0.60, 0.030, 0.14);
     var freeThrowTrips = sampleMakes(effectivePossessions, freeThrowTripRate);
     var freeThrowTripSizes = [];
     for (var trip = 0; trip < freeThrowTrips; trip++) {
@@ -648,12 +708,12 @@
     });
     var fgaByPlayer = allocatePeriodQuota(fga, context.opportunity, fgaCaps, fgaLedger);
     var threeWeights = context.players.map(function(_, index) {
-      return context.opportunity[index] * (0.35 + context.volumeThree[index] * 1.45);
+      return threePointOpportunityWeight(context, index);
     });
     // 三分配额与 FGA 一样跨节累计，且逐节硬受 FGA 约束，避免替补分钟跨过整数阈值时突增。
     var threeByPlayer = allocatePeriodQuota(threeA, threeWeights, fgaByPlayer, threeLedger);
-      var ftaWeights = context.players.map(function(_, index) {
-        return context.touchOpportunity[index] * (0.28 + context.volumeRim[index] * 1.55 + context.creation[index] * 0.25);
+    var ftaWeights = context.players.map(function(_, index) {
+      return freeThrowOpportunityWeight(context, index);
     });
     var ftaTripsByPlayer = weightedRandomAllocation(freeThrowTrips, ftaWeights, fgaByPlayer.map(function(value) {
       return Math.max(1, Math.round(value * 0.50) + 2);
@@ -668,9 +728,7 @@
     });
 
     function addFieldGoalAttempts(line, index, threeAttempts, twoAttempts) {
-      var rimShareBase = context.volumeRim[index] / Math.max(0.01, context.volumeRim[index] + context.volumeMid[index]);
-      var rimDeterrence = clamp((opponent.rimProtection - 0.50) * 0.75, -0.15, 0.30);
-      var rimShare = clamp(rimShareBase * (1 - rimDeterrence), 0.15, 0.75);
+      var rimShare = rimAttemptShare(context, opponent, index);
       // 每次两分出手独立决定区域，避免 Math.round 在低出手量下制造
       // 防守属性跨阈值时的篮下出手断崖。
       var rimAttempts = sampleMakes(twoAttempts, rimShare);
@@ -785,10 +843,7 @@
       context.players.forEach(function(_, index) {
         var threeAttempts = attempts * threeRate * threeShares[index];
         var twoAttempts = attempts * (1 - threeRate) * fgaShares[index];
-        var rimShareBase = context.volumeRim[index]
-          / Math.max(0.01, context.volumeRim[index] + context.volumeMid[index]);
-        var rimDeterrence = clamp((opponent.rimProtection - 0.50) * 0.75, -0.15, 0.30);
-        var rimShare = clamp(rimShareBase * (1 - rimDeterrence), 0.15, 0.75);
+        var rimShare = rimAttemptShare(context, opponent, index);
         var rimAttempts = twoAttempts * rimShare;
         var midAttempts = twoAttempts - rimAttempts;
         var defensePenalty = (opponent.rimProtection - 0.50) * 0.11;
@@ -831,11 +886,10 @@
         - opponent.rimProtection * 0.015,
       0.075, 0.185,
     );
-    var freeThrowTrips = effectivePossessions * clamp(freeThrowRate * 0.56, 0.030, 0.14);
+    var freeThrowTrips = effectivePossessions * clamp(freeThrowRate * 0.60, 0.030, 0.14);
     var fta = freeThrowTrips * 1.88;
     var ftaWeights = context.players.map(function(_, index) {
-      return context.touchOpportunity[index]
-        * (0.28 + context.volumeRim[index] * 1.55 + context.creation[index] * 0.25);
+      return freeThrowOpportunityWeight(context, index);
     });
     var ftaShares = shares(ftaWeights);
     var freeThrowPct = context.players.reduce(function(sum, _, index) {
@@ -850,7 +904,7 @@
       0.24, 0.54,
     );
     var threeWeights = context.players.map(function(_, index) {
-      return context.opportunity[index] * (0.35 + context.volumeThree[index] * 1.45);
+      return threePointOpportunityWeight(context, index);
     });
     var primary = expectedFieldGoals(fga, threeRate, context.opportunity, threeWeights);
     var missedField = Math.max(0, fga - primary.makes);

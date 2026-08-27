@@ -109,8 +109,8 @@ function setSharedProfile(patch) {
 function runFatigueProfile(label, patch) {
   setSharedProfile(patch);
   return {
-    fatigueA: runGames(`${label}-fatigue-a`, 3000, {}, { isHomeA: null, isB2BA: true, isB2BB: false }),
-    fatigueB: runGames(`${label}-fatigue-b`, 3000, {}, { isHomeA: null, isB2BA: false, isB2BB: true }),
+    fatigueA: runGames(`${label}-fatigue-a`, 10000, {}, { isHomeA: null, isB2BA: true, isB2BB: false }),
+    fatigueB: runGames(`${label}-fatigue-b`, 10000, {}, { isHomeA: null, isB2BA: false, isB2BB: true }),
   };
 }
 const fatigueProfiles = {
@@ -146,6 +146,11 @@ const homePattern = [true, true, false, false, true, false, true];
 function runSeries(label, count, scenario, seedBonus) {
   setScenario(scenario);
   let seriesWins = 0;
+  const gameWinProbabilities = homePattern.map((isHomeA, game) => seeded(810000 + game, () => (
+    runtime('A', 'B', seedBonus, null, {
+      isHomeA, isB2B: false, ignoreNpcAvailability: true,
+    }).estimatedWinProb
+  )));
   for (let series = 0; series < count; series++) {
     let winsA = 0;
     let winsB = 0;
@@ -158,17 +163,44 @@ function runSeries(label, count, scenario, seedBonus) {
     }
     if (winsA === 4) seriesWins++;
   }
-  return { label, series: count, winRate: seriesWins / count };
+  let probabilityStates = { '0,0': 1 };
+  gameWinProbabilities.forEach(winProbability => {
+    const nextStates = {};
+    Object.keys(probabilityStates).forEach(key => {
+      const [winsA, winsB] = key.split(',').map(Number);
+      const stateProbability = probabilityStates[key];
+      if (winsA === 4 || winsB === 4) {
+        nextStates[key] = (nextStates[key] || 0) + stateProbability;
+        return;
+      }
+      const winKey = `${winsA + 1},${winsB}`;
+      const lossKey = `${winsA},${winsB + 1}`;
+      nextStates[winKey] = (nextStates[winKey] || 0) + stateProbability * winProbability;
+      nextStates[lossKey] = (nextStates[lossKey] || 0) + stateProbability * (1 - winProbability);
+    });
+    probabilityStates = nextStates;
+  });
+  const expectedWinRate = Object.keys(probabilityStates).reduce((total, key) => (
+    Number(key.split(',')[0]) === 4 ? total + probabilityStates[key] : total
+  ), 0);
+  return { label, series: count, winRate: seriesWins / count, expectedWinRate };
 }
-const equalSeries = runSeries('equal', 2500, {}, 0);
+// 系列赛目标只有约 2～6 个百分点差异；10,000 组可将二项抽样标准误压到约 0.5 个百分点，
+// 避免事件层随机调用数变化后，固定 2,500 组样本跨过门禁边界。
+const playoffSeriesTrials = 10000;
+const equalSeries = runSeries('equal', playoffSeriesTrials, {}, 0);
 // 1v4 属于分区半决赛，生产规则不会再给首轮 seedBonus。
-const oneVsFour = runSeries('1v4', 2500, { recordA: [56, 26], recordB: [48, 34] }, 0);
-const oneVsEight = runSeries('1v8', 2500, { recordA: [56, 26], recordB: [35, 47] }, 2.8);
-assert(equalSeries.winRate >= 0.52 && equalSeries.winRate <= 0.56,
+const oneVsFour = runSeries('1v4', playoffSeriesTrials, { recordA: [56, 26], recordB: [48, 34] }, 0);
+const oneVsEight = runSeries('1v8', playoffSeriesTrials, { recordA: [56, 26], recordB: [35, 47] }, 2.8);
+assert(equalSeries.expectedWinRate >= 0.52 && equalSeries.expectedWinRate <= 0.56,
   `同阵容 2-2-1-1-1 系列赛概率异常：${JSON.stringify(equalSeries)}`);
-assert(oneVsFour.winRate >= 0.55 && oneVsFour.winRate <= 0.60
-  && oneVsEight.winRate >= 0.64 && oneVsEight.winRate <= 0.71,
+assert(oneVsFour.expectedWinRate >= 0.55 && oneVsFour.expectedWinRate <= 0.60
+  && oneVsEight.expectedWinRate >= 0.64 && oneVsEight.expectedWinRate <= 0.71,
 `生产规则下的 1v4/1v8 系列赛概率异常：${JSON.stringify({ equalSeries, oneVsFour, oneVsEight })}`);
+for (const sample of [equalSeries, oneVsFour, oneVsEight]) {
+  assert(Math.abs(sample.winRate - sample.expectedWinRate) < 0.015,
+    `${sample.label} 系列赛实测胜率偏离理论概率：${JSON.stringify(sample)}`);
+}
 
 console.log(JSON.stringify({
   paired: { neutral, home, roster, structure, record, fatigueA, fatigueB, fatigueBoth, combined, combinedFatigueA },
