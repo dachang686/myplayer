@@ -346,6 +346,8 @@ const SIM_CONFIG = {
   PLAYER_RATING_MODEL: {
     version: 5,
     mode: 'primary-secondary-role-impact',
+    attributeSchemaVersion: 2,
+    handleAttribute: 'Ball Handle',
     validPositions: ['PG', 'SG', 'SF', 'PF', 'C']
   },
   // ============================================================
@@ -1005,14 +1007,16 @@ function getUnifiedPlayerRating(player, position) {
     return roleImpact[key] > roleImpact[best] ? key : best;
   }, roleNames[0]);
   var peakRoleImpact = roleImpact[peakRoleName];
-  var peakRoleBonus = Math.min(2, Math.max(0, peakRoleImpact - 90) * 0.25);
+  // Ball Handle 的高端分布低于 Hands；只有完整角色超过 87.5 才进入顶级区间，
+  // 额外收益封顶 3 分，普通 85 属性包不会触发，单项属性也无法直接制造巨星 OVR。
+  var peakRoleBonus = Math.min(3, Math.max(0, peakRoleImpact - 87.5) * 4.00);
   // 同一份顶级能力不能在主侧和角色层重复完整加分。
   var apexBonus = Math.max(dominantEliteBonus, peakRoleBonus);
   var twoWayBonus = Math.max(0, Math.min(offense, defense) - 80) * 0.25;
   var overall = clampRating(
     50
-      + (highImpact - 50) * 0.86
-      + (lowImpact - 50) * 0.20
+      + (highImpact - 50) * 0.84
+      + (lowImpact - 50) * 0.32
       + apexBonus
       + twoWayBonus
   );
@@ -1024,9 +1028,13 @@ function getUnifiedPlayerRating(player, position) {
     roleImpact.hubCreator,
     roleImpact.scorer
   );
-  var anchorCeiling = 89
-    + Math.max(0, creationComplement - 80) * 0.80
-    + Math.max(0, roleImpact.rimFinisher - 80) * 0.25;
+  // HAN 改用 Ball Handle 后，纯防守支柱不再从 2K Hands 获得虚假的持球补偿。
+  // 完整创造和篮下终结只负责抬高连续上限，不直接给 OVR 加目标分。
+  var anchorCeiling = 83.8
+    + Math.max(0, creationComplement - 80) * 1.40
+    + Math.max(0, roleImpact.rimFinisher - 80) * 0.40
+    + Math.max(0, roleImpact.defensiveAnchor - 84) * 1.20
+      * Math.max(0, Math.min(1, (creationComplement - 70) / 10));
   overall = Math.min(overall, anchorCeiling);
 
   var creationLoadValue = clampRating(

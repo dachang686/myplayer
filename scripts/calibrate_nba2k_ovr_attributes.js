@@ -24,11 +24,9 @@ if (formulaStart < 0 || formulaEnd < 0) throw new Error('无法提取 OVR 公式
 
 const ATTR_KEYS = config.ATTR_LIST.slice();
 const REVIEW_FIELDS = ['ovr', ...ATTR_KEYS.filter((key) => key !== 'STL')];
-const ATTRIBUTE_MAP = {
-  threePT: 'Three-Point', MID: 'Mid-Range', FIN: 'Close Shot', DNK: 'Driving Dunk',
-  HAN: 'Hands', PAS: 'Pass Accuracy', PDEF: 'Perimeter D', STL: 'Steal',
-  IDEF: 'Interior D', BLK: 'Block', REB: 'Def. Rebound', ATH: 'Agility', STR: 'Strength',
-};
+const { NBA2K_ATTRIBUTE_MAP: ATTRIBUTE_MAP } = require(
+  path.join(root, 'js', 'data', 'player_attribute_schema.js'),
+);
 const STAT_MODELS = {
   threePT: { maxDelta: 1, metrics: [['FG3_PCT', 1]] },
   MID: { maxDelta: 1, metrics: [['PTS', 0.65], ['FG_PCT', 0.35]] },
@@ -140,6 +138,13 @@ function reviewedBaseline(local) {
   }
   const map = mappingById.get(local.id);
   const external = map?.accepted && map.url ? ratingByUrl.get(map.url) : null;
+  const reviewedHan = ovrAdjustmentById.get(local.id)?.changes?.HAN?.[1];
+  const sourceHan = external?.attributes?.[ATTRIBUTE_MAP.HAN];
+  // 旧审核文件中的 HAN 来自 2K Hands。迁移后只接受明确人工复核值或 Ball Handle，
+  // 来源缺失时保留当前名单值，禁止重新写回 Hands。
+  profile.HAN = finite(reviewedHan)
+    ? Number(reviewedHan)
+    : (finite(sourceHan) ? Number(sourceHan) : Number(local.HAN));
   const sourceSteal = external?.attributes?.Steal;
   profile.STL = Number.isInteger(sourceSteal) ? sourceSteal : Number(stealOverrides[local.id]?.value);
   if (!finite(profile.STL)) profile.STL = Number(local.STL);

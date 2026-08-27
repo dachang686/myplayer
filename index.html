@@ -1248,6 +1248,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   </div>
 </div>
 
+<script src="js/data/player_attribute_schema.js"></script>
 <script src="js/data/league_players.js"></script>
 <script src="js/data/player_loyalty.js"></script>
 <script src="js/data/league_schedule.js"></script>
@@ -1794,7 +1795,7 @@ function trackExposureOnce(el, params) {
 // ==================== 属性工具 ====================
 const ATTR_KEYS = SIM_CONFIG.ATTR_LIST;
 const ATTR_CN = SIM_CONFIG.ATTR_CN;
-ATTR_CN.HAN = '护球';
+ATTR_CN.HAN = PLAYER_ATTRIBUTE_SCHEMA.fields.HAN.label;
 const ATTR_DESC = SIM_CONFIG.ATTR_DESC;
 const GRADE = SIM_CONFIG.GRADE;
 

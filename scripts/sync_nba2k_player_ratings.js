@@ -19,21 +19,9 @@ const TEAM_NAMES = {
   UTA: 'Utah Jazz', WAS: 'Washington Wizards',
 };
 
-const ATTRIBUTE_MAP = {
-  threePT: 'Three-Point',
-  MID: 'Mid-Range',
-  FIN: 'Close Shot',
-  DNK: 'Driving Dunk',
-  HAN: 'Hands',
-  PAS: 'Pass Accuracy',
-  PDEF: 'Perimeter D',
-  STL: 'Steal',
-  IDEF: 'Interior D',
-  BLK: 'Block',
-  REB: 'Def. Rebound',
-  ATH: 'Agility',
-  STR: 'Strength',
-};
+const { NBA2K_ATTRIBUTE_MAP: ATTRIBUTE_MAP } = require(
+  path.join(root, 'js', 'data', 'player_attribute_schema.js'),
+);
 
 // Confirmed aliases in the cached OVRBase snapshot. Keep these keyed by local
 // player ID so short names and suffix differences never create fuzzy matches.

@@ -29,21 +29,9 @@ const TEAM_NAMES = {
   UTA: 'Utah Jazz', WAS: 'Washington Wizards',
 };
 
-const ATTRIBUTE_MAP = {
-  threePT: 'Three-Point',
-  MID: 'Mid-Range',
-  FIN: 'Close Shot',
-  DNK: 'Driving Dunk',
-  HAN: 'Hands',
-  PAS: 'Pass Accuracy',
-  PDEF: 'Perimeter D',
-  STL: 'Steal',
-  IDEF: 'Interior D',
-  BLK: 'Block',
-  REB: 'Def. Rebound',
-  ATH: 'Agility',
-  STR: 'Strength',
-};
+const { NBA2K_ATTRIBUTE_MAP: ATTRIBUTE_MAP } = require(
+  path.join(root, 'js', 'data', 'player_attribute_schema.js'),
+);
 const REVIEW_FIELDS = ['ovr', ...Object.keys(ATTRIBUTE_MAP), 'CLU'];
 const NBA_STATS_FIELDS = [
   'PLAYER_ID', 'PLAYER', 'TEAM', 'GP', 'MIN', 'FG_PCT', 'FG3_PCT', 'FT_PCT',

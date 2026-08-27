@@ -77,7 +77,9 @@ const positionOvrs = ['PG', 'SG', 'SF', 'PF', 'C'].map(pos => config.getUnifiedP
 assert(positionOvrs.every(value => Math.abs(value - positionOvrs[0]) < 1e-9),
   `角色驱动模型不应保留无效的位置权重：${JSON.stringify(positionOvrs)}`);
 assert(config.PLAYER_RATING_MODEL.version === 5
-  && config.PLAYER_RATING_MODEL.mode === 'primary-secondary-role-impact',
+  && config.PLAYER_RATING_MODEL.mode === 'primary-secondary-role-impact'
+  && config.PLAYER_RATING_MODEL.attributeSchemaVersion === 2
+  && config.PLAYER_RATING_MODEL.handleAttribute === 'Ball Handle',
   `统一评分模型必须使用 V5 主次角色影响公式：${JSON.stringify(config.PLAYER_RATING_MODEL)}`);
 
 const completeCreator = config.getUnifiedPlayerRating(player({
@@ -104,7 +106,7 @@ const pureAnchor = config.getUnifiedPlayerRating(player({
   STL: 65, BLK: 97, REB: 97, ATH: 78, STR: 94,
 }));
 assert(pureAnchor.roles.defensiveAnchor > 95
-  && pureAnchor.overall <= 89.01
+  && pureAnchor.overall <= 84.01
   && Math.abs(pureAnchor.rotationValue - pureAnchor.overall) > 0.1,
 `纯防守支柱必须受角色上限约束，且轮换价值与 OVR 分离：${JSON.stringify(pureAnchor)}`);
 

@@ -1,0 +1,298 @@
+{
+  "schemaVersion": 2,
+  "definition": {
+    "HAN": "持球状态下的运球控制、变向稳定性和失误保护能力",
+    "nba2kAttribute": "Ball Handle",
+    "excludedNba2kAttribute": "Hands"
+  },
+  "precedence": [
+    "reviewed_override",
+    "nba2k_ball_handle",
+    "retain_current_when_source_missing"
+  ],
+  "counts": {
+    "leaguePlayers": 525,
+    "sourcedFromReview": 28,
+    "sourcedFrom2k": 451,
+    "retainedWithoutSource": 46,
+    "changed": 470
+  },
+  "retainedWithoutSource": [
+    {
+      "localId": "P0018",
+      "cname": "吉尔伯特",
+      "HAN": 80,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0035",
+      "cname": "约翰逊",
+      "HAN": 73,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0037",
+      "cname": "史密斯",
+      "HAN": 82,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0039",
+      "cname": "斯科特",
+      "HAN": 70,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0052",
+      "cname": "班顿",
+      "HAN": 79,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0086",
+      "cname": "迪林厄姆",
+      "HAN": 89,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0089",
+      "cname": "麦克朗",
+      "HAN": 82,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0102",
+      "cname": "萨尔",
+      "HAN": 72,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0103",
+      "cname": "埃纳鲁纳",
+      "HAN": 82,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0118",
+      "cname": "普拉基达斯",
+      "HAN": 71,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0119",
+      "cname": "史密斯",
+      "HAN": 73,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0134",
+      "cname": "辛普森",
+      "HAN": 80,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0136",
+      "cname": "罗迪",
+      "HAN": 81,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0520",
+      "cname": "里斯",
+      "HAN": 65,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0168",
+      "cname": "威廉姆斯",
+      "HAN": 82,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0169",
+      "cname": "克赖尔",
+      "HAN": 92,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0171",
+      "cname": "莱昂斯",
+      "HAN": 82,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0224",
+      "cname": "佩杜拉",
+      "HAN": 79,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0204",
+      "cname": "斯劳森",
+      "HAN": 71,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0205",
+      "cname": "汤普森",
+      "HAN": 80,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0221",
+      "cname": "华盛顿",
+      "HAN": 80,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0223",
+      "cname": "奥米尔",
+      "HAN": 75,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0238",
+      "cname": "蒂米",
+      "HAN": 81,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0259",
+      "cname": "马沙克",
+      "HAN": 69,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0262",
+      "cname": "吉布森",
+      "HAN": 81,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0263",
+      "cname": "巴尔",
+      "HAN": 94,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0275",
+      "cname": "基尔斯",
+      "HAN": 72,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0293",
+      "cname": "瑞安",
+      "HAN": 82,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0305",
+      "cname": "莱尔斯",
+      "HAN": 82,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0313",
+      "cname": "普林",
+      "HAN": 84,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0346",
+      "cname": "琼斯",
+      "HAN": 89,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0378",
+      "cname": "莫拉莱斯",
+      "HAN": 80,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0397",
+      "cname": "博尚",
+      "HAN": 74,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0411",
+      "cname": "布耶",
+      "HAN": 75,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0415",
+      "cname": "布雷亚",
+      "HAN": 84,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0431",
+      "cname": "杨",
+      "HAN": 68,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0433",
+      "cname": "肯特",
+      "HAN": 81,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0447",
+      "cname": "海斯",
+      "HAN": 84,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0448",
+      "cname": "鲍德温",
+      "HAN": 80,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0451",
+      "cname": "弗拉格勒",
+      "HAN": 73,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0502",
+      "cname": "欣森",
+      "HAN": 88,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0504",
+      "cname": "班巴",
+      "HAN": 72,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0505",
+      "cname": "姆本格",
+      "HAN": 80,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0507",
+      "cname": "贝茨",
+      "HAN": 80,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0508",
+      "cname": "格雷",
+      "HAN": 84,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    },
+    {
+      "localId": "P0518",
+      "cname": "卡林顿",
+      "HAN": 84,
+      "reason": "cached 2K detail has no Ball Handle; retained current reviewed value"
+    }
+  ]
+}
