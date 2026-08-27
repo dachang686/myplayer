@@ -102,6 +102,14 @@ const perimeter = makeSyntheticTeam('V2_PERIMETER_CORE', {
   pos: 'PG', threePT: 95, MID: 95, FIN: 85, DNK: 70, HAN: 95, PAS: 85,
   ATH: 90, STR: 70, REB: 65, PDEF: 80, IDEF: 55, STL: 80, BLK: 45,
 });
+const pureInterior = makeSyntheticTeam('V2_PURE_INTERIOR_CORE', {
+  pos: 'C', threePT: 25, MID: 25, FIN: 99, DNK: 99, HAN: 99, PAS: 80,
+  ATH: 99, STR: 99, REB: 90, PDEF: 75, IDEF: 75, STL: 75, BLK: 75, CLU: 99,
+});
+const purePerimeter = makeSyntheticTeam('V2_PURE_PERIMETER_CORE', {
+  pos: 'PG', threePT: 99, MID: 99, FIN: 25, DNK: 25, HAN: 99, PAS: 80,
+  ATH: 99, STR: 70, REB: 70, PDEF: 75, IDEF: 75, STL: 75, BLK: 75, CLU: 99,
+});
 
 function runCore(team, games, seedBase) {
   const totals = { pts: 0, fgm: 0, fga: 0, fta: 0, threeA: 0 };
@@ -134,6 +142,8 @@ const games = 2500;
 const report = {
   interior: runCore(interior, games, 810000),
   perimeter: runCore(perimeter, games, 820000),
+  pureInterior: runCore(pureInterior, games, 830000),
+  purePerimeter: runCore(purePerimeter, games, 840000),
 };
 
 if (report.interior.pts < 18 || report.interior.pts > 25
@@ -144,6 +154,13 @@ if (report.interior.pts < 18 || report.interior.pts > 25
   || report.interior.fga < report.perimeter.fga * 0.72
   || report.interior.fta < report.perimeter.fta * 0.80) {
   throw new Error(`V2 强力内线进攻机会仍被压制：${JSON.stringify(report)}`);
+}
+
+const pureFgaRatio = report.pureInterior.fga / Math.max(0.01, report.purePerimeter.fga);
+const purePtsRatio = report.pureInterior.pts / Math.max(0.01, report.purePerimeter.pts);
+if (pureFgaRatio < 0.90 || pureFgaRatio > 1.10
+  || purePtsRatio < 0.85 || purePtsRatio > 1.15) {
+  throw new Error(`V2 同档纯内线/纯外线使用率不对称：${JSON.stringify({ pureFgaRatio, purePtsRatio, report })}`);
 }
 
 console.log(JSON.stringify(report, null, 2));

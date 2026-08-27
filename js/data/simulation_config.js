@@ -906,6 +906,10 @@ function getUnifiedPlayerRating(player, position) {
   var interiorUsageLoad = clampRating(
     rimScoring * 0.40 + rimFinisher * 0.35 + shotCreation * 0.15 + touchLoad * 0.10
   );
+  // 外线专精同样可以依靠投射牵制和自主创造承担高使用率，不能被篮下能力反向限制。
+  var perimeterUsageLoad = clampRating(
+    shootingGravity * 0.45 + shotCreation * 0.30 + touchLoad * 0.15 + ballSecurity * 0.10
+  );
   var defensiveLoad = clampRating(pointOfAttackDefense * 0.28 + interiorDefense * 0.27 + rimProtection * 0.25 + rebounding * 0.20);
   var scoringEfficiency = clampRating(shootingGravity * 0.44 + rimScoring * 0.46 + ballSecurity * 0.10);
 
@@ -1074,6 +1078,7 @@ function getUnifiedPlayerRating(player, position) {
       touchLoad: touchLoad,
       shotLoad: shotLoad,
       interiorUsageLoad: interiorUsageLoad,
+      perimeterUsageLoad: perimeterUsageLoad,
       defensiveLoad: defensiveLoad,
     },
     impact: { offense: offense, defense: defense, neutralTotal: neutralTotal },

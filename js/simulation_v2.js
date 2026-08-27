@@ -436,6 +436,24 @@
         rimAbility[index] * 0.75 + creation[index] * 0.15 + touchLoad[index] * 0.10
       );
     });
+    var perimeterUsageLoad = players.map(function(_, index) {
+      return profileNorm(
+        index,
+        ['capacity', 'perimeterUsageLoad'],
+        three[index] * 0.45 + creation[index] * 0.30 + touchLoad[index] * 0.15 + ballSecurity[index] * 0.10
+      );
+    });
+    var perimeterSpecialistLoad = perimeterUsageLoad.map(function(value, index) {
+      var specializationGap = Math.max(0, value - shotLoad[index]);
+      // 只有外线专精相对通用负荷领先超过 5 个属性点才补偿，并在随后 10 点内连续放大。
+      // 这样普通全能得分手沿用原生态，极端纯外线画像才获得完整的对称通道。
+      var specializationGate = clamp(
+        (specializationGap - 5 / 74) / (10 / 74),
+        0,
+        1
+      );
+      return shotLoad[index] + specializationGap * specializationGate;
+    });
     var form = players.map(function(player) {
       if (player._isUser) {
         var baseForm = typeof getSeasonUsageBias === 'function'
@@ -455,7 +473,7 @@
     });
     // 触球、出手、助攻各有独立权重：高传球中轴可以承担进攻，却不会被迫拥有最高 FGA。
     var scoringLoads = shotLoad.map(function(value, index) {
-      return Math.max(value, interiorUsageLoad[index]);
+      return Math.max(value, interiorUsageLoad[index], perimeterSpecialistLoad[index]);
     });
     // 进攻角色由实际得分/持球能力决定；rotation.roleRanks 只描述轮换顺序，不能把 PG/SG 槽位当成第一、第二得分手。
     // 相同能力使用相同进攻档位，让阵容数组顺序本身不会制造出手权差异。
@@ -468,14 +486,15 @@
       var offensiveRoleRank = offensiveRoleRanks[index];
       var roleFactor = clamp(1 + (scoringLoads[index] - teamScoringLoad) * 1.95, 0.72, 1.32);
       var creationFactor = 0.58 + creation[index] * 0.85;
-      // 只有内线负荷显著高于常规 shotLoad 时才打开额外通道；完整外线得分包不重复获益。
-      var interiorParticipationFactor = 0.40 + interiorUsageLoad[index] * 0.95
-        + Math.max(0, interiorUsageLoad[index] - shotLoad[index]) * 1.50;
+      // 只有专精负荷显著高于常规 shotLoad 时才打开额外通道；完整得分包不重复获益。
+      var specialistUsageLoad = Math.max(interiorUsageLoad[index], perimeterSpecialistLoad[index]);
+      var specialistParticipationFactor = 0.40 + specialistUsageLoad * 0.95
+        + Math.max(0, specialistUsageLoad - shotLoad[index]) * 1.50;
       var threatFactor = 0.54 + threat[index] * 0.90;
       var scoringLoad = scoringLoads[index];
       // 低技术球员仍需参与半场进攻；软底座避免 creation/threat 相乘后把长时间上场者压到几乎零出手。
       // 补偿随 scoringLoad 平方衰减，中高端球员基本保持原有机会分配。
-      var participationFactor = Math.max(creationFactor, interiorParticipationFactor) * threatFactor
+      var participationFactor = Math.max(creationFactor, specialistParticipationFactor) * threatFactor
         + 0.18 * Math.pow(1 - scoringLoad, 2);
       // 顶级得分负荷在内线机会重新分配后保留少量稳定承载，避免头部得分完全依赖爆发抽样。
       var eliteLoadFactor = scoringLoad > 0.985
@@ -564,6 +583,7 @@
       touchLoad: touchLoad,
       shotLoad: shotLoad,
       interiorUsageLoad: interiorUsageLoad,
+      perimeterUsageLoad: perimeterUsageLoad,
       teamCreation: weightedMean(creation, weights),
       teamTouchLoad: teamTouchLoad,
       // 保留原始攻防评分供赛前 expectedMargin 使用；比赛事件读取下方的

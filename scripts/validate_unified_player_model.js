@@ -115,6 +115,13 @@ const interiorFinisher = config.getUnifiedPlayerRating(player({
 assert(interiorFinisher.capacity.interiorUsageLoad > interiorFinisher.capacity.shotLoad + 8,
   `强力篮下终结手必须拥有独立于外线创造的进攻负荷：${JSON.stringify(interiorFinisher)}`);
 
+const perimeterScorer = config.getUnifiedPlayerRating(player({
+  pos: 'PG', threePT: 99, MID: 99, FIN: 25, DNK: 25, HAN: 99, PAS: 80,
+  ATH: 99, STR: 70, REB: 70, PDEF: 75, IDEF: 75, STL: 75, BLK: 75,
+}));
+assert(perimeterScorer.capacity.perimeterUsageLoad > perimeterScorer.capacity.shotLoad + 8,
+  `纯外线得分手必须拥有独立于篮下能力的进攻负荷：${JSON.stringify(perimeterScorer)}`);
+
 const anchorBoundary = player({
   pos: 'C', threePT: 50, MID: 50, FIN: 99, DNK: 99, HAN: 50, PAS: 50,
   ATH: 92, STR: 96, REB: 92, PDEF: 50, IDEF: 90, STL: 50, BLK: 55,
@@ -260,6 +267,10 @@ console.log(JSON.stringify({
   interiorUsage: {
     shotLoad: interiorFinisher.capacity.shotLoad,
     interiorUsageLoad: interiorFinisher.capacity.interiorUsageLoad,
+  },
+  perimeterUsage: {
+    shotLoad: perimeterScorer.capacity.shotLoad,
+    perimeterUsageLoad: perimeterScorer.capacity.perimeterUsageLoad,
   },
   lineup: { fitted: fitted.total, unfitted: unfitted.total },
   residuals: residualMetrics,
