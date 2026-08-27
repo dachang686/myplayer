@@ -8984,8 +8984,13 @@ function applyAnnualAttributeDrift() {
         delta = Math.min(0, delta + 1);
       }
       if (delta !== 0) {
+        var before = Number(STATE.attrs[k]);
+        if (!Number.isFinite(before)) before = 50;
         addAttrDelta(k, delta);
-        changes.push((delta > 0 ? '+' : '') + delta + ' ' + attrCN(k) + (label ? '（' + label + '）' : ''));
+        var appliedDelta = Number(STATE.attrs[k]) - before;
+        if (appliedDelta !== 0) {
+          changes.push((appliedDelta > 0 ? '+' : '') + appliedDelta + ' ' + attrCN(k) + (label ? '（' + label + '）' : ''));
+        }
       }
     });
   }
@@ -10939,15 +10944,21 @@ function confirmTraining() {
   if (spent < 0 || spent > totalPoints) {
     throw new Error('训练点预算校验失败');
   }
+  // 先完整校验，再统一写入；任何非法字段都不能留下部分训练结果。
   for (var k in pending) {
-    if (!pending.hasOwnProperty(k)) continue;
+    if (!Object.prototype.hasOwnProperty.call(pending, k)) continue;
     if (ATTR_KEYS.indexOf(k) < 0 || !Number.isInteger(Number(pending[k])) || Number(pending[k]) < 0) {
       throw new Error('训练属性增量无效');
     }
     var baseValue = Number(STATE.attrs[k]);
     if (!Number.isFinite(baseValue)) baseValue = 50;
     if (baseValue + Number(pending[k]) > 99) throw new Error('训练属性不能超过99');
-    STATE.attrs[k] = baseValue + Number(pending[k]);
+  }
+  for (var applyKey in pending) {
+    if (!Object.prototype.hasOwnProperty.call(pending, applyKey)) continue;
+    var applyBaseValue = Number(STATE.attrs[applyKey]);
+    if (!Number.isFinite(applyBaseValue)) applyBaseValue = 50;
+    STATE.attrs[applyKey] = applyBaseValue + Number(pending[applyKey]);
   }
   STATE.finalOVR = calcOVR(STATE.attrs);
 
