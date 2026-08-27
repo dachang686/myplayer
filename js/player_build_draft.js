@@ -416,14 +416,20 @@ function renderPlayerBuildAttributes(build, player) {
     var pick = owned ? build.picks.find(function(item) { return item && item.attr === attrKey; }) : null;
     var lockedValue = Number(STATE.attrs[attrKey]);
     var value = owned && Number.isFinite(lockedValue) ? lockedValue : getPlayerBuildBaseValue(player, attrKey);
-    var stateLabel = owned ? (pick && pick.sourcePlayerName ? '来源：' + pick.sourcePlayerName : '已拥有') : (selected ? '已选' : '可选择');
+    var sourceTeamName = pick && pick.sourceTeam
+      ? (typeof getTeamName === 'function' ? getTeamName(pick.sourceTeam) : pick.sourceTeam)
+      : '';
+    var sourcePlayerName = pick && pick.sourcePlayerName ? pick.sourcePlayerName : '';
+    var stateLabel = owned
+      ? (sourceTeamName && sourcePlayerName ? sourceTeamName + '-' + sourcePlayerName : '已拥有')
+      : (selected ? '已选' : '可选择');
     var disabled = owned ? ' disabled' : '';
     return '<button type="button" class="pb-attr-card' + (owned ? ' is-owned' : '') + (selected ? ' is-selected' : '') + '"' +
       ' data-build-attr="' + attrKey + '" aria-pressed="' + (selected ? 'true' : 'false') + '"' + disabled +
       ' onclick="selectPlayerBuildAttribute(\'' + attrKey + '\')">' +
       '<span class="pb-attr-name">' + escapePlayerBuildText(attrCN(attrKey)) + '</span>' +
       '<strong class="pb-attr-value">' + value + '</strong>' +
-      '<span class="pb-attr-state">' + stateLabel + '</span>' +
+      '<span class="pb-attr-state">' + escapePlayerBuildText(stateLabel) + '</span>' +
       '</button>';
   }).join('');
 }
