@@ -21,16 +21,16 @@ body {
 
 .manager-app {
   --manager-bg: oklch(0.16 0.018 50);
-  --manager-surface: oklch(0.205 0.02 50);
-  --manager-surface-2: oklch(0.245 0.024 50);
-  --manager-border: oklch(0.33 0.024 50);
-  --manager-border-soft: oklch(0.28 0.02 50);
-  --manager-text: oklch(0.95 0.018 80);
-  --manager-muted: oklch(0.75 0.025 70);
-  --manager-dim: oklch(0.58 0.025 65);
-  --manager-accent: oklch(0.74 0.17 45);
-  --manager-accent-soft: rgba(255, 123, 69, 0.14);
-  --manager-on-accent: oklch(0.2 0.02 50);
+  --manager-surface: oklch(0.19 0.022 185);
+  --manager-surface-2: oklch(0.235 0.028 185);
+  --manager-border: oklch(0.33 0.035 185);
+  --manager-border-soft: oklch(0.28 0.03 185);
+  --manager-text: oklch(0.95 0.018 185);
+  --manager-muted: oklch(0.72 0.025 185);
+  --manager-dim: oklch(0.56 0.025 185);
+  --manager-accent: oklch(0.79 0.14 166);
+  --manager-accent-soft: oklch(0.79 0.14 166 / 0.1);
+  --manager-on-accent: oklch(0.18 0.025 185);
   --manager-safe-bottom: env(safe-area-inset-bottom, 0px);
   width: min(560px, 100%);
   min-height: 100vh;
@@ -65,7 +65,7 @@ body {
   height: 34px;
   border-radius: 10px 10px 10px 4px;
   color: var(--manager-on-accent);
-  box-shadow: 0 4px 0 oklch(0.48 0.14 42), 0 8px 18px rgba(255, 107, 53, 0.2);
+  box-shadow: 0 4px 0 oklch(0.45 0.095 166), 0 8px 18px oklch(0.79 0.14 166 / 0.2);
   transform: rotate(45deg);
 }
 
@@ -137,7 +137,7 @@ body {
 .manager-nav button:focus-visible,
 .manager-nav button.is-active {
   border-color: var(--manager-accent-soft);
-  background: rgba(255, 123, 69, 0.08);
+  background: oklch(0.79 0.14 166 / 0.08);
   color: var(--manager-accent);
 }
 
@@ -177,7 +177,7 @@ body {
 
 .manager-button-primary {
   color: var(--manager-on-accent);
-  box-shadow: 0 4px 0 oklch(0.48 0.14 42), 0 6px 12px rgba(255, 107, 53, 0.18);
+  box-shadow: 0 4px 0 oklch(0.45 0.095 166), 0 6px 12px oklch(0.79 0.14 166 / 0.18);
 }
 
 .manager-button-secondary {
@@ -198,7 +198,7 @@ body {
   border-radius: 14px;
   background: var(--manager-accent);
   color: var(--manager-on-accent);
-  box-shadow: 0 4px 0 oklch(0.48 0.14 42), 0 8px 22px rgba(255, 107, 53, 0.26);
+  box-shadow: 0 4px 0 oklch(0.45 0.095 166), 0 8px 22px oklch(0.79 0.14 166 / 0.26);
   font-family: "Arial Black", "Microsoft YaHei UI", sans-serif;
   font-size: 16px;
   font-weight: 800;
@@ -208,7 +208,7 @@ body {
 
 .manager-next-button:active {
   transform: translateY(3px);
-  box-shadow: 0 1px 0 oklch(0.48 0.14 42), 0 4px 12px rgba(255, 107, 53, 0.18);
+  box-shadow: 0 1px 0 oklch(0.45 0.095 166), 0 4px 12px oklch(0.79 0.14 166 / 0.18);
 }
 
 .manager-app button:disabled {
@@ -655,7 +655,7 @@ button.manager-calendar-cell:hover {
 .manager-player-stat-tabs button:focus-visible,
 .manager-player-stat-tabs button.is-active {
   border-color: var(--manager-accent);
-  background: rgba(255, 123, 69, 0.08);
+  background: oklch(0.79 0.14 166 / 0.08);
   color: var(--manager-accent);
   outline: none;
 }

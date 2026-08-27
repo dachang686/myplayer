@@ -621,7 +621,7 @@ if (!Object.values(ACHIEVEMENT_FEATURES).some(v => v)) {
           var val = c.attrs[k] || 50;
           var g = typeof getGrade === "function" ? getGrade(val) : {
             letter: Math.round(val / 10),
-            color: "#d4af37"
+            color: "oklch(0.79 0.14 166)"
           };
           html += "      <div class=\"mc-attr\"><span class=\"mc-alabel\">" + attrCN(k) + "</span><span class=\"mc-aval\" style=\"color:" + g.color + "\">" + g.letter + "</span></div>";
         });
@@ -678,15 +678,15 @@ if (!Object.values(ACHIEVEMENT_FEATURES).some(v => v)) {
 
       // ── 颜色 ──
       var Cc = {
-        bg: "#faf5eb",
-        card: "#fffaf2",
-        border: "#f0e0cc",
-        text: "#2d1f0e",
-        textDim: "#8a7a66",
-        textMuted: "#baa992",
-        gold: "#d4af37",
-        goldLight: "#f5d060",
-        green: "#2ec4b6",
+        bg: "oklch(0.16 0.018 50)",
+        card: "oklch(0.19 0.022 185)",
+        border: "oklch(0.33 0.035 185)",
+        text: "oklch(0.95 0.018 185)",
+        textDim: "oklch(0.72 0.025 185)",
+        textMuted: "oklch(0.56 0.025 185)",
+        gold: "oklch(0.79 0.14 166)",
+        goldLight: "oklch(0.85 0.1 166)",
+        green: "oklch(0.76 0.14 165)",
         fd: "\"Fredoka\",\"Noto Sans SC\",sans-serif",
         fb: "\"Nunito\",\"Noto Sans SC\",sans-serif"
       };
@@ -716,7 +716,7 @@ if (!Object.values(ACHIEVEMENT_FEATURES).some(v => v)) {
       ctx.save();
       ctx.globalAlpha = 0.03;
       for (var i = 0; i < 200; i++) {
-        ctx.fillStyle = "#000";
+        ctx.fillStyle = "oklch(0.08 0.018 185)";
         ctx.fillRect(Math.random() * W, Math.random() * H, 1, 1);
       }
       ctx.restore();
@@ -745,7 +745,7 @@ if (!Object.values(ACHIEVEMENT_FEATURES).some(v => v)) {
       y += 22;
 
       // ── 分隔装饰线 ──
-      ctx.strokeStyle = "rgba(212,175,55,0.2)";
+      ctx.strokeStyle = "oklch(0.79 0.14 166 / 0.2)";
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(220, y);
@@ -786,7 +786,7 @@ if (!Object.values(ACHIEVEMENT_FEATURES).some(v => v)) {
       roundRectC(ctx, barX, y, fillW, barH, 7);
       ctx.fill();
       // 百分比文字
-      ctx.fillStyle = "#fff";
+      ctx.fillStyle = Cc.text;
       ctx.font = "700 8px " + Cc.fd;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -812,7 +812,7 @@ if (!Object.values(ACHIEVEMENT_FEATURES).some(v => v)) {
         });
 
         // Conf 标题带
-        ctx.fillStyle = "rgba(212,175,55,0.06)";
+        ctx.fillStyle = "oklch(0.79 0.14 166 / 0.06)";
         roundRectC(ctx, PAD, y, 560, 24, 6);
         ctx.fill();
         ctx.fillStyle = Cc.text;
@@ -839,10 +839,10 @@ if (!Object.values(ACHIEVEMENT_FEATURES).some(v => v)) {
             var tx = PAD + col * cellW + cellPad;
             var ty = y;
             if (hasWon) {
-              ctx.fillStyle = "rgba(212,175,55,0.07)";
+              ctx.fillStyle = "oklch(0.79 0.14 166 / 0.07)";
               roundRectC(ctx, PAD + col * cellW + 2, ty - 2, 108, 40, 8);
               ctx.fill();
-              ctx.strokeStyle = "rgba(212,175,55,0.35)";
+              ctx.strokeStyle = "oklch(0.79 0.14 166 / 0.35)";
               ctx.lineWidth = 1;
               roundRectC(ctx, PAD + col * cellW + 2, ty - 2, 108, 40, 8);
               ctx.stroke();
@@ -874,7 +874,7 @@ if (!Object.values(ACHIEVEMENT_FEATURES).some(v => v)) {
 
       // ── Footer ──
       y += 4;
-      ctx.strokeStyle = "rgba(212,175,55,0.15)";
+      ctx.strokeStyle = "oklch(0.79 0.14 166 / 0.15)";
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(200, y);
@@ -932,39 +932,39 @@ if (!Object.values(ACHIEVEMENT_FEATURES).some(v => v)) {
 .cq-conf-panel,
 .cq-tile,
 .cq-toast {
-  --cq-gold: #d4af37;
-  --cq-gold-light: #e8c84a;
-  --cq-gold-dim: rgba(212,175,55,0.12);
-  --cq-gold-bg: rgba(212,175,55,0.06);
-  --cq-bg-elevated: #f5eee0;
-  --cq-border-gold: rgba(212,175,55,0.3);
+  --cq-gold: var(--orange);
+  --cq-gold-light: var(--orange-light);
+  --cq-gold-dim: var(--orange-dim);
+  --cq-gold-bg: var(--orange-bg);
+  --cq-bg-elevated: var(--bg-elevated);
+  --cq-border-gold: var(--orange-dim);
 }
 
 /* ── Hero 头 ── */
 .cq-hero{text-align:center;padding:clamp(20px,4vh,32px) 16px 8px;opacity:0;animation:cqFadeSlide .35s ease forwards}
 .cq-hero-crown{font-size:clamp(36px,10vw,52px);line-height:1;margin-bottom:4px;animation:cqBounce 2s ease-in-out infinite}
-.cq-hero-title{font-family:var(--font-display);font-size:clamp(24px,6.5vw,36px);font-weight:800;background:linear-gradient(135deg,#d4af37,#f5d060,#d4af37);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:4px;line-height:1.2}
+.cq-hero-title{font-family:var(--font-display);font-size:clamp(24px,6.5vw,36px);font-weight:800;color:var(--orange);letter-spacing:4px;line-height:1.2}
 .cq-hero-sub{font-family:var(--font-display);font-size:clamp(10px,2.5vw,13px);color:var(--text-muted);letter-spacing:6px;text-transform:uppercase;margin-top:4px;font-weight:500}
 
 /* ── 进度勋章区 ── */
-.cq-trophy-case{display:flex;align-items:center;justify-content:center;gap:clamp(8px,2vw,16px);padding:12px 16px;margin:0 12px;background:linear-gradient(135deg,rgba(212,175,55,0.06),rgba(212,175,55,0.02));border:1.5px solid rgba(212,175,55,0.15);border-radius:16px;opacity:0;animation:cqFadeSlide .3s ease forwards}
+.cq-trophy-case{display:flex;align-items:center;justify-content:center;gap:clamp(8px,2vw,16px);padding:12px 16px;margin:0 12px;background:var(--orange-bg);border:1.5px solid var(--orange-dim);border-radius:16px;opacity:0;animation:cqFadeSlide .3s ease forwards}
 .cq-trophy-stat{text-align:center;min-width:48px}
-.cq-trophy-num{display:block;font-family:var(--font-display);font-size:clamp(22px,6vw,30px);font-weight:800;color:#d4af37;line-height:1;letter-spacing:1px}
+.cq-trophy-num{display:block;font-family:var(--font-display);font-size:clamp(22px,6vw,30px);font-weight:800;color:var(--orange);line-height:1;letter-spacing:1px}
 .cq-trophy-lbl{display:block;font-size:clamp(9px,2vw,11px);color:var(--text-dim);margin-top:2px;font-weight:600}
-.cq-trophy-divider{color:rgba(212,175,55,0.3);font-size:14px;padding:0 2px}
+.cq-trophy-divider{color:var(--orange-dim);font-size:14px;padding:0 2px}
 
 /* ── 进度条 ── */
 .cq-progress-section{padding:8px 16px 4px;opacity:0;animation:cqFadeSlide .25s ease forwards}
 .cq-progress-track{position:relative;height:20px;background:var(--bg-card);border:1.5px solid var(--border);border-radius:10px;overflow:visible;box-shadow:inset 0 1px 4px rgba(0,0,0,0.04)}
-.cq-progress-fill{height:100%;background:linear-gradient(90deg,#d4af37,#f5d060,#d4af37);border-radius:10px;transition:width .8s cubic-bezier(0.34,1.56,0.64,1);position:relative;min-width:4px}
+.cq-progress-fill{height:100%;background:var(--orange);border-radius:10px;transition:width .8s cubic-bezier(0.34,1.56,0.64,1);position:relative;min-width:4px}
 .cq-progress-fill::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);animation:cqShimmer 2s ease-in-out infinite}
-.cq-progress-marker{position:absolute;top:-22px;font-family:var(--font-display);font-size:10px;font-weight:700;color:#d4af37;transform:translateX(-50%);white-space:nowrap;transition:left .8s cubic-bezier(0.34,1.56,0.64,1)}
+.cq-progress-marker{position:absolute;top:-22px;font-family:var(--font-display);font-size:10px;font-weight:700;color:var(--orange);transform:translateX(-50%);white-space:nowrap;transition:left .8s cubic-bezier(0.34,1.56,0.64,1)}
 
 /* ── 联盟面板 ── */
 .cq-conf-panel{margin:8px 8px 12px;background:var(--bg-card);border:1.5px solid var(--border);border-radius:16px;overflow:hidden;opacity:0;animation:cqFadeSlide .3s ease forwards;box-shadow:0 2px 12px rgba(45,31,14,0.06)}
-.cq-conf-ribbon{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:linear-gradient(135deg,#f5eee0,#f0e6d4);border-bottom:1.5px solid var(--border)}
+.cq-conf-ribbon{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg-card-hover);border-bottom:1.5px solid var(--border)}
 .cq-conf-name{font-family:var(--font-display);font-size:clamp(14px,3.5vw,17px);font-weight:700;color:var(--text);letter-spacing:2px}
-.cq-conf-progress{font-family:var(--font-display);font-size:13px;font-weight:700;color:#d4af37;letter-spacing:1px}
+.cq-conf-progress{font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--orange);letter-spacing:1px}
 
 /* ── 分区（简化版：直接并列）── */
 .cq-conf-teams-wrap{padding:8px 10px 12px}
@@ -975,8 +975,8 @@ if (!Object.values(ACHIEVEMENT_FEATURES).some(v => v)) {
 /* ── 球队磁贴 ── */
 .cq-tile{position:relative;border-radius:12px;text-align:center;cursor:default;transition:all .25s cubic-bezier(0.34,1.56,0.64,1);min-height:clamp(72px,14vw,88px);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;overflow:hidden;padding:6px 2px}
 .cq-tile-bg{position:absolute;inset:0;border-radius:12px;pointer-events:none;transition:opacity .3s ease}
-.cq-tile-won{background:linear-gradient(145deg,rgba(212,175,55,0.07),rgba(212,175,55,0.02));border:2px solid rgba(212,175,55,0.35);cursor:pointer;box-shadow:0 2px 8px rgba(212,175,55,0.08)}
-.cq-tile-won:hover{transform:translateY(-4px) scale(1.03);border-color:#d4af37;box-shadow:0 8px 24px rgba(212,175,55,0.18),0 0 0 1px rgba(212,175,55,0.2)}
+.cq-tile-won{background:var(--orange-bg);border:2px solid var(--orange-dim);cursor:pointer;box-shadow:0 2px 8px var(--orange-dim)}
+.cq-tile-won:hover{transform:translateY(-4px) scale(1.03);border-color:var(--orange);box-shadow:0 8px 24px var(--orange-dim),0 0 0 1px var(--orange-dim)}
 .cq-tile-won:active{transform:scale(0.96)}
 .cq-tile-empty{background:var(--bg);border:1.5px dashed var(--border-light);opacity:.5}
 .cq-tile-empty .cq-tile-logo{opacity:.35;filter:grayscale(.7)}
@@ -985,9 +985,9 @@ if (!Object.values(ACHIEVEMENT_FEATURES).some(v => v)) {
 .cq-tile-won:hover .cq-tile-logo{transform:scale(1.08)}
 .cq-tile-logo img{display:block;margin:0 auto;border-radius:4px;transition:all .3s ease}
 .cq-tile-code{font-family:var(--font-display);font-size:clamp(9px,2.2vw,11px);font-weight:700;color:var(--text);letter-spacing:.8px;position:relative;z-index:1}
-.cq-tile-name{font-size:clamp(7px,1.6vw,8px);color:#d4af37;font-weight:600;position:relative;z-index:1;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.3px}
+.cq-tile-name{font-size:clamp(7px,1.6vw,8px);color:var(--orange);font-weight:600;position:relative;z-index:1;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;letter-spacing:.3px}
 .cq-tile-lock{font-size:11px;position:relative;z-index:1;filter:grayscale(.5)}
-.cq-tile-won::before{content:'';position:absolute;inset:0;border-radius:12px;background:linear-gradient(135deg,transparent 60%,rgba(212,175,55,0.06) 100%);pointer-events:none}
+.cq-tile-won::before{content:'';position:absolute;inset:0;border-radius:12px;background:var(--orange-bg);pointer-events:none}
 
 /* ── 底部 ── */
 .cq-footer{text-align:center;padding:12px 16px 24px;opacity:0;animation:cqFadeSlide .25s ease forwards}
@@ -996,9 +996,9 @@ if (!Object.values(ACHIEVEMENT_FEATURES).some(v => v)) {
 .cq-back-btn{border:2px solid var(--border);background:var(--bg-card);color:var(--text-dim);box-shadow:0 2px 0 var(--border)}
 .cq-back-btn:active{transform:translateY(2px);box-shadow:0 0 0 var(--border)}
 .cq-back-btn:hover{border-color:var(--orange);color:var(--orange)}
-.cq-share-btn{border:none;background:linear-gradient(135deg,#d4af37,#e8c84a);color:#2a2015;box-shadow:0 3px 0 #b8922a,0 4px 12px rgba(212,175,55,0.2)}
-.cq-share-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #b8922a,0 2px 6px rgba(212,175,55,0.15)}
-.cq-share-btn:hover{background:linear-gradient(135deg,#e8c84a,#f5d85a)}
+.cq-share-btn{border:none;background:var(--orange);color:var(--on-accent);box-shadow:0 3px 0 oklch(0.45 0.095 166),0 4px 12px oklch(0.79 0.14 166 / .2)}
+.cq-share-btn:active{transform:translateY(2px);box-shadow:0 1px 0 oklch(0.45 0.095 166),0 2px 6px oklch(0.79 0.14 166 / .15)}
+.cq-share-btn:hover{background:var(--orange-light)}
 .cq-back-arrow{font-size:12px}
 
 /* ── 详情页 — 列表视图 ── */
@@ -1013,7 +1013,7 @@ if (!Object.values(ACHIEVEMENT_FEATURES).some(v => v)) {
 
 .cq-list-item{display:flex;align-items:center;gap:10px;padding:10px 12px;margin:0 4px 6px;background:var(--bg-card);border:1.5px solid var(--border);border-radius:12px;cursor:pointer;transition:all .15s ease;opacity:0;animation:cqFadeSlide .3s ease forwards}
 .cq-list-item:active{transform:scale(0.97);border-color:var(--orange);background:var(--orange-bg)}
-.cq-list-item-badge{font-family:var(--font-display);font-size:11px;font-weight:700;color:#d4af37;background:rgba(212,175,55,0.1);border:1.5px solid rgba(212,175,55,0.25);border-radius:8px;padding:4px 8px;white-space:nowrap;flex-shrink:0}
+.cq-list-item-badge{font-family:var(--font-display);font-size:11px;font-weight:700;color:var(--orange);background:var(--orange-bg);border:1.5px solid var(--orange-dim);border-radius:8px;padding:4px 8px;white-space:nowrap;flex-shrink:0}
 .cq-list-item-main{flex:1;min-width:0}
 .cq-list-item-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .cq-li-ovr{font-family:var(--font-display);font-size:16px;font-weight:700;color:var(--text)}
@@ -1026,7 +1026,7 @@ if (!Object.values(ACHIEVEMENT_FEATURES).some(v => v)) {
 
 
 /* ── Toast — 金牌弹出 ── */
-.cq-toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:500;width:min(520px,calc(100vw - 32px));box-sizing:border-box;background:linear-gradient(145deg,#3a2a1a,#2a2015);border:2px solid #d4af37;border-radius:20px;padding:24px 32px;font-family:var(--font-display);font-size:clamp(22px,5vw,30px);font-weight:700;color:#f5e6c8;box-shadow:0 16px 56px rgba(212,175,55,0.22),0 0 0 1px rgba(212,175,55,0.08);text-align:center;line-height:1.35;animation:cqToastIn .45s cubic-bezier(.16,1,.3,1) forwards;letter-spacing:.5px}
+.cq-toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:500;width:min(520px,calc(100vw - 32px));box-sizing:border-box;background:var(--bg-card);border:2px solid var(--orange);border-radius:20px;padding:24px 32px;font-family:var(--font-display);font-size:clamp(22px,5vw,30px);font-weight:700;color:var(--text);box-shadow:0 16px 56px oklch(0.79 0.14 166 / .22),0 0 0 1px var(--orange-dim);text-align:center;line-height:1.35;animation:cqToastIn .45s cubic-bezier(.16,1,.3,1) forwards;letter-spacing:.5px}
 .cq-toast-team{font-size:.62em;font-weight:600}.cq-toast-detail{font-family:var(--font-body);font-size:.48em;font-weight:600;color:var(--text-dim)}
 .cq-toast-out{animation:cqToastOut .4s ease forwards!important}
 

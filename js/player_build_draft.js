@@ -4,7 +4,7 @@
    ============================================================ */
 
 var PLAYER_BUILD_TOTAL_ROUNDS = 14;
-var PLAYER_BUILD_MAX_REROLLS = 5;
+var PLAYER_BUILD_MAX_REROLLS = 8;
 var PLAYER_BUILD_TIERS = Object.freeze({
   core: Object.freeze({ key: 'core', label: '核心', count: 4, multiplier: 1.00, tone: 'core' }),
   strong: Object.freeze({ key: 'strong', label: '强项', count: 4, multiplier: 0.92, tone: 'strong' }),

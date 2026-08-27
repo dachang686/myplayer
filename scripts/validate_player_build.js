@@ -50,7 +50,7 @@ function startBuild() {
   state.attrSlots = {};
   ATTR_KEYS.forEach(key => { state.attrs[key] = null; state.attrSlots[key] = null; });
   state.playerBuild = context.createPlayerBuildState();
-  state._rerollsLeft = 5;
+  state._rerollsLeft = 8;
   assert(context.drawNextPlayerBuildPlayers(), '无法抽取首轮两名候选');
   return state.playerBuild;
 }
@@ -83,8 +83,8 @@ assert(Object.keys(context.STATE.attrs).length === 14 && ATTR_KEYS.every(key => 
 assert(ovrCalls === 1 && context.STATE.finalOVR === 88, 'OVR 未使用中央 calcOVR');
 
 const rerollBuild = startBuild();
-for (let i = 0; i < 5; i += 1) context.rerollPlayerBuildPlayer();
-assert(rerollBuild.rerollsUsed === 5 && context.STATE._rerollsLeft === 0, '5次重抽未跨轮统一计数');
+for (let i = 0; i < 8; i += 1) context.rerollPlayerBuildPlayer();
+assert(rerollBuild.rerollsUsed === 8 && context.STATE._rerollsLeft === 0, '8次重抽未跨轮统一计数');
 assert(rerollBuild.picks.length === 0 && rerollBuild.round === 1, '重抽错误消耗轮次');
 
 console.log(JSON.stringify({
