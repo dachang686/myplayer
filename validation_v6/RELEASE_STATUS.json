@@ -1,0 +1,18 @@
+{
+  "release_ready": false,
+  "archive_integrity": false,
+  "verified_archive": "/mnt/data/index_2_verified_v6.zip",
+  "verified_size": 0,
+  "sha256": null,
+  "player_audit": {},
+  "simulation_integration": {
+    "actualEngineEvidence": null,
+    "sourceEvidence": null,
+    "validatorsFound": null,
+    "passed": null,
+    "failed": null
+  },
+  "pipeline_fatal": null,
+  "archive_error": "",
+  "generated_at": "2026-08-28 09:58:21"
+}
