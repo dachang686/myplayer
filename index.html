@@ -12069,8 +12069,9 @@ function getCareerNarrativeIdentity() {
   var starter = !!(STATE.season && STATE.season.isUserStarter);
   var role = 'bench';
   if (starter) role = 'starter';
-  if (starter && (ovr >= 86 || (Number(avg.pts) || 0) >= 20 || (Number(avg.ast) || 0) >= 8)) role = 'core';
-  if (starter && (ovr >= 92 || (Number(profile.fame) || 0) >= 15)) role = 'franchise';
+  // 核心身份同时读取能力与真实产出，避免第六人/阵容标记把顶级球员降成轮换边缘人。
+  if (ovr >= 86 || (Number(avg.pts) || 0) >= 20 || (Number(avg.ast) || 0) >= 8) role = 'core';
+  if (ovr >= 92 || (Number(profile.fame) || 0) >= 15) role = 'franchise';
   if (age >= 34) role = role === 'bench' ? 'veteran' : 'veteran_core';
   var stage = 'emerging';
   if (age >= 34) stage = 'veteran';
@@ -12441,12 +12442,17 @@ function chooseSeasonNarrativeTheme() {
   var previousPct = getNarrativePreviousWinPct();
   var age = Number(career.currentAge) || 22;
   var seasonNum = getNarrativeSeasonNumber();
+  var avg = typeof getUserAvg === 'function' ? getUserAvg() : { pts: 0, ast: 0, reb: 0 };
+  var ovr = Number(STATE.finalOVR) || 0;
+  var isRotationFringe = !STATE.season.isUserStarter && ovr < 84 &&
+    (Number(avg.pts) || 0) < 14 && (Number(avg.ast) || 0) < 6 && (Number(avg.reb) || 0) < 10;
   var key = 'rise';
   if (age >= 34) key = 'legacy';
   else if (hasNarrativeTeamChanged()) key = 'new_city';
   else if ((Number(career.contract) || 0) <= 1) key = 'contract';
   else if (getConsecutiveCareerChampionships() >= 2) key = 'dynasty';
-  else if (seasonNum === 1 || !STATE.season.isUserStarter) key = 'prove';
+  // 新秀/替补只是名义身份；只有能力与实际产出也处在轮换边缘时，才使用“证明自己”。
+  else if (isRotationFringe) key = 'prove';
   else if ((flags.seasonCommitment && flags.seasonCommitment.outcome === 'fell_short') || (previousPct != null && previousPct < 0.45)) key = 'reset';
   else if ((Number(STATE.finalOVR) || 0) >= 89 || (previousPct != null && previousPct >= 0.6)) key = 'title';
   key = avoidRepeatedNarrativeTheme(key);
@@ -12743,12 +12749,13 @@ function getNarrativeMatchupGame(team, minimumGame) {
 }
 
 function getRoleNarrativeLevel() {
-  var seasonNum = getNarrativeSeasonNumber();
   var age = Number(STATE.career && STATE.career.currentAge) || 22;
+  var ovr = Number(STATE.finalOVR) || 0;
+  var avg = typeof getUserAvg === 'function' ? getUserAvg() : { pts: 0, ast: 0, reb: 0 };
   if (age >= 34) return 4;
-  if (seasonNum === 1 || !STATE.season.isUserStarter) return 1;
-  if ((Number(STATE.finalOVR) || 0) >= 89) return 3;
-  return 2;
+  if (ovr >= 89 || (Number(avg.pts) || 0) >= 20 || (Number(avg.ast) || 0) >= 8) return 3;
+  if (STATE.season.isUserStarter || ovr >= 84 || (Number(avg.pts) || 0) >= 14 || (Number(avg.ast) || 0) >= 6 || (Number(avg.reb) || 0) >= 10) return 2;
+  return 1;
 }
 
 function makeSeasonStoryThread(id, kind, title, emoji, openingGame, resolutionGame, payload) {
@@ -13104,6 +13111,7 @@ function initializeSeasonNarrative() {
   var events = ensureSeasonEventState();
   if (!events.narrativeTeam) events.narrativeTeam = inferSeasonNarrativeTeam(events);
   syncNarrativeAfterPlayerTeamChange(events);
+  reconcileQueuedNarrativeRole(events);
   if (events.seasonTheme && Array.isArray(events.storyThreads) && events.storyThreads.length) return events;
   var theme = chooseSeasonNarrativeTheme();
   events.seasonTheme = theme;
@@ -13117,6 +13125,38 @@ function initializeSeasonNarrative() {
   events.directorEvents = [];
   events.narrativeTeam = STATE.careerTeam || events.narrativeTeam;
   return events;
+}
+
+/** 未作选择的角色剧情会跟随已兑现的赛季身份升级；已经承诺或结算的选择不做追溯改写。 */
+function reconcileQueuedNarrativeRole(events) {
+  if (!events) return false;
+  var threads = Array.isArray(events.storyThreads) ? events.storyThreads : [];
+  var changed = false;
+  var teamThread = threads.find(function(thread) {
+    return thread && thread.kind === 'team' && thread.state === 'queued' && thread.payload && thread.payload.themeId === 'prove';
+  });
+  if (events.seasonTheme && events.seasonTheme.id === 'prove' && teamThread) {
+    var correctedTheme = chooseSeasonNarrativeTheme();
+    if (correctedTheme.id !== 'prove') {
+      var correctedStory = getSeasonThemeStoryline(correctedTheme);
+      events.seasonTheme = correctedTheme;
+      teamThread.title = correctedStory.title;
+      teamThread.emoji = correctedTheme.emoji;
+      teamThread.payload.themeId = correctedTheme.id;
+      teamThread.payload.themeStoryId = correctedTheme.variantId || correctedTheme.id;
+      teamThread.payload.themeTitle = correctedTheme.title;
+      teamThread.payload.effectProfile = correctedStory.effectProfile || null;
+      changed = true;
+    }
+  }
+  var correctedRoleLevel = getRoleNarrativeLevel();
+  threads.forEach(function(thread) {
+    if (!thread || thread.kind !== 'role' || thread.state !== 'queued' || (Number(thread.payload && thread.payload.level) || 0) >= correctedRoleLevel) return;
+    thread.title = '角色线 Lv' + correctedRoleLevel;
+    thread.payload.level = correctedRoleLevel;
+    changed = true;
+  });
+  return changed;
 }
 
 function hasNarrativeThread(kind) {
@@ -15570,7 +15610,7 @@ EVENT_REGISTRY.push({
     var seasonNum = STATE.career.seasonCount || 0;
     if (seasonNum > 2) return false;
     var avg = typeof getUserAvg === 'function' ? getUserAvg() : { pts: 0, ast: 0 };
-    var isEstablishedCore = !!STATE.season.isUserStarter && (
+    var isEstablishedCore = (
       (Number(avg.pts) || 0) >= 18 ||
       (Number(avg.ast) || 0) >= 7 ||
       (Number(STATE.finalOVR) || 0) >= 88

@@ -110,10 +110,15 @@ if (registryStart < 0 || registryEnd < 0) {
     'LEAGUE_PLAYER_DATA',
     'addProfileDelta',
     'getCareerProfile',
+    'getUserAvg',
     'getBondedTeammateName',
     'ensureSeasonEventState',
     `${indexSource.slice(registryStart, registryEnd)}\nreturn { EVENT_REGISTRY, checkRandomEvents, resolveEventVars, getRandomEventLane, getEventNoiseLevel, getEventNoiseTheme, getEventNoiseThemeCooldown, isRandomEventNoiseEligible, shouldPresentRandomEvent, initializeSeasonNarrative, canTriggerEventByLifecycle, recordEventLifecycle, meetsCareerEventIdentity, recordNarrativePlayoffSeries, finalizeSeasonNarrativeAtSeasonEnd, commitDirectorThreadChoice, resolveDirectorThread, getNarrativeThreadOutcome, getSeasonThemeEventWeight, chooseSeasonNarrativeTheme, chooseNarrativeThemeVariant, getSeasonThemeStoryline, getSeasonNarrativeTeammate, getNarrativeFormerTeammates, getDirectorThreadOpening, queueGameDrivenPressureThread, getActiveNarrativeThreadCount, selectNarrativeFormerTeammate, checkSeasonNarrativeDirector, consumeActiveEventEffectsForCareerGame, afterCareerTeamGame, findNarrativePlayer, syncNarrativeReunitedTeammates, syncNarrativeAfterPlayerTeamChange, isNarrativeThreadInCurrentTeamContext };`,
-  )({}, state, leagueData, addProfileDelta, profile, () => '测试队友', ensureEventState);
+  )({}, state, leagueData, addProfileDelta, profile, () => {
+    const stats = state.season?.playerStats || {};
+    const games = stats.games || 1;
+    return { pts: (stats.pts || 0) / games, ast: (stats.ast || 0) / games, reb: (stats.reb || 0) / games };
+  }, () => '测试队友', ensureEventState);
 
   const registry = eventModule.EVENT_REGISTRY;
   registryCount = registry.length;
@@ -196,6 +201,9 @@ if (registryStart < 0 || registryEnd < 0) {
     state.finalOVR = 78;
     state.season.isUserStarter = false;
     if (!coachRoleMeeting.condition()) failures.push('早期未稳定角色的球员无法触发角色会议');
+
+    state.finalOVR = 97;
+    if (coachRoleMeeting.condition()) failures.push('顶级能力球员因名义替补状态错误触发角色会议');
 
     state.career.flags = { coachRoleMeetingDone: true };
     if (coachRoleMeeting.condition()) failures.push('已完成的角色会议仍会重复触发');
@@ -324,6 +332,61 @@ if (registryStart < 0 || registryEnd < 0) {
     failures.push('失败后的重整主题为了防重复被错误改写成成长主题');
   }
 
+  // 首季只是资历，不得覆盖已经兑现的首发/核心身份；普通替补新秀仍应从轮换竞争开始。
+  state.career.seasonCount = 0;
+  state.career.currentAge = 19;
+  state.career.contract = 4;
+  state.career.flags = {};
+  state.finalOVR = 97;
+  state.season = {
+    games: [], wins: 0, losses: 0, isPlayoffs: false, isUserStarter: true,
+    playerStats: { games: 54, pts: 1571, ast: 356, reb: 432 }, schedule: [], events: createEventState(0),
+  };
+  const eliteRookieNarrative = eventModule.initializeSeasonNarrative();
+  const eliteRookieRole = eliteRookieNarrative.storyThreads.find(thread => thread.kind === 'role');
+  if (eliteRookieNarrative.seasonTheme.id === 'prove' || eliteRookieRole?.payload?.level !== 3) {
+    failures.push('首季精英首发仍被错误写成争取轮换');
+  }
+  state.career.flags = {};
+  state.finalOVR = 78;
+  state.season = {
+    games: [], wins: 0, losses: 0, isPlayoffs: false, isUserStarter: false,
+    playerStats: { games: 0, pts: 0, ast: 0, reb: 0 }, schedule: [], events: createEventState(0),
+  };
+  const benchRookieNarrative = eventModule.initializeSeasonNarrative();
+  const benchRookieRole = benchRookieNarrative.storyThreads.find(thread => thread.kind === 'role');
+  if (benchRookieNarrative.seasonTheme.id !== 'prove' || benchRookieRole?.payload?.level !== 1) {
+    failures.push('普通替补新秀没有保留争取轮换剧情');
+  }
+  state.career.flags = {};
+  state.finalOVR = 78;
+  state.season = {
+    games: [], wins: 0, losses: 0, isPlayoffs: false, isUserStarter: false,
+    playerStats: { games: 54, pts: 1571, ast: 356, reb: 432 }, schedule: [], events: createEventState(0),
+  };
+  const productiveBenchNarrative = eventModule.initializeSeasonNarrative();
+  const productiveBenchRole = productiveBenchNarrative.storyThreads.find(thread => thread.kind === 'role');
+  if (productiveBenchNarrative.seasonTheme.id === 'prove' || productiveBenchRole?.payload?.level !== 3) {
+    failures.push('高产替补仍被名义首发状态错误写成争取轮换');
+  }
+  state.career.flags = {};
+  state.finalOVR = 97;
+  state.season = {
+    games: [], wins: 0, losses: 0, isPlayoffs: false, isUserStarter: true,
+    playerStats: { games: 54, pts: 1571, ast: 356, reb: 432 }, schedule: [], events: createEventState(0),
+  };
+  state.season.events.seasonTheme = { id: 'prove', variantId: 'prove_rotation', title: '轮换席位之争', season: 1 };
+  state.season.events.storyThreads = [
+    { id: 'legacy-role', kind: 'role', title: '角色线 Lv1', state: 'queued', payload: { level: 1, teamAtBinding: 'HOME' } },
+    { id: 'legacy-team', kind: 'team', title: '证明自己：争取轮换', emoji: '🌱', state: 'queued', payload: { themeId: 'prove', themeStoryId: 'prove_rotation', themeTitle: '轮换席位之争', teamAtBinding: 'HOME' } },
+  ];
+  const migratedEliteRookieNarrative = eventModule.initializeSeasonNarrative();
+  const migratedEliteRole = migratedEliteRookieNarrative.storyThreads.find(thread => thread.kind === 'role');
+  const migratedEliteTeam = migratedEliteRookieNarrative.storyThreads.find(thread => thread.kind === 'team');
+  if (migratedEliteRookieNarrative.seasonTheme.id === 'prove' || migratedEliteRole?.payload?.level !== 3 || migratedEliteTeam?.payload?.themeId === 'prove') {
+    failures.push('旧存档中未决的首季精英争轮换剧情没有被纠正');
+  }
+
   // 长期替补与生涯暮年可以保留大主题，但必须轮换具体矛盾与文案。
   state.career.seasonCount = 10;
   state.career.currentAge = 35;
@@ -335,7 +398,9 @@ if (registryStart < 0 || registryEnd < 0) {
   state.career.seasonCount = 3;
   state.career.currentAge = 24;
   state.career.contract = 3;
+  state.finalOVR = 78;
   state.season.isUserStarter = false;
+  state.season.playerStats = { games: 40, pts: 320, ast: 120, reb: 160 };
   state.career.flags = { seasonThemeHistory: [{ id: 'prove', variantId: 'prove_trust', season: 3 }] };
   const proveVariant = eventModule.chooseSeasonNarrativeTheme();
   if (proveVariant.id !== 'prove' || proveVariant.variantId === 'prove_trust') {
