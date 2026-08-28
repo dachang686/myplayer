@@ -44,7 +44,9 @@
     "test:training": "node scripts/validate_training_budget.js",
     "test:narratives": "node scripts/validate_career_narratives.js",
     "test:mvp": "node scripts/validate_mvp_fairness.js",
-    "test:player-build": "node scripts/validate_player_build.js"
+    "test:player-build": "node scripts/validate_player_build.js",
+    "test:rookie-pipeline": "node scripts/validate_generated_rookie_pipeline.js",
+    "test:elite-roster:playoffs": "node scripts/validate_elite_roster_playoff.js"
   },
   "devDependencies": {
     "@babel/generator": "^8.0.0",

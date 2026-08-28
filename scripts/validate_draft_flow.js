@@ -17,7 +17,7 @@ new Function(draftSource);
 assert(indexSource.includes('id="screen-draft-lottery"'), '缺少选秀抽签页面');
 assert(indexSource.includes('id="screen-draft-trades"'), '缺少选秀签交易页面');
 assert(indexSource.includes('id="screen-draft"'), '缺少选秀大会页面');
-assert(indexSource.includes('<script src="js/draft.js"></script>'), '缺少选秀脚本入口');
+assert(/<script\s+src=["']js\/draft\.js(?:\?[^"']*)?["']\s*><\/script>/.test(indexSource), '缺少选秀脚本入口');
 assert(indexSource.includes('showOffseasonDraftLottery();'), '休赛期未接入抽签页面');
 assert(indexSource.includes('beginOffseasonDraft();'), '训练后未接入选秀大会');
 assert(indexSource.includes('function resumeLoadedCareer(targetScreen)'), '缺少基于业务状态恢复生涯的入口');
@@ -70,7 +70,11 @@ assert(draftSource.includes('STATE.career.draftHistory'), '生涯选秀历史未
 assert(!draftSource.includes('draft.pipelineStarted = true'), '进入自由市场仍把瞬时点击锁写入存档');
 assert(draftSource.includes('Promise.resolve(pipeline)'), '进入自由市场入口没有等待异步休赛期流程');
 assert(indexSource.includes("runOffseasonPipelineStage('free_agents'"), '自由市场流程没有拆分为可渲染阶段');
-assert(indexSource.includes('yieldToBrowser: true'), '自由球员分配没有启用主线程让步模式');
+const pipelineStageSource = indexSource.slice(
+  indexSource.indexOf('function runOffseasonPipelineStage'),
+  indexSource.indexOf('function continueCareerAfterLeagueDraft'),
+);
+assert(pipelineStageSource.includes('setTimeout(function()') && pipelineStageSource.includes('resolve(action())'), '休赛期阶段没有在计算前让出主线程');
 
 const draftContext = {
   console: { error() {} },

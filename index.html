@@ -1254,7 +1254,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 <script src="js/data/player_loyalty.js"></script>
 <script src="js/data/league_schedule.js"></script>
 <script src="js/data/player_archetypes.js"></script>
-<script src="js/data/simulation_config.js"></script>
+<script src="js/data/simulation_config.js?v=20260828-1"></script>
 <script src="js/data/fictional_team_names.js"></script>
 <script src="js/cartoon_art.js"></script>
 <script src="js/local_player_profile.js"></script>
@@ -2009,6 +2009,8 @@ function initGame() {
   if (typeof syncLeaguePlayerOvrs === 'function') syncLeaguePlayerOvrs();
   _rngState = null;
   _rookieNameSeq = 0;
+  _starRookieQueue = [];
+  _usedRookieCandidateNames = {};
   // 重置状态（保留 gameId 持久不变，直到下一次显式重置）
   Object.assign(STATE, {
     simulationEngine: 'v2',
@@ -5823,7 +5825,7 @@ function getLeagueDefensiveAnchor(player) {
 function getPlayerGameImpact(player) {
   const unifiedRating = typeof getUnifiedPlayerRating === 'function'
     ? getUnifiedPlayerRating
-    : (SIM_CONFIG && SIM_CONFIG.getUnifiedPlayerRating);
+    : (typeof SIM_CONFIG !== 'undefined' && SIM_CONFIG && SIM_CONFIG.getUnifiedPlayerRating);
   if (typeof unifiedRating === 'function') {
     const rating = unifiedRating(player, player && player.pos);
     return {
@@ -5898,7 +5900,7 @@ function allocateLeagueRotationMinutes(players, roleRanks, rotationOptions) {
     { base: 5, slope: 0.03 },
   ];
   var playoffRoles = [
-    { base: 33, slope: 0.25 }, // 首发
+    { base: 32.5, slope: 0.32, maxMinutes: 43 }, // 首发
     { base: 22, slope: 0.55, maxMinutes: 34 }, // 季后赛缩短轮换后，顶级第六人同样应获得核心时间
     { base: 15, slope: 0.20 },
     { base: 10, slope: 0.10 },
@@ -5919,6 +5921,7 @@ function allocateLeagueRotationMinutes(players, roleRanks, rotationOptions) {
     if (!Number.isFinite(ovr)) ovr = Number(impact.overall) || 50;
     var role = roles[index];
     var base = role.base + (ovr - 75) * role.slope;
+    if (isPlayoffs && roleRanks[index] < 5 && ovr > 90) base += (ovr - 90) * 0.14;
     return Math.max(4, base + (noiseDeviation ? leagueStatNormal(0, noiseDeviation) : 0));
   });
   var minuteCaps = roles.map(function(role) {
@@ -5964,9 +5967,12 @@ function allocateLeagueRotationMinutes(players, roleRanks, rotationOptions) {
   return minutes;
 }
 
-/** 动态选择 9-11 人轮换。首发伤停时会由完整名单中的后备球员递补。 */
+/** 常规赛动态选择 9-11 人轮换，季后赛缩短为 8-9 人；首发伤停时由完整名单中的后备球员递补。 */
 function buildLeagueGameRotation(team, gameOptions) {
   var options = gameOptions || {};
+  var isPlayoffs = typeof options.isPlayoffs === 'boolean'
+    ? options.isPlayoffs
+    : !!(STATE.season && STATE.season.isPlayoffs);
   var lineup = calcTeamLineup(team, options);
   var ordered = Object.values(lineup.starters).concat(lineup.bench || []);
   var unique = [];
@@ -6014,7 +6020,9 @@ function buildLeagueGameRotation(team, gameOptions) {
     var replacementSlot = 1;
     while (available.length < 5) available.push(createEmergencyReplacementPlayer(team, replacementSlot++));
   }
-  var targetSize = 9 + (Math.random() < 0.68 ? 1 : (Math.random() < 0.70 ? 2 : 0));
+  var targetSize = isPlayoffs
+    ? (Math.random() < 0.78 ? 8 : 9)
+    : 9 + (Math.random() < 0.68 ? 1 : (Math.random() < 0.70 ? 2 : 0));
   var selected = available.slice(0, targetSize);
   if (user && options.userAvailable !== false && selected.indexOf(user) < 0) {
     if (selected.length >= targetSize) selected[selected.length - 1] = user;
@@ -6031,20 +6039,22 @@ function buildLeagueGameRotation(team, gameOptions) {
 /** 阵容页/排名页使用的稳定预计轮换，不触发伤病、轮休或赛季状态推进。 */
 function buildExpectedLeagueGameRotation(team, gameOptions) {
   var options = gameOptions || {};
+  var isPlayoffs = typeof options.isPlayoffs === 'boolean'
+    ? options.isPlayoffs
+    : !!(STATE.season && STATE.season.isPlayoffs);
   var lineup = calcTeamLineup(team, options);
   var ordered = Object.values(lineup.starters).concat(lineup.bench || []);
   var players = [];
+  var expectedSize = isPlayoffs ? 9 : 10;
   ordered.forEach(function(player) {
-    if (player && players.indexOf(player) < 0 && players.length < 10) players.push(player);
+    if (player && players.indexOf(player) < 0 && players.length < expectedSize) players.push(player);
   });
   var roleRanks = players.map(function(player) { return ordered.indexOf(player); });
   return {
     players: players,
     roleRanks: roleRanks,
     minutes: allocateLeagueRotationMinutes(players, roleRanks, {
-      isPlayoffs: typeof options.isPlayoffs === 'boolean'
-        ? options.isPlayoffs
-        : !!(STATE.season && STATE.season.isPlayoffs),
+      isPlayoffs: isPlayoffs,
       randomize: false,
     }),
   };
@@ -10584,6 +10594,7 @@ function manualLoadGame(slot, options) {
           _playerGenes[playerId] = {
             v: snap.genes[playerId].v,
             potential: snap.genes[playerId].potential,
+            potentialVersion: snap.genes[playerId].potentialVersion,
             loyalty: snap.genes[playerId].loyalty,
             loyaltyVersion: snap.genes[playerId].loyaltyVersion,
             loyaltyRenewals: snap.genes[playerId].loyaltyRenewals,
@@ -11613,7 +11624,7 @@ function finishLegacyStory() {
   generateCareerPoster();
 }
 
-var _starRookieQueue = STAR_ROOKIES.slice();
+var _starRookieQueue = [];
 var _usedRookieCandidateNames = {};
 var _rngState = null;
 var _rookieNameSeq = 0;
@@ -11645,6 +11656,24 @@ function restoreUsedRookieCandidatesFromLeague() {
       _usedRookieCandidateNames[String(player._prospectId)] = true;
     });
   });
+}
+
+
+/** 每届只投放一组 3 名剧情明星，避免六名明星在同一届集中进入联盟。 */
+function prepareScheduledStarRookiesForDraft() {
+  restoreUsedRookieCandidatesFromLeague();
+  _starRookieQueue = [];
+  for (var start = 0; start < STAR_ROOKIES.length; start += 3) {
+    var remaining = STAR_ROOKIES.slice(start, start + 3).filter(function(candidate) {
+      return !_usedRookieCandidateNames[candidate.id]
+        && !(candidate.ratingId && _usedRookieCandidateNames[candidate.ratingId]);
+    });
+    if (remaining.length) {
+      _starRookieQueue = remaining.slice();
+      break;
+    }
+  }
+  return _starRookieQueue.length;
 }
 
 function rngReset() {
@@ -11698,8 +11727,10 @@ function generateRookie() {
     _age: 19 + Math.floor(rngNext() * 3),
     loyalty: 60,
   };
+  p._draftTalentSeed = Number(ovr) || 50;
   if (fixedRating) {
     p._fixedProspectRating = true;
+    p._authoredProspectOvr = Number(fixedRating.ovr) || Number(ovr) || 50;
     p._rookieProfile = fixedRating.profile;
     p._rookieGenerationVersion = 3;
     Object.keys(fixedRating.attributes).forEach(function(key) {
@@ -11719,8 +11750,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <script src="js/player_build_draft.js?v=20260827-1"></script>
 <script src="js/awards.js"></script>
-<script src="js/offseason.js?v=20260825-3"></script>
-<script src="js/draft.js"></script>
+<script src="js/offseason.js?v=20260828-1"></script>
+<script src="js/draft.js?v=20260828-1"></script>
 <script src="js/career_branch_data.js"></script>
 
 <!-- ====== 随机事件系统 — EVENT REGISTRY ====== -->

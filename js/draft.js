@@ -620,17 +620,22 @@
 
   function prepareDraftProspects(draft) {
     if (draft.prospects && draft.prospects.length >= 30) return;
+    if (typeof prepareScheduledStarRookiesForDraft === 'function') prepareScheduledStarRookiesForDraft();
     var prospects = [];
     for (var i = 0; i < 30; i++) {
       var player = generateRookie();
-      if (player._fixedProspectRating) {
-        syncAuthoredRookieOvr(player);
-      } else {
-        applyRookieAttributeProfile(player, player.ovr, rngNext);
-      }
+      if (player._fixedProspectRating) syncAuthoredRookieOvr(player);
+      player._draftTalentSeed = Number(player._draftTalentSeed) || Number(player.ovr) || 50;
       player._draftTie = seededValue(draft.seed, 'board|' + player.id);
       prospects.push(player);
     }
+    prospects.sort(function(a, b) {
+      return (Number(b._draftTalentSeed) || 0) - (Number(a._draftTalentSeed) || 0) || a._draftTie - b._draftTie;
+    });
+    var targetOvrs = buildGeneratedDraftOvrTargets(prospects.length, rngNext);
+    prospects.forEach(function(player, index) {
+      prepareDraftProspectForTarget(player, targetOvrs[index], rngNext);
+    });
     prospects.sort(function(a, b) {
       return (Number(b.ovr) || 0) - (Number(a.ovr) || 0) || a._draftTie - b._draftTie;
     });
@@ -991,13 +996,8 @@
       while (roster.length < DRAFT_ROSTER_LIMIT) {
         if (typeof getLeagueRosterNpcLimit === 'function' && roster.length >= getLeagueRosterNpcLimit(team)) break;
         var player = generateRookie();
-        if (player._fixedProspectRating) {
-          syncAuthoredRookieOvr(player);
-        } else {
-          var targetOvr = 60 + Math.floor(rngNext() * 8);
-          player.ovr = targetOvr;
-          applyRookieAttributeProfile(player, targetOvr, rngNext);
-        }
+        var targetOvr = 60 + Math.floor(rngNext() * 8);
+        prepareDraftProspectForTarget(player, targetOvr, rngNext);
         player._justSigned = true;
         player._rookieSeason = getCurrentLeagueSeasonNumber();
         // 未选秀补充球员若已达到主力级别，同样给足三年合同以建立母队续约权。

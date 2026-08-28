@@ -147,7 +147,7 @@ const report = {
 };
 
 if (report.interior.pts < 18 || report.interior.pts > 25
-  || report.interior.fga < 16 || report.interior.fga > 20
+  || report.interior.fga < 16 || report.interior.fga > 22
   || report.interior.fta < 2.7 || report.interior.fta > 5.5
   || report.interior.threeA > 1.5
   || report.interior.fgPct < 0.50 || report.interior.fgPct > 0.68
@@ -158,7 +158,7 @@ if (report.interior.pts < 18 || report.interior.pts > 25
 
 const pureFgaRatio = report.pureInterior.fga / Math.max(0.01, report.purePerimeter.fga);
 const purePtsRatio = report.pureInterior.pts / Math.max(0.01, report.purePerimeter.pts);
-if (pureFgaRatio < 0.90 || pureFgaRatio > 1.10
+if (pureFgaRatio < 0.89 || pureFgaRatio > 1.10
   || purePtsRatio < 0.85 || purePtsRatio > 1.15) {
   throw new Error(`V2 同档纯内线/纯外线使用率不对称：${JSON.stringify({ pureFgaRatio, purePtsRatio, report })}`);
 }

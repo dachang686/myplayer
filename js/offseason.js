@@ -1409,6 +1409,7 @@ function applyDraftClass2026() {
       } else {
         applyRookieAttributeProfile(rookie, ovr, Math.random);
       }
+      rookie._draftOvr = Number(rookie.ovr) || ovr;
       rookie._rookieSeason = getCurrentLeagueSeasonNumber();
       roster.push(rookie);
     });
@@ -1442,25 +1443,14 @@ function processDraft() {
     var bp = bw + bl > 0 ? bw / (bw + bl) : 0.5;
     return ap - bp;
   });
+  if (typeof prepareScheduledStarRookiesForDraft === 'function') prepareScheduledStarRookiesForDraft();
+  var targetOvrs = buildGeneratedDraftOvrTargets(teams.length, rngNext);
   teams.forEach(function(t, idx) {
-    var ovrRange;
-    if (idx === 0) ovrRange = { min: 75, max: 82 };
-    else if (idx === 1) ovrRange = { min: 73, max: 80 };
-    else if (idx === 2) ovrRange = { min: 72, max: 78 };
-    else if (idx < 10) ovrRange = { min: 68, max: 75 };
-    else ovrRange = { min: 60, max: 70 };
-
     var rookie = generateRookie();
     // 当届新秀只在本次休赛期受交易保护，下一休赛期会统一解除。
     rookie._justSigned = true;
-    var targetOvr = ovrRange.min + Math.floor(rngNext() * (ovrRange.max - ovrRange.min + 1));
-    if (rookie._fixedProspectRating) {
-      syncAuthoredRookieOvr(rookie);
-      rookie._rookieSeason = getCurrentLeagueSeasonNumber();
-    } else {
-      rookie.ovr = targetOvr;
-      applyRookieAttributeProfile(rookie, targetOvr, rngNext);
-    }
+    var targetOvr = targetOvrs[idx] || 60;
+    prepareDraftProspectForTarget(rookie, targetOvr, rngNext);
     // 新秀合同
     if (idx < 5) rookie.contract = 4;
     else rookie.contract = 3;
@@ -1987,27 +1977,37 @@ function applyLeaguePlayerOvrChange(player, oldOvr, newOvr) {
     return player.ovr;
   }
 
-  if (isGeneratedLeaguePlayer(player) && typeof migrateLegacyGeneratedPlayerAttributes === 'function') {
+  var generatedPlayer = isGeneratedLeaguePlayer(player);
+  if (generatedPlayer && typeof migrateLegacyGeneratedPlayerAttributes === 'function') {
     migrateLegacyGeneratedPlayerAttributes(player);
   }
 
   var age = Number(player._age) || 27;
   var requestedMagnitude = Math.max(1, Math.abs(requested - before));
-  var cap = direction > 0 && age <= 23 && requestedMagnitude >= 2 ? 3 : 2;
+  // 生成球员每季最多按 2 点 OVR 的属性预算演变；旧逻辑会在 +2 请求时把全部主属性提高 3 点。
+  var cap = generatedPlayer ? 2 : (direction > 0 && age <= 23 && requestedMagnitude >= 2 ? 3 : 2);
   var magnitude = Math.min(cap, requestedMagnitude);
   var profile = getLeaguePlayerDevelopmentProfile(player);
   var declineFast = ['ATH','STR','PDEF','STL','DNK'];
   var declineResist = ['threePT','MID','PAS','HAN','CLU'];
 
   var beforeFormulaOvr = typeof calcOVR === 'function' ? calcOVR(player, player.pos) : before;
+  var beforeAttributes = {};
+  getLeagueAttributeKeys().forEach(function(attrKey) {
+    beforeAttributes[attrKey] = Number(player[attrKey]);
+  });
   getLeagueAttributeKeys().forEach(function(attrKey) {
     var current = Number(player[attrKey]);
     if (!Number.isFinite(current)) return;
     var attrMagnitude;
     if (direction > 0) {
-      if (profile.primary.indexOf(attrKey) >= 0) attrMagnitude = Math.min(cap, magnitude + (cap === 3 ? 1 : 0));
-      else if (profile.slow.indexOf(attrKey) >= 0) attrMagnitude = Math.max(0, magnitude - 1);
-      else attrMagnitude = Math.max(0, magnitude - 1);
+      if (profile.primary.indexOf(attrKey) >= 0) {
+        attrMagnitude = generatedPlayer ? magnitude : Math.min(cap, magnitude + (cap === 3 ? 1 : 0));
+      } else if (profile.slow.indexOf(attrKey) >= 0) {
+        attrMagnitude = generatedPlayer ? 0 : Math.max(0, magnitude - 1);
+      } else {
+        attrMagnitude = Math.max(0, magnitude - 1);
+      }
     } else {
       if (age >= 29 && declineFast.indexOf(attrKey) >= 0) attrMagnitude = Math.min(2, magnitude + 1);
       else if (declineResist.indexOf(attrKey) >= 0) attrMagnitude = Math.max(0, magnitude - 1);
@@ -2018,9 +2018,40 @@ function applyLeaguePlayerOvrChange(player, oldOvr, newOvr) {
 
   if (typeof calcOVR === 'function') {
     var afterFormulaOvr = calcOVR(player, player.pos);
-    player.ovr = isGeneratedLeaguePlayer(player)
-      ? afterFormulaOvr
-      : Math.max(55, Math.min(99, before + afterFormulaOvr - beforeFormulaOvr));
+    if (generatedPlayer) {
+      // 属性公式的离散取整有时会把“本季 +1/+2”放大成更高 OVR；逐点撤回边缘属性，直到不超过请求。
+      var primaryKeys = profile.primary.slice();
+      var slowKeys = profile.slow.slice();
+      var neutralKeys = getLeagueAttributeKeys().filter(function(key) {
+        return primaryKeys.indexOf(key) < 0 && slowKeys.indexOf(key) < 0;
+      });
+      var rollbackOrder = neutralKeys.concat(slowKeys, primaryKeys);
+      var guard = 0;
+      while (((direction > 0 && afterFormulaOvr > requested) || (direction < 0 && afterFormulaOvr < requested)) && guard++ < 240) {
+        var adjusted = false;
+        for (var rollbackIndex = 0; rollbackIndex < rollbackOrder.length; rollbackIndex++) {
+          var rollbackKey = rollbackOrder[rollbackIndex];
+          var currentValue = Number(player[rollbackKey]);
+          var originalValue = Number(beforeAttributes[rollbackKey]);
+          if (!Number.isFinite(currentValue) || !Number.isFinite(originalValue)) continue;
+          if (direction > 0 && currentValue > originalValue) {
+            player[rollbackKey] = currentValue - 1;
+            adjusted = true;
+          } else if (direction < 0 && currentValue < originalValue) {
+            player[rollbackKey] = currentValue + 1;
+            adjusted = true;
+          }
+          if (adjusted) {
+            afterFormulaOvr = calcOVR(player, player.pos);
+            break;
+          }
+        }
+        if (!adjusted) break;
+      }
+      player.ovr = afterFormulaOvr;
+    } else {
+      player.ovr = Math.max(55, Math.min(99, before + afterFormulaOvr - beforeFormulaOvr));
+    }
   } else {
     player.ovr = Math.max(55, Math.min(99, requested));
   }
@@ -3263,7 +3294,7 @@ function syncAuthoredRookieOvr(player) {
 /** 随机新秀只允许做有限统一平移；强弱项顺序不会翻转，也不要求精确命中目标。 */
 function calibrateGeneratedRookieAttributes(player, targetOvr, maxAdjustment) {
   var pos = getGeneratedPlayerMainPos(player);
-  var target = Math.max(55, Math.min(99, Math.round(Number(targetOvr) || 55)));
+  var target = Math.max(50, Math.min(99, Math.round(Number(targetOvr) || 50)));
   var cap = Math.max(0, Math.min(3, Math.round(Number(maxAdjustment) || 3)));
   var original = {};
   ATTR_KEYS.forEach(function(key) { original[key] = Number(player[key]) || 50; });
@@ -3280,6 +3311,89 @@ function calibrateGeneratedRookieAttributes(player, targetOvr, maxAdjustment) {
   ATTR_KEYS.forEach(function(key) { player[key] = clampLeagueAttribute(original[key] + bestShift); });
   player.ovr = calcOVR(player, pos);
   return player.ovr;
+}
+
+// 未来随机选秀的正式稀有度：只有极少数球员以明星即战力进入联盟。
+var GENERATED_DRAFT_OVR_TIERS = [
+  { id: 'elite', share: 0.02, min: 80, max: 84 },
+  { id: 'high', share: 0.10, min: 75, max: 79 },
+  { id: 'rotation', share: 0.50, min: 68, max: 74 },
+  { id: 'development', share: 0.30, min: 60, max: 67 },
+  { id: 'longshot', share: 0.08, min: 50, max: 59 }
+];
+
+function buildGeneratedDraftOvrTargets(count, randomFn) {
+  var total = Math.max(0, Math.floor(Number(count) || 0));
+  var random = typeof randomFn === 'function' ? randomFn : Math.random;
+  var rows = GENERATED_DRAFT_OVR_TIERS.map(function(tier, index) {
+    var exact = total * tier.share;
+    return { tier: tier, index: index, count: Math.floor(exact), remainder: exact - Math.floor(exact) };
+  });
+  var assigned = rows.reduce(function(sum, row) { return sum + row.count; }, 0);
+  rows.slice().sort(function(left, right) {
+    return right.remainder - left.remainder || left.index - right.index;
+  }).forEach(function(row) {
+    if (assigned >= total) return;
+    row.count++;
+    assigned++;
+  });
+  var targets = [];
+  rows.forEach(function(row) {
+    for (var index = 0; index < row.count; index++) {
+      targets.push(row.tier.min + Math.floor(random() * (row.tier.max - row.tier.min + 1)));
+    }
+  });
+  return targets.sort(function(left, right) { return right - left; });
+}
+
+/**
+ * 固定候选人的原始属性只定义球风轮廓，不再绕过当届选秀稀有度。
+ * 运行时对克隆对象做统一平移，保留所有强弱项顺序，并选择最接近当届目标 OVR 的结果。
+ */
+function fitAuthoredRookieAttributesToTarget(player, targetOvr) {
+  if (!player) return player;
+  var target = Math.max(50, Math.min(99, Math.round(Number(targetOvr) || 50)));
+  var pos = getGeneratedPlayerMainPos(player);
+  var original = {};
+  ATTR_KEYS.forEach(function(key) { original[key] = calcOvrAttribute(player, key); });
+  var authoredOvr = calcOVR(player, pos);
+  var bestShift = 0;
+  var bestDistance = Infinity;
+  var bestAttributes = null;
+  for (var shift = -55; shift <= 25; shift++) {
+    var candidate = {};
+    ATTR_KEYS.forEach(function(key) {
+      candidate[key] = clampLeagueAttribute(original[key] + shift);
+      player[key] = candidate[key];
+    });
+    var distance = Math.abs(calcOVR(player, pos) - target);
+    if (distance < bestDistance || (distance === bestDistance && Math.abs(shift) < Math.abs(bestShift))) {
+      bestDistance = distance;
+      bestShift = shift;
+      bestAttributes = candidate;
+    }
+  }
+  ATTR_KEYS.forEach(function(key) { player[key] = bestAttributes[key]; });
+  player._authoredProspectOvr = Number(player._authoredProspectOvr) || authoredOvr;
+  player._draftAttributeShift = bestShift;
+  player._rookieGenerationVersion = ROOKIE_ATTRIBUTE_PROFILE_VERSION;
+  player.ovr = calcOVR(player, pos);
+  return player;
+}
+
+function prepareDraftProspectForTarget(player, targetOvr, randomFn) {
+  if (!player) return player;
+  var target = Math.max(50, Math.min(99, Math.round(Number(targetOvr) || 50)));
+  if (player._fixedProspectRating && ATTR_KEYS.every(function(key) { return Number.isFinite(Number(player[key])); })) {
+    fitAuthoredRookieAttributesToTarget(player, target);
+  } else {
+    player.ovr = target;
+    applyRookieAttributeProfile(player, target, randomFn);
+  }
+  player._rookieSeason = getCurrentLeagueSeasonNumber();
+  player._draftOvr = Number(player.ovr) || target;
+  refreshGeneratedPlayerType(player);
+  return player;
 }
 
 function getCurrentLeagueSeasonNumber() {
@@ -3299,7 +3413,7 @@ function refreshGeneratedPlayerType(player) {
 function applyRookieAttributeProfile(player, targetOvr, randomFn) {
   var random = typeof randomFn === 'function' ? randomFn : Math.random;
   var profile = getRookieProfile(player, random);
-  var target = Math.max(55, Math.min(99, Math.round(Number(targetOvr) || 55)));
+  var target = Math.max(50, Math.min(99, Math.round(Number(targetOvr) || 50)));
   player._rookieProfile = profile.id;
   player._rookieGenerationVersion = ROOKIE_ATTRIBUTE_PROFILE_VERSION;
   if (!player._rookieSeason) player._rookieSeason = getCurrentLeagueSeasonNumber();
@@ -3523,6 +3637,7 @@ var _playerAges = null;
 var _playerGenes = null;
 var _playerAgeSources = null;
 var PLAYER_LOYALTY_GENE_VERSION = 3;
+var PLAYER_POTENTIAL_MODEL_VERSION = 2;
 // 数据校准：NBA 官方资料显示 Nate Williams（P0168）在 2025-26 赛季为 27 岁；
 // 旧年龄表的 73 是明显的脏数据，运行时先用 ID 覆盖，避免进入衰退/退役链路。
 var PLAYER_AGE_OVERRIDES = { P0168: 27 };
@@ -3599,8 +3714,69 @@ function validateLeaguePlayerAgeData() {
   return { total: rows.length, rows: Object.keys(_playerAges || {}).length, missing: missing, invalid: invalid, estimated: estimated };
 }
 
+function generatedPlayerStableHash(player) {
+  var text = String(player && (player._prospectId || player.id) || 'generated');
+  var hash = 2166136261;
+  for (var index = 0; index < text.length; index++) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 16777619) >>> 0;
+  }
+  return hash >>> 0;
+}
+
+function inferGeneratedPlayerDraftOvr(player, currentOvr, age) {
+  var saved = Number(player && player._draftOvr);
+  if (Number.isFinite(saved)) return Math.max(50, Math.min(84, Math.round(saved)));
+  var currentSeason = typeof getCurrentLeagueSeasonNumber === 'function' ? getCurrentLeagueSeasonNumber() : 1;
+  var rookieSeason = Number(player && player._rookieSeason);
+  var seasonsPlayed = Number.isFinite(rookieSeason)
+    ? Math.max(0, currentSeason - rookieSeason)
+    : Math.max(0, (Number(age) || 20) - 20);
+  var estimated = Math.round((Number(currentOvr) || 60) - Math.min(12, seasonsPlayed * 1.25));
+  estimated = Math.max(50, Math.min(84, estimated));
+  if (player) player._draftOvr = estimated;
+  return estimated;
+}
+
+function getGeneratedPlayerPotentialCap(player, draftOvr) {
+  var identity = String(player && (player._prospectId || player.id) || '');
+  if (typeof MVP_STAR_PROSPECT_IDS !== 'undefined') {
+    var starIndex = MVP_STAR_PROSPECT_IDS.indexOf(identity);
+    if (starIndex >= 0) {
+      var authoredStarCaps = [98, 96, 95, 99, 97, 96, 99, 97, 96];
+      return authoredStarCaps[starIndex] || 96;
+    }
+  }
+  if (draftOvr <= 59) return 78;
+  if (draftOvr <= 67) return 84;
+  if (draftOvr <= 74) return 90;
+  if (draftOvr <= 79) return 94;
+  return 97;
+}
+
+function inferGeneratedPlayerPotential(player, age) {
+  var currentOvr = Math.max(50, Math.min(99, Number(player && player.ovr) || 50));
+  var draftOvr = inferGeneratedPlayerDraftOvr(player, currentOvr, age);
+  var identity = String(player && (player._prospectId || player.id) || '');
+  var starIndex = typeof MVP_STAR_PROSPECT_IDS !== 'undefined'
+    ? MVP_STAR_PROSPECT_IDS.indexOf(identity)
+    : -1;
+  var potential;
+  if (starIndex >= 0) {
+    potential = getGeneratedPlayerPotentialCap(player, draftOvr);
+  } else {
+    var variance = generatedPlayerStableHash(player) % 3;
+    var baseGain = draftOvr <= 59 ? 12 : (draftOvr <= 67 ? 13 : (draftOvr <= 74 ? 14 : 14));
+    potential = Math.min(getGeneratedPlayerPotentialCap(player, draftOvr), draftOvr + baseGain + variance);
+  }
+  // 不回退已有存档的当前能力；新版只阻止后续继续越过合理上限。
+  return Math.max(currentOvr, Math.min(99, potential));
+}
+
 function inferLeaguePlayerPotential(player, age) {
-  var ovr = Math.max(55, Math.min(99, Number(player && player.ovr) || 55));
+  var sourceOvr = Number(player && player.ovr) || 55;
+  if (isGeneratedLeaguePlayer(player)) return inferGeneratedPlayerPotential(player, age);
+  var ovr = Math.max(55, Math.min(99, sourceOvr));
   var playerAge = Number(age) || inferAge(player && player.id, ovr);
   if (playerAge >= 29) return ovr;
 
@@ -3609,7 +3785,6 @@ function inferLeaguePlayerPotential(player, age) {
   var ageBenchmark = Math.max(68, Math.min(88, 68 + Math.max(0, playerAge - 18) * 2));
   var abilityBonus = Math.max(-2, Math.min(3, Math.round((ovr - ageBenchmark) / 5)));
   var potential = ovr + Math.max(0, ageRoom + abilityBonus);
-  if (typeof isMvpStar === 'function' && isMvpStar(player)) potential = Math.max(potential, ovr + 10);
   return Math.max(ovr, Math.min(99, potential));
 }
 
@@ -3717,9 +3892,11 @@ function assignKnownPlayerPotentials() {
     (LEAGUE_PLAYER_DATA[teamId] || []).forEach(function(player) {
       var gene = _playerGenes[player.id];
       if (!gene) return;
-      if (typeof gene.potential !== 'number') {
+      if (typeof gene.potential !== 'number'
+        || (isGeneratedLeaguePlayer(player) && Number(gene.potentialVersion) < PLAYER_POTENTIAL_MODEL_VERSION)) {
         var age = _playerAges[player.id] || player._age || inferAge(player.id, player.ovr);
         gene.potential = inferLeaguePlayerPotential(player, age);
+        gene.potentialVersion = PLAYER_POTENTIAL_MODEL_VERSION;
       }
       ensurePlayerLoyaltyGene(gene, player);
     });
@@ -3732,12 +3909,18 @@ function getPlayerGene(player) {
   var playerObject = player && typeof player === 'object' ? player : null;
   if (_playerGenes && _playerGenes[playerId]) {
     var existingGene = _playerGenes[playerId];
+    if (playerObject && isGeneratedLeaguePlayer(playerObject)
+      && Number(existingGene.potentialVersion) < PLAYER_POTENTIAL_MODEL_VERSION) {
+      existingGene.potential = inferLeaguePlayerPotential(playerObject, getLeaguePlayerAge(playerObject));
+      existingGene.potentialVersion = PLAYER_POTENTIAL_MODEL_VERSION;
+    }
     return ensurePlayerLoyaltyGene(existingGene, playerObject || playerId);
   }
   var age = playerObject ? getLeaguePlayerAge(playerObject) : null;
   var g = {
     v: 1 + Math.floor(rngNext() * 4),
     potential: inferLeaguePlayerPotential(playerObject, age),
+    potentialVersion: PLAYER_POTENTIAL_MODEL_VERSION,
     loyalty: inferPlayerLoyalty(playerObject || playerId),
     loyaltyVersion: PLAYER_LOYALTY_GENE_VERSION,
     loyaltyRenewals: 0,
@@ -3895,10 +4078,12 @@ function evolveLeague() {
       var randFactor = (rngNext() - 0.5) * 1.5;
       var change = ageFactor * 0.5 + volFactor * 0.3 + randFactor * 0.2;
       change += getPotentialGrowthBias(gene.potential, p.ovr, age);
-      if (isMvpStar(p) && age <= 26) change += 0.6 + rngNext() * 0.8; // 重点新秀成长加速
+      if (isMvpStar(p) && age <= 26) change += 0.25 + rngNext() * 0.40; // 重点新秀仍更快成长，但不再稳定每年跳 2 点
       if (change > 0 && p.ovr >= gene.potential) change = 0;
       change = Math.sign(change) * Math.round(Math.abs(change));
-      var newOvr = Math.max(55, Math.min(99, p.ovr + change));
+      var minimumOvr = isGeneratedLeaguePlayer(p) ? 50 : 55;
+      var newOvr = Math.max(minimumOvr, Math.min(99, p.ovr + change));
+      if (change > 0 && Number.isFinite(Number(gene.potential))) newOvr = Math.min(newOvr, Number(gene.potential));
       if (newOvr !== p.ovr) {
         var oldOvr = p.ovr;
         applyLeaguePlayerOvrChange(p, oldOvr, newOvr);

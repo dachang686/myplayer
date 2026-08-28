@@ -30,7 +30,7 @@ const SIM_CONFIG = {
       MID: 79.5,
       FIN: 82.5,
       DNK: 57.9,
-      HAN: 85.2,
+      HAN: 81.5,
       PAS: 79.4,
       PDEF: 69.5,
       STL: 62.4,
@@ -46,7 +46,7 @@ const SIM_CONFIG = {
       MID: 77.2,
       FIN: 82.5,
       DNK: 71.3,
-      HAN: 83,
+      HAN: 78.2,
       PAS: 71.7,
       PDEF: 69.6,
       STL: 53.1,
@@ -62,7 +62,7 @@ const SIM_CONFIG = {
       MID: 75.6,
       FIN: 82.5,
       DNK: 73.5,
-      HAN: 82.8,
+      HAN: 72.9,
       PAS: 65.2,
       PDEF: 71.1,
       STL: 54.1,
@@ -78,7 +78,7 @@ const SIM_CONFIG = {
       MID: 71.4,
       FIN: 83.4,
       DNK: 75.8,
-      HAN: 83.4,
+      HAN: 66.2,
       PAS: 62.4,
       PDEF: 67.6,
       STL: 51.1,
@@ -94,7 +94,7 @@ const SIM_CONFIG = {
       MID: 70.7,
       FIN: 86.4,
       DNK: 73.2,
-      HAN: 80.3,
+      HAN: 55.1,
       PAS: 53,
       PDEF: 50.8,
       STL: 46.7,
@@ -873,8 +873,8 @@ function getUnifiedPlayerRating(player, position) {
     return clampRating(50 + (roleScore - 50) * multiplier);
   }
 
-  var shootingGravity = component(weighted({ threePT: 0.68, MID: 0.32 }), ['threePT', 'MID', 'HAN']);
-  var rimScoring = component(weighted({ FIN: 0.48, DNK: 0.20, HAN: 0.13, ATH: 0.11, STR: 0.08 }), ['FIN', 'HAN', 'ATH', 'STR']);
+  var shootingGravity = component(weighted({ threePT: 0.68, MID: 0.32 }), ['threePT', 'MID']);
+  var rimScoring = component(weighted({ FIN: 0.52, DNK: 0.22, ATH: 0.14, STR: 0.12 }), ['FIN', 'DNK', 'ATH', 'STR']);
   var shotCreation = component(
     attr('HAN') * 0.38 + shootingGravity * 0.20 + rimScoring * 0.16 + attr('PAS') * 0.12 + attr('ATH') * 0.14,
     ['HAN', 'threePT', 'FIN', 'ATH'], ['HAN', 'threePT', 'MID', 'FIN']
@@ -907,14 +907,18 @@ function getUnifiedPlayerRating(player, position) {
   var shotLoad = clampRating(scorer * 0.55 + shotCreation * 0.30 + rimScoring * 0.15);
   // 吃饼、顺下、低位和二次进攻同样可以形成高使用率；不能要求内线先具备外线式持球创造。
   var interiorUsageLoad = clampRating(
-    rimScoring * 0.40 + rimFinisher * 0.35 + shotCreation * 0.15 + touchLoad * 0.10
+    50
+      + (rimScoring - 50) * 0.42
+      + (rimFinisher - 50) * 0.30
+      + (rebounding - 50) * 0.10
+      + (athletic - 50) * 0.05
   );
   // 外线专精同样可以依靠投射牵制和自主创造承担高使用率，不能被篮下能力反向限制。
   var perimeterUsageLoad = clampRating(
     shootingGravity * 0.45 + shotCreation * 0.30 + touchLoad * 0.15 + ballSecurity * 0.10
   );
   var defensiveLoad = clampRating(pointOfAttackDefense * 0.28 + interiorDefense * 0.27 + rimProtection * 0.25 + rebounding * 0.20);
-  var scoringEfficiency = clampRating(shootingGravity * 0.44 + rimScoring * 0.46 + ballSecurity * 0.10);
+  var scoringEfficiency = clampRating(shootingGravity * 0.46 + rimScoring * 0.54);
 
   var roleV5 = {
     primaryCreator: adjustedRole(
