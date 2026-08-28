@@ -23,6 +23,7 @@
     "test:engine-extremes:v2": "node scripts/validate_v2_engine_extreme_cases.js",
     "test:playoffs:v2": "node scripts/validate_v2_playoff_calibration.js",
     "test:draft-attributes:v5": "node scripts/validate_draft_v5_attribute_integrity.js",
+    "sync:draft-authored-ovr": "node scripts/sync_authored_draft_ovrs.js --apply",
     "test:offseason-attributes": "node scripts/validate_offseason_attribute_evolution.js",
     "test:training-growth": "node scripts/validate_player_training_growth.js",
     "test:career:v2": "node scripts/validate_v2_career_full_chain.js",
