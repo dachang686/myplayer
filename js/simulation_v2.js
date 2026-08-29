@@ -484,19 +484,16 @@
     var legendaryScorerFlags = players.map(function() { return false; });
     var opportunity = players.map(function(player, index) {
       var offensiveRoleRank = offensiveRoleRanks[index];
-      var roleFactor = clamp(1 + (scoringLoads[index] - teamScoringLoad) * 1.95, 0.72, 1.32);
-      var creationFactor = 0.58 + creation[index] * 0.85;
-      // 只有专精负荷显著高于常规 shotLoad 时才打开额外通道；完整得分包不重复获益。
-      var specialistUsageLoad = Math.max(interiorUsageLoad[index], perimeterSpecialistLoad[index]);
-      var specialistParticipationFactor = 0.40 + specialistUsageLoad * 0.95
-        + Math.max(0, specialistUsageLoad - shotLoad[index]) * 1.50;
-      var threatFactor = 0.54 + threat[index] * 0.90;
       var scoringLoad = scoringLoads[index];
-      // 低技术球员仍需参与半场进攻；软底座避免 creation/threat 相乘后把长时间上场者压到几乎零出手。
-      // 补偿随 scoringLoad 平方衰减，中高端球员基本保持原有机会分配。
-      var participationFactor = Math.max(creationFactor, specialistParticipationFactor) * threatFactor
-        + 0.18 * Math.pow(1 - scoringLoad, 2);
-      // 顶级得分负荷在内线机会重新分配后保留少量稳定承载，避免头部得分完全依赖爆发抽样。
+      var roleFactor = clamp(1 + (scoringLoad - teamScoringLoad) * 1.60, 0.72, 1.32);
+      // V10：先决定“承担多少终结回合”，再由 three/mid/rim profile 决定这些回合在哪里结束。
+      // 旧版把 creation × threat 作为主要 participation，会让同档外线因为高控球+投射在多个通道重复获益，
+      // 同档低位/顺下核心则因低三分、低持球被二次压低 FGA。现在 scoringLoad 是唯一主轴；
+      // creation 只提供 ±4% 的自主创造修正，不再决定一个顶级内线有没有资格拿到核心出手权。
+      var scoringParticipationFactor = 0.50 + scoringLoad * 1.00;
+      var creationSupportFactor = 0.98 + creation[index] * 0.04;
+      var participationFactor = scoringParticipationFactor * creationSupportFactor;
+      // 顶级得分负荷保留少量稳定承载，避免头部得分完全依赖爆发抽样。
       var eliteLoadFactor = scoringLoad > 0.985
         ? 1
         : 1 + Math.max(0, scoringLoad - 0.80) * 0.08;
@@ -587,6 +584,7 @@
       ballSecurity: ballSecurity,
       touchLoad: touchLoad,
       shotLoad: shotLoad,
+      scoringLoad: scoringLoads,
       interiorUsageLoad: interiorUsageLoad,
       perimeterUsageLoad: perimeterUsageLoad,
       teamCreation: weightedMean(creation, weights),
@@ -730,7 +728,12 @@
     var threeA = Math.max(0, Math.min(fga, Math.round(fga * threeRate)));
     var fgaCaps = context.players.map(function(_, index) {
       var legendaryCapBonus = context.legendaryScorerFlags && context.legendaryScorerFlags[index] ? 0.06 : 0;
-      return Math.max(4, Math.round(fga * (0.30 + context.threat[index] * 0.13 + legendaryCapBonus)));
+      // 单节 FGA 上限也必须跟终结负荷一致，而不是跟 threat（偏向跳投效率）绑定。
+      // 否则即使 opportunity 已经公平，纯内线仍会在配额上限阶段再次被低三分/中投压制。
+      var scoringLoad = context.scoringLoad && Number.isFinite(Number(context.scoringLoad[index]))
+        ? Number(context.scoringLoad[index])
+        : Number(context.threat[index]) || 0;
+      return Math.max(4, Math.round(fga * (0.30 + scoringLoad * 0.13 + legendaryCapBonus)));
     });
     var fgaByPlayer = allocatePeriodQuota(fga, context.opportunity, fgaCaps, fgaLedger);
     var threeWeights = context.players.map(function(_, index) {
