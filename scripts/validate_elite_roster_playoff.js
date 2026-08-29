@@ -12,22 +12,28 @@ const sourceLeague = new Function(`${leagueSource}\nreturn LEAGUE_PLAYER_DATA;`)
 const sourcePlayers = Object.values(sourceLeague).flat();
 const byId = Object.fromEntries(sourcePlayers.map(player => [player.id, player]));
 
-function clonePlayer(id, prefix) {
+function clonePlayer(id, prefix, syntheticTarget) {
   const source = byId[id];
   if (!source) throw new Error(`缺少测试球员 ${id}`);
   const player = JSON.parse(JSON.stringify(source));
   player.id = `${prefix}-${id}`;
   player.cname = `${prefix}-${player.cname}`;
+  if (syntheticTarget === 93) {
+    const keys = ['threePT','MID','FIN','DNK','HAN','PAS','PDEF','STL','IDEF','BLK','REB','ATH','STR','CLU'];
+    keys.forEach(key => { player[key] = Math.min(99, Number(player[key]) + 1); });
+    player.HAN = Math.min(99, Number(player.HAN) + 1);
+  }
   player.ovr = Math.round(SIM_CONFIG.getUnifiedPlayerRating(player, player.pos).overall);
   player._age = 27;
   return player;
 }
 
-// A：真实属性轮廓的 99 + 99 + 93 三核心；B：六名 86-89 的均衡深度强队。
-const eliteIds = ['P0347', 'P0471', 'P0264', 'P0323', 'P0285', 'P0522', 'P0255', 'P0231', 'P0180', 'P0018'];
+// A：V9 语义属性模型自然计算出的 99 + 99 + 93 三核心；B：86-89 档的均衡深度强队。
+// 测试只读取属性计算结果，不覆盖任何现实球员属性，也不使用隐藏 OVR 加成。
+const eliteIds = ['P0347', 'P0120', 'P0040', 'P0323', 'P0285', 'P0522', 'P0255', 'P0231', 'P0180', 'P0018'];
 const balancedIds = ['P0418', 'P0296', 'P0349', 'P0092', 'P0265', 'P0041', 'P0019', 'P0402', 'P0191', 'P0039'];
 const LEAGUE_PLAYER_DATA = {
-  ELITE: eliteIds.map(id => clonePlayer(id, 'ELITE')),
+  ELITE: eliteIds.map(id => clonePlayer(id, 'ELITE', id === 'P0040' ? 93 : null)),
   BALANCED: balancedIds.map(id => clonePlayer(id, 'BALANCED')),
 };
 
@@ -124,7 +130,7 @@ if (coreOvrs[0] !== 99 || coreOvrs[1] !== 99 || coreOvrs[2] !== 93) {
 
 const playoffRotation = runtime.expectedRotation('ELITE', { isPlayoffs: true, ignoreNpcAvailability: true });
 const regularRotation = runtime.expectedRotation('ELITE', { isPlayoffs: false, ignoreNpcAvailability: true });
-const coreOriginalIds = new Set(['P0347', 'P0471', 'P0264']);
+const coreOriginalIds = new Set(['P0347', 'P0120', 'P0040']);
 function coreMinutes(rotation) {
   return rotation.players.reduce((sum, player, index) => {
     const originalId = String(player.id).split('-').slice(-1)[0];

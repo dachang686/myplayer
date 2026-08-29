@@ -3521,8 +3521,8 @@ function syncGeneratedLeaguePlayerOvrs() {
 }
 
 var LEAGUE_OVR_ANCHOR_VERSION = 1;
-var LEAGUE_ATTRIBUTE_SCHEMA_VERSION = 2;
-var LEAGUE_ATTRIBUTE_SOURCE_VERSION = 1;
+var LEAGUE_ATTRIBUTE_SCHEMA_VERSION = 3;
+var LEAGUE_ATTRIBUTE_SOURCE_VERSION = 2;
 
 function getCanonicalLeaguePlayer(playerId) {
   if (!playerId || typeof _baseLeagueRosterSnapshot === 'undefined' || !_baseLeagueRosterSnapshot) return null;
@@ -3561,8 +3561,21 @@ function migrateRealPlayerAttributeSource(player, canonical) {
       legacyDistance += Math.abs(Number(player[key]) - Number(legacyValues[index]));
     });
     if (legacyDistance < canonicalDistance) {
+      var deltas = keys.map(function(key, index) {
+        return Math.round(Number(player[key]) - Number(legacyValues[index]));
+      });
+      var deltaCounts = {};
+      deltas.forEach(function(delta) {
+        if (!delta) return;
+        deltaCounts[delta] = (deltaCounts[delta] || 0) + 1;
+      });
+      var uniformLegacyShift = Object.keys(deltaCounts).some(function(delta) {
+        return deltaCounts[delta] >= 8;
+      });
       keys.forEach(function(key, index) {
-        var developmentDelta = Number(player[key]) - Number(legacyValues[index]);
+        // V8 曾用同一 OVR 差值批量平移十余项属性。检测到这种指纹时直接恢复
+        // V9 的逐球员语义画像；正常生涯的分散成长/衰退则继续保留。
+        var developmentDelta = uniformLegacyShift ? 0 : Number(player[key]) - Number(legacyValues[index]);
         player[key] = clampLeagueAttribute(Number(canonical[key]) + developmentDelta);
       });
     }

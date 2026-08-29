@@ -1248,13 +1248,13 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
   </div>
 </div>
 
-<script src="js/data/player_attribute_schema.js"></script>
-<script src="js/data/league_attribute_source_migration.js"></script>
-<script src="js/data/league_players.js"></script>
+<script src="js/data/player_attribute_schema.js?v=20260828-v9"></script>
+<script src="js/data/league_attribute_source_migration.js?v=20260828-v9"></script>
+<script src="js/data/league_players.js?v=20260828-v9"></script>
 <script src="js/data/player_loyalty.js"></script>
 <script src="js/data/league_schedule.js"></script>
 <script src="js/data/player_archetypes.js"></script>
-<script src="js/data/simulation_config.js?v=20260828-1"></script>
+<script src="js/data/simulation_config.js?v=20260828-v9"></script>
 <script src="js/data/fictional_team_names.js"></script>
 <script src="js/cartoon_art.js"></script>
 <script src="js/local_player_profile.js"></script>
@@ -5871,10 +5871,26 @@ function getPlayerGameImpact(player) {
 }
 
 function getLeaguePlayerImpactRatings(player) {
-  var impact = getPlayerGameImpact(player);
+  // 仅用于名单“攻/防”展示。V9 直接由可见 14 项能力形成方向评分，
+  // 再少量使用名单 OVR 保持显示量表稳定；比赛引擎仍只走 getPlayerGameImpact。
+  function v(key) {
+    var value = Number(player && player[key]);
+    return Math.max(25, Math.min(99, Number.isFinite(value) ? value : 50));
+  }
+  var rosterOvr = Math.max(40, Math.min(99, Number(player && player.ovr) || 50));
+  var rawOffense =
+    v('threePT') * 0.18 + v('MID') * 0.10 + v('FIN') * 0.18 + v('DNK') * 0.08
+    + v('HAN') * 0.15 + v('PAS') * 0.15 + v('ATH') * 0.06 + v('STR') * 0.04 + v('CLU') * 0.06;
+  var rawDefense =
+    v('PDEF') * 0.33 + v('STL') * 0.18 + v('IDEF') * 0.22 + v('BLK') * 0.12
+    + v('REB') * 0.08 + v('ATH') * 0.05 + v('STR') * 0.02;
+  // 攻/防都来自真实技能方向；只把两侧共同平移到名单 OVR 的显示量表附近，
+  // 不压缩攻防差异，也不会回写任何属性或参与比赛。
+  var displayCenter = rawOffense * 0.60 + rawDefense * 0.40;
+  var displayCalibration = (rosterOvr - displayCenter) * 0.65;
   return {
-    offense: Math.round(impact.offense),
-    defense: Math.round(impact.defense),
+    offense: Math.round(Math.max(25, Math.min(99, rawOffense + displayCalibration))),
+    defense: Math.round(Math.max(25, Math.min(99, rawDefense + displayCalibration))),
   };
 }
 

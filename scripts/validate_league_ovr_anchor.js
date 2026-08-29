@@ -42,7 +42,7 @@ const initialMismatches = initialPlayers.filter(player => player.ovr !== sourceO
 assert(initialPlayers.length === 525 && initialMismatches.length === 0,
   `现实球员初始 OVR 必须保持官方锚点：${JSON.stringify(initialMismatches.slice(0, 10))}`);
 assert(initialPlayers.every(player => player._ovrAnchorVersion === 1
-  && player._attributeSchemaVersion === 2 && player._attributeSourceVersion === 1),
+  && player._attributeSchemaVersion === 3 && player._attributeSourceVersion === 2),
   '现实球员必须记录 OVR 锚点、属性语义和属性来源版本');
 assert(vm.runInContext('syncLeaguePlayerOvrs()', context) === 0,
   '联盟 OVR/属性语义同步必须可重复执行且第二次零改动');

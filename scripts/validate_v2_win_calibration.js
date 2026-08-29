@@ -198,7 +198,7 @@ const archetypeScenarios = [
   { label: '纯三分 +19', patch: { threePT: 99 } },
   { label: '纯中投 +19', patch: { MID: 99 } },
   { label: '纯终结 +19', patch: { FIN: 99 } },
-  { label: '纯护球 +19', patch: { HAN: 99 } },
+  { label: '纯控球 +19', patch: { HAN: 99 } },
   { label: '纯传球 +19', patch: { PAS: 99 } },
   { label: '纯外防 +19', patch: { PDEF: 99 } },
   { label: '纯内防 +19', patch: { IDEF: 99 } },

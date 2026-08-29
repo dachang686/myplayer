@@ -1,59 +1,11 @@
-const fs = require('fs');
-const path = require('path');
-const {
-  REVIEWED_FIELDS,
-  buildExpectedValues,
-  readLeague,
-} = require('./restore_reviewed_league_attributes.js');
-
-const root = path.resolve(__dirname, '..');
-const leagueSource = fs.readFileSync(path.join(root, 'js', 'data', 'league_players.js'), 'utf8');
-const league = readLeague(leagueSource);
-const players = Object.values(league).flat();
-const playerById = new Map(players.map(player => [player.id, player]));
-const queue = JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'player_rating_review_queue.json'), 'utf8'));
-const overrideData = JSON.parse(fs.readFileSync(path.join(__dirname, 'data', 'nba2k27_latest_player_overrides.json'), 'utf8'));
-const overrideById = new Map(overrideData.players.map(row => [row.localId, row]));
-const failures = [];
-let checkedFields = 0;
-let sourcedSteal = 0;
-let retainedSteal = 0;
-
-for (const row of queue.players) {
-  const player = playerById.get(row.localId);
-  if (!player) {
-    failures.push(`${row.localId} 不在联盟名单`);
-    continue;
-  }
-  const expected = buildExpectedValues(row, overrideById.get(row.localId));
-  for (const [key, value] of Object.entries(expected)) {
-    checkedFields++;
-    if (Number(player[key]) !== Number(value)) {
-      failures.push(`${player.id} ${key}=${player[key]}，来源值=${value}`);
-    }
-  }
-  if (Number.isFinite(Number(row.latest2k?.attributes?.Steal))) sourcedSteal++;
-  else retainedSteal++;
-}
-
-if (players.length !== 525 || queue.players.length !== 525) {
-  failures.push(`联盟/审核人数异常：${players.length}/${queue.players.length}`);
-}
-if (overrideById.size !== 2) failures.push(`最新逐人覆盖数量异常：${overrideById.size}`);
-if (sourcedSteal !== 478 || retainedSteal !== 47) {
-  failures.push(`STL 来源覆盖异常：${sourcedSteal}/${retainedSteal}`);
-}
-
-console.log(JSON.stringify({
-  leaguePlayers: players.length,
-  reviewedFieldsPerPlayer: REVIEWED_FIELDS.length,
-  checkedFields,
-  sourcedSteal,
-  retainedSteal,
-  hanCheckedBy: 'validate_player_attribute_schema.js',
-  latestOverrides: overrideData.players.map(row => ({ localId: row.localId, name: row.name, source: row.source })),
-  failureCount: failures.length,
-  failures: failures.slice(0, 30),
-}, null, 2));
-
-if (failures.length) process.exitCode = 1;
+const fs=require('fs'),path=require('path');
+const root=path.resolve(__dirname,'..');
+const league=new Function(fs.readFileSync(path.join(root,'js/data/league_players.js'),'utf8')+';return LEAGUE_PLAYER_DATA;')();
+const audit=JSON.parse(fs.readFileSync(path.join(__dirname,'data/player_semantic_calibration_v9.json'),'utf8'));
+const players=Object.values(league).flat(), byId=new Map(players.map(p=>[p.id,p]));
+const A=['threePT','MID','FIN','DNK','HAN','PAS','PDEF','STL','IDEF','BLK','REB','ATH','STR','CLU'];
+const failures=[];let checked=0,statsInformed=0;const sourceCounts={};
+for(const row of audit.players){const p=byId.get(row.id);if(!p){failures.push(`${row.id} missing`);continue;}sourceCounts[row.sourceKind]=(sourceCounts[row.sourceKind]||0)+1;if(Object.keys(row.statsAdjustments||{}).length)statsInformed++;for(const k of A){checked++;if(Number(p[k])!==Number(row.profile[k]))failures.push(`${row.id} ${k}`);}}
+if(players.length!==525||audit.players.length!==525) failures.push(`count ${players.length}/${audit.players.length}`);
+if((sourceCounts['2k-semantic']||0)!==478||(sourceCounts['local-reviewed']||0)!==47) failures.push(`source counts ${JSON.stringify(sourceCounts)}`);
+console.log(JSON.stringify({players:players.length,checkedFields:checked,sourceCounts,statsInformed,failureCount:failures.length,failures:failures.slice(0,50)},null,2));if(failures.length)process.exitCode=1;

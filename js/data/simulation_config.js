@@ -114,7 +114,7 @@ const SIM_CONFIG = {
     MID: "中投",
     FIN: "终结",
     DNK: "扣篮",
-    HAN: "控球/护球",
+    HAN: "控球",
     PAS: "传球",
     PDEF: "外防",
     STL: "抢断",
