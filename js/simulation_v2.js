@@ -1208,10 +1208,12 @@
     var biasB = -contextualBias;
     var recordFormBias = recordFormEdge * MARGIN_TO_BIAS_PER_SIDE;
     var rosterStarBias = teamResidualMarginEdge * MARGIN_TO_BIAS_PER_SIDE;
+    // V11：现代得分环境轻微提速。只增加约 1-2 个全场回合，不改投篮命中率或球员属性；
+    // 与队内得分层级微调配合，把长期偏低的个人得分榜整体抬高，但避免直接给球星加隐藏得分。
     var basePace = clamp(Math.round(
-      105 + ((first.pace + second.pace) / 2 - 0.50) * 7
+      107 + ((first.pace + second.pace) / 2 - 0.50) * 7
         - (first.fatigue + second.fatigue) * 1.5 + normal(0, 1.8),
-    ), 88, 108);
+    ), 90, 110);
     var totalLinesA = first.players.map(function(player, index) { return emptyLine(player, first, index); });
     var totalLinesB = second.players.map(function(player, index) { return emptyLine(player, second, index); });
     var qScoresA = [];

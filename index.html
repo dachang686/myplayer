@@ -6146,7 +6146,9 @@ function generateBoxScore(teamA, teamB, totalA, totalB, gameOptions) {
       } else {
         roleOpportunity = leagueStatClamp(0.90 - (roleRanks[index] - 5) * 0.045, 0.66, 0.90);
       }
-      var hierarchyOpportunity = leagueStatClamp(1 + (offSkill[index] - averageScoring) * 0.80, 0.80, 1.25);
+      // V11：只轻微拉开队内真实得分手层级。这里重新分配球队既有 FGA/PTS，
+      // 不提高球队总分，也不改变投篮效率；避免排行榜长期被压缩在 25-27 分。
+      var hierarchyOpportunity = leagueStatClamp(1 + (offSkill[index] - averageScoring) * 0.88, 0.80, 1.27);
       // 轻度非线性拉开核心与普通主力的球权，但不改变球队 FGA 或总得分。
       return minutes[index]
         * (0.22 + Math.pow(offense[index].usage, 1.40) * 1.48)
