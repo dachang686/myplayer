@@ -3,9 +3,10 @@ const path = require('path');
 const vm = require('vm');
 
 const root = path.resolve(__dirname, '..');
-const CHECKPOINTS = [10, 15, 20, 25];
+const CHECKPOINTS = [10, 15, 20, 25, 30, 35];
+const EQUILIBRIUM_CHECKPOINTS = [20, 25, 30, 35];
 const SEED_COUNT = Math.max(1, Number(process.env.LONG_TERM_OVR_SEEDS) || 100);
-const MAX_SEASONS = Math.max(25, ...CHECKPOINTS);
+const MAX_SEASONS = Math.max(35, ...CHECKPOINTS);
 
 const configSource = fs.readFileSync(path.join(root, 'js/data/simulation_config.js'), 'utf8');
 const leagueSource = fs.readFileSync(path.join(root, 'js/data/league_players.js'), 'utf8');
@@ -204,8 +205,7 @@ for (let seedIndex = 0; seedIndex < SEED_COUNT; seedIndex++) {
     }
   }
 
-  if ((snapshots[20] && snapshots[20].count99 > 2)
-    || (snapshots[25] && snapshots[25].count99 > 2)) {
+  if (EQUILIBRIUM_CHECKPOINTS.some(season => snapshots[season] && snapshots[season].count99 > 2)) {
     seedsWith99Overflow += 1;
   }
 
@@ -217,11 +217,18 @@ for (let seedIndex = 0; seedIndex < SEED_COUNT; seedIndex++) {
     }
   }
 
-  if (snapshots[20] && snapshots[25]) {
-    const drop90 = snapshots[20].count90 - snapshots[25].count90;
-    const drop85 = snapshots[20].count85 - snapshots[25].count85;
-    if (drop90 > 10) failures.push(`seed ${seed} 第 20→25 季 90+ 下滑 ${drop90}，超过允许范围`);
-    if (drop85 > 18) failures.push(`seed ${seed} 第 20→25 季 85+ 下滑 ${drop85}，超过允许范围`);
+  for (let index = 1; index < EQUILIBRIUM_CHECKPOINTS.length; index++) {
+    const earlier = snapshots[EQUILIBRIUM_CHECKPOINTS[index - 1]];
+    const later = snapshots[EQUILIBRIUM_CHECKPOINTS[index]];
+    if (!earlier || !later) continue;
+    const drop90 = earlier.count90 - later.count90;
+    const drop85 = earlier.count85 - later.count85;
+    if (drop90 > 8) {
+      failures.push(`seed ${seed} 第 ${EQUILIBRIUM_CHECKPOINTS[index - 1]}→${EQUILIBRIUM_CHECKPOINTS[index]} 季 90+ 下滑 ${drop90}，超过允许范围`);
+    }
+    if (drop85 > 12) {
+      failures.push(`seed ${seed} 第 ${EQUILIBRIUM_CHECKPOINTS[index - 1]}→${EQUILIBRIUM_CHECKPOINTS[index]} 季 85+ 下滑 ${drop85}，超过允许范围`);
+    }
   }
 }
 
@@ -241,49 +248,58 @@ function summarizeCheckpoint(season) {
   };
 }
 
+function validateEquilibriumSummary(summary, failures) {
+  const season = summary.season;
+  if (!inRange(summary.count90.avg, 18, 30)) {
+    failures.push(`第 ${season} 季 90+ 均值 ${summary.count90.avg}，目标 18–30`);
+  }
+  if (summary.count90.min < 14) {
+    failures.push(`第 ${season} 季 90+ 最低 ${summary.count90.min}，低于允许下限 14`);
+  }
+  if (!inRange(summary.count85.avg, 50, 82)) {
+    failures.push(`第 ${season} 季 85+ 均值 ${summary.count85.avg}，目标 50–82`);
+  }
+  if (!inRange(summary.maxOvr.avg, 96, 99)) {
+    failures.push(`第 ${season} 季最高 OVR 均值 ${summary.maxOvr.avg}，目标 96–99`);
+  }
+}
+
+function validateEquilibriumTrend(left, right, failures) {
+  if (right.count90.avg < left.count90.avg - 4) {
+    failures.push(`第 ${left.season}→${right.season} 季 90+ 均值下滑 ${(left.count90.avg - right.count90.avg).toFixed(1)}，超过允许范围`);
+  }
+  if (right.count85.avg < left.count85.avg - 6) {
+    failures.push(`第 ${left.season}→${right.season} 季 85+ 均值下滑 ${(left.count85.avg - right.count85.avg).toFixed(1)}，超过允许范围`);
+  }
+}
+
+const summaries = CHECKPOINTS.map(summarizeCheckpoint);
+
+for (const season of EQUILIBRIUM_CHECKPOINTS) {
+  const summary = summaries.find(row => row && row.season === season);
+  if (summary) validateEquilibriumSummary(summary, failures);
+}
+
+for (let index = 1; index < EQUILIBRIUM_CHECKPOINTS.length; index++) {
+  const left = summaries.find(row => row && row.season === EQUILIBRIUM_CHECKPOINTS[index - 1]);
+  const right = summaries.find(row => row && row.season === EQUILIBRIUM_CHECKPOINTS[index]);
+  if (left && right) validateEquilibriumTrend(left, right, failures);
+}
+
+if (seedsWith99Overflow > Math.max(2, Math.floor(SEED_COUNT * 0.02))) {
+  failures.push(`99 OVR 泛滥：${seedsWith99Overflow}/${SEED_COUNT} 个样本在均衡检查点超过 2 人，允许 ${Math.max(2, Math.floor(SEED_COUNT * 0.02))}`);
+}
+
 const report = {
   seeds: SEED_COUNT,
   checkpoints: CHECKPOINTS,
-  summaries: CHECKPOINTS.map(summarizeCheckpoint),
+  equilibriumCheckpoints: EQUILIBRIUM_CHECKPOINTS,
+  summaries,
   seedsWith99Overflow,
   allowed99OverflowSeeds: Math.max(2, Math.floor(SEED_COUNT * 0.02)),
   failureCount: failures.length,
   failures: failures.slice(0, 50),
 };
-
-for (const season of [20, 25]) {
-  const summary = report.summaries.find(row => row && row.season === season);
-  if (!summary) continue;
-  if (!inRange(summary.count90.avg, 11, 30)) {
-    failures.push(`第 ${season} 季 90+ 均值 ${summary.count90.avg}，预期 18–30（允许均值 14–30）`);
-  }
-  if (summary.count90.min < 8) {
-    failures.push(`第 ${season} 季 90+ 最低 ${summary.count90.min}，低于允许下限 8`);
-  }
-  if (!inRange(summary.count85.avg, 45, 82)) {
-    failures.push(`第 ${season} 季 85+ 均值 ${summary.count85.avg}，预期 50–82（允许均值 45–82）`);
-  }
-  if (!inRange(summary.maxOvr.avg, 93, 99)) {
-    failures.push(`第 ${season} 季最高 OVR 均值 ${summary.maxOvr.avg}，预期 96–99（允许均值 93–99）`);
-  }
-}
-
-const summary20 = report.summaries.find(row => row && row.season === 20);
-const summary25 = report.summaries.find(row => row && row.season === 25);
-if (summary20 && summary25) {
-  if (summary25.count90.avg < summary20.count90.avg - 5) {
-    failures.push(`第 20→25 季 90+ 均值下滑 ${(summary20.count90.avg - summary25.count90.avg).toFixed(1)}，超过允许范围`);
-  }
-  if (summary25.count85.avg < summary20.count85.avg - 8) {
-    failures.push(`第 20→25 季 85+ 均值下滑 ${(summary20.count85.avg - summary25.count85.avg).toFixed(1)}，超过允许范围`);
-  }
-}
-
-if (seedsWith99Overflow > report.allowed99OverflowSeeds) {
-  failures.push(`99 OVR 泛滥：${seedsWith99Overflow}/${SEED_COUNT} 个样本在检查点超过 2 人，允许 ${report.allowed99OverflowSeeds}`);
-}
-
-report.failureCount = failures.length;
 
 console.log(JSON.stringify(report, null, 2));
 if (failures.length) process.exitCode = 1;

@@ -3849,6 +3849,61 @@ function inferGeneratedPlayerDraftOvr(player, currentOvr, age) {
   return estimated;
 }
 
+function isEliteGeneratedDraftPick(player) {
+  if (!isGeneratedLeaguePlayer(player)) return false;
+  var draftOvr = Number(player && player._draftOvr);
+  if (!Number.isFinite(draftOvr)) {
+    draftOvr = inferGeneratedPlayerDraftOvr(player, Number(player && player.ovr) || 60, getLeaguePlayerAge(player));
+  }
+  return draftOvr >= 80 && draftOvr <= 84;
+}
+
+function getEliteDraftGrowthBonus(player, age) {
+  if (!isEliteGeneratedDraftPick(player)) return 0;
+  if (age <= 22) return 0.30;
+  if (age <= 25) return 0.20;
+  if (age <= 28) return 0.12;
+  if (age <= 30) return 0.05;
+  return 0;
+}
+
+function isHighGeneratedDraftPick(player) {
+  if (!isGeneratedLeaguePlayer(player)) return false;
+  var draftOvr = Number(player && player._draftOvr);
+  if (!Number.isFinite(draftOvr)) {
+    draftOvr = inferGeneratedPlayerDraftOvr(player, Number(player && player.ovr) || 60, getLeaguePlayerAge(player));
+  }
+  return draftOvr >= 75 && draftOvr <= 79;
+}
+
+function getHighDraftGrowthBonus(player, age) {
+  if (!isHighGeneratedDraftPick(player)) return 0;
+  if (age <= 22) return 0.14;
+  if (age <= 25) return 0.09;
+  if (age <= 28) return 0.05;
+  return 0;
+}
+
+function getGeneratedPlayerAgeFactor(player, age, ovr) {
+  var rating = Number(ovr) || 70;
+  if (isEliteGeneratedDraftPick(player) && rating >= 88 && age >= 29 && age <= 34) {
+    return (rngNext() - 0.48) * 0.32;
+  }
+  if (age <= 22) return 1 + rngNext() * 1.5;
+  if (age <= 28) return (rngNext() - 0.35) * 1.2;
+  if (age <= 30) return (rngNext() - 0.62) * 0.8;
+  if (age <= 32) {
+    if (rating >= 88) return (rngNext() - 0.52) * 0.42;
+    return (rngNext() - 0.58) * 0.65;
+  }
+  if (age <= 33) {
+    if (rating >= 90) return (rngNext() - 0.54) * 0.48;
+    return -0.55 - rngNext() * 0.75;
+  }
+  if (age <= 35) return -1.4 - rngNext() * 1.1;
+  return -2 - rngNext() * 2;
+}
+
 function getGeneratedPlayerPotentialCap(player, draftOvr) {
   var identity = String(player && (player._prospectId || player.id) || '');
   if (typeof MVP_STAR_PROSPECT_IDS !== 'undefined') {
@@ -3877,7 +3932,7 @@ function inferGeneratedPlayerPotential(player, age) {
     potential = getGeneratedPlayerPotentialCap(player, draftOvr);
   } else {
     var variance = generatedPlayerStableHash(player) % 3;
-    var baseGain = draftOvr <= 59 ? 13 : (draftOvr <= 67 ? 14 : (draftOvr <= 74 ? 15 : 15));
+    var baseGain = draftOvr <= 59 ? 13 : (draftOvr <= 67 ? 14 : (draftOvr <= 74 ? 15 : (draftOvr <= 79 ? 15 : 18)));
     potential = Math.min(getGeneratedPlayerPotentialCap(player, draftOvr), draftOvr + baseGain + variance);
   }
   // 不回退已有存档的当前能力；新版只阻止后续继续越过合理上限。
@@ -4188,20 +4243,15 @@ function evolveLeague() {
       getPlayerSalary(p);
       var gene = getPlayerGene(p);
       var volatility = gene.v;
-      var ageFactor = 0;
-      if (age <= 22) ageFactor = 1 + rngNext() * 1.5;
-      else if (age <= 28) ageFactor = (rngNext() - 0.35) * 1.2;
-      else if (age <= 30) ageFactor = (rngNext() - 0.62) * 0.8;
-      else if (age <= 32) ageFactor = (rngNext() - 0.58) * 0.65;
-      else if (age <= 33) ageFactor = -0.55 - rngNext() * 0.75;
-      else if (age <= 35) ageFactor = -1.4 - rngNext() * 1.1;
-      else ageFactor = -2 - rngNext() * 2;
+      var ageFactor = getGeneratedPlayerAgeFactor(p, age, p.ovr);
       var volFactor = (rngNext() - 0.5) * volatility * 0.6;
       var randFactor = (rngNext() - 0.5) * 1.5;
       var change = ageFactor * 0.5 + volFactor * 0.3 + randFactor * 0.2;
       change += getPotentialGrowthBias(gene.potential, p.ovr, age);
+      change += getEliteDraftGrowthBonus(p, age);
+      change += getHighDraftGrowthBonus(p, age);
       if (change <= 0 && isGeneratedLeaguePlayer(p) && age <= 25 && Number(gene.potential) - Number(p.ovr) >= 8) {
-        if (rngNext() < 0.38) change = 0.85;
+        if (rngNext() < (isEliteGeneratedDraftPick(p) ? 0.48 : 0.38)) change = 0.85;
       }
       if (isMvpStar(p) && age <= 26) change += 0.25 + rngNext() * 0.40; // 重点新秀仍更快成长，但不再稳定每年跳 2 点
       if (change > 0 && p.ovr >= gene.potential) change = 0;
