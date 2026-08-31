@@ -1982,7 +1982,7 @@ function applyLeaguePlayerAttributeRound(player, profile, direction, roundMagnit
     var attrMagnitude;
     if (direction > 0) {
       if (profile.primary.indexOf(attrKey) >= 0) {
-        attrMagnitude = generatedPlayer ? roundMagnitude : Math.min(cap, roundMagnitude + (cap === 3 ? 1 : 0));
+        attrMagnitude = roundMagnitude;
       } else if (profile.slow.indexOf(attrKey) >= 0) {
         attrMagnitude = generatedPlayer ? 0 : Math.max(0, roundMagnitude - 1);
       } else {
@@ -1995,6 +1995,50 @@ function applyLeaguePlayerAttributeRound(player, profile, direction, roundMagnit
     }
     player[attrKey] = Math.max(25, Math.min(99, Math.round(current + direction * attrMagnitude)));
   });
+}
+
+function rollbackLeaguePlayerAttributesToFormulaLimit(player, profile, beforeAttributes, beforeFormulaOvr, direction, limit, targetFormulaOvr) {
+  if (typeof calcOVR !== 'function') return Number(beforeFormulaOvr) || 0;
+  var primaryKeys = profile.primary.slice();
+  var slowKeys = profile.slow.slice();
+  var neutralKeys = getLeagueAttributeKeys().filter(function(key) {
+    return primaryKeys.indexOf(key) < 0 && slowKeys.indexOf(key) < 0;
+  });
+  var rollbackOrder = neutralKeys.concat(slowKeys, primaryKeys);
+  var afterFormulaOvr = calcOVR(player, player.pos);
+  var guard = 0;
+  function exceedsLimit() {
+    if (Number.isFinite(Number(targetFormulaOvr))) {
+      return (direction > 0 && afterFormulaOvr > targetFormulaOvr)
+        || (direction < 0 && afterFormulaOvr < targetFormulaOvr);
+    }
+    var formulaDelta = afterFormulaOvr - beforeFormulaOvr;
+    if (direction > 0) return formulaDelta > limit;
+    if (direction < 0) return formulaDelta < -limit;
+    return false;
+  }
+  while (exceedsLimit() && guard++ < 240) {
+    var adjusted = false;
+    for (var rollbackIndex = 0; rollbackIndex < rollbackOrder.length; rollbackIndex++) {
+      var rollbackKey = rollbackOrder[rollbackIndex];
+      var currentValue = Number(player[rollbackKey]);
+      var originalValue = Number(beforeAttributes[rollbackKey]);
+      if (!Number.isFinite(currentValue) || !Number.isFinite(originalValue)) continue;
+      if (direction > 0 && currentValue > originalValue) {
+        player[rollbackKey] = currentValue - 1;
+        adjusted = true;
+      } else if (direction < 0 && currentValue < originalValue) {
+        player[rollbackKey] = currentValue + 1;
+        adjusted = true;
+      }
+      if (adjusted) {
+        afterFormulaOvr = calcOVR(player, player.pos);
+        break;
+      }
+    }
+    if (!adjusted) break;
+  }
+  return afterFormulaOvr;
 }
 
 function applyLeaguePlayerOvrChange(player, oldOvr, newOvr) {
@@ -2014,9 +2058,8 @@ function applyLeaguePlayerOvrChange(player, oldOvr, newOvr) {
 
   var age = Number(player._age) || 27;
   var requestedMagnitude = Math.max(1, Math.abs(requested - before));
-  // 生成球员每季最多按 2 点 OVR 的属性预算演变；旧逻辑会在 +2 请求时把全部主属性提高 3 点。
-  var cap = generatedPlayer ? 2 : (direction > 0 && age <= 23 && requestedMagnitude >= 2 ? 3 : 2);
-  var magnitude = Math.min(cap, requestedMagnitude);
+  var cap = Math.min(2, requestedMagnitude);
+  var magnitude = cap;
   var profile = getLeaguePlayerDevelopmentProfile(player);
   var declineFast = ['ATH','STR','PDEF','STL','DNK'];
   var declineResist = ['threePT','MID','PAS','HAN','CLU'];
@@ -2037,8 +2080,13 @@ function applyLeaguePlayerOvrChange(player, oldOvr, newOvr) {
   for (var growthRound = 0; growthRound < growthRounds; growthRound++) {
     if (typeof calcOVR === 'function') {
       var currentFormulaOvr = calcOVR(player, player.pos);
-      if (direction > 0 && currentFormulaOvr >= requested) break;
-      if (direction < 0 && currentFormulaOvr <= requested) break;
+      if (generatedPlayer) {
+        if (direction > 0 && currentFormulaOvr >= requested) break;
+        if (direction < 0 && currentFormulaOvr <= requested) break;
+      } else {
+        if (direction > 0 && currentFormulaOvr >= beforeFormulaOvr + requestedMagnitude) break;
+        if (direction < 0 && currentFormulaOvr <= beforeFormulaOvr - requestedMagnitude) break;
+      }
     }
     var roundMagnitude = generatedPlayer && direction > 0 ? 1 : magnitude;
     applyLeaguePlayerAttributeRound(player, profile, direction, roundMagnitude, roundOptions);
@@ -2046,40 +2094,19 @@ function applyLeaguePlayerOvrChange(player, oldOvr, newOvr) {
   }
 
   if (typeof calcOVR === 'function') {
-    var afterFormulaOvr = calcOVR(player, player.pos);
+    var targetFormulaOvr = generatedPlayer
+      ? requested
+      : (beforeFormulaOvr + direction * requestedMagnitude);
+    var afterFormulaOvr = rollbackLeaguePlayerAttributesToFormulaLimit(
+      player, profile, beforeAttributes, beforeFormulaOvr, direction, requestedMagnitude, targetFormulaOvr
+    );
     if (generatedPlayer) {
-      // 属性公式的离散取整有时会把“本季 +1/+2”放大成更高 OVR；逐点撤回边缘属性，直到不超过请求。
-      var primaryKeys = profile.primary.slice();
-      var slowKeys = profile.slow.slice();
-      var neutralKeys = getLeagueAttributeKeys().filter(function(key) {
-        return primaryKeys.indexOf(key) < 0 && slowKeys.indexOf(key) < 0;
-      });
-      var rollbackOrder = neutralKeys.concat(slowKeys, primaryKeys);
-      var guard = 0;
-      while (((direction > 0 && afterFormulaOvr > requested) || (direction < 0 && afterFormulaOvr < requested)) && guard++ < 240) {
-        var adjusted = false;
-        for (var rollbackIndex = 0; rollbackIndex < rollbackOrder.length; rollbackIndex++) {
-          var rollbackKey = rollbackOrder[rollbackIndex];
-          var currentValue = Number(player[rollbackKey]);
-          var originalValue = Number(beforeAttributes[rollbackKey]);
-          if (!Number.isFinite(currentValue) || !Number.isFinite(originalValue)) continue;
-          if (direction > 0 && currentValue > originalValue) {
-            player[rollbackKey] = currentValue - 1;
-            adjusted = true;
-          } else if (direction < 0 && currentValue < originalValue) {
-            player[rollbackKey] = currentValue + 1;
-            adjusted = true;
-          }
-          if (adjusted) {
-            afterFormulaOvr = calcOVR(player, player.pos);
-            break;
-          }
-        }
-        if (!adjusted) break;
-      }
       player.ovr = afterFormulaOvr;
     } else {
-      player.ovr = Math.max(55, Math.min(99, before + afterFormulaOvr - beforeFormulaOvr));
+      var formulaDelta = afterFormulaOvr - beforeFormulaOvr;
+      if (direction > 0) formulaDelta = Math.min(requestedMagnitude, Math.max(0, formulaDelta));
+      else formulaDelta = Math.max(-requestedMagnitude, Math.min(0, formulaDelta));
+      player.ovr = Math.max(55, Math.min(99, before + formulaDelta));
     }
   } else {
     player.ovr = Math.max(55, Math.min(99, requested));
@@ -3600,6 +3627,7 @@ function migrateLeagueTalentBalance(player) {
   if (compensation <= 0) return false;
   migrateLegacyGeneratedPlayerAttributes(player);
   applyLeaguePlayerOvrChange(player, currentOvr, Math.min(potential, currentOvr + compensation));
+  player._talentBalanceMigrationSeason = getCurrentLeagueSeasonNumber();
   refreshGeneratedPlayerType(player);
   return true;
 }
@@ -4250,6 +4278,10 @@ function evolveLeague() {
       change += getPotentialGrowthBias(gene.potential, p.ovr, age);
       change += getEliteDraftGrowthBonus(p, age);
       change += getHighDraftGrowthBonus(p, age);
+      if (change > 0 && isGeneratedLeaguePlayer(p)
+        && Number(p._talentBalanceMigrationSeason) === getCurrentLeagueSeasonNumber()) {
+        change = 0;
+      }
       if (change <= 0 && isGeneratedLeaguePlayer(p) && age <= 25 && Number(gene.potential) - Number(p.ovr) >= 8) {
         if (rngNext() < (isEliteGeneratedDraftPick(p) ? 0.48 : 0.38)) change = 0.85;
       }
@@ -4272,6 +4304,9 @@ function evolveLeague() {
         return;
       }
       p._age = age + 1; // 临时实验：球员年龄真实上涨，每年 +1
+      if (Number(p._talentBalanceMigrationSeason) === getCurrentLeagueSeasonNumber()) {
+        delete p._talentBalanceMigrationSeason;
+      }
       refreshGeneratedPlayerType(p);
       newRoster.push(p);
     });

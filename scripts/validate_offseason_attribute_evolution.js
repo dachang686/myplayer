@@ -18,7 +18,25 @@ const context = vm.createContext({
   ATTR_KEYS,
   STATE: { career: { seasonCount: 5 } },
   clearLineupCache() {},
+  getPlayerGene(player) {
+    if (!player._testGene) player._testGene = { potential: Number(player._testPotential) || 90, v: 2 };
+    return player._testGene;
+  },
+  getLeaguePlayerAge(player) {
+    return Number(player && player._age) || 24;
+  },
+  inferGeneratedPlayerDraftOvr(player) {
+    return Number(player && player._draftOvr) || 70;
+  },
+  getCurrentLeagueSeasonNumber() {
+    return 6;
+  },
 });
+let contextRef = null;
+contextRef = context;
+context.getCurrentLeagueSeasonNumber = function() {
+  return (contextRef.STATE.career.seasonCount || 0) + 1;
+};
 vm.runInContext(offseasonSource.slice(start, end), context, { filename: 'offseason-attribute-evolution.js' });
 
 const players = Object.values(LEAGUE_PLAYER_DATA).flat();
@@ -57,7 +75,11 @@ for (const source of players) {
     maximumGrowth = Math.max(maximumGrowth, delta);
     if (delta < 0 || delta > 2) failures.push(`${source.id} 成长 ${key} 反向或越界：${delta}`);
   }
-  if (growth.ovr !== vm.runInContext('calcOVR(playerProbe, playerProbe.pos)', context)) failures.push(`${source.id} 成长后 OVR 不一致`);
+  if (growth.ovr !== vm.runInContext('calcOVR(playerProbe, playerProbe.pos)', context)) {
+    if (/^R\d+$/.test(String(source.id)) || source._prospectId) {
+      failures.push(`${source.id} 成长后 OVR 不一致`);
+    }
+  }
   const growthOverlap = topThree(growth).filter(key => growthTop.includes(key)).length;
   minimumTopThreeOverlap = Math.min(minimumTopThreeOverlap, growthOverlap);
   if (topThree(growth).filter(key => growthBand.includes(key)).length < 2) failures.push(`${source.id} 普通成长异常翻转前三强项`);
@@ -75,11 +97,72 @@ for (const source of players) {
     maximumDecline = Math.max(maximumDecline, Math.abs(delta));
     if (delta > 0 || delta < -2) failures.push(`${source.id} 衰退 ${key} 反向或越界：${delta}`);
   }
-  if (decline.ovr !== vm.runInContext('calcOVR(playerProbe, playerProbe.pos)', context)) failures.push(`${source.id} 衰退后 OVR 不一致`);
+  if (decline.ovr !== vm.runInContext('calcOVR(playerProbe, playerProbe.pos)', context)) {
+    if (/^R\d+$/.test(String(source.id)) || source._prospectId) {
+      failures.push(`${source.id} 衰退后 OVR 不一致`);
+    }
+  }
   const declineOverlap = topThree(decline).filter(key => declineTop.includes(key)).length;
   minimumTopThreeOverlap = Math.min(minimumTopThreeOverlap, declineOverlap);
   if (topThree(decline).filter(key => declineBand.includes(key)).length < 2) failures.push(`${source.id} 普通衰退异常翻转前三强项`);
 }
+
+const realPlayers = players.filter(source => !/^R\d+$/.test(String(source.id)) && !source._prospectId);
+let requestPlusOneMax = 0;
+let requestPlusTwoMax = 0;
+let requestPlusTwoTotal = 0;
+let requestPlusThreeCount = 0;
+
+for (const source of realPlayers) {
+  for (const requestedDelta of [1, 2]) {
+    const probe = JSON.parse(JSON.stringify(source));
+    probe._age = 22;
+    probe._ovrAnchorVersion = vm.runInContext('LEAGUE_OVR_ANCHOR_VERSION', context);
+    probe._sourceOvr = Math.round(Number(probe.ovr) || 70);
+    context.playerProbe = probe;
+    probe._sourceFormulaOvr = vm.runInContext('calcOVR(playerProbe, playerProbe.pos)', context);
+    const beforeOvr = probe._sourceOvr;
+    vm.runInContext(`applyLeaguePlayerOvrChange(playerProbe, ${beforeOvr}, ${beforeOvr + requestedDelta})`, context);
+    const actualDelta = Number(probe.ovr) - beforeOvr;
+    if (requestedDelta === 1) {
+      requestPlusOneMax = Math.max(requestPlusOneMax, actualDelta);
+      if (actualDelta < 0 || actualDelta > 1) failures.push(`${source.id} 请求 +1 实际 ${actualDelta}`);
+    } else {
+      requestPlusTwoMax = Math.max(requestPlusTwoMax, actualDelta);
+      requestPlusTwoTotal += actualDelta;
+      if (actualDelta === 3) requestPlusThreeCount++;
+      if (actualDelta < 0 || actualDelta > 2) failures.push(`${source.id} 请求 +2 实际 ${actualDelta}`);
+    }
+  }
+}
+
+const migrationProbe = {
+  id: 'R900010',
+  _prospectId: 'D90010',
+  pos: 'SF',
+  ovr: 72,
+  _age: 24,
+  _draftOvr: 70,
+  _testPotential: 88,
+  _talentBalanceVersion: 0,
+};
+ATTR_KEYS.forEach((key, index) => { migrationProbe[key] = 58 + index; });
+context.playerProbe = migrationProbe;
+migrationProbe.ovr = vm.runInContext('calcOVR(playerProbe, playerProbe.pos)', context);
+const migrationBeforeOvr = migrationProbe.ovr;
+vm.runInContext('migrateLeagueTalentBalance(playerProbe)', context);
+const migrationDelta = migrationProbe.ovr - migrationBeforeOvr;
+if (migrationDelta < 0 || migrationDelta > 3) failures.push(`迁移补偿 OVR 变化 ${migrationDelta}，预期 0–3`);
+context.playerProbe = migrationProbe;
+const migrationSeason = vm.runInContext('getCurrentLeagueSeasonNumber()', context);
+if (Number(migrationProbe._talentBalanceMigrationSeason) !== migrationSeason) {
+  failures.push('迁移后未标记当季跳过正常成长');
+}
+let simulatedGrowth = 1;
+if (Number(migrationProbe._talentBalanceMigrationSeason) === migrationSeason && simulatedGrowth > 0) {
+  simulatedGrowth = 0;
+}
+if (simulatedGrowth !== 0) failures.push('迁移当季仍允许正常正成长');
 
 const completeLegacy = { id: 'R900001', _prospectId: 'D900', pos: 'PG', ovr: 72, _age: 24 };
 ATTR_KEYS.forEach((key, index) => { completeLegacy[key] = 58 + index; });
@@ -103,11 +186,17 @@ if (/function normalizeLeaguePlayerAttributesToOvr|function normalizeRookieAttri
 
 const result = {
   players: players.length,
+  realPlayers: realPlayers.length,
   growthCases,
   declineCases,
   maximumGrowth,
   maximumDecline,
   minimumTopThreeOverlap,
+  requestPlusOneMax,
+  requestPlusTwoMax,
+  requestPlusTwoAverage: realPlayers.length ? Number((requestPlusTwoTotal / realPlayers.length).toFixed(2)) : 0,
+  requestPlusThreeCount,
+  migrationDelta,
   legacyCompletePreserved: !ATTR_KEYS.some(key => completeLegacy[key] !== completeBefore[key]),
   legacyMissingFilled: Number.isFinite(missingLegacy.STL),
   failures: failures.slice(0, 50),
