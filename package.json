@@ -28,7 +28,7 @@
     "test:offseason-attributes": "node scripts/validate_offseason_attribute_evolution.js",
     "test:training-growth": "node scripts/validate_player_training_growth.js",
     "test:career:v2": "node scripts/validate_v2_career_full_chain.js",
-    "test:v2:formal": "npm run test:smoke && npm run test:integration && npm run test:statistical && npm run test:attribute-schema && npm run test:league-attribute-provenance && npm run test:unified-player-model && npm run test:league-ovr-anchor && npm run test:usage:interior:v2 && npm run test:extremes:v2 && npm run test:engine-extremes:v2 && npm run test:draft-attributes:v5 && npm run test:offseason-attributes && npm run test:training && npm run test:training-growth && npm run test:career:v2 && npm run test:calibration && npm run test:calibration:season:v2:statistical && npm run test:playoffs:v2",
+    "test:v2:formal": "npm run test:smoke && npm run test:integration && npm run test:statistical && npm run test:attribute-schema && npm run test:league-attribute-provenance && npm run test:unified-player-model && npm run test:league-ovr-anchor && npm run test:usage:interior:v2 && npm run test:extremes:v2 && npm run test:engine-extremes:v2 && npm run test:draft-attributes:v5 && npm run test:offseason-attributes && npm run test:training && npm run test:training-growth && npm run test:career:v2 && npm run test:calibration && npm run test:calibration:season:v2:statistical && npm run test:playoffs:v2 && npm run test:long-term-league-ovr",
     "test:free-agents": "node scripts/validate_free_agent_market.js",
     "test:offseason-invariants": "node scripts/validate_offseason_invariants.js",
     "test:offseason-lifecycle": "node scripts/validate_offseason_lifecycle.js",
@@ -47,6 +47,7 @@
     "test:mvp": "node scripts/validate_mvp_fairness.js",
     "test:player-build": "node scripts/validate_player_build.js",
     "test:rookie-pipeline": "node scripts/validate_generated_rookie_pipeline.js",
+    "test:long-term-league-ovr": "node scripts/validate_long_term_league_ovr.js",
     "test:elite-roster:playoffs": "node scripts/validate_elite_roster_playoff.js"
   },
   "devDependencies": {

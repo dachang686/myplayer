@@ -48,7 +48,7 @@ const tierCounts = {
   development: targets.filter(value => value >= 60 && value <= 67).length,
   longshot: targets.filter(value => value >= 50 && value <= 59).length,
 };
-const expectedCounts = { elite: 1, high: 3, rotation: 15, development: 9, longshot: 2 };
+const expectedCounts = { elite: 2, high: 5, rotation: 13, development: 8, longshot: 2 };
 for (const [tier, expected] of Object.entries(expectedCounts)) {
   if (tierCounts[tier] !== expected) failures.push(`${tier} 档数量 ${tierCounts[tier]}，预期 ${expected}`);
 }
@@ -88,7 +88,7 @@ for (let index = 0; index < targets.length; index++) {
 
   const potential = vm.runInContext('inferGeneratedPlayerPotential(playerProbe, 20)', context);
   maximumNormalPotential = Math.max(maximumNormalPotential, potential);
-  if (potential > 97 || potential < player.ovr) failures.push(`${player.id} 普通潜力异常：${potential}`);
+  if (potential > 98 || potential < player.ovr) failures.push(`${player.id} 普通潜力异常：${potential}`);
 
   const growthPlayer = JSON.parse(JSON.stringify(player));
   context.playerProbe = growthPlayer;
@@ -110,7 +110,7 @@ for (let index = 0; index < targets.length; index++) {
 }
 
 const capChecks = [
-  [55, 78], [63, 84], [70, 90], [77, 94], [82, 97],
+  [55, 80], [63, 86], [70, 92], [77, 96], [82, 98],
 ];
 for (const [draftOvr, expectedCap] of capChecks) {
   context.playerProbe = { id: `R-CAP-${draftOvr}`, _prospectId: `CAP-${draftOvr}`, pos: 'SF', ovr: draftOvr, _draftOvr: draftOvr };

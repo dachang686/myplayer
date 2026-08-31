@@ -1451,6 +1451,9 @@ function processDraft() {
     rookie._justSigned = true;
     var targetOvr = targetOvrs[idx] || 60;
     prepareDraftProspectForTarget(rookie, targetOvr, rngNext);
+    var rookieGene = getPlayerGene(rookie);
+    rookieGene.potential = inferLeaguePlayerPotential(rookie, getLeaguePlayerAge(rookie));
+    rookieGene.potentialVersion = PLAYER_POTENTIAL_MODEL_VERSION;
     // 新秀合同
     if (idx < 5) rookie.contract = 4;
     else rookie.contract = 3;
@@ -1967,6 +1970,33 @@ function getLeaguePlayerDevelopmentProfile(player) {
  * 现实球员以官方初始 OVR 为锚点，只叠加本次属性变化产生的公式增量，
  * 生成球员继续由属性公式直接计算。两者都不为命中目标反向改写属性。
  */
+function applyLeaguePlayerAttributeRound(player, profile, direction, roundMagnitude, options) {
+  var generatedPlayer = options.generatedPlayer;
+  var age = options.age;
+  var cap = options.cap;
+  var declineFast = options.declineFast;
+  var declineResist = options.declineResist;
+  getLeagueAttributeKeys().forEach(function(attrKey) {
+    var current = Number(player[attrKey]);
+    if (!Number.isFinite(current)) return;
+    var attrMagnitude;
+    if (direction > 0) {
+      if (profile.primary.indexOf(attrKey) >= 0) {
+        attrMagnitude = generatedPlayer ? roundMagnitude : Math.min(cap, roundMagnitude + (cap === 3 ? 1 : 0));
+      } else if (profile.slow.indexOf(attrKey) >= 0) {
+        attrMagnitude = generatedPlayer ? 0 : Math.max(0, roundMagnitude - 1);
+      } else {
+        attrMagnitude = generatedPlayer ? 0 : Math.max(0, roundMagnitude - 1);
+      }
+    } else {
+      if (age >= 29 && declineFast.indexOf(attrKey) >= 0) attrMagnitude = Math.min(2, roundMagnitude + 1);
+      else if (declineResist.indexOf(attrKey) >= 0) attrMagnitude = Math.max(0, roundMagnitude - 1);
+      else attrMagnitude = roundMagnitude;
+    }
+    player[attrKey] = Math.max(25, Math.min(99, Math.round(current + direction * attrMagnitude)));
+  });
+}
+
 function applyLeaguePlayerOvrChange(player, oldOvr, newOvr) {
   if (!player) return Number(newOvr) || 0;
   var before = Math.round(Number(oldOvr) || Number(player.ovr) || 60);
@@ -1990,31 +2020,30 @@ function applyLeaguePlayerOvrChange(player, oldOvr, newOvr) {
   var profile = getLeaguePlayerDevelopmentProfile(player);
   var declineFast = ['ATH','STR','PDEF','STL','DNK'];
   var declineResist = ['threePT','MID','PAS','HAN','CLU'];
+  var roundOptions = {
+    generatedPlayer: generatedPlayer,
+    age: age,
+    cap: cap,
+    declineFast: declineFast,
+    declineResist: declineResist
+  };
 
   var beforeFormulaOvr = typeof calcOVR === 'function' ? calcOVR(player, player.pos) : before;
   var beforeAttributes = {};
   getLeagueAttributeKeys().forEach(function(attrKey) {
     beforeAttributes[attrKey] = Number(player[attrKey]);
   });
-  getLeagueAttributeKeys().forEach(function(attrKey) {
-    var current = Number(player[attrKey]);
-    if (!Number.isFinite(current)) return;
-    var attrMagnitude;
-    if (direction > 0) {
-      if (profile.primary.indexOf(attrKey) >= 0) {
-        attrMagnitude = generatedPlayer ? magnitude : Math.min(cap, magnitude + (cap === 3 ? 1 : 0));
-      } else if (profile.slow.indexOf(attrKey) >= 0) {
-        attrMagnitude = generatedPlayer ? 0 : Math.max(0, magnitude - 1);
-      } else {
-        attrMagnitude = Math.max(0, magnitude - 1);
-      }
-    } else {
-      if (age >= 29 && declineFast.indexOf(attrKey) >= 0) attrMagnitude = Math.min(2, magnitude + 1);
-      else if (declineResist.indexOf(attrKey) >= 0) attrMagnitude = Math.max(0, magnitude - 1);
-      else attrMagnitude = magnitude;
+  var growthRounds = generatedPlayer && direction > 0 && requestedMagnitude <= 2 ? 2 : 1;
+  for (var growthRound = 0; growthRound < growthRounds; growthRound++) {
+    if (typeof calcOVR === 'function') {
+      var currentFormulaOvr = calcOVR(player, player.pos);
+      if (direction > 0 && currentFormulaOvr >= requested) break;
+      if (direction < 0 && currentFormulaOvr <= requested) break;
     }
-    player[attrKey] = Math.max(25, Math.min(99, Math.round(current + direction * attrMagnitude)));
-  });
+    var roundMagnitude = generatedPlayer && direction > 0 ? 1 : magnitude;
+    applyLeaguePlayerAttributeRound(player, profile, direction, roundMagnitude, roundOptions);
+    if (!generatedPlayer || direction < 0 || requestedMagnitude > 2) break;
+  }
 
   if (typeof calcOVR === 'function') {
     var afterFormulaOvr = calcOVR(player, player.pos);
@@ -2080,6 +2109,19 @@ function evolveUnsignedFreeAgents() {
     player._age = age + 1;
     player.contract = 0;
     delete player.salary;
+
+    // 年轻生成球员在无队时仍会以较低强度兑现潜力，避免被裁后永久停滞。
+    if (age <= 26 && isGeneratedLeaguePlayer(player)) {
+      var gene = getPlayerGene(player);
+      var potential = Number(gene && gene.potential);
+      if (Number.isFinite(potential) && oldOvr < potential) {
+        var faGrowth = getPotentialGrowthBias(potential, oldOvr, age) * 0.55 + (rngNext() - 0.35) * 0.35;
+        faGrowth = roundLeagueOvrChange(faGrowth);
+        if (faGrowth > 0) {
+          applyLeaguePlayerOvrChange(player, oldOvr, Math.min(potential, oldOvr + faGrowth));
+        }
+      }
+    }
 
     // 无队状态下的衰退比在队球员更温和；高龄和低 OVR 球员仍会逐步退出联盟。
     if (age >= 31 && rngNext() < 0.72) {
@@ -3313,13 +3355,13 @@ function calibrateGeneratedRookieAttributes(player, targetOvr, maxAdjustment) {
   return player.ovr;
 }
 
-// 未来随机选秀的正式稀有度：只有极少数球员以明星即战力进入联盟。
+// 未来随机选秀的正式稀有度：每届约 2 名高即战力 + 5 名高水平，其余以轮换/发展型为主。
 var GENERATED_DRAFT_OVR_TIERS = [
-  { id: 'elite', share: 0.02, min: 80, max: 84 },
-  { id: 'high', share: 0.10, min: 75, max: 79 },
-  { id: 'rotation', share: 0.50, min: 68, max: 74 },
-  { id: 'development', share: 0.30, min: 60, max: 67 },
-  { id: 'longshot', share: 0.08, min: 50, max: 59 }
+  { id: 'elite', share: 0.067, min: 80, max: 84 },
+  { id: 'high', share: 0.167, min: 75, max: 79 },
+  { id: 'rotation', share: 0.433, min: 68, max: 74 },
+  { id: 'development', share: 0.267, min: 60, max: 67 },
+  { id: 'longshot', share: 0.067, min: 50, max: 59 }
 ];
 
 function buildGeneratedDraftOvrTargets(count, randomFn) {
@@ -3521,8 +3563,63 @@ function syncGeneratedLeaguePlayerOvrs() {
 }
 
 var LEAGUE_OVR_ANCHOR_VERSION = 1;
+var LEAGUE_TALENT_BALANCE_VERSION = 1;
 var LEAGUE_ATTRIBUTE_SCHEMA_VERSION = 3;
 var LEAGUE_ATTRIBUTE_SOURCE_VERSION = 2;
+
+function getExpectedGeneratedCareerOvr(player, age, potential) {
+  var draftOvr = inferGeneratedPlayerDraftOvr(player, Number(player && player.ovr) || 60, age);
+  var gap = Math.max(0, Number(potential) - draftOvr);
+  var progress;
+  if (age <= 20) progress = 0;
+  else if (age <= 22) progress = 0.12 + (age - 20) * 0.14;
+  else if (age <= 25) progress = 0.40 + (age - 22) * 0.10;
+  else if (age <= 28) progress = 0.70 + (age - 25) * 0.05;
+  else progress = 0.85;
+  return Math.min(Number(potential), Math.round(draftOvr + gap * progress));
+}
+
+function migrateLeagueTalentBalance(player) {
+  if (!player || !isGeneratedLeaguePlayer(player) || player._isUser) return false;
+  if (Number(player._talentBalanceVersion) >= LEAGUE_TALENT_BALANCE_VERSION) return false;
+  var age = getLeaguePlayerAge(player);
+  if (age < 22 || age > 28) {
+    player._talentBalanceVersion = LEAGUE_TALENT_BALANCE_VERSION;
+    return false;
+  }
+  var gene = getPlayerGene(player);
+  var potential = Number(gene && gene.potential);
+  var currentOvr = Math.round(Number(player.ovr) || 60);
+  if (!Number.isFinite(potential) || currentOvr >= potential) {
+    player._talentBalanceVersion = LEAGUE_TALENT_BALANCE_VERSION;
+    return false;
+  }
+  var expectedOvr = getExpectedGeneratedCareerOvr(player, age, potential);
+  var compensation = Math.min(3, Math.max(0, expectedOvr - currentOvr));
+  player._talentBalanceVersion = LEAGUE_TALENT_BALANCE_VERSION;
+  if (compensation <= 0) return false;
+  migrateLegacyGeneratedPlayerAttributes(player);
+  applyLeaguePlayerOvrChange(player, currentOvr, Math.min(potential, currentOvr + compensation));
+  refreshGeneratedPlayerType(player);
+  return true;
+}
+
+function migrateLeagueTalentBalanceAll() {
+  if (typeof LEAGUE_PLAYER_DATA === 'undefined' || typeof LEAGUE_TEAM_IDS === 'undefined') return 0;
+  var changed = 0;
+  LEAGUE_TEAM_IDS.forEach(function(teamId) {
+    (LEAGUE_PLAYER_DATA[teamId] || []).forEach(function(player) {
+      if (migrateLeagueTalentBalance(player)) changed++;
+    });
+  });
+  if (Array.isArray(STATE._freeAgentPool)) {
+    STATE._freeAgentPool.forEach(function(player) {
+      if (migrateLeagueTalentBalance(player)) changed++;
+    });
+  }
+  if (changed && typeof clearLineupCache === 'function') clearLineupCache();
+  return changed;
+}
 
 function getCanonicalLeaguePlayer(playerId) {
   if (!playerId || typeof _baseLeagueRosterSnapshot === 'undefined' || !_baseLeagueRosterSnapshot) return null;
@@ -3604,6 +3701,7 @@ function syncLeaguePlayerOvrs() {
     if (!Number.isFinite(Number(player.STL))) player.STL = calcOvrAttribute(player, 'PDEF');
     if (isGeneratedLeaguePlayer(player)) {
       migrateLegacyGeneratedPlayerAttributes(player);
+      if (migrateLeagueTalentBalance(player)) changed++;
       refreshGeneratedPlayerType(player);
       var generatedOvr = calcOVR(player, player.pos);
       if (player.ovr === generatedOvr) return;
@@ -3760,11 +3858,11 @@ function getGeneratedPlayerPotentialCap(player, draftOvr) {
       return authoredStarCaps[starIndex] || 96;
     }
   }
-  if (draftOvr <= 59) return 78;
-  if (draftOvr <= 67) return 84;
-  if (draftOvr <= 74) return 90;
-  if (draftOvr <= 79) return 94;
-  return 97;
+  if (draftOvr <= 59) return 80;
+  if (draftOvr <= 67) return 86;
+  if (draftOvr <= 74) return 92;
+  if (draftOvr <= 79) return 96;
+  return 98;
 }
 
 function inferGeneratedPlayerPotential(player, age) {
@@ -3779,7 +3877,7 @@ function inferGeneratedPlayerPotential(player, age) {
     potential = getGeneratedPlayerPotentialCap(player, draftOvr);
   } else {
     var variance = generatedPlayerStableHash(player) % 3;
-    var baseGain = draftOvr <= 59 ? 12 : (draftOvr <= 67 ? 13 : (draftOvr <= 74 ? 14 : 14));
+    var baseGain = draftOvr <= 59 ? 13 : (draftOvr <= 67 ? 14 : (draftOvr <= 74 ? 15 : 15));
     potential = Math.min(getGeneratedPlayerPotentialCap(player, draftOvr), draftOvr + baseGain + variance);
   }
   // 不回退已有存档的当前能力；新版只阻止后续继续越过合理上限。
@@ -3945,13 +4043,21 @@ function getPlayerGene(player) {
   return g;
 }
 
+function roundLeagueOvrChange(rawChange) {
+  var magnitude = Math.abs(Number(rawChange) || 0);
+  if (magnitude < 0.05) return 0;
+  if (magnitude < 1) return rngNext() < magnitude ? Math.sign(rawChange || 1) : 0;
+  return Math.sign(rawChange) * Math.round(magnitude);
+}
+
 function getPotentialGrowthBias(potential, ovr, age) {
-  if (typeof potential !== 'number' || age > 28) return 0;
-  var room = potential - ovr;
-  if (room <= 0) return 0;
-  if (age <= 22) return Math.max(-0.25, Math.min(0.5, (room - 5) * 0.1));
-  if (age <= 26) return Math.max(-0.15, Math.min(0.35, (room - 3) * 0.08));
-  return Math.min(0.2, room * 0.05);
+  if (typeof potential !== 'number' || age > 29) return 0;
+  var potentialGap = potential - ovr;
+  if (potentialGap <= 0) return 0;
+  if (age <= 22) return Math.min(1.35, potentialGap * 0.11);
+  if (age <= 25) return Math.min(1.05, potentialGap * 0.09);
+  if (age <= 28) return Math.min(0.60, potentialGap * 0.06);
+  return Math.min(0.25, potentialGap * 0.03);
 }
 
 function inferAge(playerId, ovr) {
@@ -4084,16 +4190,22 @@ function evolveLeague() {
       var volatility = gene.v;
       var ageFactor = 0;
       if (age <= 22) ageFactor = 1 + rngNext() * 1.5;
-      else if (age <= 28) ageFactor = (rngNext() - 0.5) * 1.5;
-      else if (age <= 33) ageFactor = -1 - rngNext() * 1.5;
+      else if (age <= 28) ageFactor = (rngNext() - 0.35) * 1.2;
+      else if (age <= 30) ageFactor = (rngNext() - 0.62) * 0.8;
+      else if (age <= 32) ageFactor = (rngNext() - 0.58) * 0.65;
+      else if (age <= 33) ageFactor = -0.55 - rngNext() * 0.75;
+      else if (age <= 35) ageFactor = -1.4 - rngNext() * 1.1;
       else ageFactor = -2 - rngNext() * 2;
       var volFactor = (rngNext() - 0.5) * volatility * 0.6;
       var randFactor = (rngNext() - 0.5) * 1.5;
       var change = ageFactor * 0.5 + volFactor * 0.3 + randFactor * 0.2;
       change += getPotentialGrowthBias(gene.potential, p.ovr, age);
+      if (change <= 0 && isGeneratedLeaguePlayer(p) && age <= 25 && Number(gene.potential) - Number(p.ovr) >= 8) {
+        if (rngNext() < 0.38) change = 0.85;
+      }
       if (isMvpStar(p) && age <= 26) change += 0.25 + rngNext() * 0.40; // 重点新秀仍更快成长，但不再稳定每年跳 2 点
       if (change > 0 && p.ovr >= gene.potential) change = 0;
-      change = Math.sign(change) * Math.round(Math.abs(change));
+      change = roundLeagueOvrChange(change);
       var minimumOvr = isGeneratedLeaguePlayer(p) ? 50 : 55;
       var newOvr = Math.max(minimumOvr, Math.min(99, p.ovr + change));
       if (change > 0 && Number.isFinite(Number(gene.potential))) newOvr = Math.min(newOvr, Number(gene.potential));
