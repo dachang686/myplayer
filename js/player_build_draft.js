@@ -226,6 +226,7 @@ function startDraftPlayerBuild() {
   var build = createPlayerBuildState();
   STATE.playerBuild = build;
   STATE.buildStep = 'player-draft';
+  STATE.selectedAttr = null;
   STATE.attrs = {};
   STATE.attrSlots = {};
   ATTR_KEYS.forEach(function(key) {
@@ -245,6 +246,64 @@ function startDraftPlayerBuild() {
   drawNextPlayerBuildPlayers();
   showScreen('screen-build');
   renderBuildUI();
+  queuePlayerBuildSave();
+}
+
+function playerBuildHasProgress(build) {
+  return !!(build && (
+    (Array.isArray(build.picks) && build.picks.length > 0) ||
+    Number(build.rerollsUsed) > 0 ||
+    build.selectedAttr ||
+    build.selectedTier
+  ));
+}
+
+function confirmPlayerBuildAction(message, build) {
+  if (!playerBuildHasProgress(build)) return true;
+  return typeof window === 'undefined' || typeof window.confirm !== 'function'
+    ? true
+    : window.confirm(message);
+}
+
+function resetPlayerBuildProgress() {
+  if (!isDraftPlayerBuildActive()) return;
+  var build = ensurePlayerBuildState();
+  if (!confirmPlayerBuildAction('确定要重置当前建人进度吗？已锁定的属性、档位和重抽次数都会清空。', build)) return;
+  startDraftPlayerBuild();
+  window.scrollTo(0, 0);
+}
+
+function clearPlayerBuildRuntimeState() {
+  STATE.buildStep = 'select';
+  STATE.playerBuild = null;
+  STATE.position = null;
+  STATE.attrs = {};
+  STATE.attrSlots = {};
+  STATE.lockedCount = 0;
+  STATE.usedPlayers = [];
+  STATE._mustLockAfterSpin = false;
+  STATE.selectedAttr = null;
+  STATE.currentTeam = null;
+  STATE.currentRoster = [];
+  STATE._shownThisTeam = [];
+  STATE._rerollsLeft = PLAYER_BUILD_MAX_REROLLS;
+  STATE._teamsVisited = [];
+  STATE.selectedPlayer = null;
+  STATE._locking = false;
+  STATE.finalOVR = 0;
+  STATE.finalPosition = null;
+  STATE.finalArchetype = null;
+}
+
+function backToPositionSelection() {
+  if (!isDraftPlayerBuildActive()) return;
+  var build = ensurePlayerBuildState();
+  if (!confirmPlayerBuildAction('返回位置选择会清除当前建人进度，确定继续吗？', build)) return;
+  clearPlayerBuildRuntimeState();
+  showScreen('screen-position');
+  renderPositionNameInput();
+  if (typeof renderPositionSelect === 'function') renderPositionSelect();
+  window.scrollTo(0, 0);
   queuePlayerBuildSave();
 }
 
@@ -484,6 +543,16 @@ function renderDraftPlayerBuildUI() {
 
   area.innerHTML =
     '<div class="pb-build-shell" data-build-round="' + round + '" data-build-status="in_progress">' +
+      '<div class="pb-build-toolbar" aria-label="建球员操作">' +
+        '<button type="button" class="pb-toolbar-button pb-toolbar-button-back" onclick="backToPositionSelection()" aria-label="返回上一步并重新选择位置">' +
+          '<span class="pb-toolbar-icon" aria-hidden="true">←</span>' +
+          '<span class="pb-toolbar-copy"><strong>返回上一步</strong><small>重新选择位置</small></span>' +
+        '</button>' +
+        '<button type="button" class="pb-toolbar-button pb-toolbar-button-reset" onclick="resetPlayerBuildProgress()" aria-label="重置当前建人进度">' +
+          '<span class="pb-toolbar-icon" aria-hidden="true">↻</span>' +
+          '<span class="pb-toolbar-copy"><strong>重置</strong><small>清空当前进度</small></span>' +
+        '</button>' +
+      '</div>' +
       '<div class="pb-round-strip">' +
         '<div class="pb-round-copy"><span class="pb-round-kicker">PLAYER FORGE · ROUND ' + String(round).padStart(2, '0') + '</span><strong>第 ' + round + ' / ' + PLAYER_BUILD_TOTAL_ROUNDS + ' 轮</strong></div>' +
         '<div class="pb-reroll-meter"><span>重抽</span><strong>' + STATE._rerollsLeft + ' <small>/ ' + PLAYER_BUILD_MAX_REROLLS + '</small></strong></div>' +
