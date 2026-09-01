@@ -1473,6 +1473,7 @@ function processDraft() {
 // 但不会作为自由市场签约/续约的硬性资格门槛；阵容名额仍然严格限制。
 var FREE_AGENT_MARKET = {
   rosterLimit: 18,
+  externalNinetyPlusLimit: 3,
   softCap: 100,
   taxLine: 120,
   firstApron: 127,
@@ -1627,6 +1628,22 @@ function getTeamRosterCount(teamId) {
   var userActive = typeof STATE !== 'undefined' && STATE && STATE.career && !STATE.career.retired
     && STATE.careerTeam === teamId && Number(STATE.career.contract) > 0 && Number(STATE.finalOVR) > 0;
   return count + (userActive ? 1 : 0);
+}
+
+// 外部自由市场签约最多只能为一队带来第 4 名 90+ 球员；
+// 原队回签、常规续约和后续成长均不受此规则影响，避免强拆既有核心。
+function getTeamNinetyPlusCount(teamId) {
+  var count = (LEAGUE_PLAYER_DATA[teamId] || []).reduce(function(sum, player) {
+    return sum + ((Number(player && player.ovr) || 0) >= 90 ? 1 : 0);
+  }, 0);
+  var userActive = typeof STATE !== 'undefined' && STATE && STATE.career && !STATE.career.retired
+    && STATE.careerTeam === teamId && Number(STATE.career.contract) > 0 && Number(STATE.finalOVR) > 0;
+  if (userActive && Number(STATE.finalOVR) >= 90) count++;
+  return count;
+}
+
+function isExternalFreeAgentSigning(player, teamId) {
+  return !!player && player._origTeam !== teamId;
 }
 
 function getTeamPayrollExcludingPlayer(teamId, excludedPlayer) {
@@ -2726,6 +2743,11 @@ function getFreeAgentRosterCutCandidate(teamId, allowJustSigned) {
 
 function buildFreeAgentOffer(player, teamId, round, standings, options) {
   options = options || {};
+  if ((Number(player && player.ovr) || 0) >= 90
+      && isExternalFreeAgentSigning(player, teamId)
+      && getTeamNinetyPlusCount(teamId) >= FREE_AGENT_MARKET.externalNinetyPlusLimit) {
+    return null;
+  }
   var terms = buildContractOffer(player, teamId, {
     source: 'free_agent',
     round: round,
@@ -4398,4 +4420,3 @@ function evolveLeague() {
   STATE._leagueChanges.freeAgentCount = mergedFreeAgents.length;
   STATE._freeAgentPool = mergedFreeAgents;
 }
-

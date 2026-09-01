@@ -162,6 +162,31 @@ if (!birdOverApronOffer) failures.push('工资帽不应阻止 Bird 续约');
 if (!nonBirdOffer) failures.push('工资帽不应阻止 non-Bird 续约');
 if (!birdOffer) failures.push('正常 Bird 续约被错误拒绝');
 
+// 外部自由球员不能让球队拥有第 4 名 90+；原队回签和低于 90 的球员不受影响。
+context.STATE.careerTeam = null;
+context.STATE.finalOVR = 0;
+context.LEAGUE_PLAYER_DATA.A = [
+  player('NINETY-A-1', 92, 'PG', 27),
+  player('NINETY-A-2', 91, 'SG', 27),
+  player('NINETY-A-3', 90, 'SF', 27),
+  player('NINETY-A-DEPTH', 70, 'PF', 27),
+];
+const externalNinetyPlus = player('FA-EXTERNAL-90', 90, 'C', 27, { _origTeam: 'B', contract: 0 });
+const originalTeamReturn = player('FA-RETURN-90', 90, 'C', 27, { _origTeam: 'A', contract: 0 });
+const externalBelowThreshold = player('FA-EXTERNAL-89', 89, 'C', 27, { _origTeam: 'B', contract: 0 });
+const blockedExternalOffer = vm.runInContext('buildFreeAgentOffer', context)(externalNinetyPlus, 'A', 0, context.STATE._prevStandings);
+const returnOffer = vm.runInContext('buildFreeAgentOffer', context)(originalTeamReturn, 'A', 0, context.STATE._prevStandings);
+const belowThresholdOffer = vm.runInContext('buildFreeAgentOffer', context)(externalBelowThreshold, 'A', 0, context.STATE._prevStandings);
+if (blockedExternalOffer) failures.push('已有 3 名 90+ 的球队仍向外部 90+ 自由球员报价');
+if (!returnOffer) failures.push('已有 3 名 90+ 时原队回签被错误阻止');
+if (!belowThresholdOffer) failures.push('已有 3 名 90+ 时外部 89 OVR 签约被错误阻止');
+context.STATE.careerTeam = 'A';
+context.STATE.finalOVR = 90;
+context.STATE.career = { currentAge: 24, contract: 2, flags: {} };
+if (vm.runInContext('getTeamNinetyPlusCount("A")', context) !== 4) failures.push('玩家球员没有计入球队 90+ 人数上限');
+context.STATE.careerTeam = null;
+context.STATE.finalOVR = 0;
+
 // 21 岁 87 OVR 球员即使四轮市场没有其它合适报价，母队也必须拥有回签兜底。
 context.LEAGUE_PLAYER_DATA.A = Array.from({ length: 18 }, (_, index) => player('YOUNG-A-' + index, 70 + (index % 3), 'SF', 27, {
   salary: 20, _salaryVersion: 2, contract: 2,
