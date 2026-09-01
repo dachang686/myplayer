@@ -1984,8 +1984,8 @@ function getLeaguePlayerDevelopmentProfile(player) {
 
 /**
  * 目标 OVR 只用于表达本季成长方向和强度。属性先按位置/角色显式演变；
- * 现实球员以官方初始 OVR 为锚点，只叠加本次属性变化产生的公式增量，
- * 生成球员继续由属性公式直接计算。两者都不为命中目标反向改写属性。
+ * 所有球员以当前公式 OVR 为成长基准；来源 OVR 仅供审计，
+ * 不参与成长结果。属性不会为命中目标反向改写。
  */
 function applyLeaguePlayerAttributeRound(player, profile, direction, roundMagnitude, options) {
   var generatedPlayer = options.generatedPlayer;
@@ -2089,6 +2089,13 @@ function applyLeaguePlayerOvrChange(player, oldOvr, newOvr) {
   };
 
   var beforeFormulaOvr = typeof calcOVR === 'function' ? calcOVR(player, player.pos) : before;
+  // Real players now expose formula OVR everywhere. If a legacy caller passes
+  // an old source rating, preserve only the requested direction and apply it
+  // from the current formula value instead of creating a one-time rating jump.
+  if (!generatedPlayer && typeof calcOVR === 'function') {
+    before = beforeFormulaOvr;
+    requested = before + direction * requestedMagnitude;
+  }
   var beforeAttributes = {};
   getLeagueAttributeKeys().forEach(function(attrKey) {
     beforeAttributes[attrKey] = Number(player[attrKey]);
@@ -2117,14 +2124,7 @@ function applyLeaguePlayerOvrChange(player, oldOvr, newOvr) {
     var afterFormulaOvr = rollbackLeaguePlayerAttributesToFormulaLimit(
       player, profile, beforeAttributes, beforeFormulaOvr, direction, requestedMagnitude, targetFormulaOvr
     );
-    if (generatedPlayer) {
-      player.ovr = afterFormulaOvr;
-    } else {
-      var formulaDelta = afterFormulaOvr - beforeFormulaOvr;
-      if (direction > 0) formulaDelta = Math.min(requestedMagnitude, Math.max(0, formulaDelta));
-      else formulaDelta = Math.max(-requestedMagnitude, Math.min(0, formulaDelta));
-      player.ovr = Math.max(55, Math.min(99, before + formulaDelta));
-    }
+    player.ovr = afterFormulaOvr;
   } else {
     player.ovr = Math.max(55, Math.min(99, requested));
   }
@@ -3411,19 +3411,6 @@ function calibrateGeneratedRookieAttributes(player, targetOvr, maxAdjustment) {
   }
   ATTR_KEYS.forEach(function(key) { player[key] = clampLeagueAttribute(original[key] + bestShift); });
   player.ovr = calcOVR(player, pos);
-  if (player.ovr > target) {
-    var attributeFloors = {};
-    getLeagueAttributeKeys().forEach(function(key) { attributeFloors[key] = 25; });
-    player.ovr = rollbackLeaguePlayerAttributesToFormulaLimit(
-      player,
-      getLeaguePlayerDevelopmentProfile(player),
-      attributeFloors,
-      player.ovr,
-      1,
-      player.ovr - target,
-      target
-    );
-  }
   return player.ovr;
 }
 
@@ -3826,7 +3813,7 @@ function migrateRealPlayerAttributeSchema(player, canonical) {
 
 function syncLeaguePlayerOvrs() {
   if (typeof LEAGUE_PLAYER_DATA === 'undefined' || typeof LEAGUE_TEAM_IDS === 'undefined') return 0;
-  var changed = migrateLeagueTalentBalanceAll();
+  var changed = 0;
   var syncedPlayers = new Set();
   function syncPlayer(player) {
     if (!player || !player.pos || syncedPlayers.has(player)) return;
@@ -3835,7 +3822,6 @@ function syncLeaguePlayerOvrs() {
     if (!Number.isFinite(Number(player.STL))) player.STL = calcOvrAttribute(player, 'PDEF');
     if (isGeneratedLeaguePlayer(player)) {
       migrateLegacyGeneratedPlayerAttributes(player);
-      if (migrateLeagueTalentBalance(player)) changed++;
       refreshGeneratedPlayerType(player);
       var generatedOvr = calcOVR(player, player.pos);
       if (player.ovr === generatedOvr) return;
@@ -3847,24 +3833,28 @@ function syncLeaguePlayerOvrs() {
     var realPlayerChanged = false;
     if (migrateRealPlayerAttributeSource(player, canonical)) realPlayerChanged = true;
     if (migrateRealPlayerAttributeSchema(player, canonical)) realPlayerChanged = true;
-    if (Number(player._ovrAnchorVersion) >= LEAGUE_OVR_ANCHOR_VERSION) {
-      if (realPlayerChanged) changed++;
-      return;
-    }
     var sourceOvr = Number(player._sourceOvr)
       || Number(canonical && canonical.ovr)
       || Number(player.ovr)
       || 50;
     var currentFormulaOvr = calcOVR(player, player.pos);
     var canonicalFormulaOvr = canonical ? calcOVR(canonical, canonical.pos) : currentFormulaOvr;
-    var nextOvr = Math.max(55, Math.min(99,
-      Math.round(sourceOvr + currentFormulaOvr - canonicalFormulaOvr)
-    ));
-    player._sourceOvr = sourceOvr;
-    player._sourceFormulaOvr = canonicalFormulaOvr;
-    player._ovrAnchorVersion = LEAGUE_OVR_ANCHOR_VERSION;
-    realPlayerChanged = true;
-    if (player.ovr !== nextOvr) player.ovr = nextOvr;
+    if (Number(player._sourceOvr) !== sourceOvr) {
+      player._sourceOvr = sourceOvr;
+      realPlayerChanged = true;
+    }
+    if (Number(player._sourceFormulaOvr) !== canonicalFormulaOvr) {
+      player._sourceFormulaOvr = canonicalFormulaOvr;
+      realPlayerChanged = true;
+    }
+    if (Number(player._ovrAnchorVersion) !== LEAGUE_OVR_ANCHOR_VERSION) {
+      player._ovrAnchorVersion = LEAGUE_OVR_ANCHOR_VERSION;
+      realPlayerChanged = true;
+    }
+    if (player.ovr !== currentFormulaOvr) {
+      player.ovr = currentFormulaOvr;
+      realPlayerChanged = true;
+    }
     if (realPlayerChanged) changed++;
   }
   LEAGUE_TEAM_IDS.forEach(function(teamId) {
@@ -4070,9 +4060,9 @@ function inferGeneratedPlayerPotential(player, age) {
 }
 
 function inferLeaguePlayerPotential(player, age) {
-  var sourceOvr = Number(player && player.ovr) || 55;
+  var currentOvr = Number(player && player.ovr) || 55;
   if (isGeneratedLeaguePlayer(player)) return inferGeneratedPlayerPotential(player, age);
-  var ovr = Math.max(55, Math.min(99, sourceOvr));
+  var ovr = Math.max(55, Math.min(99, currentOvr));
   var playerAge = Number(age) || inferAge(player && player.id, ovr);
   if (playerAge >= 29) return ovr;
 
@@ -4346,6 +4336,7 @@ function evolveLeague() {
   evolveUnsignedFreeAgents();
   var carriedFreeAgents = Array.isArray(STATE._freeAgentPool) ? STATE._freeAgentPool.slice() : [];
   var teams = typeof LEAGUE_TEAM_IDS !== 'undefined' ? LEAGUE_TEAM_IDS : [];
+  migrateLeagueTalentBalanceAll();
   syncLeaguePlayerOvrs();
   var seasonRoleContexts = {};
   teams.forEach(function(t) {

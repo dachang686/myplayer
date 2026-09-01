@@ -28,9 +28,14 @@
 
   function teamName(teamId) { return global.ManagerEngine.teamName(teamId); }
   function playerOvr(player) {
+    var cached = Number(player && player._gameOvr);
+    if (Number.isFinite(cached)) return cached;
     return typeof global.getUnifiedPlayerOvr === 'function'
       ? global.getUnifiedPlayerOvr(player, player && player.pos)
       : (Number(player && player.ovr) || 0);
+  }
+  function playerOvrLabel(player) {
+    return '比赛 OVR ' + playerOvr(player);
   }
   function leagueData() { return typeof LEAGUE_PLAYER_DATA !== 'undefined' ? LEAGUE_PLAYER_DATA : (global.LEAGUE_PLAYER_DATA || {}); }
   function config() { return typeof SIM_CONFIG !== 'undefined' ? SIM_CONFIG : (global.SIM_CONFIG || {}); }
@@ -199,7 +204,7 @@
         var positions = escapeHtml(String(player.pos || '').replace(/\s+/g, ' '));
         return '<article class="manager-player-row ' + (assignment.starter ? 'is-starter' : '') + ' ' + (Number(assignment.minutes) > 0 ? 'is-active' : 'is-inactive') + '" data-rotation-player="' + escapeHtml(player.id) + '">' +
           '<div class="manager-player-rank">' + (assignment.starter ? 'S' : (Number(assignment.minutes) > 0 ? 'R' : '—')) + '</div>' +
-          '<div class="manager-player-copy"><strong>' + escapeHtml(player.cname || player.name || '球员') + '</strong><span>' + positions + ' · OVR ' + playerOvr(player) + '</span></div>' +
+          '<div class="manager-player-copy"><strong>' + escapeHtml(player.cname || player.name || '球员') + '</strong><span>' + positions + ' · ' + playerOvrLabel(player) + '</span></div>' +
           '<label class="manager-minute-field"><span>分钟</span><input type="number" min="0" max="48" step="1" value="' + (Number(assignment.minutes) || 0) + '" data-minute-player="' + escapeHtml(player.id) + '"></label>' +
           '<button class="manager-toggle-button" type="button" data-action="toggle-starter" data-player="' + escapeHtml(player.id) + '" aria-pressed="' + (!!assignment.starter) + '">' + (assignment.starter ? '首发' : '轮换') + '</button>' +
         '</article>';
@@ -286,13 +291,13 @@
     var outgoingChoices = roster.map(function(player) {
       var selected = tradeOutgoingIds.indexOf(player.id) >= 0;
       return '<button type="button" class="manager-trade-player-choice ' + (selected ? 'is-selected' : '') + '" data-action="select-trade-outgoing" data-player="' + escapeHtml(player.id) + '" aria-pressed="' + selected + '"' + (windowOpen ? '' : ' disabled') + '>' +
-        '<span><b>' + escapeHtml(playerName(player)) + '</b><small>' + escapeHtml(player.pos || '位置待定') + '</small></span><strong>' + playerOvr(player) + '</strong>' +
+        '<span><b>' + escapeHtml(playerName(player)) + '</b><small>' + escapeHtml(player.pos || '位置待定') + '</small></span><strong>' + playerOvrLabel(player) + '</strong>' +
       '</button>';
     }).join('');
     var incomingChoices = partnerRoster.map(function(player) {
       var selected = tradeIncomingIds.indexOf(player.id) >= 0;
       return '<button type="button" class="manager-trade-player-choice ' + (selected ? 'is-selected' : '') + '" data-action="select-trade-incoming" data-player="' + escapeHtml(player.id) + '" aria-pressed="' + selected + '"' + (windowOpen ? '' : ' disabled') + '>' +
-        '<span><b>' + escapeHtml(playerName(player)) + '</b><small>' + escapeHtml(player.pos || '位置待定') + '</small></span><strong>' + playerOvr(player) + '</strong>' +
+        '<span><b>' + escapeHtml(playerName(player)) + '</b><small>' + escapeHtml(player.pos || '位置待定') + '</small></span><strong>' + playerOvrLabel(player) + '</strong>' +
       '</button>';
     }).join('');
     var history = (current.tradeHistory || []).slice().reverse().slice(0, 4).map(function(trade) {
@@ -561,7 +566,7 @@
       '</div>';
     }).join('') : '<div class="manager-ranking-empty">联盟名单中暂无球员 OVR 数据。</div>';
     var remainingOvrRows = Math.max(0, ovrRows.length - visibleOvrRows.length);
-    var ovrBody = '<div class="manager-player-stat-panel manager-player-ovr-panel"><div class="manager-player-stat-list"><div class="manager-player-stat-head manager-player-ovr-head"><span>排名</span><span>球员</span><span>球队</span><span>位置</span><span>OVR</span></div>' + ovrListHtml + '</div>' +
+    var ovrBody = '<div class="manager-player-stat-panel manager-player-ovr-panel"><div class="manager-player-stat-list"><div class="manager-player-stat-head manager-player-ovr-head"><span>排名</span><span>球员</span><span>球队</span><span>位置</span><span>比赛 OVR</span></div>' + ovrListHtml + '</div>' +
       (remainingOvrRows > 0 ? '<button type="button" class="manager-button manager-button-secondary manager-player-stat-more" data-action="show-more-player-stats">查看更多（下 ' + Math.min(10, remainingOvrRows) + ' 名）</button>' : '') + '</div>';
     main.innerHTML = '<section class="manager-page manager-standings-page"><div class="manager-page-head"><div><div class="manager-eyebrow">赛季排名 / STANDINGS</div><h1>' + (current.season.phase === 'complete' ? '赛季总结' : '联盟排行榜') + '</h1><p>' + (current.season.phase === 'complete' ? '冠军：' + escapeHtml(teamName(current.season.champion)) + ' · 董事会：' + escapeHtml(owner.label || '') : '排名按胜率与净胜分排序，各联盟前八进入季后赛。') + '</p></div></div>' +
       (current.season.phase === 'complete' ? '<div class="manager-review-banner"><strong>' + (owner.score || 0) + '<em>/100</em></strong><div><b>' + escapeHtml(owner.label || '') + '</b><span>' + escapeHtml(owner.summary || '') + '</span></div></div>' : '') +

@@ -1,7 +1,7 @@
 (function installManagerState(global) {
   'use strict';
 
-  var VERSION = 5;
+  var VERSION = 7;
   var POSITION_SLOTS = ['PG', 'SG', 'SF', 'PF', 'C'];
   var DEFAULT_MINUTES = [34, 34, 32, 32, 30, 20, 18, 16, 14, 10];
 
@@ -10,14 +10,27 @@
     return JSON.parse(JSON.stringify(value));
   }
 
-  function syncUnifiedRatings(leagueData) {
+  function gameOvr(player) {
+    var cached = Number(player && player._gameOvr);
+    if (Number.isFinite(cached)) return cached;
+    if (player && typeof global.getUnifiedPlayerOvr === 'function') {
+      return global.getUnifiedPlayerOvr(player, player.pos);
+    }
+    return Number(player && player.ovr) || 0;
+  }
+
+  // The gameplay formula is the single live OVR. The source roster rating is
+  // retained only as `_sourceOvr` for audit and is never used by manager logic.
+  function syncGameRatings(leagueData) {
     if (!leagueData || typeof global.getUnifiedPlayerOvr !== 'function') return 0;
     var changed = 0;
     Object.keys(leagueData).forEach(function(teamId) {
       (leagueData[teamId] || []).forEach(function(player) {
         if (!player) return;
         var next = global.getUnifiedPlayerOvr(player, player.pos);
-        if (Number(player.ovr) === next) return;
+        if (!Number.isFinite(Number(player._sourceOvr))) player._sourceOvr = Number(player.ovr) || next;
+        if (Number(player._gameOvr) === next && Number(player.ovr) === next) return;
+        player._gameOvr = next;
         player.ovr = next;
         changed++;
       });
@@ -74,7 +87,7 @@
 
   function selectDefaultStarters(roster) {
     var candidates = roster.slice().sort(function(a, b) {
-      return (Number(b.ovr) || 0) - (Number(a.ovr) || 0);
+      return gameOvr(b) - gameOvr(a);
     });
     var best = null;
 
@@ -98,7 +111,7 @@
 
   function createDefaultRotation(roster) {
     var sorted = roster.slice().sort(function(a, b) {
-      return (Number(b.ovr) || 0) - (Number(a.ovr) || 0);
+      return gameOvr(b) - gameOvr(a);
     });
     var starters = selectDefaultStarters(sorted);
     var starterIds = {};
@@ -168,11 +181,11 @@
   function createOwnerGoal(teamId, leagueData) {
     var strengths = Object.keys(leagueData).map(function(id) {
       var topTen = leagueData[id].slice().sort(function(a, b) {
-        return (Number(b.ovr) || 0) - (Number(a.ovr) || 0);
+        return gameOvr(b) - gameOvr(a);
       }).slice(0, 10);
       return {
         id: id,
-        strength: topTen.reduce(function(sum, player) { return sum + (Number(player.ovr) || 0); }, 0) / Math.max(1, topTen.length)
+        strength: topTen.reduce(function(sum, player) { return sum + gameOvr(player); }, 0) / Math.max(1, topTen.length)
       };
     }).sort(function(a, b) { return b.strength - a.strength; });
     var rank = strengths.findIndex(function(team) { return team.id === teamId; }) + 1;
@@ -184,7 +197,7 @@
   function create(teamId, sourceLeagueData, teamIds, scheduleFactory, config) {
     if (!teamId || teamIds.indexOf(teamId) < 0) throw new Error('请选择有效球队。');
     var leagueData = deepClone(sourceLeagueData);
-    syncUnifiedRatings(leagueData);
+    syncGameRatings(leagueData);
     var roster = leagueData[teamId] || [];
     var schedule = scheduleFactory({
       teams: teamIds.slice(),
@@ -335,12 +348,70 @@
   }
 
   function migrateVersionFour(state, teamIds) {
-    syncUnifiedRatings(state.leagueData);
+    syncGameRatings(state.leagueData);
     ensureSeasonDefaults(state, teamIds);
     state.rotation = normalizeRotation(state.leagueData[state.selectedTeam], state.rotation);
     ensureOwnerDefaults(state);
     state.tradeHistory = normalizeTradeHistory(state.tradeHistory);
     state.version = 5;
+    return state;
+  }
+
+  var publishedRosterOvrById = null;
+
+  function findPublishedRosterOvr(player) {
+    var league = typeof LEAGUE_PLAYER_DATA !== 'undefined'
+      ? LEAGUE_PLAYER_DATA
+      : (global.LEAGUE_PLAYER_DATA || {});
+    if (!publishedRosterOvrById) {
+      publishedRosterOvrById = {};
+      Object.keys(league).forEach(function(teamId) {
+        (league[teamId] || []).forEach(function(published) {
+          if (!published || !published.id) return;
+          // In the career page, the live `ovr` has already been normalized to
+          // the formula. Prefer its preserved audit anchor when rebuilding a
+          // V5/V6 manager save; raw manager data simply falls back to `ovr`.
+          publishedRosterOvrById[String(published.id)] = Number(published._sourceOvr)
+            || Number(published.ovr);
+        });
+      });
+    }
+    return Number(publishedRosterOvrById[String(player && player.id || '')]);
+  }
+
+  // V5/V6 manager saves may have either source or formula in `ovr`; preserve
+  // the bundled source rating for audit, then normalize the live OVR to V5.
+  function migrateVersionFive(state, teamIds) {
+    Object.keys(state.leagueData).forEach(function(teamId) {
+      (state.leagueData[teamId] || []).forEach(function(player) {
+        if (!player) return;
+        var publishedOvr = findPublishedRosterOvr(player);
+        if (Number.isFinite(publishedOvr)) player._sourceOvr = publishedOvr;
+      });
+    });
+    syncGameRatings(state.leagueData);
+    ensureSeasonDefaults(state, teamIds);
+    state.rotation = normalizeRotation(state.leagueData[state.selectedTeam], state.rotation);
+    ensureOwnerDefaults(state);
+    state.tradeHistory = normalizeTradeHistory(state.tradeHistory);
+    state.version = 6;
+    return state;
+  }
+
+  function migrateVersionSix(state, teamIds) {
+    Object.keys(state.leagueData).forEach(function(teamId) {
+      (state.leagueData[teamId] || []).forEach(function(player) {
+        if (!player || Number.isFinite(Number(player._sourceOvr))) return;
+        var publishedOvr = findPublishedRosterOvr(player);
+        if (Number.isFinite(publishedOvr)) player._sourceOvr = publishedOvr;
+      });
+    });
+    syncGameRatings(state.leagueData);
+    ensureSeasonDefaults(state, teamIds);
+    state.rotation = normalizeRotation(state.leagueData[state.selectedTeam], state.rotation);
+    ensureOwnerDefaults(state);
+    state.tradeHistory = normalizeTradeHistory(state.tradeHistory);
+    state.version = 7;
     return state;
   }
 
@@ -373,9 +444,15 @@
       } else if (version === 4) {
         state = migrateVersionFour(state, teamIds);
         version = state.version;
+      } else if (version === 5) {
+        state = migrateVersionFive(state, teamIds);
+        version = state.version;
+      } else if (version === 6) {
+        state = migrateVersionSix(state, teamIds);
+        version = state.version;
       }
     }
-    syncUnifiedRatings(state.leagueData);
+    syncGameRatings(state.leagueData);
     ensureSeasonDefaults(state, teamIds);
     state.rotation = normalizeRotation(state.leagueData[state.selectedTeam], state.rotation);
     ensureOwnerDefaults(state);

@@ -38,12 +38,12 @@ function players(league) {
 const sourceOvrs = Object.fromEntries(players(canonicalLeague).map(player => [player.id, player.ovr]));
 const firstChanged = vm.runInContext('syncLeaguePlayerOvrs()', context);
 const initialPlayers = players(runtimeLeague);
-const initialMismatches = initialPlayers.filter(player => player.ovr !== sourceOvrs[player.id]);
+const initialMismatches = initialPlayers.filter(player => player.ovr !== config.getUnifiedPlayerOvr(player, player.pos));
 assert(initialPlayers.length === 525 && initialMismatches.length === 0,
-  `现实球员初始 OVR 必须保持官方锚点：${JSON.stringify(initialMismatches.slice(0, 10))}`);
+  `现实球员初始 OVR 必须使用比赛公式：${JSON.stringify(initialMismatches.slice(0, 10))}`);
 assert(initialPlayers.every(player => player._ovrAnchorVersion === 1
-  && player._attributeSchemaVersion === 3 && player._attributeSourceVersion === 2),
-  '现实球员必须记录 OVR 锚点、属性语义和属性来源版本');
+  && player._sourceOvr === sourceOvrs[player.id] && player._attributeSchemaVersion === 3 && player._attributeSourceVersion === 2),
+  '现实球员必须保留来源 OVR 审计锚点、属性语义和属性来源版本');
 assert(vm.runInContext('syncLeaguePlayerOvrs()', context) === 0,
   '联盟 OVR/属性语义同步必须可重复执行且第二次零改动');
 
@@ -53,14 +53,12 @@ const topDistribution = {
   at98: sorted.filter(player => player.ovr === 98).length,
   atLeast97: sorted.filter(player => player.ovr >= 97).length,
 };
-assert(topDistribution.at99 === 0 && topDistribution.at98 === 2 && topDistribution.atLeast97 === 5,
-  `初始联盟顶端 OVR 分布异常：${JSON.stringify(topDistribution)}`);
 const tatum = initialPlayers.find(player => player.id === 'P0040');
 const zubac = initialPlayers.find(player => player.id === 'P0191');
-assert(tatum && tatum.ovr === 93 && tatum.HAN === 86,
-  `塔图姆锚点或 Ball Handle 异常：${JSON.stringify(tatum)}`);
-assert(zubac && zubac.ovr === 84 && zubac.HAN === 35,
-  `祖巴茨锚点或 Ball Handle 异常：${JSON.stringify(zubac)}`);
+assert(tatum && tatum.ovr === config.getUnifiedPlayerOvr(tatum, tatum.pos) && tatum.HAN === 86,
+  `塔图姆比赛 OVR 或 Ball Handle 异常：${JSON.stringify(tatum)}`);
+assert(zubac && zubac.ovr === config.getUnifiedPlayerOvr(zubac, zubac.pos) && zubac.HAN === 35,
+  `祖巴茨比赛 OVR 或 Ball Handle 异常：${JSON.stringify(zubac)}`);
 
 const legacyLeague = JSON.parse(JSON.stringify(canonicalLeague));
 const legacyPlayers = players(legacyLeague);
@@ -81,9 +79,9 @@ legacyLeague.LAC = legacyLeague.LAC.filter(player => player.id !== legacyZubac.i
 context.STATE._freeAgentPool = [legacyZubac];
 context.LEAGUE_PLAYER_DATA = legacyLeague;
 vm.runInContext('syncLeaguePlayerOvrs()', context);
-assert(legacyTatum.HAN === 86 && legacyTatum.ovr === 93
-  && legacyZubac.HAN === 35 && legacyZubac.ovr === 84,
-`旧 Hands/错误 OVR 存档没有迁移到 Ball Handle 官方锚点：${JSON.stringify({ legacyTatum, legacyZubac })}`);
+assert(legacyTatum.HAN === 86 && legacyTatum.ovr === config.getUnifiedPlayerOvr(legacyTatum, legacyTatum.pos)
+  && legacyZubac.HAN === 35 && legacyZubac.ovr === config.getUnifiedPlayerOvr(legacyZubac, legacyZubac.pos),
+  `旧 Hands/错误 OVR 存档没有迁移到 Ball Handle 与比赛 OVR：${JSON.stringify({ legacyTatum, legacyZubac })}`);
 const canonicalJohnson = players(canonicalLeague).find(player => player.id === legacyJohnson.id);
 assert(attributeSourceMigration.attributeKeys.every(key => legacyJohnson[key] === canonicalJohnson[key] + (key === 'FIN' ? 1 : 0)),
   `旧批量属性存档没有迁移到来源基线并保留成长量：${JSON.stringify(legacyJohnson)}`);
@@ -92,12 +90,12 @@ const evolvedTatum = JSON.parse(JSON.stringify(tatum));
 evolvedTatum._age = 24;
 context.playerProbe = evolvedTatum;
 const beforeFormula = vm.runInContext('calcOVR(playerProbe, playerProbe.pos)', context);
-const beforeAnchoredOvr = evolvedTatum.ovr;
+const beforeOvr = evolvedTatum.ovr;
 vm.runInContext('applyLeaguePlayerOvrChange(playerProbe, playerProbe.ovr, playerProbe.ovr + 2)', context);
 const afterFormula = vm.runInContext('calcOVR(playerProbe, playerProbe.pos)', context);
 assert(afterFormula > beforeFormula
-  && evolvedTatum.ovr === beforeAnchoredOvr + afterFormula - beforeFormula,
-  `现实球员成长必须只叠加属性公式增量：${JSON.stringify({ beforeAnchoredOvr, beforeFormula, afterFormula, afterOvr: evolvedTatum.ovr })}`);
+  && evolvedTatum.ovr === afterFormula,
+  `现实球员成长后 OVR 必须等于属性公式：${JSON.stringify({ beforeOvr, beforeFormula, afterFormula, afterOvr: evolvedTatum.ovr })}`);
 
 console.log(JSON.stringify({
   players: initialPlayers.length,
@@ -115,7 +113,7 @@ console.log(JSON.stringify({
     johnson: { ovr: legacyJohnson.ovr, FIN: legacyJohnson.FIN, sourceVersion: legacyJohnson._attributeSourceVersion },
   },
   anchoredGrowth: {
-    beforeOvr: beforeAnchoredOvr,
+    beforeOvr,
     afterOvr: evolvedTatum.ovr,
     formulaDelta: afterFormula - beforeFormula,
   },

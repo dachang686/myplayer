@@ -138,7 +138,8 @@ for (const source of realPlayers) {
     probe._sourceOvr = Math.round(Number(probe.ovr) || 70);
     context.playerProbe = probe;
     probe._sourceFormulaOvr = vm.runInContext('calcOVR(playerProbe, playerProbe.pos)', context);
-    const beforeOvr = probe._sourceOvr;
+    probe.ovr = probe._sourceFormulaOvr;
+    const beforeOvr = probe.ovr;
     vm.runInContext(`applyLeaguePlayerOvrChange(playerProbe, ${beforeOvr}, ${beforeOvr + requestedDelta})`, context);
     const actualDelta = Number(probe.ovr) - beforeOvr;
     if (requestedDelta === 1) {

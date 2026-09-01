@@ -78,7 +78,7 @@ assert(positionOvrs.every(value => Math.abs(value - positionOvrs[0]) < 1e-9),
   `角色驱动模型不应保留无效的位置权重：${JSON.stringify(positionOvrs)}`);
 assert(config.PLAYER_RATING_MODEL.version === 5
   && config.PLAYER_RATING_MODEL.mode === 'primary-secondary-role-impact'
-  && config.PLAYER_RATING_MODEL.attributeSchemaVersion === 2
+  && config.PLAYER_RATING_MODEL.attributeSchemaVersion === 3
   && config.PLAYER_RATING_MODEL.handleAttribute === 'Ball Handle',
   `统一评分模型必须使用 V5 主次角色影响公式：${JSON.stringify(config.PLAYER_RATING_MODEL)}`);
 

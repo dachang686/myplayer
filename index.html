@@ -583,7 +583,8 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 .season-team-offense{color:var(--orange);font:700 11px var(--font-display)}
 .season-team-defense{color:var(--green);font:700 11px var(--font-display)}
 .season-team-loyalty{color:var(--text-dim);font:500 10px var(--font-display)}
-.season-team-ovr{font:800 15px var(--font-display)!important;color:var(--gold)!important;letter-spacing:.2px}
+.season-team-ovr{font:800 15px var(--font-display)!important;color:var(--gold)!important;letter-spacing:.2px;white-space:nowrap}
+.season-team-ovr small{margin-right:2px;font:700 9px var(--font-display);color:var(--text-muted)}
 .season-team-player.is-user .season-team-ovr{color:var(--gold)!important}
 @media (max-width:420px){.season-team-roster{padding-inline:8px}.season-team-roster-table{min-width:312px}.season-team-roster-table col.season-team-col-age{width:38px}.season-team-roster-table col.season-team-col-metric{width:33px}.season-team-roster-table col.season-team-col-ovr{width:37px}.season-team-player-cell{gap:4px}.season-team-avatar{width:24px;height:24px;flex-basis:24px}}
 .season-team-stats{padding:8px 12px 12px;overflow-x:auto}
@@ -2207,6 +2208,14 @@ function renderModeSelect() {
 }
 
 function startGame() {
+  // “新建球员”必须从打包的基准名单开始。此前从旧存档返回菜单后只重置了
+  // 建人步骤，LEAGUE_PLAYER_DATA 仍保留旧存档的交易、成长和新秀结果。
+  var selectedMode = STATE.mode;
+  var selectedEngine = STATE.simulationEngine === 'v1' ? 'v1' : 'v2';
+  initGame();
+  STATE.mode = selectedMode;
+  STATE.simulationEngine = selectedEngine;
+  if (STATE.season) STATE.season.simulationEngine = selectedEngine;
   ensureLocalPlayerProfile(true);
   if (STATE.mode === 'current' || STATE.mode === 'legend' || STATE.mode === 'legacy') {
     showScreen('screen-position');
@@ -5872,22 +5881,22 @@ function getPlayerGameImpact(player) {
 
 function getLeaguePlayerImpactRatings(player) {
   // 仅用于名单“攻/防”展示。V9 直接由可见 14 项能力形成方向评分，
-  // 再少量使用名单 OVR 保持显示量表稳定；比赛引擎仍只走 getPlayerGameImpact。
+  // 再少量使用统一比赛 OVR 保持显示量表稳定；比赛引擎仍只走 getPlayerGameImpact。
   function v(key) {
     var value = Number(player && player[key]);
     return Math.max(25, Math.min(99, Number.isFinite(value) ? value : 50));
   }
-  var rosterOvr = Math.max(40, Math.min(99, Number(player && player.ovr) || 50));
+  var gameOvr = Math.max(40, Math.min(99, Number(player && player.ovr) || 50));
   var rawOffense =
     v('threePT') * 0.18 + v('MID') * 0.10 + v('FIN') * 0.18 + v('DNK') * 0.08
     + v('HAN') * 0.15 + v('PAS') * 0.15 + v('ATH') * 0.06 + v('STR') * 0.04 + v('CLU') * 0.06;
   var rawDefense =
     v('PDEF') * 0.33 + v('STL') * 0.18 + v('IDEF') * 0.22 + v('BLK') * 0.12
     + v('REB') * 0.08 + v('ATH') * 0.05 + v('STR') * 0.02;
-  // 攻/防都来自真实技能方向；只把两侧共同平移到名单 OVR 的显示量表附近，
+  // 攻/防都来自真实技能方向；只把两侧共同平移到比赛 OVR 的显示量表附近，
   // 不压缩攻防差异，也不会回写任何属性或参与比赛。
   var displayCenter = rawOffense * 0.60 + rawDefense * 0.40;
-  var displayCalibration = (rosterOvr - displayCenter) * 0.65;
+  var displayCalibration = (gameOvr - displayCenter) * 0.65;
   return {
     offense: Math.round(Math.max(25, Math.min(99, rawOffense + displayCalibration))),
     defense: Math.round(Math.max(25, Math.min(99, rawDefense + displayCalibration))),
@@ -7782,7 +7791,7 @@ function getSeasonPlayerOvrRows() {
         age: resolveAge(player),
         position: player.pos || player.position || '—',
         ovr: ovr,
-        isUser: false,
+      isUser: false,
       });
     });
   });
@@ -7807,7 +7816,7 @@ function getSeasonPlayerOvrRows() {
       age: resolveAge(player, player.age),
       position: player.pos || player.position || '—',
       ovr: ovr,
-      isUser: false,
+        isUser: false,
     });
   });
   var userOvr = Number(STATE.finalOVR) || 0;
@@ -7987,7 +7996,7 @@ function renderSeasonRankingsPage() {
     '<div class="rankings-view-tabs">' +
       '<button class="rankings-view-tab ' + (view === 'teams' ? 'active' : '') + '" onclick="setSeasonRankingsView(\'teams\')">球队战绩</button>' +
       '<button class="rankings-view-tab ' + (view === 'players' ? 'active' : '') + '" onclick="setSeasonRankingsView(\'players\')">球员统计</button>' +
-      '<button class="rankings-view-tab ' + (view === 'ovr' ? 'active' : '') + '" onclick="setSeasonRankingsView(\'ovr\')">球员 OVR</button>' +
+    '<button class="rankings-view-tab ' + (view === 'ovr' ? 'active' : '') + '" onclick="setSeasonRankingsView(\'ovr\')">球员 OVR</button>' +
     '</div>' + bodyHtml +
     '</div>';
   bindSeasonRankingInteractions(target);
@@ -8113,7 +8122,7 @@ function showSeasonTeamModal(teamOverride) {
     var loyaltyText = loyalty == null ? '—' : loyalty;
     var loyaltyCellTitle = loyalty == null ? '暂无忠诚度' : loyaltyTitle;
     var impact = getLeaguePlayerImpactRatings(player);
-    return '<tr class="season-team-player is-interactive' + (isUser ? ' is-user' : '') + '" data-season-player-team="' + team + '" data-season-player-id="' + playerId + '" role="button" tabindex="0" aria-label="查看' + name + '详细属性，年龄 ' + ageText + '，进攻 ' + impact.offense + '，防守 ' + impact.defense + '，忠诚 ' + loyaltyText + '，总评 ' + ovr + '" title="点击查看详细属性">' +
+    return '<tr class="season-team-player is-interactive' + (isUser ? ' is-user' : '') + '" data-season-player-team="' + team + '" data-season-player-id="' + playerId + '" role="button" tabindex="0" aria-label="查看' + name + '详细属性，年龄 ' + ageText + '，进攻 ' + impact.offense + '，防守 ' + impact.defense + '，忠诚 ' + loyaltyText + '，OVR ' + ovr + '" title="点击查看详细属性">' +
       '<td class="season-team-player-cell"><span class="season-team-avatar"' + avatarStyle + '></span><span class="season-team-position">' + (player.posCn || player.pos || '—') + '</span><span class="season-team-name">' + name + (isUser ? ' ⭐' : '') + '</span></td>' +
       '<td class="season-team-age-cell" title="球员年龄">' + ageText + '</td>' +
       '<td class="season-team-offense" title="进攻影响力">' + impact.offense + '</td>' +
@@ -8130,7 +8139,7 @@ function showSeasonTeamModal(teamOverride) {
 
   var rosterHtml = '<table class="season-team-roster-table">' +
     '<colgroup><col><col class="season-team-col-age"><col class="season-team-col-metric"><col class="season-team-col-metric"><col class="season-team-col-metric"><col class="season-team-col-ovr"></colgroup>' +
-    '<thead><tr class="season-team-roster-head"><th scope="col">球员</th><th scope="col" title="球员年龄">年龄</th><th scope="col" title="进攻影响力">攻</th><th scope="col" title="防守影响力">防</th><th scope="col" title="球员忠诚度">忠</th><th scope="col">总评</th></tr></thead>' +
+    '<thead><tr class="season-team-roster-head"><th scope="col">球员</th><th scope="col" title="球员年龄">年龄</th><th scope="col" title="进攻影响力">攻</th><th scope="col" title="防守影响力">防</th><th scope="col" title="球员忠诚度">忠</th><th scope="col">OVR</th></tr></thead>' +
     renderRosterGroup('🏀 首发阵容', starters, '');
   if (bench.length) {
     rosterHtml += renderRosterGroup('🔄 主要轮换', bench, 'rotation');

@@ -136,6 +136,8 @@ async function main() {
   const state = createState(teamIds[0], sourceLeague, teamIds, vm.runInContext('generateLeagueSchedule', context), vm.runInContext('SIM_CONFIG', context));
   const engine = vm.runInContext('ManagerEngine', context);
   const roster = state.leagueData[state.selectedTeam];
+  const sourceOvrById = new Map(Object.values(sourceLeague).flat().map(player => [player.id, Number(player.ovr)]));
+  assert(Object.values(state.leagueData).flat().every(player => Number(player.ovr) === Number(player._gameOvr) && Number(player._sourceOvr) === sourceOvrById.get(player.id)), '经理初始化没有统一比赛 OVR 或保留来源审计锚点');
   const validRotation = validateRotation(roster, state.rotation);
   assert(validRotation.valid && validRotation.totalMinutes === 240, '合法轮换校验失败');
 
@@ -230,7 +232,13 @@ async function main() {
   delete oldSave.rotation;
   delete oldSave.owner;
   const migrated = normalize(oldSave);
-  assert(migrated.version === 5 && migrated.season.playerStats && migrated.season.playerStatGameKeys && Array.isArray(migrated.season.games) && migrated.season.standings && Number.isInteger(migrated.season.scheduleIndex) && migrated.season.playoffs === null && migrated.rotation && migrated.owner.goal && migrated.owner.evaluation === null && Array.isArray(migrated.tradeHistory), '旧经理存档没有完成字段迁移');
+  assert(migrated.version === 7 && migrated.season.playerStats && migrated.season.playerStatGameKeys && Array.isArray(migrated.season.games) && migrated.season.standings && Number.isInteger(migrated.season.scheduleIndex) && migrated.season.playoffs === null && migrated.rotation && migrated.owner.goal && migrated.owner.evaluation === null && Array.isArray(migrated.tradeHistory), '旧经理存档没有完成字段迁移');
+  const legacyV5 = deepClone(state);
+  legacyV5.version = 5;
+  legacyV5.leagueData[state.selectedTeam][0].ovr = legacyV5.leagueData[state.selectedTeam][0]._gameOvr;
+  const migratedV5 = normalize(legacyV5);
+  assert(Number(migratedV5.leagueData[state.selectedTeam][0].ovr) === Number(migratedV5.leagueData[state.selectedTeam][0]._gameOvr)
+    && Number(migratedV5.leagueData[state.selectedTeam][0]._sourceOvr) === sourceOvrById.get(migratedV5.leagueData[state.selectedTeam][0].id), 'V5 经理存档没有迁移到统一比赛 OVR');
   assert(Array.isArray(engine.standingsList(migrated, 'NORTH')) && Array.isArray(engine.playerStatRows(migrated)), '旧经理存档无法打开球队排名或球员统计');
   let corruptSaveError = null;
   try {
@@ -276,7 +284,7 @@ async function main() {
   const closedProposal = engine.evaluateTrade(closedWindowState, outgoing.id, acceptedProposal.incoming[0].player.id);
   assert(!closedProposal.valid && /交易窗口已关闭/.test(closedProposal.reason), '季后赛交易窗口没有关闭');
   const tradeRoundTrip = normalize(JSON.parse(JSON.stringify(tradeState)));
-  assert(tradeRoundTrip.version === 5 && tradeRoundTrip.tradeHistory.length === 1 && tradeRoundTrip.tradeHistory[0].received[0].id === acceptedProposal.incoming[0].player.id, '交易记录无法随经理存档保存');
+  assert(tradeRoundTrip.version === 7 && tradeRoundTrip.tradeHistory.length === 1 && tradeRoundTrip.tradeHistory[0].received[0].id === acceptedProposal.incoming[0].player.id, '交易记录无法随经理存档保存');
 
   const twoForOneState = createState(teamIds[0], sourceLeague, teamIds, vm.runInContext('generateLeagueSchedule', context), vm.runInContext('SIM_CONFIG', context));
   const twoForOne = findAcceptedPackage(engine, twoForOneState, teamIds, 2, 1);
@@ -314,7 +322,7 @@ async function main() {
   versionThreeTradeSave.version = 3;
   versionThreeTradeSave.tradeHistory = [{ id: 'legacy-trade', userTeam: state.selectedTeam, partnerTeam, sent: { id: outgoing.id, name: outgoing.cname || outgoing.name || outgoing.id }, received: { id: acceptedProposal.incoming[0].player.id, name: acceptedProposal.incoming[0].player.cname || acceptedProposal.incoming[0].player.name || acceptedProposal.incoming[0].player.id }, acceptedMargin: 0, scheduleIndex: 0, rotationReset: false, createdAt: '2026-01-01T00:00:00.000Z' }];
   const versionThreeMigrated = normalize(versionThreeTradeSave);
-  assert(versionThreeMigrated.version === 5 && versionThreeMigrated.tradeHistory[0].sent.length === 1 && versionThreeMigrated.tradeHistory[0].received.length === 1, 'v3 一换一交易记录没有迁移为资产包');
+  assert(versionThreeMigrated.version === 7 && versionThreeMigrated.tradeHistory[0].sent.length === 1 && versionThreeMigrated.tradeHistory[0].received.length === 1, 'v3 一换一交易记录没有迁移为资产包');
 
   const inquiryState = createState(teamIds[0], sourceLeague, teamIds, vm.runInContext('generateLeagueSchedule', context), vm.runInContext('SIM_CONFIG', context));
   const inquiryOutgoing = inquiryState.leagueData[inquiryState.selectedTeam].slice().sort((first, second) => (Number(second.ovr) || 0) - (Number(first.ovr) || 0)).slice(0, 2).map(player => player.id);

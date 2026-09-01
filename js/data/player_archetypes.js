@@ -1,7 +1,7 @@
 /**
  * ============================================================
  *  Player Archetype Profiles — generated from local roster data
- *  308 archetypes across 533 players
+ *  308 archetypes across the current league roster
  * ============================================================
  */
 
@@ -7091,5 +7091,36 @@ const PLAYER_ARCHETYPES = {
     },
   }
 };
+
+// Archetype metadata must cover the same 14 visible attributes as player data.
+// This file is loaded after league_players.js in the browser, so derive each
+// profile's STL from the actual members of that archetype. Historical labels
+// without a current member use the explicit fallback below. The profiles are
+// display metadata and do not affect game OVR.
+(function attachArchetypeStealAverages() {
+  if (typeof LEAGUE_PLAYER_DATA === 'undefined') return;
+  var buckets = {};
+  Object.keys(LEAGUE_PLAYER_DATA).forEach(function(teamId) {
+    (LEAGUE_PLAYER_DATA[teamId] || []).forEach(function(player) {
+      var archetype = String(player && player.type || '');
+      var steal = Number(player && player.STL);
+      if (!archetype || !Number.isFinite(steal)) return;
+      var bucket = buckets[archetype] || (buckets[archetype] = { total: 0, count: 0 });
+      bucket.total += steal;
+      bucket.count++;
+    });
+  });
+  Object.keys(PLAYER_ARCHETYPES).forEach(function(archetype) {
+    var profile = PLAYER_ARCHETYPES[archetype];
+    var bucket = buckets[archetype];
+    if (!profile || !profile.attrs) return;
+    // Six historical labels have no current roster member. Keep their profile
+    // complete with an explicit defensive fallback rather than silently omitting
+    // STL; all current archetypes use the member average above.
+    profile.attrs.STL = bucket && bucket.count
+      ? Math.round(bucket.total / bucket.count)
+      : Math.round(profile.attrs.PDEF * 0.72 + profile.attrs.ATH * 0.18 + profile.attrs.HAN * 0.10);
+  });
+})();
 
 // Total: 308 archetypes

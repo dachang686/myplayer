@@ -221,7 +221,7 @@ const SIM_CONFIG = {
     C: "中锋"
   },
   POS_LIST: ["PG", "SG", "SF", "PF", "C"],
-  /** OVR 计算公式：各属性对每个位置的权重 */
+  /** @deprecated 旧建模资料；运行时 V5 overall 不读取此表。 */
   OVR_WEIGHTS: {
     PG: {
       threePT: 0.1,
@@ -304,11 +304,7 @@ const SIM_CONFIG = {
       CLU: 0.04
     }
   },
-  /**
-   * OVR 单调拟合模型：位置权重只使用 14 项可见属性。
-   * 生成球员直接使用公式 OVR；现实球员以名单来源 OVR 为初始锚点，成长/衰退只叠加公式变化量。
-   * 三项全局奖励分别表达进攻手段完整度、核心强项和 80+ 精英属性，不含球员个人修正。
-   */
+  /** @deprecated 旧线性拟合资料，仅供历史校准脚本读取；运行时 V5 overall 不读取此模型。 */
   OVR_MODEL: {
     secondaryPositionWeight: 0.2,
     base: 22.902948,
@@ -342,12 +338,12 @@ const SIM_CONFIG = {
   },
   /**
    * 统一比赛评分模型。OVR、球队战力和经理模式都以这套可解释的比赛能力为来源：
-   * 投射、终结、组织、防守、篮板与运动能力各只计算一次；CLU 仅保留很小的情境权重。
+   * 投射、终结、组织、防守、篮板与运动能力各只计算一次；CLU 只作为关键回合字段返回，不进入 overall。
    */
   PLAYER_RATING_MODEL: {
     version: 5,
     mode: 'primary-secondary-role-impact',
-    attributeSchemaVersion: 2,
+    attributeSchemaVersion: 3,
     handleAttribute: 'Ball Handle',
     validPositions: ['PG', 'SG', 'SF', 'PF', 'C']
   },
