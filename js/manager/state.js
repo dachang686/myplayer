@@ -1,7 +1,7 @@
 (function installManagerState(global) {
   'use strict';
 
-  var VERSION = 7;
+  var VERSION = 8;
   var POSITION_SLOTS = ['PG', 'SG', 'SF', 'PF', 'C'];
   var DEFAULT_MINUTES = [34, 34, 32, 32, 30, 20, 18, 16, 14, 10];
 
@@ -10,18 +10,13 @@
     return JSON.parse(JSON.stringify(value));
   }
 
-  function gameOvr(player) {
-    var cached = Number(player && player._gameOvr);
-    if (Number.isFinite(cached)) return cached;
-    if (player && typeof global.getUnifiedPlayerOvr === 'function') {
-      return global.getUnifiedPlayerOvr(player, player.pos);
-    }
+  function playerOvr(player) {
     return Number(player && player.ovr) || 0;
   }
 
-  // The gameplay formula is the single live OVR. The source roster rating is
-  // retained only as `_sourceOvr` for audit and is never used by manager logic.
-  function syncGameRatings(leagueData) {
+  // 属性变更、读档迁移和新经理档创建时，统一写入唯一的实时 OVR。
+  // `_sourceOvr` 只保留为审计锚点，经理模式的所有读路径只读取 `player.ovr`。
+  function syncStoredPlayerOvrs(leagueData) {
     if (!leagueData || typeof global.getUnifiedPlayerOvr !== 'function') return 0;
     var changed = 0;
     Object.keys(leagueData).forEach(function(teamId) {
@@ -29,8 +24,9 @@
         if (!player) return;
         var next = global.getUnifiedPlayerOvr(player, player.pos);
         if (!Number.isFinite(Number(player._sourceOvr))) player._sourceOvr = Number(player.ovr) || next;
-        if (Number(player._gameOvr) === next && Number(player.ovr) === next) return;
-        player._gameOvr = next;
+        var removedLegacyGameOvr = Object.prototype.hasOwnProperty.call(player, '_gameOvr');
+        if (removedLegacyGameOvr) delete player._gameOvr;
+        if (Number(player.ovr) === next && !removedLegacyGameOvr) return;
         player.ovr = next;
         changed++;
       });
@@ -87,7 +83,7 @@
 
   function selectDefaultStarters(roster) {
     var candidates = roster.slice().sort(function(a, b) {
-      return gameOvr(b) - gameOvr(a);
+      return playerOvr(b) - playerOvr(a);
     });
     var best = null;
 
@@ -111,7 +107,7 @@
 
   function createDefaultRotation(roster) {
     var sorted = roster.slice().sort(function(a, b) {
-      return gameOvr(b) - gameOvr(a);
+      return playerOvr(b) - playerOvr(a);
     });
     var starters = selectDefaultStarters(sorted);
     var starterIds = {};
@@ -181,11 +177,11 @@
   function createOwnerGoal(teamId, leagueData) {
     var strengths = Object.keys(leagueData).map(function(id) {
       var topTen = leagueData[id].slice().sort(function(a, b) {
-        return gameOvr(b) - gameOvr(a);
+        return playerOvr(b) - playerOvr(a);
       }).slice(0, 10);
       return {
         id: id,
-        strength: topTen.reduce(function(sum, player) { return sum + gameOvr(player); }, 0) / Math.max(1, topTen.length)
+        strength: topTen.reduce(function(sum, player) { return sum + playerOvr(player); }, 0) / Math.max(1, topTen.length)
       };
     }).sort(function(a, b) { return b.strength - a.strength; });
     var rank = strengths.findIndex(function(team) { return team.id === teamId; }) + 1;
@@ -197,7 +193,7 @@
   function create(teamId, sourceLeagueData, teamIds, scheduleFactory, config) {
     if (!teamId || teamIds.indexOf(teamId) < 0) throw new Error('请选择有效球队。');
     var leagueData = deepClone(sourceLeagueData);
-    syncGameRatings(leagueData);
+    syncStoredPlayerOvrs(leagueData);
     var roster = leagueData[teamId] || [];
     var schedule = scheduleFactory({
       teams: teamIds.slice(),
@@ -348,7 +344,7 @@
   }
 
   function migrateVersionFour(state, teamIds) {
-    syncGameRatings(state.leagueData);
+    syncStoredPlayerOvrs(state.leagueData);
     ensureSeasonDefaults(state, teamIds);
     state.rotation = normalizeRotation(state.leagueData[state.selectedTeam], state.rotation);
     ensureOwnerDefaults(state);
@@ -389,7 +385,7 @@
         if (Number.isFinite(publishedOvr)) player._sourceOvr = publishedOvr;
       });
     });
-    syncGameRatings(state.leagueData);
+    syncStoredPlayerOvrs(state.leagueData);
     ensureSeasonDefaults(state, teamIds);
     state.rotation = normalizeRotation(state.leagueData[state.selectedTeam], state.rotation);
     ensureOwnerDefaults(state);
@@ -406,12 +402,22 @@
         if (Number.isFinite(publishedOvr)) player._sourceOvr = publishedOvr;
       });
     });
-    syncGameRatings(state.leagueData);
+    syncStoredPlayerOvrs(state.leagueData);
     ensureSeasonDefaults(state, teamIds);
     state.rotation = normalizeRotation(state.leagueData[state.selectedTeam], state.rotation);
     ensureOwnerDefaults(state);
     state.tradeHistory = normalizeTradeHistory(state.tradeHistory);
     state.version = 7;
+    return state;
+  }
+
+  function migrateVersionSeven(state, teamIds) {
+    syncStoredPlayerOvrs(state.leagueData);
+    ensureSeasonDefaults(state, teamIds);
+    state.rotation = normalizeRotation(state.leagueData[state.selectedTeam], state.rotation);
+    ensureOwnerDefaults(state);
+    state.tradeHistory = normalizeTradeHistory(state.tradeHistory);
+    state.version = 8;
     return state;
   }
 
@@ -450,9 +456,12 @@
       } else if (version === 6) {
         state = migrateVersionSix(state, teamIds);
         version = state.version;
+      } else if (version === 7) {
+        state = migrateVersionSeven(state, teamIds);
+        version = state.version;
       }
     }
-    syncGameRatings(state.leagueData);
+    syncStoredPlayerOvrs(state.leagueData);
     ensureSeasonDefaults(state, teamIds);
     state.rotation = normalizeRotation(state.leagueData[state.selectedTeam], state.rotation);
     ensureOwnerDefaults(state);

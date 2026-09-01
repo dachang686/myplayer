@@ -108,7 +108,46 @@ const pureAnchor = config.getUnifiedPlayerRating(player({
 assert(pureAnchor.roles.defensiveAnchor > 95
   && pureAnchor.overall <= 84.01
   && Math.abs(pureAnchor.rotationValue - pureAnchor.overall) > 0.1,
-`纯防守支柱必须受角色上限约束，且轮换价值与 OVR 分离：${JSON.stringify(pureAnchor)}`);
+  `纯防守支柱必须受角色上限约束，且轮换价值与 OVR 分离：${JSON.stringify(pureAnchor)}`);
+
+const spaceAnchor = config.getUnifiedPlayerRating(player({
+  pos: 'C', threePT: 80, MID: 77, FIN: 88, DNK: 84, HAN: 70, PAS: 75,
+  PDEF: 81, STL: 74, IDEF: 93, BLK: 95, REB: 90, ATH: 67, STR: 59,
+}));
+const noSpaceAnchor = config.getUnifiedPlayerRating(player({
+  pos: 'C', threePT: 76, MID: 77, FIN: 88, DNK: 84, HAN: 70, PAS: 75,
+  PDEF: 81, STL: 74, IDEF: 93, BLK: 95, REB: 90, ATH: 67, STR: 59,
+}));
+const noRimAnchor = config.getUnifiedPlayerRating(player({
+  pos: 'C', threePT: 80, MID: 77, FIN: 88, DNK: 84, HAN: 70, PAS: 75,
+  PDEF: 81, STL: 74, IDEF: 80, BLK: 80, REB: 90, ATH: 67, STR: 59,
+}));
+assert(Math.round(spaceAnchor.overall) === 97
+  && spaceAnchor.pricing.spaceAnchorBonus > 6.9
+  && noSpaceAnchor.pricing.spaceAnchorBonus === 0
+  && noRimAnchor.pricing.spaceAnchorBonus === 0
+  && spaceAnchor.overall > noSpaceAnchor.overall + 5
+  && spaceAnchor.overall > noRimAnchor.overall + 5,
+`空间护框定价必须只在高三分与高护框同时成立时连续抬高 OVR/上限：${JSON.stringify({ spaceAnchor, noSpaceAnchor, noRimAnchor })}`);
+
+const twoWayScoringWing = config.getUnifiedPlayerRating(player({
+  pos: 'SF', threePT: 86, MID: 84, FIN: 94, DNK: 90, HAN: 88, PAS: 78,
+  PDEF: 86, IDEF: 68, STL: 72, BLK: 60, REB: 68, ATH: 86, STR: 68,
+}));
+const noWingFinishing = config.getUnifiedPlayerRating(player({
+  pos: 'SF', threePT: 86, MID: 84, FIN: 88, DNK: 90, HAN: 88, PAS: 78,
+  PDEF: 86, IDEF: 68, STL: 72, BLK: 60, REB: 68, ATH: 86, STR: 68,
+}));
+const noWingDefense = config.getUnifiedPlayerRating(player({
+  pos: 'SF', threePT: 86, MID: 84, FIN: 94, DNK: 90, HAN: 88, PAS: 78,
+  PDEF: 78, IDEF: 68, STL: 72, BLK: 60, REB: 68, ATH: 86, STR: 68,
+}));
+assert(twoWayScoringWing.pricing.twoWayScoringWingBonus > 5.9
+  && noWingFinishing.pricing.twoWayScoringWingBonus === 0
+  && noWingDefense.pricing.twoWayScoringWingBonus === 0
+  && twoWayScoringWing.overall > noWingFinishing.overall + 5
+  && twoWayScoringWing.overall > noWingDefense.overall + 5,
+`双向得分侧翼定价必须要求终结、投射、创造与外防同时成立：${JSON.stringify({ twoWayScoringWing, noWingFinishing, noWingDefense })}`);
 
 const interiorFinisher = config.getUnifiedPlayerRating(player({
   pos: 'C', threePT: 35, MID: 50, FIN: 99, DNK: 95, HAN: 65, PAS: 60,
@@ -275,6 +314,8 @@ console.log(JSON.stringify({
     perimeterUsageLoad: perimeterScorer.capacity.perimeterUsageLoad,
   },
   lineup: { fitted: fitted.total, unfitted: unfitted.total },
+  spaceAnchor: { overall: spaceAnchor.overall, bonus: spaceAnchor.pricing.spaceAnchorBonus },
+  twoWayScoringWing: { overall: twoWayScoringWing.overall, bonus: twoWayScoringWing.pricing.twoWayScoringWingBonus },
   residuals: residualMetrics,
   residualsByPosition,
   specialtyResiduals: { balanced: balancedResidual, specialist: specialistResidual },

@@ -72,7 +72,7 @@ vm.runInContext('syncLeaguePlayerOvrs()', context);
 if (published.STL !== published.PDEF) throw new Error(`旧存档 STL 应由 PDEF 一次性迁移，实际 ${published.STL}`);
 if (published._sourceOvr !== 95) throw new Error(`现实球员来源 OVR 应保留 95，实际 ${published._sourceOvr}`);
 if (published.ovr !== expectedPublishedOvr || published._ovrAnchorVersion !== 1) {
-  throw new Error(`现实球员没有同步为比赛 OVR，实际 ${published.ovr}/${expectedPublishedOvr}`);
+  throw new Error(`现实球员没有同步为唯一 OVR，实际 ${published.ovr}/${expectedPublishedOvr}`);
 }
 
 const growthPlayer = { id: 'R000007', _prospectId: 'S007', _rookieGenerationVersion: 3, _rookieProfile: 'interior_forward', pos: 'PF', ovr: 75, _age: 22 };

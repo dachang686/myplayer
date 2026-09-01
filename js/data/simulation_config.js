@@ -1014,12 +1014,29 @@ function getUnifiedPlayerRating(player, position) {
   // 同一份顶级能力不能在主侧和角色层重复完整加分。
   var apexBonus = Math.max(dominantEliteBonus, peakRoleBonus);
   var twoWayBonus = Math.max(0, Math.min(offense, defense) - 80) * 0.25;
+  // 空间型护框手的价值来自两个独立且必须同时成立的能力：真实三分威胁和内防/盖帽组合。
+  // 使用连续乘积而非球员名单或位置特判；任一维度未过门槛时不加分，封顶避免普通内线被抬成巨星。
+  var spaceAnchorApex = gmValues([attr('IDEF'), attr('BLK')]);
+  var spaceAnchorBonus = Math.min(7,
+    Math.max(0, attr('threePT') - 76) * Math.max(0, spaceAnchorApex - 80) * 0.20
+  );
+  // 顶级双向得分侧翼不必先成为传控中轴：高终结、投射、创造和外防必须同时成立。
+  // 四项连续门槛排除纯射手、单向突破手和普通 3&D，仍不使用位置或来源 OVR。
+  var twoWayScoringWingBonus = Math.min(6,
+    Math.max(0, attr('FIN') - 88)
+      * Math.max(0, shootingGravity - 80)
+      * Math.max(0, shotCreation - 82)
+      * Math.max(0, attr('PDEF') - 78)
+      * 0.25
+  );
   var overall = clampRating(
     50
       + (highImpact - 50) * 0.84
       + (lowImpact - 50) * 0.32
       + apexBonus
       + twoWayBonus
+      + spaceAnchorBonus
+      + twoWayScoringWingBonus
   );
 
   // 防守支柱上限必须连续生效，不能在最高角色切换时突然压低 OVR。
@@ -1035,7 +1052,9 @@ function getUnifiedPlayerRating(player, position) {
     + Math.max(0, creationComplement - 80) * 1.40
     + Math.max(0, roleImpact.rimFinisher - 80) * 0.40
     + Math.max(0, roleImpact.defensiveAnchor - 84) * 1.20
-      * Math.max(0, Math.min(1, (creationComplement - 70) / 10));
+      * Math.max(0, Math.min(1, (creationComplement - 70) / 10))
+    // 这部分必须同步抬高防守支柱上限，否则上面的空间护框定价会被旧上限完全吞掉。
+    + spaceAnchorBonus;
   overall = Math.min(overall, anchorCeiling);
 
   var creationLoadValue = clampRating(
@@ -1091,6 +1110,12 @@ function getUnifiedPlayerRating(player, position) {
       defensiveLoad: defensiveLoad,
     },
     impact: { offense: offense, defense: defense, neutralTotal: neutralTotal },
+    pricing: {
+      spaceAnchorApex: spaceAnchorApex,
+      spaceAnchorBonus: spaceAnchorBonus,
+      twoWayScoringWingBonus: twoWayScoringWingBonus,
+      anchorCeiling: anchorCeiling,
+    },
     // 保留旧字段，令页面、存档和现有校验可渐进迁移。
     shooting: shootingGravity, rim: rimScoring, creation: shotCreation,
     perimeterDefense: pointOfAttackDefense, interiorDefense: interiorDefense,

@@ -5018,12 +5018,10 @@ function calcTeamLineup(team, gameOptions) {
 
 /** 计算球队首发五人和头两名主要轮换的平均 OVR，供阵容摘要展示。 */
 function getTeamLineupOvr(team) {
-  const lineup = calcTeamLineup(team);
-  const averageOvr = function(players) {
-    const values = (players || []).map(function(player) {
-      return typeof getUnifiedPlayerOvr === 'function'
-        ? getUnifiedPlayerOvr(player, player.pos)
-        : (parseInt(player.ovr) || 0);
+    const lineup = calcTeamLineup(team);
+    const averageOvr = function(players) {
+      const values = (players || []).map(function(player) {
+      return parseInt(player.ovr) || 0;
     }).filter(function(value) { return value > 0; });
     if (!values.length) return 0;
     return Math.round(values.reduce(function(sum, value) { return sum + value; }, 0) / values.length);
@@ -5829,7 +5827,7 @@ function getLeagueDefensiveAnchor(player) {
 
 /**
  * 唯一的球员比赛能力出口。
- * 所有对外字段均由统一能力画像派生；OVR 只用于展示，不作为比赛事件的输入。
+ * `player.ovr` 是唯一的实时综合价值；属性画像只服务于比赛事件的方向性能力。
  */
 function getPlayerGameImpact(player) {
   const unifiedRating = typeof getUnifiedPlayerRating === 'function'
@@ -5837,13 +5835,14 @@ function getPlayerGameImpact(player) {
     : (typeof SIM_CONFIG !== 'undefined' && SIM_CONFIG && SIM_CONFIG.getUnifiedPlayerRating);
   if (typeof unifiedRating === 'function') {
     const rating = unifiedRating(player, player && player.pos);
+    const overall = leagueStatClamp(Number(player && player.ovr) || 50, 40, 99);
     return {
-      overall: rating.overall,
+      overall: overall,
       offense: rating.offense,
       defense: rating.defense,
       athletic: rating.athletic,
       clutch: rating.clutch,
-      rotationValue: rating.rotationValue || rating.overall,
+      rotationValue: overall,
       skills: rating.skills || {},
       roles: rating.roles || {},
       capacity: rating.capacity || {},
@@ -5881,7 +5880,7 @@ function getPlayerGameImpact(player) {
 
 function getLeaguePlayerImpactRatings(player) {
   // 仅用于名单“攻/防”展示。V9 直接由可见 14 项能力形成方向评分，
-  // 再少量使用统一比赛 OVR 保持显示量表稳定；比赛引擎仍只走 getPlayerGameImpact。
+  // 再少量使用实时 OVR 保持显示量表稳定；比赛引擎仍只走 getPlayerGameImpact。
   function v(key) {
     var value = Number(player && player[key]);
     return Math.max(25, Math.min(99, Number.isFinite(value) ? value : 50));
@@ -5893,7 +5892,7 @@ function getLeaguePlayerImpactRatings(player) {
   var rawDefense =
     v('PDEF') * 0.33 + v('STL') * 0.18 + v('IDEF') * 0.22 + v('BLK') * 0.12
     + v('REB') * 0.08 + v('ATH') * 0.05 + v('STR') * 0.02;
-  // 攻/防都来自真实技能方向；只把两侧共同平移到比赛 OVR 的显示量表附近，
+  // 攻/防都来自真实技能方向；只把两侧共同平移到实时 OVR 的显示量表附近，
   // 不压缩攻防差异，也不会回写任何属性或参与比赛。
   var displayCenter = rawOffense * 0.60 + rawDefense * 0.40;
   var displayCalibration = (gameOvr - displayCenter) * 0.65;

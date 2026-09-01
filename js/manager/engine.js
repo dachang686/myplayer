@@ -31,26 +31,8 @@
     return typeof SIM_CONFIG !== 'undefined' ? SIM_CONFIG : (global.SIM_CONFIG || {});
   }
 
-  function playerRating(player) {
-    var config = getConfig();
-    var calculate = typeof global.getUnifiedPlayerRating === 'function'
-      ? global.getUnifiedPlayerRating
-      : config.getUnifiedPlayerRating;
-    return typeof calculate === 'function' ? calculate(player, player && player.pos) : null;
-  }
-
   function playerOvr(player) {
-    var config = getConfig();
-    var calculate = typeof global.getUnifiedPlayerOvr === 'function'
-      ? global.getUnifiedPlayerOvr
-      : config.getUnifiedPlayerOvr;
-    return typeof calculate === 'function' ? calculate(player, player && player.pos) : (Number(player && player.ovr) || 70);
-  }
-
-  function positionScore(player, offense) {
-    var rating = playerRating(player);
-    if (rating) return offense ? rating.offense : rating.defense;
-    return playerOvr(player);
+    return Number(player && player.ovr) || 0;
   }
 
   function rosterPower(state, teamId) {
@@ -70,11 +52,11 @@
     }, 0) || 1;
     var offense = selected.reduce(function(sum, player) {
       var minutes = rotation && rotation[player.id] ? Math.max(1, Number(rotation[player.id].minutes) || 0) : 24;
-      return sum + positionScore(player, true) * minutes;
+      return sum + playerOvr(player) * minutes;
     }, 0) / totalMinutes;
     var defense = selected.reduce(function(sum, player) {
       var minutes = rotation && rotation[player.id] ? Math.max(1, Number(rotation[player.id].minutes) || 0) : 24;
-      return sum + positionScore(player, false) * minutes;
+      return sum + playerOvr(player) * minutes;
     }, 0) / totalMinutes;
     return {
       offense: offense,
@@ -89,11 +71,9 @@
   var MAX_ROSTER_SIZE = 25;
 
   function playerTradeValue(player) {
-    var rating = playerRating(player);
     var overall = playerOvr(player);
     var coreValue = Math.pow(Math.max(0, overall - 55), 1.35) * 1.2;
-    var twoWayValue = rating ? (rating.offense + rating.defense) * 0.06 : 0;
-    return Math.round((coreValue + twoWayValue) * 10) / 10;
+    return Math.round(coreValue * 10) / 10;
   }
 
   function packageTradeValue(players) {
@@ -424,9 +404,7 @@
   function allocatePoints(entries, teamScore) {
     var weights = entries.map(function(entry) {
       var player = entry.player;
-      var rating = playerRating(player);
-      var scoring = rating ? rating.offense : playerOvr(player);
-      return Math.max(1, entry.minutes * scoring);
+      return Math.max(1, entry.minutes * playerOvr(player));
     });
     var totalWeight = weights.reduce(function(sum, weight) { return sum + weight; }, 0) || 1;
     var allocations = weights.map(function(weight, index) {
