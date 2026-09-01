@@ -48,7 +48,7 @@ const tierCounts = {
   development: targets.filter(value => value >= 60 && value <= 67).length,
   longshot: targets.filter(value => value >= 50 && value <= 59).length,
 };
-const expectedCounts = { elite: 2, high: 5, rotation: 13, development: 8, longshot: 2 };
+const expectedCounts = { elite: 4, high: 3, rotation: 13, development: 8, longshot: 2 };
 for (const [tier, expected] of Object.entries(expectedCounts)) {
   if (tierCounts[tier] !== expected) failures.push(`${tier} 档数量 ${tierCounts[tier]}，预期 ${expected}`);
 }

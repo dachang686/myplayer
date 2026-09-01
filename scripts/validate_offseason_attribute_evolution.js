@@ -8,7 +8,9 @@ const offseasonSource = fs.readFileSync(path.join(root, 'js/offseason.js'), 'utf
 const leagueSource = fs.readFileSync(path.join(root, 'js/data/league_players.js'), 'utf8');
 const start = offseasonSource.indexOf('function getLeagueAttributeKeys');
 const end = offseasonSource.indexOf('// ==================== 联盟演变', start);
-if (start < 0 || end < 0) throw new Error('无法提取休赛期属性演变逻辑');
+const ageFactorStart = offseasonSource.indexOf('function getGeneratedPlayerAgeFactor');
+const ageFactorEnd = offseasonSource.indexOf('function getGeneratedPlayerPotentialCap', ageFactorStart);
+if (start < 0 || end < 0 || ageFactorStart < 0 || ageFactorEnd < 0) throw new Error('无法提取休赛期属性演变逻辑');
 
 const SIM_CONFIG = new Function(`${configSource}\nreturn SIM_CONFIG;`)();
 const LEAGUE_PLAYER_DATA = new Function(`${leagueSource}\nreturn LEAGUE_PLAYER_DATA;`)();
@@ -38,6 +40,8 @@ context.getCurrentLeagueSeasonNumber = function() {
   return (contextRef.STATE.career.seasonCount || 0) + 1;
 };
 vm.runInContext(offseasonSource.slice(start, end), context, { filename: 'offseason-attribute-evolution.js' });
+context.rngNext = () => 0.5;
+vm.runInContext(offseasonSource.slice(ageFactorStart, ageFactorEnd), context, { filename: 'offseason-age-factor.js' });
 
 const players = Object.values(LEAGUE_PLAYER_DATA).flat();
 const failures = [];
@@ -46,6 +50,19 @@ let declineCases = 0;
 let maximumGrowth = 0;
 let maximumDecline = 0;
 let minimumTopThreeOverlap = 3;
+
+const ageCurve = vm.runInContext(`({
+  age31: getGeneratedPlayerAgeFactor({_draftOvr: 82}, 31, 95),
+  age33: getGeneratedPlayerAgeFactor({_draftOvr: 82}, 33, 95),
+  age35: getGeneratedPlayerAgeFactor({_draftOvr: 82}, 35, 95),
+  normalAge33: getGeneratedPlayerAgeFactor({_draftOvr: 70}, 33, 75)
+})`, context);
+if (!(ageCurve.age31 < 0 && ageCurve.age33 < ageCurve.age31 && ageCurve.age35 < ageCurve.age33)) {
+  failures.push(`NPC 年龄衰退曲线没有随年龄加强：${JSON.stringify(ageCurve)}`);
+}
+if (ageCurve.age33 !== ageCurve.normalAge33) {
+  failures.push(`精英/高 OVR 球员仍绕过统一年龄衰退：${JSON.stringify(ageCurve)}`);
+}
 
 function topThree(player) {
   return ATTR_KEYS.slice().sort((a, b) => Number(player[b]) - Number(player[a]) || a.localeCompare(b)).slice(0, 3);
@@ -164,6 +181,58 @@ if (Number(migrationProbe._talentBalanceMigrationSeason) === migrationSeason && 
 }
 if (simulatedGrowth !== 0) failures.push('迁移当季仍允许正常正成长');
 
+// 旧存档年龄断层迁移必须从 21–23、24–26、27–29 三个年龄段均匀挑选，
+// 且只安排渐进追赶，不能一次性把年轻球员直接抬成球星。
+const oldTopPlayers = Array.from({ length: 35 }, (_, index) => {
+  const player = { id: `P-OLD-${index}`, pos: 'SF', ovr: 90, _age: 32 };
+  ATTR_KEYS.forEach(key => { player[key] = 90; });
+  return player;
+});
+const cohortCandidates = [];
+for (const age of [22, 25, 28]) {
+  for (let index = 0; index < 4; index++) {
+    const player = {
+      id: `R-CATCHUP-${age}-${index}`,
+      _prospectId: `CATCHUP-${age}-${index}`,
+      pos: 'SF',
+      ovr: 75,
+      _age: age,
+      _draftOvr: 77,
+      _testPotential: 92,
+      _talentBalanceVersion: 1,
+      _rookieProfile: 'two_way_wing',
+      _rookieGenerationVersion: 3,
+    };
+    ATTR_KEYS.forEach(key => { player[key] = 75; });
+    context.playerProbe = player;
+    player.ovr = vm.runInContext('calcOVR(playerProbe, playerProbe.pos)', context);
+    player._cohortBeforeOvr = player.ovr;
+    cohortCandidates.push(player);
+  }
+}
+context.LEAGUE_TEAM_IDS = ['A'];
+context.LEAGUE_PLAYER_DATA = { A: oldTopPlayers.concat(cohortCandidates) };
+context.STATE._freeAgentPool = [];
+context.STATE.career.seasonCount = 12;
+vm.runInContext('migrateLeagueTalentBalanceAll()', context);
+const selectedCatchups = cohortCandidates.filter(player => player._talentCatchupSeasons === 3);
+const selectedAgeCounts = selectedCatchups.reduce((counts, player) => {
+  counts[player._age] = (counts[player._age] || 0) + 1;
+  return counts;
+}, {});
+if (selectedCatchups.length !== 12
+  || selectedAgeCounts[22] !== 4
+  || selectedAgeCounts[25] !== 4
+  || selectedAgeCounts[28] !== 4) {
+  failures.push(`年龄断层迁移没有跨三个年龄段均匀选择：${JSON.stringify(selectedAgeCounts)}`);
+}
+if (cohortCandidates.some(player => Number(player.ovr) - Number(player._cohortBeforeOvr) > 2)) {
+  failures.push('年龄断层迁移单次补偿超过 2 OVR');
+}
+if (cohortCandidates.some(player => Number(player._talentBalanceVersion) !== 2)) {
+  failures.push('年龄断层迁移没有写入 V2 版本');
+}
+
 const completeLegacy = { id: 'R900001', _prospectId: 'D900', pos: 'PG', ovr: 72, _age: 24 };
 ATTR_KEYS.forEach((key, index) => { completeLegacy[key] = 58 + index; });
 const completeBefore = Object.fromEntries(ATTR_KEYS.map(key => [key, completeLegacy[key]]));
@@ -192,11 +261,14 @@ const result = {
   maximumGrowth,
   maximumDecline,
   minimumTopThreeOverlap,
+  ageCurve,
   requestPlusOneMax,
   requestPlusTwoMax,
   requestPlusTwoAverage: realPlayers.length ? Number((requestPlusTwoTotal / realPlayers.length).toFixed(2)) : 0,
   requestPlusThreeCount,
   migrationDelta,
+  selectedCatchups: selectedCatchups.length,
+  selectedCatchupAgeCounts: selectedAgeCounts,
   legacyCompletePreserved: !ATTR_KEYS.some(key => completeLegacy[key] !== completeBefore[key]),
   legacyMissingFilled: Number.isFinite(missingLegacy.STL),
   failures: failures.slice(0, 50),

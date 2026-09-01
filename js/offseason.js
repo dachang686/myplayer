@@ -2155,15 +2155,24 @@ function evolveUnsignedFreeAgents() {
     delete player.salary;
 
     // 年轻生成球员在无队时仍会以较低强度兑现潜力，避免被裁后永久停滞。
-    if (age <= 26 && isGeneratedLeaguePlayer(player)) {
+    var faCatchupActive = isGeneratedLeaguePlayer(player)
+      && age <= 29
+      && Number(player._talentCatchupSeasons) > 0;
+    if ((age <= 26 || faCatchupActive) && isGeneratedLeaguePlayer(player)) {
       var gene = getPlayerGene(player);
       var potential = Number(gene && gene.potential);
       if (Number.isFinite(potential) && oldOvr < potential) {
-        var faGrowth = getPotentialGrowthBias(potential, oldOvr, age) * 0.55 + (rngNext() - 0.35) * 0.35;
+        var faGrowth = (age <= 26 ? getPotentialGrowthBias(potential, oldOvr, age) * 0.55 : 0)
+          + (rngNext() - 0.35) * 0.35
+          + (faCatchupActive ? 0.55 : 0);
         faGrowth = roundLeagueOvrChange(faGrowth);
         if (faGrowth > 0) {
           applyLeaguePlayerOvrChange(player, oldOvr, Math.min(potential, oldOvr + faGrowth));
         }
+      }
+      if (faCatchupActive) {
+        player._talentCatchupSeasons = Math.max(0, Number(player._talentCatchupSeasons) - 1);
+        if (!player._talentCatchupSeasons) delete player._talentCatchupSeasons;
       }
     }
 
@@ -3393,7 +3402,8 @@ function calibrateGeneratedRookieAttributes(player, targetOvr, maxAdjustment) {
   var bestDistance = Infinity;
   for (var shift = -cap; shift <= cap; shift++) {
     ATTR_KEYS.forEach(function(key) { player[key] = clampLeagueAttribute(original[key] + shift); });
-    var distance = Math.abs(calcOVR(player, pos) - target);
+    var candidateOvr = calcOVR(player, pos);
+    var distance = Math.abs(candidateOvr - target);
     if (distance < bestDistance || (distance === bestDistance && Math.abs(shift) < Math.abs(bestShift))) {
       bestDistance = distance;
       bestShift = shift;
@@ -3401,13 +3411,27 @@ function calibrateGeneratedRookieAttributes(player, targetOvr, maxAdjustment) {
   }
   ATTR_KEYS.forEach(function(key) { player[key] = clampLeagueAttribute(original[key] + bestShift); });
   player.ovr = calcOVR(player, pos);
+  if (player.ovr > target) {
+    var attributeFloors = {};
+    getLeagueAttributeKeys().forEach(function(key) { attributeFloors[key] = 25; });
+    player.ovr = rollbackLeaguePlayerAttributesToFormulaLimit(
+      player,
+      getLeaguePlayerDevelopmentProfile(player),
+      attributeFloors,
+      player.ovr,
+      1,
+      player.ovr - target,
+      target
+    );
+  }
   return player.ovr;
 }
 
-// 未来随机选秀的正式稀有度：每届约 2 名高即战力 + 5 名高水平，其余以轮换/发展型为主。
+// 未来随机选秀的正式稀有度：每届约 4 名高即战力 + 3 名高水平，其余以轮换/发展型为主。
+// 总强新人仍为 7 人，只调整潜在球星的档位结构，用年轻供给替代老将冻结。
 var GENERATED_DRAFT_OVR_TIERS = [
-  { id: 'elite', share: 0.067, min: 80, max: 84 },
-  { id: 'high', share: 0.167, min: 75, max: 79 },
+  { id: 'elite', share: 0.133, min: 80, max: 84 },
+  { id: 'high', share: 0.100, min: 75, max: 79 },
   { id: 'rotation', share: 0.433, min: 68, max: 74 },
   { id: 'development', share: 0.267, min: 60, max: 67 },
   { id: 'longshot', share: 0.067, min: 50, max: 59 }
@@ -3612,7 +3636,7 @@ function syncGeneratedLeaguePlayerOvrs() {
 }
 
 var LEAGUE_OVR_ANCHOR_VERSION = 1;
-var LEAGUE_TALENT_BALANCE_VERSION = 1;
+var LEAGUE_TALENT_BALANCE_VERSION = 2;
 var LEAGUE_ATTRIBUTE_SCHEMA_VERSION = 3;
 var LEAGUE_ATTRIBUTE_SOURCE_VERSION = 2;
 
@@ -3632,7 +3656,7 @@ function migrateLeagueTalentBalance(player) {
   if (!player || !isGeneratedLeaguePlayer(player) || player._isUser) return false;
   if (Number(player._talentBalanceVersion) >= LEAGUE_TALENT_BALANCE_VERSION) return false;
   var age = getLeaguePlayerAge(player);
-  if (age < 22 || age > 28) {
+  if (age < 21 || age > 29) {
     player._talentBalanceVersion = LEAGUE_TALENT_BALANCE_VERSION;
     return false;
   }
@@ -3644,7 +3668,7 @@ function migrateLeagueTalentBalance(player) {
     return false;
   }
   var expectedOvr = getExpectedGeneratedCareerOvr(player, age, potential);
-  var compensation = Math.min(3, Math.max(0, expectedOvr - currentOvr));
+  var compensation = Math.min(2, Math.max(0, expectedOvr - currentOvr));
   player._talentBalanceVersion = LEAGUE_TALENT_BALANCE_VERSION;
   if (compensation <= 0) return false;
   migrateLegacyGeneratedPlayerAttributes(player);
@@ -3654,19 +3678,79 @@ function migrateLeagueTalentBalance(player) {
   return true;
 }
 
+function getTalentBalanceMigrationAge(player) {
+  if (typeof getLeaguePlayerAge === 'function') {
+    try {
+      var leagueAge = Number(getLeaguePlayerAge(player));
+      if (Number.isFinite(leagueAge)) return leagueAge;
+    } catch (error) {}
+  }
+  var savedAge = Number(player && player._age);
+  return Number.isFinite(savedAge) ? savedAge : 99;
+}
+
 function migrateLeagueTalentBalanceAll() {
   if (typeof LEAGUE_PLAYER_DATA === 'undefined' || typeof LEAGUE_TEAM_IDS === 'undefined') return 0;
-  var changed = 0;
+  var allPlayers = [];
   LEAGUE_TEAM_IDS.forEach(function(teamId) {
-    (LEAGUE_PLAYER_DATA[teamId] || []).forEach(function(player) {
-      if (migrateLeagueTalentBalance(player)) changed++;
+    allPlayers = allPlayers.concat(LEAGUE_PLAYER_DATA[teamId] || []);
+  });
+  if (Array.isArray(STATE._freeAgentPool)) allPlayers = allPlayers.concat(STATE._freeAgentPool);
+
+  // V1 只能给单个年轻球员补少量 OVR，无法修复旧存档连续多个选秀届没有
+  // 年轻球星的年龄断层。V2 只在版本升级时挑选欠账球员，并在未来三季渐进追赶。
+  var topPlayers = allPlayers.filter(function(player) {
+    return player && !player._isUser && Number(player.ovr) > 0;
+  }).sort(function(left, right) {
+    return (Number(right.ovr) || 0) - (Number(left.ovr) || 0);
+  }).slice(0, 35);
+  var topUnderThirty = topPlayers.filter(function(player) {
+    return getTalentBalanceMigrationAge(player) < 30;
+  }).length;
+  var topPlayerSet = new Set(topPlayers);
+  var catchupNeeded = Math.max(0, 12 - topUnderThirty);
+  var candidateBuckets = [[], [], []];
+  allPlayers.forEach(function(player) {
+    if (!player || player._isUser || !isGeneratedLeaguePlayer(player) || topPlayerSet.has(player)) return;
+    if (Number(player._talentBalanceVersion) >= LEAGUE_TALENT_BALANCE_VERSION) return;
+    var age = getTalentBalanceMigrationAge(player);
+    if (age < 21 || age > 29) return;
+    var gene = getPlayerGene(player);
+    var potential = Number(gene && gene.potential);
+    if (!Number.isFinite(potential) || potential < 88 || potential <= Number(player.ovr)) return;
+    var bucketIndex = age <= 23 ? 0 : (age <= 26 ? 1 : 2);
+    candidateBuckets[bucketIndex].push({
+      player: player,
+      potential: potential,
+      gap: potential - (Number(player.ovr) || 0)
     });
   });
-  if (Array.isArray(STATE._freeAgentPool)) {
-    STATE._freeAgentPool.forEach(function(player) {
-      if (migrateLeagueTalentBalance(player)) changed++;
+  candidateBuckets.forEach(function(bucket) {
+    bucket.sort(function(left, right) {
+      return right.potential - left.potential
+        || right.gap - left.gap
+        || (Number(right.player.ovr) || 0) - (Number(left.player.ovr) || 0)
+        || String(left.player.id || '').localeCompare(String(right.player.id || ''));
     });
+  });
+  var selectedCatchups = 0;
+  while (selectedCatchups < catchupNeeded) {
+    var selectedThisRound = false;
+    for (var bucketIndex = 0; bucketIndex < candidateBuckets.length && selectedCatchups < catchupNeeded; bucketIndex++) {
+      var candidate = candidateBuckets[bucketIndex].shift();
+      if (!candidate) continue;
+      candidate.player._talentCatchupSeasons = Math.max(3, Number(candidate.player._talentCatchupSeasons) || 0);
+      selectedCatchups++;
+      selectedThisRound = true;
+    }
+    if (!selectedThisRound) break;
   }
+
+  var changed = 0;
+  allPlayers.forEach(function(player) {
+    if (migrateLeagueTalentBalance(player)) changed++;
+  });
+  changed += selectedCatchups;
   if (changed && typeof clearLineupCache === 'function') clearLineupCache();
   return changed;
 }
@@ -3742,7 +3826,7 @@ function migrateRealPlayerAttributeSchema(player, canonical) {
 
 function syncLeaguePlayerOvrs() {
   if (typeof LEAGUE_PLAYER_DATA === 'undefined' || typeof LEAGUE_TEAM_IDS === 'undefined') return 0;
-  var changed = 0;
+  var changed = migrateLeagueTalentBalanceAll();
   var syncedPlayers = new Set();
   function syncPlayer(player) {
     if (!player || !player.pos || syncedPlayers.has(player)) return;
@@ -3910,11 +3994,15 @@ function isEliteGeneratedDraftPick(player) {
 
 function getEliteDraftGrowthBonus(player, age) {
   if (!isEliteGeneratedDraftPick(player)) return 0;
-  if (age <= 22) return 0.30;
-  if (age <= 25) return 0.20;
-  if (age <= 28) return 0.12;
-  if (age <= 30) return 0.05;
-  return 0;
+  var bonus = age <= 22 ? 0.30 : (age <= 25 ? 0.32 : (age <= 28 ? 0.24 : 0));
+  // 每届约四名精英中只有一名获得时代级兑现加成；不提高入联盟 OVR，
+  // 也不延长 30 岁后的巅峰，用极少数顶尖球员维持联盟最高值。
+  if (generatedPlayerStableHash(player) % 4 === 0) {
+    if (age <= 22) bonus += 0.12;
+    else if (age <= 25) bonus += 0.18;
+    else if (age <= 28) bonus += 0.14;
+  }
+  return bonus;
 }
 
 function isHighGeneratedDraftPick(player) {
@@ -3935,22 +4023,14 @@ function getHighDraftGrowthBonus(player, age) {
 }
 
 function getGeneratedPlayerAgeFactor(player, age, ovr) {
-  var rating = Number(ovr) || 70;
-  if (isEliteGeneratedDraftPick(player) && rating >= 88 && age >= 29 && age <= 34) {
-    return (rngNext() - 0.48) * 0.32;
-  }
   if (age <= 22) return 1 + rngNext() * 1.5;
   if (age <= 28) return (rngNext() - 0.35) * 1.2;
   if (age <= 30) return (rngNext() - 0.62) * 0.8;
-  if (age <= 32) {
-    if (rating >= 88) return (rngNext() - 0.52) * 0.42;
-    return (rngNext() - 0.58) * 0.65;
-  }
-  if (age <= 33) {
-    if (rating >= 90) return (rngNext() - 0.54) * 0.48;
-    return -0.55 - rngNext() * 0.75;
-  }
-  if (age <= 35) return -1.4 - rngNext() * 1.1;
+  // 年龄曲线只由年龄决定，不能因为当前 OVR 或选秀档位而冻结衰退。
+  // 31–32 岁轻度下滑，33–34 岁稳定下滑，35 岁后快速下滑。
+  if (age <= 32) return -0.35 - rngNext() * 0.45;
+  if (age <= 34) return -0.90 - rngNext() * 0.80;
+  if (age <= 35) return -1.60 - rngNext();
   return -2 - rngNext() * 2;
 }
 
@@ -4300,6 +4380,11 @@ function evolveLeague() {
       change += getPotentialGrowthBias(gene.potential, p.ovr, age);
       change += getEliteDraftGrowthBonus(p, age);
       change += getHighDraftGrowthBonus(p, age);
+      var catchupActive = isGeneratedLeaguePlayer(p)
+        && age <= 29
+        && Number(p._talentCatchupSeasons) > 0
+        && Number(gene.potential) > Number(p.ovr);
+      if (catchupActive) change += 0.55;
       if (change > 0 && isGeneratedLeaguePlayer(p)
         && Number(p._talentBalanceMigrationSeason) === getCurrentLeagueSeasonNumber()) {
         change = 0;
@@ -4326,8 +4411,15 @@ function evolveLeague() {
         return;
       }
       p._age = age + 1; // 临时实验：球员年龄真实上涨，每年 +1
-      if (Number(p._talentBalanceMigrationSeason) === getCurrentLeagueSeasonNumber()) {
+      var migratedThisSeason = Number(p._talentBalanceMigrationSeason) === getCurrentLeagueSeasonNumber();
+      if (migratedThisSeason) {
         delete p._talentBalanceMigrationSeason;
+      }
+      if (catchupActive && !migratedThisSeason) {
+        p._talentCatchupSeasons = Math.max(0, Number(p._talentCatchupSeasons) - 1);
+        if (!p._talentCatchupSeasons) delete p._talentCatchupSeasons;
+      } else if (age > 29 || Number(gene.potential) <= Number(p.ovr)) {
+        delete p._talentCatchupSeasons;
       }
       refreshGeneratedPlayerType(p);
       newRoster.push(p);
