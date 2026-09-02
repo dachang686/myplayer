@@ -2058,6 +2058,31 @@ function rollbackLeaguePlayerAttributesToFormulaLimit(player, profile, beforeAtt
   return afterFormulaOvr;
 }
 
+function completeLeaguePlayerDeclineToFormulaTarget(player, beforeAttributes, targetFormulaOvr, declineFast, declineResist) {
+  if (typeof calcOVR !== 'function') return Number(player && player.ovr) || 0;
+  var afterFormulaOvr = calcOVR(player, player.pos);
+  if (afterFormulaOvr <= targetFormulaOvr) return afterFormulaOvr;
+
+  var keys = getLeagueAttributeKeys();
+  var neutralKeys = keys.filter(function(key) {
+    return declineFast.indexOf(key) < 0 && declineResist.indexOf(key) < 0;
+  });
+  var declineOrder = declineFast.concat(neutralKeys, declineResist);
+  var guard = 0;
+  while (afterFormulaOvr > targetFormulaOvr && guard++ < declineOrder.length) {
+    var key = declineOrder[guard - 1];
+    var current = Number(player[key]);
+    var original = Number(beforeAttributes[key]);
+    if (!Number.isFinite(current) || !Number.isFinite(original)) continue;
+    var maximumDecline = declineFast.indexOf(key) >= 0 ? 3 : (declineResist.indexOf(key) >= 0 ? 1 : 2);
+    var floor = Math.max(25, original - maximumDecline);
+    if (current <= floor) continue;
+    player[key] = current - 1;
+    afterFormulaOvr = calcOVR(player, player.pos);
+  }
+  return afterFormulaOvr;
+}
+
 function applyLeaguePlayerOvrChange(player, oldOvr, newOvr) {
   if (!player) return Number(newOvr) || 0;
   var before = Math.round(Number(oldOvr) || Number(player.ovr) || 60);
@@ -2124,6 +2149,21 @@ function applyLeaguePlayerOvrChange(player, oldOvr, newOvr) {
     var afterFormulaOvr = rollbackLeaguePlayerAttributesToFormulaLimit(
       player, profile, beforeAttributes, beforeFormulaOvr, direction, requestedMagnitude, targetFormulaOvr
     );
+    if (direction < 0 && afterFormulaOvr > targetFormulaOvr) {
+      var missingDecline = afterFormulaOvr - targetFormulaOvr;
+      player._ovrDeclineRoundingCarry = Math.min(2,
+        Math.max(0, Number(player._ovrDeclineRoundingCarry) || 0) + missingDecline * 0.5
+      );
+      if (player._ovrDeclineRoundingCarry >= 1) {
+        var beforeCompletionOvr = afterFormulaOvr;
+        afterFormulaOvr = completeLeaguePlayerDeclineToFormulaTarget(
+          player, beforeAttributes, targetFormulaOvr, declineFast, declineResist
+        );
+        var completedDecline = Math.max(0, beforeCompletionOvr - afterFormulaOvr);
+        player._ovrDeclineRoundingCarry = Math.max(0, player._ovrDeclineRoundingCarry - completedDecline);
+      }
+      if (player._ovrDeclineRoundingCarry < 0.01) delete player._ovrDeclineRoundingCarry;
+    }
     player.ovr = afterFormulaOvr;
   } else {
     player.ovr = Math.max(55, Math.min(99, requested));
@@ -4018,10 +4058,10 @@ function getGeneratedPlayerAgeFactor(player, age, ovr) {
   if (age <= 30) return (rngNext() - 0.62) * 0.8;
   // 年龄曲线只由年龄决定，不能因为当前 OVR 或选秀档位而冻结衰退。
   // 31–32 岁轻度下滑，33–34 岁稳定下滑，35 岁后快速下滑。
-  if (age <= 32) return -0.35 - rngNext() * 0.45;
-  if (age <= 34) return -0.90 - rngNext() * 0.80;
-  if (age <= 35) return -1.60 - rngNext();
-  return -2 - rngNext() * 2;
+  if (age <= 32) return -0.42 - rngNext() * 0.48;
+  if (age <= 34) return -0.98 - rngNext() * 0.82;
+  if (age <= 35) return -1.68 - rngNext() * 1.05;
+  return -2.08 - rngNext() * 2.08;
 }
 
 function getGeneratedPlayerPotentialCap(player, draftOvr) {

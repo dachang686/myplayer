@@ -112,7 +112,8 @@ for (const source of players) {
   for (const key of ATTR_KEYS) {
     const delta = Number(decline[key]) - Number(declineBefore[key]);
     maximumDecline = Math.max(maximumDecline, Math.abs(delta));
-    if (delta > 0 || delta < -2) failures.push(`${source.id} 衰退 ${key} 反向或越界：${delta}`);
+    const declineLimit = ['ATH','STR','PDEF','STL','DNK'].includes(key) ? 3 : 2;
+    if (delta > 0 || delta < -declineLimit) failures.push(`${source.id} 衰退 ${key} 反向或越界：${delta}`);
   }
   if (decline.ovr !== vm.runInContext('calcOVR(playerProbe, playerProbe.pos)', context)) {
     if (/^R\d+$/.test(String(source.id)) || source._prospectId) {
@@ -152,6 +153,46 @@ for (const source of realPlayers) {
       if (actualDelta < 0 || actualDelta > 2) failures.push(`${source.id} 请求 +2 实际 ${actualDelta}`);
     }
   }
+}
+
+const saturationSources = realPlayers.map(player => {
+  const probe = JSON.parse(JSON.stringify(player));
+  context.playerProbe = probe;
+  return { player, formulaOvr: vm.runInContext('calcOVR(playerProbe, playerProbe.pos)', context) };
+}).sort((left, right) => right.formulaOvr - left.formulaOvr);
+let saturationProbe = null;
+let saturationBefore = 0;
+let saturationAfterFirst = 0;
+for (const source of saturationSources) {
+  const probe = JSON.parse(JSON.stringify(source.player));
+  probe._age = 36;
+  context.playerProbe = probe;
+  probe.ovr = vm.runInContext('calcOVR(playerProbe, playerProbe.pos)', context);
+  const before = probe.ovr;
+  vm.runInContext('applyLeaguePlayerOvrChange(playerProbe, playerProbe.ovr, playerProbe.ovr - 1)', context);
+  if (Number(probe._ovrDeclineRoundingCarry) >= 0.5) {
+    saturationProbe = probe;
+    saturationBefore = before;
+    saturationAfterFirst = probe.ovr;
+    break;
+  }
+}
+if (!saturationProbe) {
+  failures.push('未找到可验证取整欠账的球员样本');
+  saturationProbe = JSON.parse(JSON.stringify(saturationSources[0].player));
+  context.playerProbe = saturationProbe;
+  saturationProbe.ovr = vm.runInContext('calcOVR(playerProbe, playerProbe.pos)', context);
+  saturationBefore = saturationProbe.ovr;
+  saturationAfterFirst = saturationProbe.ovr;
+}
+context.playerProbe = saturationProbe;
+vm.runInContext('applyLeaguePlayerOvrChange(playerProbe, playerProbe.ovr, playerProbe.ovr - 1)', context);
+const saturationAfterSecond = saturationProbe.ovr;
+if (saturationAfterSecond > saturationBefore - 1) {
+  failures.push(`公式取整连续吞掉衰退：${saturationBefore}→${saturationAfterFirst}→${saturationAfterSecond}`);
+}
+if (saturationAfterSecond !== vm.runInContext('calcOVR(playerProbe, playerProbe.pos)', context)) {
+  failures.push('顶端公式饱和修复后 OVR 与属性公式不一致');
 }
 
 const migrationProbe = {
@@ -267,6 +308,7 @@ const result = {
   requestPlusTwoMax,
   requestPlusTwoAverage: realPlayers.length ? Number((requestPlusTwoTotal / realPlayers.length).toFixed(2)) : 0,
   requestPlusThreeCount,
+  saturationDecline: { before: saturationBefore, afterFirst: saturationAfterFirst, afterSecond: saturationAfterSecond },
   migrationDelta,
   selectedCatchups: selectedCatchups.length,
   selectedCatchupAgeCounts: selectedAgeCounts,
