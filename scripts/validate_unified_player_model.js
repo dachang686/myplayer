@@ -61,8 +61,8 @@ assert(stopper.skills.pointOfAttackDefense > athlete.skills.pointOfAttackDefense
 
 const lowClutch = config.getUnifiedPlayerRating(player({ PAS: 84, HAN: 84, threePT: 84, FIN: 84, CLU: 25 }));
 const highClutch = config.getUnifiedPlayerRating(player({ PAS: 84, HAN: 84, threePT: 84, FIN: 84, CLU: 99 }));
-assert(Math.abs(highClutch.overall - lowClutch.overall) < 0.01,
-  `CLU 不应抬高常规 OVR：${JSON.stringify({ low: lowClutch.overall, high: highClutch.overall })}`);
+assert(highClutch.overall > lowClutch.overall + 8,
+  `14 项拟合公式必须读取 CLU：${JSON.stringify({ low: lowClutch.overall, high: highClutch.overall })}`);
 
 const defenseOnly = { PDEF: 82, IDEF: 86, STL: 78, BLK: 88, REB: 90, ATH: 80, STR: 88 };
 const lowOffenseDefender = config.getUnifiedPlayerRating(player(Object.assign({}, defenseOnly, { HAN: 25, PAS: 25 })));
@@ -74,13 +74,13 @@ assert(Math.abs(lowOffenseDefender.roles.defensiveAnchor - highOffenseDefender.r
 
 const positionProbe = player({ threePT: 84, MID: 81, FIN: 78, HAN: 88, PAS: 91, PDEF: 76, IDEF: 72 });
 const positionOvrs = ['PG', 'SG', 'SF', 'PF', 'C'].map(pos => config.getUnifiedPlayerRating(positionProbe, pos).overall);
-assert(positionOvrs.every(value => Math.abs(value - positionOvrs[0]) < 1e-9),
-  `角色驱动模型不应保留无效的位置权重：${JSON.stringify(positionOvrs)}`);
-assert(config.PLAYER_RATING_MODEL.version === 5
-  && config.PLAYER_RATING_MODEL.mode === 'primary-secondary-role-impact'
+assert(Math.max(...positionOvrs) - Math.min(...positionOvrs) > 5,
+  `位置加权模型必须让同一属性包在不同位置得到不同 OVR：${JSON.stringify(positionOvrs)}`);
+assert(config.PLAYER_RATING_MODEL.version === 6
+  && config.PLAYER_RATING_MODEL.mode === 'position-weighted-monotonic-14-attribute-fit'
   && config.PLAYER_RATING_MODEL.attributeSchemaVersion === 3
   && config.PLAYER_RATING_MODEL.handleAttribute === 'Ball Handle',
-  `统一评分模型必须使用 V5 主次角色影响公式：${JSON.stringify(config.PLAYER_RATING_MODEL)}`);
+  `统一评分模型必须使用 14 项位置加权拟合公式：${JSON.stringify(config.PLAYER_RATING_MODEL)}`);
 
 const completeCreator = config.getUnifiedPlayerRating(player({
   threePT: 88, MID: 90, FIN: 92, HAN: 94, PAS: 94,
@@ -97,9 +97,9 @@ const offenseSpecialist = config.getUnifiedPlayerRating(player({
   PDEF: 45, IDEF: 35, STL: 45, BLK: 30, REB: 45, STR: 55,
 }));
 assert(offenseSpecialist.offense > offenseSpecialist.defense + 30
-  && offenseSpecialist.overall > 90
+  && offenseSpecialist.overall > 80
   && offenseSpecialist.impact.neutralTotal === offenseSpecialist.overall,
-`顶级主侧能力不应被另一侧短板线性压低：${JSON.stringify(offenseSpecialist)}`);
+  `进攻专项属性必须保持进攻画像，并由位置拟合公式独立定价：${JSON.stringify(offenseSpecialist)}`);
 
 const pureAnchor = config.getUnifiedPlayerRating(player({
   FIN: 62, DNK: 72, HAN: 48, PAS: 45, PDEF: 70, IDEF: 97,
@@ -108,46 +108,23 @@ const pureAnchor = config.getUnifiedPlayerRating(player({
 assert(pureAnchor.roles.defensiveAnchor > 95
   && pureAnchor.overall <= 84.01
   && Math.abs(pureAnchor.rotationValue - pureAnchor.overall) > 0.1,
-  `纯防守支柱必须受角色上限约束，且轮换价值与 OVR 分离：${JSON.stringify(pureAnchor)}`);
+  `纯防守支柱不应被 14 项拟合公式误判为全能超巨，且轮换价值仍与 OVR 分离：${JSON.stringify(pureAnchor)}`);
 
-const spaceAnchor = config.getUnifiedPlayerRating(player({
-  pos: 'C', threePT: 80, MID: 77, FIN: 88, DNK: 84, HAN: 70, PAS: 75,
-  PDEF: 81, STL: 74, IDEF: 93, BLK: 95, REB: 90, ATH: 67, STR: 59,
+const fitPositionProbe = player({
+  threePT: 86, MID: 84, FIN: 94, DNK: 90, HAN: 88, PAS: 78,
+  PDEF: 86, IDEF: 68, STL: 72, BLK: 60, REB: 68, ATH: 86, STR: 68, CLU: 80,
+});
+const pointGuardValue = config.getUnifiedPlayerRating(Object.assign({}, fitPositionProbe, { pos: 'PG' }));
+const centerValue = config.getUnifiedPlayerRating(Object.assign({}, fitPositionProbe, { pos: 'C' }));
+const dualPositionValue = config.getUnifiedPlayerRating(Object.assign({}, fitPositionProbe, { pos: 'PG / C' }));
+const completeApex = config.getUnifiedPlayerRating(player({
+  pos: 'PG', threePT: 99, MID: 99, FIN: 99, DNK: 99, HAN: 99, PAS: 99,
+  ATH: 99, STR: 99, REB: 99, PDEF: 99, IDEF: 99, STL: 99, BLK: 99, CLU: 99,
 }));
-const noSpaceAnchor = config.getUnifiedPlayerRating(player({
-  pos: 'C', threePT: 76, MID: 77, FIN: 88, DNK: 84, HAN: 70, PAS: 75,
-  PDEF: 81, STL: 74, IDEF: 93, BLK: 95, REB: 90, ATH: 67, STR: 59,
-}));
-const noRimAnchor = config.getUnifiedPlayerRating(player({
-  pos: 'C', threePT: 80, MID: 77, FIN: 88, DNK: 84, HAN: 70, PAS: 75,
-  PDEF: 81, STL: 74, IDEF: 80, BLK: 80, REB: 90, ATH: 67, STR: 59,
-}));
-assert(Math.round(spaceAnchor.overall) === 97
-  && spaceAnchor.pricing.spaceAnchorBonus > 6.9
-  && noSpaceAnchor.pricing.spaceAnchorBonus === 0
-  && noRimAnchor.pricing.spaceAnchorBonus === 0
-  && spaceAnchor.overall > noSpaceAnchor.overall + 5
-  && spaceAnchor.overall > noRimAnchor.overall + 5,
-`空间护框定价必须只在高三分与高护框同时成立时连续抬高 OVR/上限：${JSON.stringify({ spaceAnchor, noSpaceAnchor, noRimAnchor })}`);
-
-const twoWayScoringWing = config.getUnifiedPlayerRating(player({
-  pos: 'SF', threePT: 86, MID: 84, FIN: 94, DNK: 90, HAN: 88, PAS: 78,
-  PDEF: 86, IDEF: 68, STL: 72, BLK: 60, REB: 68, ATH: 86, STR: 68,
-}));
-const noWingFinishing = config.getUnifiedPlayerRating(player({
-  pos: 'SF', threePT: 86, MID: 84, FIN: 88, DNK: 90, HAN: 88, PAS: 78,
-  PDEF: 86, IDEF: 68, STL: 72, BLK: 60, REB: 68, ATH: 86, STR: 68,
-}));
-const noWingDefense = config.getUnifiedPlayerRating(player({
-  pos: 'SF', threePT: 86, MID: 84, FIN: 94, DNK: 90, HAN: 88, PAS: 78,
-  PDEF: 78, IDEF: 68, STL: 72, BLK: 60, REB: 68, ATH: 86, STR: 68,
-}));
-assert(twoWayScoringWing.pricing.twoWayScoringWingBonus > 5.9
-  && noWingFinishing.pricing.twoWayScoringWingBonus === 0
-  && noWingDefense.pricing.twoWayScoringWingBonus === 0
-  && twoWayScoringWing.overall > noWingFinishing.overall + 5
-  && twoWayScoringWing.overall > noWingDefense.overall + 5,
-`双向得分侧翼定价必须要求终结、投射、创造与外防同时成立：${JSON.stringify({ twoWayScoringWing, noWingFinishing, noWingDefense })}`);
+assert(Math.abs(dualPositionValue.pricing.rawOverall - (pointGuardValue.pricing.rawOverall * 0.8 + centerValue.pricing.rawOverall * 0.2)) < 1e-9
+  && Math.abs(pointGuardValue.overall - centerValue.overall) > 0.1
+  && completeApex.overall === 99,
+`14 项位置加权公式必须按主副位置混合，并保留极限属性达到 99 的可能：${JSON.stringify({ pointGuardValue, centerValue, dualPositionValue, completeApex })}`);
 
 const interiorFinisher = config.getUnifiedPlayerRating(player({
   pos: 'C', threePT: 35, MID: 50, FIN: 99, DNK: 95, HAN: 65, PAS: 60,
@@ -293,13 +270,13 @@ const specialistResidual = specialtyRows.slice(-specialtyGroupSize)
 // 现实球员的官方 OVR 与可见属性不是可逆公式关系，不能再通过平移来源属性来命中 OVR。
 // 来源完整性由 validate_league_attribute_provenance.js 负责；这里只防止公式画像整体失真。
 assert(residualMetrics.count === 525
-  && residualMetrics.meanAbsoluteError <= 4
-  && residualMetrics.spearman >= 0.65,
-`V5 公式画像与来源名单相关性异常：${JSON.stringify(residualMetrics)}`);
-assert(Object.values(residualsByPosition).every(value => Math.abs(value) <= 3.5),
-  `V5 公式画像存在明显位置系统偏差：${JSON.stringify(residualsByPosition)}`);
-assert(Math.abs(specialistResidual - balancedResidual) <= 3.5,
-  `V5 公式画像对均衡型/专项型球员偏差过大：${JSON.stringify({ balancedResidual, specialistResidual })}`);
+  && residualMetrics.meanAbsoluteError <= 2.2
+  && residualMetrics.spearman >= 0.85,
+`V6 位置加权公式与来源名单拟合异常：${JSON.stringify(residualMetrics)}`);
+assert(Object.values(residualsByPosition).every(value => Math.abs(value) <= 1),
+  `V6 位置加权公式存在明显位置系统偏差：${JSON.stringify(residualsByPosition)}`);
+assert(Math.abs(specialistResidual - balancedResidual) <= 1,
+  `V6 位置加权公式对均衡型/专项型球员偏差过大：${JSON.stringify({ balancedResidual, specialistResidual })}`);
 
 console.log(JSON.stringify({
   baseline: baseline.overall,
@@ -314,8 +291,12 @@ console.log(JSON.stringify({
     perimeterUsageLoad: perimeterScorer.capacity.perimeterUsageLoad,
   },
   lineup: { fitted: fitted.total, unfitted: unfitted.total },
-  spaceAnchor: { overall: spaceAnchor.overall, bonus: spaceAnchor.pricing.spaceAnchorBonus },
-  twoWayScoringWing: { overall: twoWayScoringWing.overall, bonus: twoWayScoringWing.pricing.twoWayScoringWingBonus },
+  positionFit: {
+    pointGuard: pointGuardValue.overall,
+    center: centerValue.overall,
+    dualPosition: dualPositionValue.overall,
+    apex: completeApex.overall,
+  },
   residuals: residualMetrics,
   residualsByPosition,
   specialtyResiduals: { balanced: balancedResidual, specialist: specialistResidual },

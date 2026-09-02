@@ -221,7 +221,7 @@ const SIM_CONFIG = {
     C: "中锋"
   },
   POS_LIST: ["PG", "SG", "SF", "PF", "C"],
-  /** @deprecated 旧建模资料；运行时 V5 overall 不读取此表。 */
+  /** @deprecated 旧建模资料；运行时 V6 overall 不读取此表。 */
   OVR_WEIGHTS: {
     PG: {
       threePT: 0.1,
@@ -304,7 +304,7 @@ const SIM_CONFIG = {
       CLU: 0.04
     }
   },
-  /** @deprecated 旧线性拟合资料，仅供历史校准脚本读取；运行时 V5 overall 不读取此模型。 */
+  /** @deprecated 旧线性拟合资料，仅供历史校准脚本读取；运行时 V6 overall 不读取此模型。 */
   OVR_MODEL: {
     secondaryPositionWeight: 0.2,
     base: 22.902948,
@@ -336,16 +336,26 @@ const SIM_CONFIG = {
       eliteExcess: 0.087269
     }
   },
-  /**
-   * 统一比赛评分模型。OVR、球队战力和经理模式都以这套可解释的比赛能力为来源：
-   * 投射、终结、组织、防守、篮板与运动能力各只计算一次；CLU 只作为关键回合字段返回，不进入 overall。
-   */
+  /** 统一比赛评分模型。OVR 由 14 项可见属性按位置权重直接计算。 */
   PLAYER_RATING_MODEL: {
-    version: 5,
-    mode: 'primary-secondary-role-impact',
+    version: 6,
+    mode: 'position-weighted-monotonic-14-attribute-fit',
     attributeSchemaVersion: 3,
     handleAttribute: 'Ball Handle',
-    validPositions: ['PG', 'SG', 'SF', 'PF', 'C']
+    validPositions: ['PG', 'SG', 'SF', 'PF', 'C'],
+    secondaryPositionWeight: 0.2,
+  },
+  // 以 525 人来源 OVR 为离线标签、仅使用现有 14 项属性拟合的非负位置权重。
+  // 每项属性提升都不会降低 OVR；双位置使用主位置 80% / 副位置 20% 的同一套权重表。
+  OVR_FIT_MODEL: {
+    inputScale: 49,
+    weights: {
+      PG: { threePT: 7.024774, MID: 5.016617, FIN: 12.611013, DNK: 0.735494, HAN: 6.853411, PAS: 6.02368, PDEF: 2.632738, STL: 0.000451, IDEF: 3.379359, BLK: 2.436969, REB: 3.073319, ATH: 4.495648, STR: 1.172392, CLU: 5.987756 },
+      SG: { threePT: 9.778641, MID: 6.547133, FIN: 9.787365, DNK: 2.837988, HAN: 6.712236, PAS: 5.426389, PDEF: 2.470728, STL: 0.795095, IDEF: 4.32783, BLK: 3.245576, REB: 3.268229, ATH: 0.952766, CLU: 5.616237 },
+      SF: { threePT: 13.662255, MID: 4.85091, FIN: 9.146245, DNK: 2.840568, HAN: 3.906061, PAS: 5.842377, PDEF: 6.214763, STL: 1.226264, IDEF: 1.033372, REB: 3.323027, ATH: 4.287358, CLU: 6.266321 },
+      PF: { threePT: 9.501934, MID: 3.502878, FIN: 9.692226, DNK: 6.138289, HAN: 2.840463, PAS: 4.985354, PDEF: 2.297921, IDEF: 2.375294, BLK: 4.130961, REB: 5.758335, ATH: 5.641353, STR: 3.587278, CLU: 4.981197 },
+      C: { threePT: 2.712939, MID: 2.871936, FIN: 13.913314, DNK: 10.044476, PAS: 2.474592, IDEF: 9.359721, BLK: 1.945136, REB: 7.66809, ATH: 2.37895, STR: 4.893746, CLU: 7.834659 },
+    },
   },
   // ============================================================
   // 4. 赛季模拟参数 — 你可以随意调整
@@ -1000,62 +1010,26 @@ function getUnifiedPlayerRating(player, position) {
       + (defenseFoundation - 50) * 0.06
   );
 
-  var highImpact = Math.max(offense, defense);
-  var lowImpact = Math.min(offense, defense);
-  var dominantEliteBonus = Math.min(4, Math.max(0, highImpact - 88) * 0.22);
-  var roleNames = Object.keys(roleImpact);
-  var peakRoleName = roleNames.reduce(function(best, key) {
-    return roleImpact[key] > roleImpact[best] ? key : best;
-  }, roleNames[0]);
-  var peakRoleImpact = roleImpact[peakRoleName];
-  // Ball Handle 的高端分布低于 Hands；只有完整角色超过 87.5 才进入顶级区间，
-  // 额外收益封顶 3 分，普通 85 属性包不会触发，单项属性也无法直接制造巨星 OVR。
-  var peakRoleBonus = Math.min(3, Math.max(0, peakRoleImpact - 87.5) * 4.00);
-  // 同一份顶级能力不能在主侧和角色层重复完整加分。
-  var apexBonus = Math.max(dominantEliteBonus, peakRoleBonus);
-  var twoWayBonus = Math.max(0, Math.min(offense, defense) - 80) * 0.25;
-  // 空间型护框手的价值来自两个独立且必须同时成立的能力：真实三分威胁和内防/盖帽组合。
-  // 使用连续乘积而非球员名单或位置特判；任一维度未过门槛时不加分，封顶避免普通内线被抬成巨星。
-  var spaceAnchorApex = gmValues([attr('IDEF'), attr('BLK')]);
-  var spaceAnchorBonus = Math.min(7,
-    Math.max(0, attr('threePT') - 76) * Math.max(0, spaceAnchorApex - 80) * 0.20
-  );
-  // 顶级双向得分侧翼不必先成为传控中轴：高终结、投射、创造和外防必须同时成立。
-  // 四项连续门槛排除纯射手、单向突破手和普通 3&D，仍不使用位置或来源 OVR。
-  var twoWayScoringWingBonus = Math.min(6,
-    Math.max(0, attr('FIN') - 88)
-      * Math.max(0, shootingGravity - 80)
-      * Math.max(0, shotCreation - 82)
-      * Math.max(0, attr('PDEF') - 78)
-      * 0.25
-  );
-  var overall = clampRating(
-    50
-      + (highImpact - 50) * 0.84
-      + (lowImpact - 50) * 0.32
-      + apexBonus
-      + twoWayBonus
-      + spaceAnchorBonus
-      + twoWayScoringWingBonus
-  );
-
-  // 防守支柱上限必须连续生效，不能在最高角色切换时突然压低 OVR。
-  // 完整创造能力和篮下终结会单调抬高上限；纯护框角色仍不能仅凭防守得到持球巨星级 OVR。
-  var creationComplement = Math.max(
-    roleImpact.primaryCreator,
-    roleImpact.hubCreator,
-    roleImpact.scorer
-  );
-  // HAN 改用 Ball Handle 后，纯防守支柱不再从 2K Hands 获得虚假的持球补偿。
-  // 完整创造和篮下终结只负责抬高连续上限，不直接给 OVR 加目标分。
-  var anchorCeiling = 83.8
-    + Math.max(0, creationComplement - 80) * 1.40
-    + Math.max(0, roleImpact.rimFinisher - 80) * 0.40
-    + Math.max(0, roleImpact.defensiveAnchor - 84) * 1.20
-      * Math.max(0, Math.min(1, (creationComplement - 70) / 10))
-    // 这部分必须同步抬高防守支柱上限，否则上面的空间护框定价会被旧上限完全吞掉。
-    + spaceAnchorBonus;
-  overall = Math.min(overall, anchorCeiling);
+  var fitModel = SIM_CONFIG.OVR_FIT_MODEL || {};
+  var fitWeights = fitModel.weights || {};
+  var listedPositions = String(position || (player && player.pos) || pos).split('/').map(function(value) {
+    return value.trim();
+  }).filter(function(value) { return Object.prototype.hasOwnProperty.call(fitWeights, value); });
+  var primaryPosition = listedPositions[0] || pos;
+  var secondaryPosition = listedPositions[1] || null;
+  var secondaryWeight = secondaryPosition ? Number(SIM_CONFIG.PLAYER_RATING_MODEL.secondaryPositionWeight) || 0.2 : 0;
+  var inputScale = Number(fitModel.inputScale) || 49;
+  function fittedPositionOvr(positionKey) {
+    var weights = fitWeights[positionKey] || {};
+    return 50 + Object.keys(weights).reduce(function(sum, key) {
+      return sum + (attr(key) - 50) / inputScale * Number(weights[key] || 0);
+    }, 0);
+  }
+  // 运行时公式仅读取 14 项属性和既有位置；来源 OVR 不参与计算，也没有顶端压缩或球员特赦。
+  var primaryOverall = fittedPositionOvr(primaryPosition);
+  var secondaryOverall = secondaryPosition ? fittedPositionOvr(secondaryPosition) : primaryOverall;
+  var rawOverall = primaryOverall * (1 - secondaryWeight) + secondaryOverall * secondaryWeight;
+  var overall = clampRating(rawOverall);
 
   var creationLoadValue = clampRating(
     roleImpact.primaryCreator * 0.55 + touchLoad * 0.25 + ballSecurity * 0.20
@@ -1111,10 +1085,11 @@ function getUnifiedPlayerRating(player, position) {
     },
     impact: { offense: offense, defense: defense, neutralTotal: neutralTotal },
     pricing: {
-      spaceAnchorApex: spaceAnchorApex,
-      spaceAnchorBonus: spaceAnchorBonus,
-      twoWayScoringWingBonus: twoWayScoringWingBonus,
-      anchorCeiling: anchorCeiling,
+      primaryPosition: primaryPosition,
+      secondaryPosition: secondaryPosition,
+      primaryOverall: primaryOverall,
+      secondaryOverall: secondaryOverall,
+      rawOverall: rawOverall,
     },
     // 保留旧字段，令页面、存档和现有校验可渐进迁移。
     shooting: shootingGravity, rim: rimScoring, creation: shotCreation,

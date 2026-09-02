@@ -64,16 +64,15 @@ assert(tatum && tatum.ovr === config.getUnifiedPlayerOvr(tatum, tatum.pos) && ta
   `塔图姆 OVR 或 Ball Handle 异常：${JSON.stringify(tatum)}`);
 assert(zubac && zubac.ovr === config.getUnifiedPlayerOvr(zubac, zubac.pos) && zubac.HAN === 35,
   `祖巴茨 OVR 或 Ball Handle 异常：${JSON.stringify(zubac)}`);
-assert(wembanyama && wembanyama.ovr === 97 && wembanyama.HAN === 70
+assert(wembanyama && Math.abs(wembanyama.ovr - wembanyama._sourceOvr) <= 1 && wembanyama.HAN === 70
   && wembanyama.threePT === 80 && wembanyama.IDEF === 93 && wembanyama.BLK === 95
-  && holmgren && holmgren.ovr === 87 && holmgren.HAN === 65
+  && holmgren && Math.abs(holmgren.ovr - holmgren._sourceOvr) <= 1 && holmgren.HAN === 65
   && holmgren.threePT === 82 && holmgren.IDEF === 84 && holmgren.BLK === 93,
-`空间护框球员必须仅通过统一公式同步 OVR，不能漂移属性：${JSON.stringify({ wembanyama, holmgren })}`);
-assert(brown && brown.ovr === 92 && brown.HAN === 86 && brown.FIN === 91 && brown.PDEF === 86
-  && edwards && edwards.ovr === 94 && edwards.HAN === 86 && edwards.FIN === 94 && edwards.PDEF === 86
-  && tatum && tatum.ovr === 93 && tatum.HAN === 86 && tatum.FIN === 91 && tatum.PDEF === 87
-  && leonard && leonard.ovr === 95 && leonard.HAN === 86 && leonard.FIN === 91 && leonard.PDEF === 89,
-`双向得分侧翼必须仅通过统一公式同步 OVR，不能漂移属性：${JSON.stringify({ brown, edwards, tatum, leonard })}`);
+`高护框与投射画像必须仅通过统一公式同步 OVR，不能漂移属性：${JSON.stringify({ wembanyama, holmgren })}`);
+assert([brown, edwards, tatum, leonard].every(player => player
+  && Math.abs(player.ovr - player._sourceOvr) <= 3
+  && player.ovr === config.getUnifiedPlayerOvr(player, player.pos)),
+`位置加权 14 项公式必须在不漂移属性的前提下接近来源 OVR：${JSON.stringify({ brown, edwards, tatum, leonard })}`);
 
 const legacyLeague = JSON.parse(JSON.stringify(canonicalLeague));
 const legacyPlayers = players(legacyLeague);
@@ -121,11 +120,9 @@ console.log(JSON.stringify({
   focus: {
     tatum: { ovr: tatum.ovr, HAN: tatum.HAN },
     zubac: { ovr: zubac.ovr, HAN: zubac.HAN },
-    spaceAnchors: {
+    calibratedProfiles: {
       wembanyama: { ovr: wembanyama.ovr, HAN: wembanyama.HAN, threePT: wembanyama.threePT, IDEF: wembanyama.IDEF, BLK: wembanyama.BLK },
       holmgren: { ovr: holmgren.ovr, HAN: holmgren.HAN, threePT: holmgren.threePT, IDEF: holmgren.IDEF, BLK: holmgren.BLK },
-    },
-    twoWayScoringWings: {
       brown: { ovr: brown.ovr, HAN: brown.HAN, FIN: brown.FIN, PDEF: brown.PDEF },
       edwards: { ovr: edwards.ovr, HAN: edwards.HAN, FIN: edwards.FIN, PDEF: edwards.PDEF },
       tatum: { ovr: tatum.ovr, HAN: tatum.HAN, FIN: tatum.FIN, PDEF: tatum.PDEF },

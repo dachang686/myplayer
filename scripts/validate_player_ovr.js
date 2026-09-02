@@ -134,7 +134,7 @@ const clutchOnly = { ...baselineAttrs, CLU: 99 };
 const scorer = { ...baselineAttrs, threePT: 99, MID: 90, FIN: 92, HAN: 88 };
 const defender = { ...baselineAttrs, PDEF: 94, IDEF: 94, BLK: 92, REB: 90, STR: 88 };
 const clutchGain = formulaContext.calcOVR(clutchOnly, 'PF') - formulaContext.calcOVR(baselineAttrs, 'PF');
-if (clutchGain > 2) validationErrors.push(`CLU 对 PF OVR 的影响过大：+${clutchGain}`);
+if (clutchGain <= 2) validationErrors.push(`CLU 没有作为第 14 项属性进入 PF OVR：+${clutchGain}`);
 if (formulaContext.calcOVR(scorer, 'SG') <= formulaContext.calcOVR(baselineAttrs, 'SG') + 12) validationErrors.push('得分核心没有显著提高 SG OVR');
 if (formulaContext.calcOVR(defender, 'C') <= formulaContext.calcOVR(baselineAttrs, 'C') + 12) validationErrors.push('防守核心没有显著提高 C OVR');
 let monotonicChecks = 0;

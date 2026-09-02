@@ -19,6 +19,7 @@
     "test:league-attribute-provenance": "node scripts/validate_league_attribute_provenance.js",
     "test:league-ovr-anchor": "node scripts/validate_league_ovr_anchor.js",
     "test:manager-mode": "node scripts/validate_manager_mode.js",
+    "fit:ovr-model": "node scripts/fit_monotonic_ovr_model.js",
     "test:usage:interior:v2": "node scripts/validate_v2_interior_usage.js",
     "test:usage:dual-core:v2": "node scripts/validate_v2_dual_core_usage.js",
     "test:extremes:v2": "node scripts/validate_v2_extreme_box_stats.js",
