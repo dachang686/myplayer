@@ -488,16 +488,16 @@
       "sourceOvr": 82,
       "profile": {
         "threePT": 75,
-        "MID": 88,
-        "FIN": 81,
-        "DNK": 85,
+        "MID": 82,
+        "FIN": 75,
+        "DNK": 80,
         "HAN": 54,
         "PAS": 58,
         "PDEF": 67,
         "STL": 66,
-        "IDEF": 75,
+        "IDEF": 70,
         "BLK": 71,
-        "REB": 73,
+        "REB": 68,
         "ATH": 74,
         "STR": 70,
         "CLU": 85
@@ -590,6 +590,32 @@
         "ratingSource": "https://ovrbase.com/nba/onyeka-okongwu-1630168",
         "performanceSource": "https://www.nba.com/stats/player/1630168/career",
         "performance": "2025-26 常规赛 74 场，15.2 分、7.6 篮板、3.1 助攻，三分命中率 37.6%"
+      },
+      "formulaResidualReview": {
+        "season": "2025-26",
+        "reason": "74 场、31.0 分钟，15.2 分、7.6 篮板、1.1 盖帽、37.6% 三分；保留投射和盖帽，回调过高的中投、终结、扣篮、内防和篮板画像。",
+        "changes": {
+          "MID": [
+            88,
+            82
+          ],
+          "FIN": [
+            81,
+            75
+          ],
+          "DNK": [
+            85,
+            80
+          ],
+          "IDEF": [
+            75,
+            70
+          ],
+          "REB": [
+            73,
+            68
+          ]
+        }
       }
     },
     {
@@ -3186,12 +3212,12 @@
       "sourceUrl": "https://ovrbase.com/nba/terance-mann-1629611",
       "sourceOvr": 76,
       "profile": {
-        "threePT": 81,
+        "threePT": 78,
         "MID": 78,
-        "FIN": 81,
+        "FIN": 77,
         "DNK": 75,
-        "HAN": 79,
-        "PAS": 78,
+        "HAN": 75,
+        "PAS": 74,
         "PDEF": 63,
         "STL": 67,
         "IDEF": 56,
@@ -3293,6 +3319,28 @@
         "ratingSource": "https://ovrbase.com/nba/terance-mann-1629611",
         "performanceSource": "https://www.nba.com/stats/player/1629611",
         "performance": "2025-26 常规赛 63 场，7.2 分、3.2 篮板、3.0 助攻，投篮命中率 45.7%、三分命中率 36.4%"
+      },
+      "formulaResidualReview": {
+        "season": "2025-26",
+        "reason": "63 场、24.3 分钟，7.2 分、3.0 助攻；投射、终结与持球画像回调。",
+        "changes": {
+          "threePT": [
+            81,
+            78
+          ],
+          "FIN": [
+            81,
+            77
+          ],
+          "HAN": [
+            79,
+            75
+          ],
+          "PAS": [
+            78,
+            74
+          ]
+        }
       }
     },
     {
@@ -4957,17 +5005,17 @@
       "sourceUrl": "https://ovrbase.com/nba/luka-garza-1630568",
       "sourceOvr": 78,
       "profile": {
-        "threePT": 72,
+        "threePT": 77,
         "MID": 74,
-        "FIN": 77,
+        "FIN": 80,
         "DNK": 52,
         "HAN": 35,
         "PAS": 56,
         "PDEF": 37,
         "STL": 47,
-        "IDEF": 54,
-        "BLK": 49,
-        "REB": 64,
+        "IDEF": 57,
+        "BLK": 52,
+        "REB": 67,
         "ATH": 40,
         "STR": 69,
         "CLU": 85
@@ -5064,6 +5112,32 @@
         "ratingSource": "https://ovrbase.com/nba/luka-garza-1630568",
         "performanceSource": "https://www.nba.com/celtics/news/sidebar-20260616-2026-awards-series-sixth-man-of-the-year-luka-garza",
         "performance": "2025-26 常规赛 69 场，8.1 分、4.1 篮板、1.0 助攻，投篮命中率 57.7%、三分命中率 43.3%；现实三分效率与最新 2K 三分 71 存在明显落差，留待球队级校准复查"
+      },
+      "formulaResidualReview": {
+        "season": "2025-26",
+        "reason": "69 场、16.2 分钟，57.7% 命中、43.3% 三分、4.1 篮板；效率、投射和内线画像上调。",
+        "changes": {
+          "threePT": [
+            72,
+            77
+          ],
+          "FIN": [
+            77,
+            80
+          ],
+          "REB": [
+            64,
+            67
+          ],
+          "IDEF": [
+            54,
+            57
+          ],
+          "BLK": [
+            49,
+            52
+          ]
+        }
       }
     },
     {
@@ -10538,7 +10612,7 @@
       "sourceOvr": 74,
       "profile": {
         "threePT": 82,
-        "MID": 86,
+        "MID": 82,
         "FIN": 76,
         "DNK": 50,
         "HAN": 73,
@@ -10546,7 +10620,7 @@
         "PDEF": 67,
         "STL": 77,
         "IDEF": 55,
-        "BLK": 78,
+        "BLK": 70,
         "REB": 59,
         "ATH": 79,
         "STR": 48,
@@ -10644,6 +10718,20 @@
         "ratingSource": "https://ovrbase.com/nba/craig-porter-jr-1641854",
         "performanceSource": "https://www.nba.com/gamenotes/cavaliers.pdf",
         "performance": "2025-26 出战 35 场、3 次首发，NBA 官方页面约为场均 4.5 分、3.4 篮板、3.2 助攻；符合 74 总评的末端轮换控卫定位，细项按同批 2K 统一来源同步"
+      },
+      "formulaResidualReview": {
+        "season": "2025-26",
+        "reason": "64 场、17.9 分钟，4.5 分、35.5% 三分；中投与后卫盖帽画像下调。",
+        "changes": {
+          "MID": [
+            86,
+            82
+          ],
+          "BLK": [
+            78,
+            70
+          ]
+        }
       }
     },
     {
@@ -24979,9 +25067,9 @@
       "sourceUrl": "https://ovrbase.com/nba/jake-laravia-1631222",
       "sourceOvr": 76,
       "profile": {
-        "threePT": 82,
-        "MID": 78,
-        "FIN": 80,
+        "threePT": 76,
+        "MID": 74,
+        "FIN": 76,
         "DNK": 75,
         "HAN": 68,
         "PAS": 69,
@@ -25082,6 +25170,24 @@
         "ratingSource": "https://ovrbase.com/nba/jake-laravia-1631222",
         "performanceSource": "https://www.nba.com/stats/player/1631222",
         "performance": "2025-26：82场 25.1分钟，8.2分、4篮板、1.8助攻、1.3抢断、0.5盖帽，投篮45.9%、三分32.1%；结合最新 2K 明细逐项确认；现实三分 32.1% 与 2K 三分 84 有偏差，保留后续表现校准观察"
+      },
+      "formulaResidualReview": {
+        "season": "2025-26",
+        "reason": "82 场、25.1 分钟，8.2 分、32.1% 三分；得分画像回调。",
+        "changes": {
+          "threePT": [
+            82,
+            76
+          ],
+          "MID": [
+            78,
+            74
+          ],
+          "FIN": [
+            80,
+            76
+          ]
+        }
       }
     },
     {
@@ -27593,9 +27699,9 @@
       "sourceUrl": "https://ovrbase.com/nba/taylor-hendricks-1641707",
       "sourceOvr": 75,
       "profile": {
-        "threePT": 80,
+        "threePT": 77,
         "MID": 78,
-        "FIN": 77,
+        "FIN": 74,
         "DNK": 71,
         "HAN": 69,
         "PAS": 54,
@@ -27603,7 +27709,7 @@
         "STL": 66,
         "IDEF": 67,
         "BLK": 74,
-        "REB": 82,
+        "REB": 76,
         "ATH": 73,
         "STR": 62,
         "CLU": 80
@@ -27708,6 +27814,24 @@
         "ratingSource": "https://ovrbase.com/nba/taylor-hendricks-1641707",
         "performanceSource": "https://www.nba.com/stats/player/1641707",
         "performance": "2025-26：59场 18.9分钟，7.4分、3.7篮板、0.9助攻、0.8抢断、0.5盖帽，投篮45.9%、三分34.2%；结合最新 2K 明细逐项确认；场均 3.7 篮板与 2K 防守篮板 94 明显冲突，标记为高优先级表现校准项"
+      },
+      "formulaResidualReview": {
+        "season": "2025-26",
+        "reason": "59 场、18.9 分钟，7.4 分、3.7 篮板、34.2% 三分；投射、终结和篮板画像回调。",
+        "changes": {
+          "threePT": [
+            80,
+            77
+          ],
+          "FIN": [
+            77,
+            74
+          ],
+          "REB": [
+            82,
+            76
+          ]
+        }
       }
     },
     {
@@ -34178,10 +34302,10 @@
       "sourceUrl": "https://ovrbase.com/nba/saddiq-bey-1630180",
       "sourceOvr": 84,
       "profile": {
-        "threePT": 77,
-        "MID": 71,
-        "FIN": 77,
-        "DNK": 60,
+        "threePT": 80,
+        "MID": 75,
+        "FIN": 81,
+        "DNK": 65,
         "HAN": 76,
         "PAS": 67,
         "PDEF": 67,
@@ -34269,6 +34393,28 @@
         "ratingSource": "https://ovrbase.com/nba/saddiq-bey-1630180",
         "performanceSource": "https://www.nba.com/stats/player/1630180",
         "performance": "2025-26：72场 31.2分钟，17.7分、5.6篮板、2.5助攻、0.9抢断、0.1盖帽，投篮45.1%、三分36.7%；结合最新 2K 明细逐项确认；72场17.7分5.6篮板、三分36.7%；采用2K总评84与完整属性，纠正旧终结87和手感95等失真值"
+      },
+      "formulaResidualReview": {
+        "season": "2025-26",
+        "reason": "72 场、31.2 分钟，17.7 分、36.7% 三分；得分和终结画像上调。",
+        "changes": {
+          "threePT": [
+            77,
+            80
+          ],
+          "MID": [
+            71,
+            75
+          ],
+          "FIN": [
+            77,
+            81
+          ],
+          "DNK": [
+            60,
+            65
+          ]
+        }
       }
     },
     {
@@ -42475,12 +42621,12 @@
       "sourceUrl": "https://ovrbase.com/nba/dalen-terry-1631207",
       "sourceOvr": 73,
       "profile": {
-        "threePT": 79,
+        "threePT": 76,
         "MID": 72,
-        "FIN": 74,
-        "DNK": 80,
-        "HAN": 80,
-        "PAS": 74,
+        "FIN": 71,
+        "DNK": 75,
+        "HAN": 76,
+        "PAS": 70,
         "PDEF": 70,
         "STL": 72,
         "IDEF": 54,
@@ -42570,6 +42716,32 @@
         "ratingSource": "https://ovrbase.com/nba/dalen-terry-1631207",
         "performanceSource": "https://www.espn.com/nba/player/stats/_/id/4433159/dalen-terry",
         "performance": "2025-26：48场 11.5分钟，3.7分、1.8篮板、1.4助攻、0.6抢断、0.3盖帽，投篮43.9%、三分36.4%；结合最新 2K 明细逐项确认；48场11.5分钟3.7分；采用2K总评73与完整属性，终结77按2K修正，盖帽由旧67降至53"
+      },
+      "formulaResidualReview": {
+        "season": "2025-26",
+        "reason": "48 场、11.5 分钟，3.7 分、1.4 助攻；进攻与持球画像回调。",
+        "changes": {
+          "threePT": [
+            79,
+            76
+          ],
+          "FIN": [
+            74,
+            71
+          ],
+          "DNK": [
+            80,
+            75
+          ],
+          "HAN": [
+            80,
+            76
+          ],
+          "PAS": [
+            74,
+            70
+          ]
+        }
       }
     },
     {
@@ -52372,7 +52544,7 @@
       "sourceOvr": 87,
       "profile": {
         "threePT": 81,
-        "MID": 69,
+        "MID": 74,
         "FIN": 87,
         "DNK": 80,
         "HAN": 65,
@@ -52381,7 +52553,7 @@
         "STL": 57,
         "IDEF": 67,
         "BLK": 62,
-        "REB": 71,
+        "REB": 74,
         "ATH": 64,
         "STR": 61,
         "CLU": 80
@@ -52466,6 +52638,20 @@
         "ratingSource": "https://ovrbase.com/nba/lauri-markkanen-1628374",
         "performanceSource": "https://www.espn.com/nba/player/stats/_/id/4066336/lauri-markkanen",
         "performance": "2025-26：42场 34.4分钟，26.7分、6.9篮板、2.1助攻、1抢断、0.5盖帽，投篮47.7%、三分35.5%；结合最新 2K 明细逐项确认；42场26.7分6.9篮板、三分35.5%；采用2K总评87与完整属性，终结97与头号得分手定位一致，中投69按2K修正"
+      },
+      "formulaResidualReview": {
+        "season": "2025-26",
+        "reason": "42 场、34.4 分钟，26.7 分、6.9 篮板；中距离与篮板画像上调。",
+        "changes": {
+          "MID": [
+            69,
+            74
+          ],
+          "REB": [
+            71,
+            74
+          ]
+        }
       }
     },
     {
@@ -56373,12 +56559,12 @@
       "sourceUrl": "https://ovrbase.com/nba/tre-mann-1630544",
       "sourceOvr": 74,
       "profile": {
-        "threePT": 83,
-        "MID": 93,
-        "FIN": 81,
+        "threePT": 78,
+        "MID": 84,
+        "FIN": 76,
         "DNK": 60,
-        "HAN": 83,
-        "PAS": 72,
+        "HAN": 78,
+        "PAS": 68,
         "PDEF": 59,
         "STL": 54,
         "IDEF": 52,
@@ -56476,6 +56662,32 @@
         "ratingSource": "https://ovrbase.com/nba/tre-mann-1630544",
         "performanceSource": "https://www.nba.com/stats/player/1630544/shots-dash",
         "performance": "2025-26 常规赛场均 5.5 分、1.7 篮板、1.6 助攻；74 总评保留，低产量主要反映角色与出场时间，单项投射能力按最新 2K 校准"
+      },
+      "formulaResidualReview": {
+        "season": "2025-26",
+        "reason": "53 场、12.6 分钟，5.5 分、36.0% 命中、32.3% 三分；高投射和持球画像回调。",
+        "changes": {
+          "threePT": [
+            83,
+            78
+          ],
+          "MID": [
+            93,
+            84
+          ],
+          "FIN": [
+            81,
+            76
+          ],
+          "HAN": [
+            83,
+            78
+          ],
+          "PAS": [
+            72,
+            68
+          ]
+        }
       }
     }
   ]
