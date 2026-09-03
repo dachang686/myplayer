@@ -475,6 +475,19 @@
     var scoringLoads = shotLoad.map(function(value, index) {
       return Math.max(value, interiorUsageLoad[index], perimeterSpecialistLoad[index]);
     });
+    // 顶级得分画像只识别可见的进攻技能：得分效率、出手负荷、自主创造和组织。
+    // 它不读取 OVR、位置、身高、防守或篮板，保证 NPC 与自建球员使用同一套规则。
+    // 这层仅拉开真正进攻核心与普通首发之间的既有出手份额，不增加球队总回合或总出手。
+    var eliteScoringProfiles = players.map(function(_, index) {
+      return clamp(
+        threat[index] * 0.50
+          + shotLoad[index] * 0.25
+          + creation[index] * 0.15
+          + playmaking[index] * 0.10,
+        0,
+        1
+      );
+    });
     // 进攻角色由实际得分/持球能力决定；rotation.roleRanks 只描述轮换顺序，不能把 PG/SG 槽位当成第一、第二得分手。
     // 相同能力使用相同进攻档位，让阵容数组顺序本身不会制造出手权差异。
     var offensiveRoleRanks = scoringLoads.map(function(scoringLoad) {
@@ -497,11 +510,18 @@
       var eliteLoadFactor = scoringLoad > 0.985
         ? 1
         : 1 + Math.max(0, scoringLoad - 0.80) * 0.08;
+      // 仅给打满核心分钟、且位列队内前二的顶级进攻画像少量优先级。
+      // 5.5%~10% 的边界用于校正顶级核心被平均分摊的出手，不会制造无限放大的刷分通道。
+      var eliteScoringPriority = weights[index] >= 28
+        && offensiveRoleRank < 2
+        && eliteScoringProfiles[index] >= 0.77
+        ? 1 + clamp(0.055 + (eliteScoringProfiles[index] - 0.77) * 1.35, 0.055, 0.10)
+        : 1;
       // 0 分钟球员必须完全退出事件分配；机会底座只用于仍在轮换中的球员。
       var baseOpportunity = weights[index] > 0
         ? Math.max(
           0.1,
-          weights[index] * roleFactor * participationFactor * eliteLoadFactor * form[index]
+          weights[index] * roleFactor * participationFactor * eliteLoadFactor * eliteScoringPriority * form[index]
         )
         : 0;
       var isCoreScorer = offensiveRoleRank < 2 && weights[index] >= 28 && scoringLoad >= 0.62;
@@ -585,6 +605,7 @@
       touchLoad: touchLoad,
       shotLoad: shotLoad,
       scoringLoad: scoringLoads,
+      eliteScoringProfile: eliteScoringProfiles,
       interiorUsageLoad: interiorUsageLoad,
       perimeterUsageLoad: perimeterUsageLoad,
       teamCreation: weightedMean(creation, weights),
@@ -682,6 +703,17 @@
     // 只压低明确缺乏外线倾向的球员；中高档射手之间沿用原分布，避免三分过度集中到单一核心。
     var lowVolumeGate = clamp((threeVolume - 0.20) / 0.25, 0, 1);
     return context.opportunity[index] * baseWeight * (0.25 + lowVolumeGate * 0.75);
+  }
+
+  function secondChanceOpportunityWeight(context, index) {
+    var fin = clamp(Number(context.fin[index]) || 0, 0, 1);
+    var dnk = clamp(Number(context.dnk[index]) || 0, 0, 1);
+    var reb = clamp(Number(context.reb[index]) || 0, 0, 1);
+    // 篮板只在球员已经具备可靠终结或扣篮时，才转化为个人补篮机会。
+    // 该加成只重分配已产生的前场篮板，不增加球队前场篮板或总出手。
+    var finishingGate = clamp((Math.max(fin, dnk) - 0.74) / 0.20, 0, 1);
+    var reboundingBonus = clamp((reb - 0.65) / 0.25, 0, 1);
+    return 1 + finishingGate * reboundingBonus * 0.18;
   }
 
   function makeQuarter(context, opponent, possessions, bias, isClutch, fgaLedger, threeLedger) {
@@ -825,7 +857,11 @@
     var offensiveRebounds = sampleMakes(reboundableMisses, offensiveReboundRate);
     var extraFgaByPlayer = weightedRandomAllocation(
       offensiveRebounds,
-      context.players.map(function(_, index) { return context.opportunity[index] * (0.72 + context.volumeRim[index] * 0.60); }),
+      context.players.map(function(_, index) {
+        return context.opportunity[index]
+          * (0.72 + context.volumeRim[index] * 0.60)
+          * secondChanceOpportunityWeight(context, index);
+      }),
       context.players.map(function() { return 24; }),
     );
     var extraThree = sampleMakes(offensiveRebounds, clamp(threeRate * 0.72, 0.16, 0.44));
