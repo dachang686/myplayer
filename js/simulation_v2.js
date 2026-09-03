@@ -555,6 +555,20 @@
         ? Math.max(0.1, weights[index] * roleFactor * (0.38 + touchLoad[index] * 0.82) * form[index])
         : 0;
     });
+    // 助攻归因与持球安全分开：高传球内线可作为策应中轴，不能因控球不如后卫而失去传球价值。
+    // 控球仍保留小幅权重；触球量和失误继续读取原有 touchLoad / ballSecurity，避免凭空制造组织回合。
+    var assistPassing = players.map(function(_, index) {
+      var isInterior = positions[index] === 'C' || positions[index] === 'PF';
+      if (!isInterior) return playmaking[index];
+      return clamp(
+        pas[index] * 0.80
+          + han[index] * 0.08
+          + rimAbility[index] * 0.07
+          + threat[index] * 0.05,
+        0,
+        1
+      );
+    });
 
     return {
       team: team,
@@ -601,6 +615,7 @@
       threat: threat,
       creation: creation,
       playmaking: playmaking,
+      assistPassing: assistPassing,
       ballSecurity: ballSecurity,
       touchLoad: touchLoad,
       shotLoad: shotLoad,
@@ -1006,7 +1021,9 @@
       if (!assistedMakes) return;
       var passWeights = context.players.map(function(_, index) {
         if (index === shooterIndex) return 0;
-        var passSkill = context.playmaking ? context.playmaking[index] : (context.pas[index] * 0.78 + context.han[index] * 0.22);
+        var passSkill = context.assistPassing
+          ? context.assistPassing[index]
+          : (context.playmaking ? context.playmaking[index] : (context.pas[index] * 0.78 + context.han[index] * 0.22));
         var touch = context.touchOpportunity ? context.touchOpportunity[index] : context.weights[index];
         return touch * (0.005 + Math.pow(passSkill, 3.4) * 3.2);
       });
