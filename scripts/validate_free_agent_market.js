@@ -108,7 +108,14 @@ if (superstarSigning && superstarSigning.salary < 20) failures.push('超级球�
 if (superstarSigning && superstarSigning.years > 5) failures.push('合同年限超过 Bird 权利上限');
 if (context.STATE._freeAgentPool.some(current => current.id === 'FA-SUPERSTAR')) failures.push('自由市场池仍存在已签球员副本');
 
-const carriedFringe = Object.assign({}, fringe, { id: 'FA-CARRIED', cname: 'FA-CARRIED', contract: 0 });
+const carriedFringe = Object.assign({}, fringe, {
+  id: 'FA-CARRIED',
+  cname: 'FA-CARRIED',
+  contract: 0,
+  // 跨季保留样本：已进入温和衰退，但尚未触及高龄清退门槛。
+  _age: 31,
+  ovr: 76,
+});
 context.STATE._freeAgentPool = [carriedFringe, protectedFreeAgent];
 context.SIM_CONFIG = { ATTR_LIST: ['threePT', 'MID', 'FIN', 'DNK', 'HAN', 'PAS', 'ATH', 'STR', 'REB', 'PDEF', 'IDEF', 'STL', 'BLK', 'CLU'] };
 context.calcOVR = current => Number(current.ovr) || 60;
@@ -122,6 +129,22 @@ if (!context.STATE._freeAgentPool.some(current => current.id === 'FA-PROTECTED')
 if (context.STATE._leagueChanges.retired.some(current => current.playerId === 'FA-PROTECTED')) failures.push('受保护退役球员的 FA 退休保护失效');
 if (carriedFringe.threePT === fringeAttrsBeforeCarry.threePT && carriedFringe.ATH === fringeAttrsBeforeCarry.ATH && carriedFringe.PDEF === fringeAttrsBeforeCarry.PDEF) {
   failures.push('未签 FA 的 OVR 衰退没有同步到球员属性');
+}
+
+const washedVeteran = player('FA-WASHED', 70, 'SF', 35, {
+  _origTeam: 'C', contract: 0,
+  threePT: 60, MID: 58, FIN: 55, DNK: 50, HAN: 52, PAS: 50,
+  ATH: 48, STR: 55, REB: 58, PDEF: 50, IDEF: 52, STL: 45, BLK: 40, CLU: 55,
+});
+context.STATE._leagueChanges = { retired: [] };
+context.STATE._freeAgentPool = [washedVeteran];
+context.rngNext = () => 0.2;
+vm.runInContext('evolveUnsignedFreeAgents()', context);
+if (context.STATE._freeAgentPool.some(current => current.id === 'FA-WASHED')) {
+  failures.push('高龄低战力未签球员没有被清退出联盟');
+}
+if (!context.STATE._leagueChanges.retired.some(current => current.playerId === 'FA-WASHED')) {
+  failures.push('高龄低战力未签球员退役未记入变化');
 }
 
 const market = vm.runInContext(`({

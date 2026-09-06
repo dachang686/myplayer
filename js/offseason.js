@@ -2171,13 +2171,24 @@ function applyLeaguePlayerOvrChange(player, oldOvr, newOvr) {
   return player.ovr;
 }
 
-function getLeaguePlayerRetirementChance(player, age) {
+function getLeaguePlayerRetirementChance(player, age, options) {
   var currentAge = Number(age) || Number(player && player._age) || 27;
   if (player && player._protectedRetirementAge && currentAge < Number(player._protectedRetirementAge)) return 0;
-  if (currentAge >= 38) return 50;
-  if (currentAge >= 36) return 25;
-  if (currentAge >= 34 && (Number(player && player.ovr) || 0) < 75) return 35;
-  return 0;
+  var ovr = Number(player && player.ovr) || 0;
+  var unsigned = !!(options && options.unsigned);
+  var chance = 0;
+  // 高龄必须有基础退役率，避免 35+ 且 OVR≥75 永久滞留；球星档略缓，边缘人更快出清。
+  if (currentAge >= 40) chance = 80;
+  else if (currentAge >= 38) chance = ovr >= 88 ? 48 : 65;
+  else if (currentAge >= 36) chance = ovr >= 85 ? 28 : (ovr >= 78 ? 42 : 55);
+  else if (currentAge >= 35) chance = ovr >= 85 ? 16 : (ovr >= 78 ? 32 : 48);
+  else if (currentAge >= 34) chance = ovr < 75 ? 40 : (ovr < 80 ? 18 : 0);
+  else if (currentAge >= 33) chance = ovr < 72 ? 30 : (ovr < 76 ? 12 : 0);
+  else if (currentAge >= 32) chance = ovr < 68 ? 20 : 0;
+  if (unsigned && currentAge >= 33 && ovr < 76) {
+    chance = Math.min(90, chance + 18);
+  }
+  return chance;
 }
 
 function evolveUnsignedFreeAgents() {
@@ -2221,7 +2232,7 @@ function evolveUnsignedFreeAgents() {
       var decline = age >= 35 ? 1 + Math.floor(rngNext() * 2) : 1;
       applyLeaguePlayerOvrChange(player, oldOvr, Math.max(55, oldOvr - decline));
     }
-    var retireChance = getLeaguePlayerRetirementChance(player, age);
+    var retireChance = getLeaguePlayerRetirementChance(player, age, { unsigned: true });
     if (rngNext() * 100 < retireChance) {
       STATE._leagueChanges.retired.push({ displayName: player.cname, playerId: player.id, hidden: false, ovr: player.ovr, team: 'FA', age: player._age });
       return;
