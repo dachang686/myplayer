@@ -4059,11 +4059,11 @@ function getGeneratedPlayerAgeFactor(player, age, ovr) {
   if (age <= 28) return (rngNext() - 0.35) * 1.2;
   if (age <= 30) return (rngNext() - 0.62) * 0.8;
   // 年龄曲线只由年龄决定，不能因为当前 OVR 或选秀档位而冻结衰退。
-  // 31–32 岁轻度下滑，33–34 岁稳定下滑，35 岁后快速下滑。
-  if (age <= 32) return -0.42 - rngNext() * 0.48;
-  if (age <= 34) return -0.98 - rngNext() * 0.82;
-  if (age <= 35) return -1.68 - rngNext() * 1.05;
-  return -2.08 - rngNext() * 2.08;
+  // 31–32 岁轻度下滑，33–34 岁稳定下滑，35 岁后快速下滑（相对初版略加重）。
+  if (age <= 32) return -0.50 - rngNext() * 0.55;
+  if (age <= 34) return -1.12 - rngNext() * 0.92;
+  if (age <= 35) return -1.88 - rngNext() * 1.15;
+  return -2.32 - rngNext() * 2.25;
 }
 
 function getGeneratedPlayerPotentialCap(player, draftOvr) {
