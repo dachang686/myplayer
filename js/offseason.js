@@ -3915,7 +3915,8 @@ var PLAYER_LOYALTY_GENE_VERSION = 3;
 var PLAYER_POTENTIAL_MODEL_VERSION = 2;
 // 数据校准：NBA 官方资料显示 Nate Williams（P0168）在 2025-26 赛季为 27 岁；
 // 旧年龄表的 73 是明显的脏数据，运行时先用 ID 覆盖，避免进入衰退/退役链路。
-var PLAYER_AGE_OVERRIDES = { P0168: 27 };
+// VJ Edgecombe（P0383）为 2025 年新秀，2025-26 赛季校准为 19 岁。
+var PLAYER_AGE_OVERRIDES = { P0168: 27, P0383: 19 };
 
 function loadPlayerAges() {
   if (_playerAges) return;
