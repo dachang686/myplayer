@@ -3916,7 +3916,8 @@ var PLAYER_POTENTIAL_MODEL_VERSION = 2;
 // 数据校准：NBA 官方资料显示 Nate Williams（P0168）在 2025-26 赛季为 27 岁；
 // 旧年龄表的 73 是明显的脏数据，运行时先用 ID 覆盖，避免进入衰退/退役链路。
 // VJ Edgecombe（P0383）为 2025 年新秀，2025-26 赛季校准为 19 岁。
-var PLAYER_AGE_OVERRIDES = { P0168: 27, P0383: 19 };
+// LeBron James（P0379）在 2025-26 赛季为 41 岁（1984 年 12 月生），确保触发老将生涯周期。
+var PLAYER_AGE_OVERRIDES = { P0168: 27, P0383: 19, P0379: 41 };
 
 function loadPlayerAges() {
   if (_playerAges) return;
