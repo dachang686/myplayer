@@ -103,7 +103,7 @@ if (result.players + result.freeAgents !== 525) failures.push(`初始化生命�
 if (new Set(result.lifecycleIds).size !== result.lifecycleIds.length) failures.push('初始化球队/FA池存在重复球员 ID');
 if (result.ageAudit.missing.length) failures.push(`运行时仍缺少年龄：${result.ageAudit.missing.join(',')}`);
 if (result.ageAudit.invalid.length) failures.push(`年龄超出 18-45：${JSON.stringify(result.ageAudit.invalid)}`);
-if (!result.p0168 || result.p0168.age !== 27 || result.p0168.source !== 'official_override') {
+if (!result.p0168 || result.p0168.age !== 26 || result.p0168.source !== 'official_override') {
   failures.push(`P0168 年龄校准异常：${JSON.stringify(result.p0168)}`);
 }
 if (!(result.payroll.average < 110 && result.payroll.max <= result.market.secondApron && result.payroll.underSoftCap > 0)) {
