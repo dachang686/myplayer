@@ -625,7 +625,8 @@
     for (var i = 0; i < 30; i++) {
       var player = generateRookie();
       if (player._fixedProspectRating) syncAuthoredRookieOvr(player);
-      player._draftTalentSeed = Number(player._draftTalentSeed) || Number(player.ovr) || 50;
+      // 固定候选人的历史登记 OVR 可能来自旧公式；统一用当前公式评分作来源种子。
+      player._draftTalentSeed = Number(player.ovr) || 50;
       player._draftTie = seededValue(draft.seed, 'board|' + player.id);
       prospects.push(player);
     }
@@ -633,8 +634,9 @@
       return (Number(b._draftTalentSeed) || 0) - (Number(a._draftTalentSeed) || 0) || a._draftTie - b._draftTie;
     });
     var targetOvrs = buildGeneratedDraftOvrTargets(prospects.length, rngNext);
-    prospects.forEach(function(player, index) {
-      prepareDraftProspectForTarget(player, targetOvrs[index], rngNext);
+    var assignments = assignPositionBalancedDraftTargets(prospects, targetOvrs);
+    assignments.forEach(function(assignment) {
+      prepareDraftProspectForTarget(assignment.player, assignment.targetOvr, rngNext);
     });
     prospects.sort(function(a, b) {
       return (Number(b.ovr) || 0) - (Number(a.ovr) || 0) || a._draftTie - b._draftTie;

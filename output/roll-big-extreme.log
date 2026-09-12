@@ -1,0 +1,85 @@
+{
+  "all99VsAll25": {
+    "games": 1000,
+    "winRateA": 1,
+    "averageMargin": 87.148,
+    "averageScoreA": 153.68,
+    "averageScoreB": 66.532,
+    "averageExpectedMargin": 18,
+    "overtimeGames": 0,
+    "maxOvertime": 0,
+    "maxScore": 190
+  },
+  "all25Equal": {
+    "games": 750,
+    "winRateA": 0.488,
+    "averageMargin": -0.548,
+    "averageScoreA": 95.17866666666667,
+    "averageScoreB": 95.72666666666667,
+    "averageExpectedMargin": 4.168517383125921e-16,
+    "overtimeGames": 27,
+    "maxOvertime": 2,
+    "maxScore": 128
+  },
+  "all99Equal": {
+    "games": 750,
+    "winRateA": 0.516,
+    "averageMargin": 0.48933333333333334,
+    "averageScoreA": 119.88266666666667,
+    "averageScoreB": 119.39333333333333,
+    "averageExpectedMargin": -5.684341886080802e-17,
+    "overtimeGames": 12,
+    "maxOvertime": 2,
+    "maxScore": 161
+  },
+  "overtimeStress": {
+    "games": 5000,
+    "winRateA": 0.4882,
+    "averageMargin": -0.261,
+    "averageScoreA": 112.146,
+    "averageScoreB": 112.407,
+    "averageExpectedMargin": 4.234834705130197e-16,
+    "overtimeGames": 103,
+    "maxOvertime": 3,
+    "maxScore": 164
+  },
+  "boundedContext": {
+    "games": 750,
+    "winRateA": 0.8773333333333333,
+    "averageMargin": 18.536,
+    "averageScoreA": 118.77466666666666,
+    "averageScoreB": 100.23866666666666,
+    "averageExpectedMargin": 18,
+    "overtimeGames": 15,
+    "maxOvertime": 2,
+    "maxScore": 160
+  },
+  "dirtyAttributes": {
+    "games": 500,
+    "winRateA": 0.48,
+    "averageMargin": -1.452,
+    "averageScoreA": 111.916,
+    "averageScoreB": 113.368,
+    "averageExpectedMargin": -2.8883963364981367,
+    "overtimeGames": 18,
+    "maxOvertime": 2,
+    "maxScore": 151
+  },
+  "zeroMinuteStar": {
+    "games": 500,
+    "winRateA": 0.52,
+    "averageMargin": -0.806,
+    "averageScoreA": 111.776,
+    "averageScoreB": 112.582,
+    "averageExpectedMargin": -9.379164112033323e-16,
+    "overtimeGames": 6,
+    "maxOvertime": 1,
+    "maxScore": 151
+  },
+  "invalidRotations": {
+    "negative": "rejected",
+    "notFinite": "rejected",
+    "over48": "rejected",
+    "wrongTotal": "rejected"
+  }
+}

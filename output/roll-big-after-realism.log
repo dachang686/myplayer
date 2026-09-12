@@ -21,7 +21,7 @@
       "HAN": 25,
       "PDEF": 25,
       "STL": 25,
-      "ovr": 75,
+      "ovr": 79,
       "offense": 71.5141,
       "defense": 73.9688
     },
@@ -29,7 +29,7 @@
       "HAN": 99,
       "PDEF": 99,
       "STL": 99,
-      "ovr": 85,
+      "ovr": 87,
       "offense": 84.3574,
       "defense": 77.2806
     }
@@ -38,21 +38,21 @@
     {
       "team": "WAS",
       "name": "安东尼-戴维斯",
-      "ovr": 91,
+      "ovr": 92,
       "offense": 80.9592,
       "defense": 93.6363
     },
     {
       "team": "MIA",
       "name": "扬尼斯-阿德托昆博",
-      "ovr": 94,
+      "ovr": 95,
       "offense": 89.9996,
       "defense": 91.2848
     },
     {
       "team": "SAS",
       "name": "维克托-文班亚马",
-      "ovr": 93,
+      "ovr": 96,
       "offense": 76.7022,
       "defense": 87.7243
     },
@@ -66,49 +66,49 @@
     {
       "team": "POR",
       "name": "罗伯特-威廉姆斯三世",
-      "ovr": 78,
+      "ovr": 81,
       "offense": 70.8433,
       "defense": 86.0012
     },
     {
       "team": "DEN",
       "name": "尼古拉-约基奇",
-      "ovr": 95,
+      "ovr": 98,
       "offense": 92.7645,
       "defense": 84.5986
     },
     {
       "team": "MIN",
       "name": "鲁迪-戈贝尔",
-      "ovr": 76,
+      "ovr": 79,
       "offense": 62.6796,
       "defense": 83.7458
     },
     {
       "team": "NYK",
       "name": "安德烈-德拉蒙德",
-      "ovr": 76,
+      "ovr": 81,
       "offense": 68.5576,
       "defense": 83.6261
     },
     {
       "team": "IND",
       "name": "伊维察-祖巴茨",
-      "ovr": 81,
+      "ovr": 86,
       "offense": 68.9464,
       "defense": 83.1099
     },
     {
       "team": "DET",
       "name": "杰伦-杜伦",
-      "ovr": 82,
+      "ovr": 86,
       "offense": 72.551,
       "defense": 83.0171
     },
     {
       "team": "BOS",
       "name": "米切尔-罗宾逊",
-      "ovr": 77,
+      "ovr": 81,
       "offense": 64.4432,
       "defense": 82.575
     },
@@ -122,66 +122,66 @@
     {
       "team": "HOU",
       "name": "克林特-卡佩拉",
-      "ovr": 73,
+      "ovr": 77,
       "offense": 63.8439,
       "defense": 81.8468
     },
     {
       "team": "PHI",
       "name": "乔尔-恩比德",
-      "ovr": 87,
+      "ovr": 90,
       "offense": 76.1158,
       "defense": 81.7067
     },
     {
       "team": "HOU",
       "name": "史蒂文-亚当斯",
-      "ovr": 76,
+      "ovr": 79,
       "offense": 65.5199,
       "defense": 81.5634
     },
     {
       "team": "UTA",
       "name": "小贾伦-杰克逊",
-      "ovr": 83,
+      "ovr": 84,
       "offense": 74.1399,
       "defense": 81.1796
     },
     {
       "team": "MIA",
       "name": "巴姆-阿德巴约",
-      "ovr": 88,
+      "ovr": 90,
       "offense": 77.246,
       "defense": 81.0852
     },
     {
       "team": "CLE",
       "name": "贾勒特-阿伦",
-      "ovr": 83,
+      "ovr": 88,
       "offense": 75.9576,
       "defense": 80.9359
     }
   ],
   "simulatedGames": 5220,
   "teamAverages": {
-    "pts": 115.8222,
-    "fta": 20.8389,
-    "ftm": 16.5603,
-    "fga": 87.9166,
-    "fgm": 43.5115,
-    "threeA": 35.209,
-    "threeM": 12.2389,
-    "orb": 8.9722,
-    "pace": 101.2533,
-    "reb": 44.8865,
-    "ast": 27.4424,
-    "stl": 7.828,
-    "blk": 4.3561,
-    "tov": 13.6538,
-    "ftPct": 0.7947,
-    "fgPct": 0.4949,
+    "pts": 115.606,
+    "fta": 20.6589,
+    "ftm": 16.3539,
+    "fga": 87.9421,
+    "fgm": 43.5819,
+    "threeA": 34.7797,
+    "threeM": 12.0883,
+    "orb": 8.9966,
+    "pace": 101.2167,
+    "reb": 44.8546,
+    "ast": 27.0635,
+    "stl": 7.7703,
+    "blk": 4.4636,
+    "tov": 13.6792,
+    "ftPct": 0.7916,
+    "fgPct": 0.4956,
     "threePct": 0.3476,
-    "freeThrowRate": 0.237
+    "freeThrowRate": 0.2349
   },
   "invariantErrors": 0,
   "leaders": {
@@ -189,71 +189,71 @@
       {
         "id": "P0225",
         "name": "卢卡-东契奇",
-        "value": 32.1349,
-        "mins": 34.39,
-        "maxPts": 75
+        "value": 32.8282,
+        "mins": 34.1503,
+        "maxPts": 54
       },
       {
         "id": "P0264",
         "name": "扬尼斯-阿德托昆博",
-        "value": 31.3234,
-        "mins": 34.3084,
-        "maxPts": 75
-      },
-      {
-        "id": "P0040",
-        "name": "杰森-塔图姆",
-        "value": 31.2857,
-        "mins": 33.7888,
-        "maxPts": 57
+        "value": 31.6988,
+        "mins": 34.2236,
+        "maxPts": 68
       },
       {
         "id": "P0347",
         "name": "谢伊-吉尔杰斯-亚历山大",
-        "value": 31.0769,
-        "mins": 34.1568,
-        "maxPts": 61
+        "value": 31.0502,
+        "mins": 33.9398,
+        "maxPts": 59
+      },
+      {
+        "id": "P0040",
+        "name": "杰森-塔图姆",
+        "value": 30.1218,
+        "mins": 33.6538,
+        "maxPts": 71
       },
       {
         "id": "P0471",
         "name": "科怀-伦纳德",
-        "value": 30.2348,
-        "mins": 34.2774,
-        "maxPts": 57
+        "value": 29.2049,
+        "mins": 34.3272,
+        "maxPts": 56
       },
       {
-        "id": "P0091",
-        "name": "多诺万-米切尔",
-        "value": 28.9725,
-        "mins": 33.811,
-        "maxPts": 60
-      },
-      {
-        "id": "P0189",
-        "name": "泰雷塞-哈利伯顿",
-        "value": 28.4765,
-        "mins": 32.9248,
+        "id": "P0296",
+        "name": "安东尼-爱德华兹",
+        "value": 29.0881,
+        "mins": 33.5627,
         "maxPts": 59
       },
       {
         "id": "P0105",
         "name": "凯里-欧文",
-        "value": 28.3623,
-        "mins": 32.8383,
-        "maxPts": 57
+        "value": 29.085,
+        "mins": 32.5367,
+        "maxPts": 62
       },
       {
-        "id": "P0019",
-        "name": "小迈克尔-波特",
-        "value": 27.2766,
-        "mins": 32.4802,
-        "maxPts": 65
+        "id": "P0091",
+        "name": "多诺万-米切尔",
+        "value": 28.25,
+        "mins": 33.4321,
+        "maxPts": 64
       },
       {
-        "id": "P0296",
-        "name": "安东尼-爱德华兹",
-        "value": 27.2691,
-        "mins": 33.3578,
+        "id": "P0189",
+        "name": "泰雷塞-哈利伯顿",
+        "value": 28.0463,
+        "mins": 32.8333,
+        "maxPts": 70
+      },
+      {
+        "id": "P0452",
+        "name": "维克托-文班亚马",
+        "value": 27.1111,
+        "mins": 33.6667,
         "maxPts": 52
       }
     ],
@@ -261,360 +261,360 @@
       {
         "id": "P0452",
         "name": "维克托-文班亚马",
-        "value": 12.8955,
-        "mins": 33.2388,
-        "maxPts": 48
+        "value": 13.0101,
+        "mins": 33.6667,
+        "maxPts": 52
       },
       {
         "id": "P0120",
         "name": "尼古拉-约基奇",
-        "value": 12.5969,
-        "mins": 34.0938,
-        "maxPts": 71
+        "value": 12.866,
+        "mins": 34.4444,
+        "maxPts": 61
       },
       {
         "id": "P0264",
         "name": "扬尼斯-阿德托昆博",
-        "value": 12.024,
-        "mins": 34.3084,
-        "maxPts": 75
+        "value": 12.0093,
+        "mins": 34.2236,
+        "maxPts": 68
       },
       {
         "id": "P0331",
         "name": "卡尔-安东尼-唐斯",
-        "value": 11.8188,
-        "mins": 31.8432,
-        "maxPts": 38
+        "value": 11.6759,
+        "mins": 32.2438,
+        "maxPts": 69
       },
       {
         "id": "P0509",
         "name": "安东尼-戴维斯",
-        "value": 11.3487,
-        "mins": 33.2171,
-        "maxPts": 67
-      },
-      {
-        "id": "P0491",
-        "name": "优素福-努尔基奇",
-        "value": 11.1362,
-        "mins": 31.4211,
-        "maxPts": 30
-      },
-      {
-        "id": "P0434",
-        "name": "多曼塔斯-萨博尼斯",
-        "value": 10.9435,
-        "mins": 31.7138,
-        "maxPts": 38
-      },
-      {
-        "id": "P0350",
-        "name": "以赛亚-哈尔滕施泰因",
-        "value": 10.8225,
-        "mins": 30.6686,
-        "maxPts": 23
+        "value": 11.0683,
+        "mins": 33.295,
+        "maxPts": 60
       },
       {
         "id": "P0191",
         "name": "伊维察-祖巴茨",
-        "value": 10.8152,
-        "mins": 30.6152,
-        "maxPts": 22
+        "value": 11.0443,
+        "mins": 31.5348,
+        "maxPts": 27
       },
       {
-        "id": "P0421",
-        "name": "多诺万-克林根",
-        "value": 10.7683,
-        "mins": 30.8328,
-        "maxPts": 20
+        "id": "P0434",
+        "name": "多曼塔斯-萨博尼斯",
+        "value": 11.0229,
+        "mins": 32.0196,
+        "maxPts": 32
+      },
+      {
+        "id": "P0350",
+        "name": "以赛亚-哈尔滕施泰因",
+        "value": 10.8018,
+        "mins": 31.1128,
+        "maxPts": 23
+      },
+      {
+        "id": "P0243",
+        "name": "扎克-埃迪",
+        "value": 10.7915,
+        "mins": 31.053,
+        "maxPts": 25
+      },
+      {
+        "id": "P0298",
+        "name": "鲁迪-戈贝尔",
+        "value": 10.6285,
+        "mins": 30.4644,
+        "maxPts": 18
       }
     ],
     "ast": [
       {
         "id": "P0120",
         "name": "尼古拉-约基奇",
-        "value": 9.9031,
-        "mins": 34.0938,
-        "maxPts": 71
+        "value": 9.549,
+        "mins": 34.4444,
+        "maxPts": 61
       },
       {
         "id": "P0138",
         "name": "凯德-坎宁安",
-        "value": 9.1477,
-        "mins": 33.4677,
-        "maxPts": 60
+        "value": 9.0123,
+        "mins": 33.1944,
+        "maxPts": 49
       },
       {
         "id": "P0076",
         "name": "乔什-吉迪",
-        "value": 8.6607,
-        "mins": 32.5506,
-        "maxPts": 67
+        "value": 8.6031,
+        "mins": 32.1508,
+        "maxPts": 47
       },
       {
         "id": "P0510",
         "name": "特雷-杨",
-        "value": 8.3538,
-        "mins": 32.28,
-        "maxPts": 59
-      },
-      {
-        "id": "P0490",
-        "name": "以赛亚-科利尔",
-        "value": 8.2455,
-        "mins": 31.2212,
-        "maxPts": 51
+        "value": 8.1518,
+        "mins": 31.8958,
+        "maxPts": 54
       },
       {
         "id": "P0225",
         "name": "卢卡-东契奇",
-        "value": 7.8827,
-        "mins": 34.39,
-        "maxPts": 75
-      },
-      {
-        "id": "P0297",
-        "name": "拉梅洛-鲍尔",
-        "value": 7.5152,
-        "mins": 31.9573,
-        "maxPts": 59
-      },
-      {
-        "id": "P0189",
-        "name": "泰雷塞-哈利伯顿",
-        "value": 7.5078,
-        "mins": 32.9248,
-        "maxPts": 59
+        "value": 7.8834,
+        "mins": 34.1503,
+        "maxPts": 54
       },
       {
         "id": "P0419",
         "name": "贾-莫兰特",
-        "value": 7.3618,
-        "mins": 32.1206,
-        "maxPts": 57
+        "value": 7.8157,
+        "mins": 32.142,
+        "maxPts": 64
       },
       {
-        "id": "P0436",
-        "name": "拉塞尔-威斯布鲁克",
-        "value": 7.3224,
-        "mins": 32.0746,
+        "id": "P0297",
+        "name": "拉梅洛-鲍尔",
+        "value": 7.767,
+        "mins": 31.9823,
         "maxPts": 54
+      },
+      {
+        "id": "P0490",
+        "name": "以赛亚-科利尔",
+        "value": 7.6779,
+        "mins": 31.094,
+        "maxPts": 48
+      },
+      {
+        "id": "P0453",
+        "name": "斯蒂芬-卡斯尔",
+        "value": 7.5318,
+        "mins": 31.5637,
+        "maxPts": 32
+      },
+      {
+        "id": "P0189",
+        "name": "泰雷塞-哈利伯顿",
+        "value": 7.5062,
+        "mins": 32.8333,
+        "maxPts": 70
       }
     ],
     "stl": [
       {
-        "id": "P0003",
-        "name": "戴森-丹尼尔斯",
-        "value": 2.5166,
-        "mins": 31.6042,
-        "maxPts": 24
-      },
-      {
         "id": "P0471",
         "name": "科怀-伦纳德",
-        "value": 2.4604,
-        "mins": 34.2774,
-        "maxPts": 57
+        "value": 2.5688,
+        "mins": 34.3272,
+        "maxPts": 56
+      },
+      {
+        "id": "P0003",
+        "name": "戴森-丹尼尔斯",
+        "value": 2.5389,
+        "mins": 31.4701,
+        "maxPts": 24
       },
       {
         "id": "P0139",
         "name": "奥萨尔-汤普森",
-        "value": 2.3402,
-        "mins": 31.6833,
-        "maxPts": 47
+        "value": 2.375,
+        "mins": 31.4535,
+        "maxPts": 56
       },
       {
         "id": "P0366",
         "name": "杰伦-萨格斯",
-        "value": 2.1794,
-        "mins": 29.2794,
-        "maxPts": 27
-      },
-      {
-        "id": "P0027",
-        "name": "基恩-埃利斯",
-        "value": 2.1541,
-        "mins": 31.0685,
-        "maxPts": 22
-      },
-      {
-        "id": "P0042",
-        "name": "保罗-乔治",
-        "value": 2.1379,
-        "mins": 32.4138,
-        "maxPts": 43
+        "value": 2.1503,
+        "mins": 28.9393,
+        "maxPts": 30
       },
       {
         "id": "P0174",
         "name": "阿门-汤普森",
-        "value": 2.0266,
-        "mins": 32.5,
-        "maxPts": 51
+        "value": 2.0803,
+        "mins": 32.3311,
+        "maxPts": 66
       },
       {
-        "id": "P0231",
-        "name": "贾里德-范德比尔特",
-        "value": 1.9931,
-        "mins": 30.1649,
-        "maxPts": 17
+        "id": "P0042",
+        "name": "保罗-乔治",
+        "value": 2.0717,
+        "mins": 32.0935,
+        "maxPts": 43
+      },
+      {
+        "id": "P0027",
+        "name": "基恩-埃利斯",
+        "value": 2.0686,
+        "mins": 30.8791,
+        "maxPts": 27
+      },
+      {
+        "id": "P0332",
+        "name": "OG-阿奴诺比",
+        "value": 2.0499,
+        "mins": 31.0293,
+        "maxPts": 30
       },
       {
         "id": "P0316",
         "name": "德章泰-默里",
-        "value": 1.9836,
-        "mins": 32.1086,
-        "maxPts": 57
+        "value": 2.0211,
+        "mins": 31.9729,
+        "maxPts": 55
       },
       {
-        "id": "P0436",
-        "name": "拉塞尔-威斯布鲁克",
-        "value": 1.9552,
-        "mins": 32.0746,
-        "maxPts": 54
+        "id": "P0231",
+        "name": "贾里德-范德比尔特",
+        "value": 2,
+        "mins": 30.2583,
+        "maxPts": 17
       }
     ],
     "blk": [
       {
         "id": "P0452",
         "name": "维克托-文班亚马",
-        "value": 2.4418,
-        "mins": 33.2388,
-        "maxPts": 48
+        "value": 2.4613,
+        "mins": 33.6667,
+        "maxPts": 52
+      },
+      {
+        "id": "P0425",
+        "name": "罗伯特-威廉姆斯三世",
+        "value": 1.7988,
+        "mins": 30.7152,
+        "maxPts": 18
       },
       {
         "id": "P0227",
         "name": "沃克-凯斯勒",
-        "value": 1.9362,
-        "mins": 30.9514,
-        "maxPts": 22
-      },
-      {
-        "id": "P0421",
-        "name": "多诺万-克林根",
-        "value": 1.8094,
-        "mins": 30.8328,
-        "maxPts": 20
+        "value": 1.7677,
+        "mins": 31.7355,
+        "maxPts": 24
       },
       {
         "id": "P0489",
         "name": "小贾伦-杰克逊",
-        "value": 1.6894,
-        "mins": 31.8944,
-        "maxPts": 35
+        "value": 1.6873,
+        "mins": 32.0155,
+        "maxPts": 38
       },
       {
-        "id": "P0348",
-        "name": "切特-霍姆格伦",
-        "value": 1.6821,
-        "mins": 31.4136,
-        "maxPts": 32
+        "id": "P0045",
+        "name": "米切尔-罗宾逊",
+        "value": 1.6138,
+        "mins": 31.1759,
+        "maxPts": 17
       },
       {
-        "id": "P0509",
-        "name": "安东尼-戴维斯",
-        "value": 1.6776,
-        "mins": 33.2171,
-        "maxPts": 67
+        "id": "P0421",
+        "name": "多诺万-克林根",
+        "value": 1.6083,
+        "mins": 31.6172,
+        "maxPts": 27
+      },
+      {
+        "id": "P0472",
+        "name": "斯科蒂-巴恩斯",
+        "value": 1.5988,
+        "mins": 33.3191,
+        "maxPts": 66
       },
       {
         "id": "P0092",
         "name": "埃文-莫布利",
-        "value": 1.6499,
-        "mins": 32.7953,
-        "maxPts": 42
+        "value": 1.5974,
+        "mins": 32.3366,
+        "maxPts": 44
       },
       {
-        "id": "P0212",
-        "name": "布鲁克-洛佩斯",
-        "value": 1.6489,
-        "mins": 29.9687,
-        "maxPts": 25
+        "id": "P0509",
+        "name": "安东尼-戴维斯",
+        "value": 1.5807,
+        "mins": 33.295,
+        "maxPts": 60
       },
       {
-        "id": "P0264",
-        "name": "扬尼斯-阿德托昆博",
-        "value": 1.5958,
-        "mins": 34.3084,
-        "maxPts": 75
-      },
-      {
-        "id": "P0324",
-        "name": "卡洛-马特科维奇",
-        "value": 1.5833,
-        "mins": 30.5192,
-        "maxPts": 22
+        "id": "P0063",
+        "name": "瑞安-卡尔克布伦纳",
+        "value": 1.5793,
+        "mins": 31.0259,
+        "maxPts": 19
       }
     ],
     "tov": [
       {
         "id": "P0120",
         "name": "尼古拉-约基奇",
-        "value": 3.4406,
-        "mins": 34.0938,
-        "maxPts": 71
-      },
-      {
-        "id": "P0138",
-        "name": "凯德-坎宁安",
-        "value": 3.3662,
-        "mins": 33.4677,
-        "maxPts": 60
-      },
-      {
-        "id": "P0225",
-        "name": "卢卡-东契奇",
-        "value": 3.3636,
-        "mins": 34.39,
-        "maxPts": 75
-      },
-      {
-        "id": "P0105",
-        "name": "凯里-欧文",
-        "value": 3.2964,
-        "mins": 32.8383,
-        "maxPts": 57
+        "value": 3.4248,
+        "mins": 34.4444,
+        "maxPts": 61
       },
       {
         "id": "P0264",
         "name": "扬尼斯-阿德托昆博",
-        "value": 3.1437,
-        "mins": 34.3084,
-        "maxPts": 75
+        "value": 3.2733,
+        "mins": 34.2236,
+        "maxPts": 68
       },
       {
         "id": "P0297",
         "name": "拉梅洛-鲍尔",
-        "value": 3.0488,
-        "mins": 31.9573,
-        "maxPts": 59
+        "value": 3.2448,
+        "mins": 31.9823,
+        "maxPts": 54
       },
       {
-        "id": "P0189",
-        "name": "泰雷塞-哈利伯顿",
-        "value": 3.0408,
-        "mins": 32.9248,
-        "maxPts": 59
+        "id": "P0225",
+        "name": "卢卡-东契奇",
+        "value": 3.2423,
+        "mins": 34.1503,
+        "maxPts": 54
+      },
+      {
+        "id": "P0138",
+        "name": "凯德-坎宁安",
+        "value": 3.1852,
+        "mins": 33.1944,
+        "maxPts": 49
+      },
+      {
+        "id": "P0105",
+        "name": "凯里-欧文",
+        "value": 3.176,
+        "mins": 32.5367,
+        "maxPts": 62
+      },
+      {
+        "id": "P0040",
+        "name": "杰森-塔图姆",
+        "value": 3.0353,
+        "mins": 33.6538,
+        "maxPts": 71
       },
       {
         "id": "P0091",
         "name": "多诺万-米切尔",
-        "value": 3,
-        "mins": 33.811,
-        "maxPts": 60
+        "value": 2.9259,
+        "mins": 33.4321,
+        "maxPts": 64
       },
       {
-        "id": "P0510",
-        "name": "特雷-杨",
-        "value": 2.9477,
-        "mins": 32.28,
-        "maxPts": 59
+        "id": "P0242",
+        "name": "泰-杰罗姆",
+        "value": 2.8973,
+        "mins": 31.6375,
+        "maxPts": 47
       },
       {
-        "id": "P0001",
-        "name": "杰伦-约翰逊",
-        "value": 2.921,
-        "mins": 32.696,
-        "maxPts": 44
+        "id": "P0076",
+        "name": "乔什-吉迪",
+        "value": 2.8831,
+        "mins": 32.1508,
+        "maxPts": 47
       }
     ]
   },
@@ -625,7 +625,7 @@
       "name": "尼古拉斯-克拉克斯顿",
       "threePT": 64,
       "MID": 69,
-      "ovr": 78,
+      "ovr": 81,
       "offense": 69.2318,
       "defense": 76.5714,
       "snapshot": {
@@ -648,14 +648,14 @@
         "SOURCE_URL": "https://www.nba.com/stats/player/1629651"
       },
       "simulated": {
-        "games": 309,
-        "mins": 31.0324,
-        "pts": 12.4434,
-        "threeA": 0.0421,
-        "threePct": 0.3077,
-        "fta": 2.6343,
-        "ftPct": 0.7359,
-        "fgPct": 0.6042
+        "games": 333,
+        "mins": 31.3123,
+        "pts": 12.3183,
+        "threeA": 0.0661,
+        "threePct": 0.2273,
+        "fta": 2.6186,
+        "ftPct": 0.7328,
+        "fgPct": 0.5883
       }
     },
     {
@@ -687,14 +687,14 @@
         "SOURCE_URL": "https://www.espn.com/nba/player/stats/_/id/3975/stephen-curry"
       },
       "simulated": {
-        "games": 330,
-        "mins": 33.2848,
-        "pts": 25.8939,
-        "threeA": 10.0455,
-        "threePct": 0.3861,
-        "fta": 4.5576,
-        "ftPct": 0.9129,
-        "fgPct": 0.4614
+        "games": 332,
+        "mins": 33.1205,
+        "pts": 25.6988,
+        "threeA": 9.9337,
+        "threePct": 0.3957,
+        "fta": 4.3614,
+        "ftPct": 0.9289,
+        "fgPct": 0.4663
       }
     },
     {
@@ -703,7 +703,7 @@
       "name": "克林特-卡佩拉",
       "threePT": 28,
       "MID": 50,
-      "ovr": 73,
+      "ovr": 77,
       "offense": 63.8439,
       "defense": 81.8468,
       "snapshot": {
@@ -726,14 +726,14 @@
         "SOURCE_URL": "https://www.nba.com/stats/player/203991"
       },
       "simulated": {
-        "games": 5,
-        "mins": 5.8,
-        "pts": 0.4,
-        "threeA": 0,
-        "threePct": null,
-        "fta": 0.4,
-        "ftPct": 1,
-        "fgPct": 0
+        "games": 313,
+        "mins": 10.6486,
+        "pts": 2.361,
+        "threeA": 0.0032,
+        "threePct": 0,
+        "fta": 0.754,
+        "ftPct": 0.5466,
+        "fgPct": 0.6381
       }
     },
     {
@@ -742,7 +742,7 @@
       "name": "鲁迪-戈贝尔",
       "threePT": 28,
       "MID": 54,
-      "ovr": 76,
+      "ovr": 79,
       "offense": 62.6796,
       "defense": 83.7458,
       "snapshot": {
@@ -765,40 +765,40 @@
         "SOURCE_URL": "https://www.nba.com/stats/player/203497"
       },
       "simulated": {
-        "games": 330,
-        "mins": 29.8061,
-        "pts": 8.3091,
-        "threeA": 0.0394,
-        "threePct": 0.0769,
-        "fta": 3.3091,
-        "ftPct": 0.5284,
-        "fgPct": 0.6704
+        "games": 323,
+        "mins": 30.4644,
+        "pts": 8.4272,
+        "threeA": 0.0341,
+        "threePct": 0.0909,
+        "fta": 3.3498,
+        "ftPct": 0.5425,
+        "fgPct": 0.6546
       }
     }
   ],
   "sameOvrGameImpact": {
     "low": {
-      "ovr": 75,
+      "ovr": 79,
       "offense": 71.5141,
       "defense": 73.9688,
-      "margin": -2.7276,
-      "firstThreeQuartersMargin": -2.1616,
-      "expectedMargin": -2.9132,
-      "winPct": 0.4268
+      "margin": -2.4252,
+      "firstThreeQuartersMargin": -1.8088,
+      "expectedMargin": -2.4489,
+      "winPct": 0.438
     },
     "high": {
-      "ovr": 85,
+      "ovr": 87,
       "offense": 84.3574,
       "defense": 77.2806,
-      "margin": 1.9868,
-      "firstThreeQuartersMargin": 1.3956,
-      "expectedMargin": 2.145,
-      "winPct": 0.5396
+      "margin": 1.71,
+      "firstThreeQuartersMargin": 1.246,
+      "expectedMargin": 1.9221,
+      "winPct": 0.5316
     }
   },
   "clutchGameImpact": {
     "low": {
-      "ovr": 79,
+      "ovr": 82,
       "offense": 75.51,
       "defense": 75.86,
       "margin": 0.2016,
@@ -807,7 +807,7 @@
       "winPct": 0.4996
     },
     "high": {
-      "ovr": 83,
+      "ovr": 86,
       "offense": 75.51,
       "defense": 75.86,
       "margin": 0.372,
@@ -967,728 +967,728 @@
   },
   "playerStatComparisons": {
     "pts": {
-      "count": 219,
-      "meanError": -1.3287,
-      "meanAbsoluteError": 1.846,
+      "count": 215,
+      "meanError": -1.3118,
+      "meanAbsoluteError": 1.8838,
       "focus": [
         {
           "id": "P0156",
           "name": "Stephen Curry",
-          "actual": 28.0062,
+          "actual": 27.9331,
           "expected": 30.9345,
-          "error": -2.9283
+          "error": -3.0015
         },
         {
           "id": "P0193",
           "name": "T.J. McConnell",
-          "actual": 14.8248,
+          "actual": 15.3177,
           "expected": 19.6262,
-          "error": -4.8013
+          "error": -4.3084
         },
         {
           "id": "P0350",
           "name": "Isaiah Hartenstein",
-          "actual": 12.6795,
+          "actual": 13.1547,
           "expected": 13.6781,
-          "error": -0.9986
+          "error": -0.5234
         },
         {
           "id": "P0382",
           "name": "Joel Embiid",
-          "actual": 26.5781,
+          "actual": 25.8845,
           "expected": 30.6045,
-          "error": -4.0264
+          "error": -4.72
         },
         {
           "id": "P0419",
           "name": "Ja Morant",
-          "actual": 25.1054,
+          "actual": 25.3986,
           "expected": 24.6116,
-          "error": 0.4938
+          "error": 0.787
         },
         {
           "id": "P0452",
           "name": "Victor Wembanyama",
-          "actual": 28.4929,
+          "actual": 28.9901,
           "expected": 30.8219,
-          "error": -2.3291
+          "error": -1.8318
         },
         {
           "id": "P0487",
           "name": "Lauri Markkanen",
-          "actual": 25.0763,
+          "actual": 24.4897,
           "expected": 28.0166,
-          "error": -2.9404
+          "error": -3.5269
         },
         {
           "id": "P0491",
           "name": "Jusuf Nurkic",
-          "actual": 14.6994,
+          "actual": 13.6589,
           "expected": 14.8587,
-          "error": -0.1593
+          "error": -1.1998
         }
       ],
       "largest": [
         {
+          "id": "P0164",
+          "name": "Gary Payton II",
+          "actual": 11.4589,
+          "expected": 17.3077,
+          "error": -5.8487
+        },
+        {
+          "id": "P0495",
+          "name": "Jaxson Hayes",
+          "actual": 8.9624,
+          "expected": 14.7541,
+          "error": -5.7917
+        },
+        {
+          "id": "P0425",
+          "name": "Robert Williams III",
+          "actual": 8.3822,
+          "expected": 14.1053,
+          "error": -5.723
+        },
+        {
           "id": "P0195",
           "name": "Obi Toppin",
-          "actual": 17.866,
+          "actual": 18.5467,
           "expected": 23.6887,
-          "error": -5.8227
+          "error": -5.142
         },
         {
-          "id": "P0083",
-          "name": "Leonard Miller",
-          "actual": 12.9659,
-          "expected": 18.0751,
-          "error": -5.1092
-        },
-        {
-          "id": "P0417",
-          "name": "Deni Avdija",
-          "actual": 21.1198,
-          "expected": 26.1622,
-          "error": -5.0424
-        },
-        {
-          "id": "P0514",
-          "name": "Deandre Ayton",
-          "actual": 11.5121,
-          "expected": 16.5441,
-          "error": -5.032
-        },
-        {
-          "id": "P0422",
-          "name": "Jrue Holiday",
-          "actual": 14.9324,
-          "expected": 19.9615,
-          "error": -5.0291
+          "id": "P0403",
+          "name": "Collin Gillespie",
+          "actual": 11.0673,
+          "expected": 16.0421,
+          "error": -4.9748
         },
         {
           "id": "P0423",
           "name": "Scoot Henderson",
-          "actual": 15.5324,
+          "actual": 15.5817,
           "expected": 20.5508,
-          "error": -5.0184
-        },
-        {
-          "id": "P0193",
-          "name": "T.J. McConnell",
-          "actual": 14.8248,
-          "expected": 19.6262,
-          "error": -4.8013
-        },
-        {
-          "id": "P0095",
-          "name": "Sam Merrill",
-          "actual": 12.6884,
-          "expected": 17.3333,
-          "error": -4.645
-        }
-      ]
-    },
-    "reb": {
-      "count": 219,
-      "meanError": 0.1738,
-      "meanAbsoluteError": 0.9139,
-      "focus": [
-        {
-          "id": "P0156",
-          "name": "Stephen Curry",
-          "actual": 5.457,
-          "expected": 4.1716,
-          "error": 1.2855
-        },
-        {
-          "id": "P0193",
-          "name": "T.J. McConnell",
-          "actual": 5.2134,
-          "expected": 4.6355,
-          "error": 0.5779
-        },
-        {
-          "id": "P0350",
-          "name": "Isaiah Hartenstein",
-          "actual": 12.7038,
-          "expected": 14.0264,
-          "error": -1.3225
+          "error": -4.9691
         },
         {
           "id": "P0382",
           "name": "Joel Embiid",
-          "actual": 11.6492,
+          "actual": 25.8845,
+          "expected": 30.6045,
+          "error": -4.72
+        },
+        {
+          "id": "P0422",
+          "name": "Jrue Holiday",
+          "actual": 15.2545,
+          "expected": 19.9615,
+          "error": -4.707
+        }
+      ]
+    },
+    "reb": {
+      "count": 215,
+      "meanError": -0.1018,
+      "meanAbsoluteError": 0.9128,
+      "focus": [
+        {
+          "id": "P0156",
+          "name": "Stephen Curry",
+          "actual": 5.1892,
+          "expected": 4.1716,
+          "error": 1.0176
+        },
+        {
+          "id": "P0193",
+          "name": "T.J. McConnell",
+          "actual": 5.1863,
+          "expected": 4.6355,
+          "error": 0.5508
+        },
+        {
+          "id": "P0350",
+          "name": "Isaiah Hartenstein",
+          "actual": 12.4986,
+          "expected": 14.0264,
+          "error": -1.5278
+        },
+        {
+          "id": "P0382",
+          "name": "Joel Embiid",
+          "actual": 11.8341,
           "expected": 8.7827,
-          "error": 2.8665
+          "error": 3.0514
         },
         {
           "id": "P0419",
           "name": "Ja Morant",
-          "actual": 3.8304,
+          "actual": 3.6511,
           "expected": 4.1125,
-          "error": -0.2821
+          "error": -0.4614
         },
         {
           "id": "P0452",
           "name": "Victor Wembanyama",
-          "actual": 13.9668,
+          "actual": 13.9118,
           "expected": 14.1781,
-          "error": -0.2113
+          "error": -0.2663
         },
         {
           "id": "P0487",
           "name": "Lauri Markkanen",
-          "actual": 8.0138,
+          "actual": 7.6664,
           "expected": 7.21,
-          "error": 0.8038
+          "error": 0.4564
         },
         {
           "id": "P0491",
           "name": "Jusuf Nurkic",
-          "actual": 12.7591,
+          "actual": 11.7321,
           "expected": 14.1274,
-          "error": -1.3683
+          "error": -2.3953
         }
       ],
       "largest": [
         {
           "id": "P0045",
           "name": "Mitchell Robinson",
-          "actual": 11.0906,
+          "actual": 11.2169,
           "expected": 16.1633,
-          "error": -5.0727
+          "error": -4.9464
         },
         {
-          "id": "P0255",
-          "name": "Taylor Hendricks",
-          "actual": 11.0568,
-          "expected": 7.0476,
-          "error": 4.0092
-        },
-        {
-          "id": "P0471",
-          "name": "Kawhi Leonard",
-          "actual": 10.8195,
-          "expected": 7.1776,
-          "error": 3.642
-        },
-        {
-          "id": "P0209",
-          "name": "Bennedict Mathurin",
-          "actual": 9.7637,
-          "expected": 6.5111,
-          "error": 3.2526
-        },
-        {
-          "id": "P0511",
-          "name": "Alex Sarr",
-          "actual": 6.5748,
-          "expected": 9.7931,
-          "error": -3.2183
-        },
-        {
-          "id": "P0213",
-          "name": "Kris Dunn",
-          "actual": 7.5249,
-          "expected": 4.3676,
-          "error": 3.1573
+          "id": "P0425",
+          "name": "Robert Williams III",
+          "actual": 11.042,
+          "expected": 14.7368,
+          "error": -3.6948
         },
         {
           "id": "P0283",
           "name": "Kel'el Ware",
-          "actual": 11.6065,
+          "actual": 11.2883,
           "expected": 14.6606,
-          "error": -3.0542
+          "error": -3.3723
+        },
+        {
+          "id": "P0511",
+          "name": "Alex Sarr",
+          "actual": 6.4516,
+          "expected": 9.7931,
+          "error": -3.3415
+        },
+        {
+          "id": "P0421",
+          "name": "Donovan Clingan",
+          "actual": 12.0755,
+          "expected": 15.3529,
+          "error": -3.2775
         },
         {
           "id": "P0382",
           "name": "Joel Embiid",
-          "actual": 11.6492,
+          "actual": 11.8341,
           "expected": 8.7827,
-          "error": 2.8665
+          "error": 3.0514
+        },
+        {
+          "id": "P0127",
+          "name": "Marvin Bagley III",
+          "actual": 7.934,
+          "expected": 10.98,
+          "error": -3.046
+        },
+        {
+          "id": "P0471",
+          "name": "Kawhi Leonard",
+          "actual": 10.0672,
+          "expected": 7.1776,
+          "error": 2.8896
         }
       ]
     },
     "ast": {
-      "count": 219,
-      "meanError": -0.1546,
-      "meanAbsoluteError": 0.2922,
+      "count": 215,
+      "meanError": -0.1633,
+      "meanAbsoluteError": 0.2942,
       "focus": [
         {
           "id": "P0156",
           "name": "Stephen Curry",
-          "actual": 4.9195,
+          "actual": 5.1728,
           "expected": 5.4989,
-          "error": -0.5794
+          "error": -0.3261
         },
         {
           "id": "P0193",
           "name": "T.J. McConnell",
-          "actual": 8.4854,
+          "actual": 8.9879,
           "expected": 10.729,
-          "error": -2.2435
+          "error": -1.741
         },
         {
           "id": "P0350",
           "name": "Isaiah Hartenstein",
-          "actual": 5.1503,
+          "actual": 5.0375,
           "expected": 5.2559,
-          "error": -0.1056
+          "error": -0.2184
         },
         {
           "id": "P0382",
           "name": "Joel Embiid",
-          "actual": 4.0607,
+          "actual": 3.8551,
           "expected": 4.4963,
-          "error": -0.4355
+          "error": -0.6412
         },
         {
           "id": "P0419",
           "name": "Ja Morant",
-          "actual": 8.2509,
+          "actual": 8.7538,
           "expected": 10.1863,
-          "error": -1.9354
+          "error": -1.4325
         },
         {
           "id": "P0452",
           "name": "Victor Wembanyama",
-          "actual": 3.6921,
+          "actual": 3.5536,
           "expected": 3.8219,
-          "error": -0.1298
+          "error": -0.2684
         },
         {
           "id": "P0487",
           "name": "Lauri Markkanen",
-          "actual": 2.1413,
+          "actual": 1.9826,
           "expected": 2.2204,
-          "error": -0.0791
+          "error": -0.2378
         },
         {
           "id": "P0491",
           "name": "Jusuf Nurkic",
-          "actual": 5.8244,
+          "actual": 5.9989,
           "expected": 6.5152,
-          "error": -0.6908
+          "error": -0.5164
         }
       ],
       "largest": [
         {
-          "id": "P0193",
-          "name": "T.J. McConnell",
-          "actual": 8.4854,
-          "expected": 10.729,
-          "error": -2.2435
-        },
-        {
-          "id": "P0419",
-          "name": "Ja Morant",
-          "actual": 8.2509,
-          "expected": 10.1863,
-          "error": -1.9354
-        },
-        {
           "id": "P0192",
           "name": "Andrew Nembhard",
-          "actual": 6.9378,
+          "actual": 6.919,
           "expected": 8.8085,
-          "error": -1.8707
+          "error": -1.8896
         },
         {
-          "id": "P0253",
-          "name": "D'Angelo Russell",
-          "actual": 6.0662,
-          "expected": 7.5636,
-          "error": -1.4974
+          "id": "P0193",
+          "name": "T.J. McConnell",
+          "actual": 8.9879,
+          "expected": 10.729,
+          "error": -1.741
         },
         {
           "id": "P0195",
           "name": "Obi Toppin",
-          "actual": 3.236,
+          "actual": 2.9579,
           "expected": 4.6698,
-          "error": -1.4339
-        },
-        {
-          "id": "P0417",
-          "name": "Deni Avdija",
-          "actual": 6.3278,
-          "expected": 7.2432,
-          "error": -0.9155
-        },
-        {
-          "id": "P0048",
-          "name": "Mike Conley",
-          "actual": 6.5396,
-          "expected": 5.7033,
-          "error": 0.8363
-        },
-        {
-          "id": "P0256",
-          "name": "Walter Clayton Jr.",
-          "actual": 6.2403,
-          "expected": 7.0588,
-          "error": -0.8185
-        }
-      ]
-    },
-    "stl": {
-      "count": 219,
-      "meanError": -0.088,
-      "meanAbsoluteError": 0.322,
-      "focus": [
-        {
-          "id": "P0156",
-          "name": "Stephen Curry",
-          "actual": 1.1307,
-          "expected": 1.3273,
-          "error": -0.1966
-        },
-        {
-          "id": "P0193",
-          "name": "T.J. McConnell",
-          "actual": 2.4275,
-          "expected": 2.0935,
-          "error": 0.3341
-        },
-        {
-          "id": "P0350",
-          "name": "Isaiah Hartenstein",
-          "actual": 0.4272,
-          "expected": 1.5198,
-          "error": -1.0926
-        },
-        {
-          "id": "P0382",
-          "name": "Joel Embiid",
-          "actual": 0.5263,
-          "expected": 0.6295,
-          "error": -0.1032
+          "error": -1.7119
         },
         {
           "id": "P0419",
           "name": "Ja Morant",
-          "actual": 1.1999,
+          "actual": 8.7538,
+          "expected": 10.1863,
+          "error": -1.4325
+        },
+        {
+          "id": "P0490",
+          "name": "Isaiah Collier",
+          "actual": 8.8893,
+          "expected": 10.0856,
+          "error": -1.1963
+        },
+        {
+          "id": "P0120",
+          "name": "Nikola Jokić",
+          "actual": 9.9803,
+          "expected": 11.069,
+          "error": -1.0887
+        },
+        {
+          "id": "P0253",
+          "name": "D'Angelo Russell",
+          "actual": 6.5262,
+          "expected": 7.5636,
+          "error": -1.0375
+        },
+        {
+          "id": "P0379",
+          "name": "LeBron James",
+          "actual": 6.821,
+          "expected": 7.8072,
+          "error": -0.9862
+        }
+      ]
+    },
+    "stl": {
+      "count": 215,
+      "meanError": -0.0881,
+      "meanAbsoluteError": 0.3135,
+      "focus": [
+        {
+          "id": "P0156",
+          "name": "Stephen Curry",
+          "actual": 1.1197,
+          "expected": 1.3273,
+          "error": -0.2076
+        },
+        {
+          "id": "P0193",
+          "name": "T.J. McConnell",
+          "actual": 2.3574,
+          "expected": 2.0935,
+          "error": 0.264
+        },
+        {
+          "id": "P0350",
+          "name": "Isaiah Hartenstein",
+          "actual": 0.4127,
+          "expected": 1.5198,
+          "error": -1.1071
+        },
+        {
+          "id": "P0382",
+          "name": "Joel Embiid",
+          "actual": 0.5377,
+          "expected": 0.6295,
+          "error": -0.0917
+        },
+        {
+          "id": "P0419",
+          "name": "Ja Morant",
+          "actual": 1.0794,
           "expected": 1.2654,
-          "error": -0.0655
+          "error": -0.186
         },
         {
           "id": "P0452",
           "name": "Victor Wembanyama",
-          "actual": 1.5551,
+          "actual": 1.5878,
           "expected": 1.2329,
-          "error": 0.3222
+          "error": 0.3549
         },
         {
           "id": "P0487",
           "name": "Lauri Markkanen",
-          "actual": 0.7463,
+          "actual": 0.788,
           "expected": 1.0478,
-          "error": -0.3016
+          "error": -0.2598
         },
         {
           "id": "P0491",
           "name": "Jusuf Nurkic",
-          "actual": 0.9826,
+          "actual": 1.1197,
           "expected": 1.7285,
-          "error": -0.746
+          "error": -0.6088
         }
       ],
       "largest": [
         {
           "id": "P0271",
           "name": "Dru Smith",
-          "actual": 1.7269,
+          "actual": 1.7829,
           "expected": 3.092,
-          "error": -1.3651
+          "error": -1.3091
         },
         {
           "id": "P0350",
           "name": "Isaiah Hartenstein",
-          "actual": 0.4272,
+          "actual": 0.4127,
           "expected": 1.5198,
-          "error": -1.0926
+          "error": -1.1071
         },
         {
-          "id": "P0500",
-          "name": "Josh Okogie",
-          "actual": 2.6647,
-          "expected": 1.6552,
-          "error": 1.0096
-        },
-        {
-          "id": "P0022",
-          "name": "Day'Ron Sharpe",
-          "actual": 1.1515,
-          "expected": 2.1176,
-          "error": -0.9661
-        },
-        {
-          "id": "P0399",
-          "name": "Dillon Brooks",
-          "actual": 2.1201,
-          "expected": 1.2056,
-          "error": 0.9145
-        },
-        {
-          "id": "P0387",
-          "name": "Justin Edwards",
-          "actual": 1.0056,
-          "expected": 1.8824,
-          "error": -0.8768
+          "id": "P0370",
+          "name": "Goga Bitadze",
+          "actual": 0.3869,
+          "expected": 1.4211,
+          "error": -1.0341
         },
         {
           "id": "P0146",
           "name": "Javonte Green",
-          "actual": 1.5857,
+          "actual": 1.566,
           "expected": 2.4545,
-          "error": -0.8689
+          "error": -0.8886
         },
         {
-          "id": "P0044",
-          "name": "Neemias Queta",
-          "actual": 0.3179,
-          "expected": 1.1383,
-          "error": -0.8204
-        }
-      ]
-    },
-    "blk": {
-      "count": 219,
-      "meanError": -0.0506,
-      "meanAbsoluteError": 0.2044,
-      "focus": [
-        {
-          "id": "P0156",
-          "name": "Stephen Curry",
-          "actual": 0.272,
-          "expected": 0.4605,
-          "error": -0.1885
-        },
-        {
-          "id": "P0193",
-          "name": "T.J. McConnell",
-          "actual": 0.3656,
-          "expected": 0.3738,
-          "error": -0.0082
-        },
-        {
-          "id": "P0350",
-          "name": "Isaiah Hartenstein",
-          "actual": 0.9064,
-          "expected": 1.1398,
-          "error": -0.2334
-        },
-        {
-          "id": "P0382",
-          "name": "Joel Embiid",
-          "actual": 1.2495,
-          "expected": 1.3789,
-          "error": -0.1294
-        },
-        {
-          "id": "P0419",
-          "name": "Ja Morant",
-          "actual": 0.2703,
-          "expected": 0.3796,
-          "error": -0.1093
-        },
-        {
-          "id": "P0452",
-          "name": "Victor Wembanyama",
-          "actual": 2.6446,
-          "expected": 3.8219,
-          "error": -1.1773
-        },
-        {
-          "id": "P0487",
-          "name": "Lauri Markkanen",
-          "actual": 0.4838,
-          "expected": 0.5239,
-          "error": -0.0402
-        },
-        {
-          "id": "P0491",
-          "name": "Jusuf Nurkic",
-          "actual": 0.6278,
-          "expected": 0.7313,
-          "error": -0.1035
-        }
-      ],
-      "largest": [
-        {
-          "id": "P0452",
-          "name": "Victor Wembanyama",
-          "actual": 2.6446,
-          "expected": 3.8219,
-          "error": -1.1773
-        },
-        {
-          "id": "P0511",
-          "name": "Alex Sarr",
-          "actual": 1.4904,
-          "expected": 2.6207,
-          "error": -1.1303
-        },
-        {
-          "id": "P0264",
-          "name": "Giannis Antetokounmpo",
-          "actual": 1.6745,
-          "expected": 0.8316,
-          "error": 0.8429
-        },
-        {
-          "id": "P0099",
-          "name": "Craig Porter Jr.",
-          "actual": 0.3647,
-          "expected": 1.2067,
-          "error": -0.842
+          "id": "P0399",
+          "name": "Dillon Brooks",
+          "actual": 2.0821,
+          "expected": 1.2056,
+          "error": 0.8764
         },
         {
           "id": "P0174",
           "name": "Amen Thompson",
-          "actual": 1.3535,
-          "expected": 0.5775,
-          "error": 0.7759
+          "actual": 2.3163,
+          "expected": 1.4439,
+          "error": 0.8725
         },
         {
-          "id": "P0332",
-          "name": "OG Anunoby",
-          "actual": 1.4825,
-          "expected": 0.759,
-          "error": 0.7234
+          "id": "P0022",
+          "name": "Day'Ron Sharpe",
+          "actual": 1.2606,
+          "expected": 2.1176,
+          "error": -0.8571
         },
         {
-          "id": "P0249",
-          "name": "Isaiah Stewart",
-          "actual": 1.8309,
-          "expected": 2.5374,
-          "error": -0.7066
-        },
-        {
-          "id": "P0515",
-          "name": "Bilal Coulibaly",
-          "actual": 0.6259,
-          "expected": 1.3243,
-          "error": -0.6983
+          "id": "P0141",
+          "name": "John Collins",
+          "actual": 0.4139,
+          "expected": 1.1956,
+          "error": -0.7817
         }
       ]
     },
-    "tov": {
-      "count": 219,
-      "meanError": -0.1307,
-      "meanAbsoluteError": 0.4088,
+    "blk": {
+      "count": 215,
+      "meanError": -0.0895,
+      "meanAbsoluteError": 0.2273,
       "focus": [
         {
           "id": "P0156",
           "name": "Stephen Curry",
-          "actual": 2.3958,
-          "expected": 3.2777,
-          "error": -0.8818
+          "actual": 0.2685,
+          "expected": 0.4605,
+          "error": -0.192
         },
         {
           "id": "P0193",
           "name": "T.J. McConnell",
-          "actual": 2.5957,
-          "expected": 2.3925,
-          "error": 0.2032
+          "actual": 0.3415,
+          "expected": 0.3738,
+          "error": -0.0323
         },
         {
           "id": "P0350",
           "name": "Isaiah Hartenstein",
-          "actual": 2.1497,
-          "expected": 2.5963,
-          "error": -0.4466
+          "actual": 0.9101,
+          "expected": 1.1398,
+          "error": -0.2297
         },
         {
           "id": "P0382",
           "name": "Joel Embiid",
-          "actual": 2.6177,
-          "expected": 3.2673,
-          "error": -0.6495
+          "actual": 1.1845,
+          "expected": 1.3789,
+          "error": -0.1944
         },
         {
           "id": "P0419",
           "name": "Ja Morant",
-          "actual": 2.914,
-          "expected": 4.4921,
-          "error": -1.5781
+          "actual": 0.1793,
+          "expected": 0.3796,
+          "error": -0.2003
         },
         {
           "id": "P0452",
           "name": "Victor Wembanyama",
-          "actual": 2.7222,
-          "expected": 2.9589,
-          "error": -0.2367
+          "actual": 2.6319,
+          "expected": 3.8219,
+          "error": -1.1901
         },
         {
           "id": "P0487",
           "name": "Lauri Markkanen",
-          "actual": 2.3213,
-          "expected": 1.5717,
-          "error": 0.7495
+          "actual": 0.4065,
+          "expected": 0.5239,
+          "error": -0.1174
         },
         {
           "id": "P0491",
           "name": "Jusuf Nurkic",
-          "actual": 2.3411,
-          "expected": 3.3573,
-          "error": -1.0162
+          "actual": 0.575,
+          "expected": 0.7313,
+          "error": -0.1563
         }
       ],
       "largest": [
         {
-          "id": "P0420",
-          "name": "Shaedon Sharpe",
-          "actual": 1.7739,
-          "expected": 3.5976,
-          "error": -1.8236
+          "id": "P0452",
+          "name": "Victor Wembanyama",
+          "actual": 2.6319,
+          "expected": 3.8219,
+          "error": -1.1901
         },
         {
-          "id": "P0161",
-          "name": "Draymond Green",
-          "actual": 1.8771,
-          "expected": 3.5345,
-          "error": -1.6574
+          "id": "P0511",
+          "name": "Alex Sarr",
+          "actual": 1.4821,
+          "expected": 2.6207,
+          "error": -1.1386
         },
         {
-          "id": "P0417",
-          "name": "Deni Avdija",
-          "actual": 2.522,
-          "expected": 4.1081,
-          "error": -1.5861
+          "id": "P0425",
+          "name": "Robert Williams III",
+          "actual": 2.1083,
+          "expected": 3.1579,
+          "error": -1.0496
+        },
+        {
+          "id": "P0249",
+          "name": "Isaiah Stewart",
+          "actual": 1.5118,
+          "expected": 2.5374,
+          "error": -1.0257
+        },
+        {
+          "id": "P0332",
+          "name": "OG Anunoby",
+          "actual": 1.5481,
+          "expected": 0.759,
+          "error": 0.789
+        },
+        {
+          "id": "P0099",
+          "name": "Craig Porter Jr.",
+          "actual": 0.4386,
+          "expected": 1.2067,
+          "error": -0.7681
+        },
+        {
+          "id": "P0077",
+          "name": "Matas Buzelis",
+          "actual": 1.1503,
+          "expected": 1.8493,
+          "error": -0.699
+        },
+        {
+          "id": "P0063",
+          "name": "Ryan Kalkbrenner",
+          "actual": 1.8325,
+          "expected": 2.5234,
+          "error": -0.6909
+        }
+      ]
+    },
+    "tov": {
+      "count": 215,
+      "meanError": -0.1246,
+      "meanAbsoluteError": 0.4039,
+      "focus": [
+        {
+          "id": "P0156",
+          "name": "Stephen Curry",
+          "actual": 2.6748,
+          "expected": 3.2777,
+          "error": -0.6029
+        },
+        {
+          "id": "P0193",
+          "name": "T.J. McConnell",
+          "actual": 2.7881,
+          "expected": 2.3925,
+          "error": 0.3956
+        },
+        {
+          "id": "P0350",
+          "name": "Isaiah Hartenstein",
+          "actual": 2.0496,
+          "expected": 2.5963,
+          "error": -0.5467
+        },
+        {
+          "id": "P0382",
+          "name": "Joel Embiid",
+          "actual": 2.5543,
+          "expected": 3.2673,
+          "error": -0.713
         },
         {
           "id": "P0419",
           "name": "Ja Morant",
-          "actual": 2.914,
+          "actual": 2.9913,
           "expected": 4.4921,
-          "error": -1.5781
+          "error": -1.5008
+        },
+        {
+          "id": "P0452",
+          "name": "Victor Wembanyama",
+          "actual": 2.5455,
+          "expected": 2.9589,
+          "error": -0.4134
+        },
+        {
+          "id": "P0487",
+          "name": "Lauri Markkanen",
+          "actual": 2.3284,
+          "expected": 1.5717,
+          "error": 0.7567
+        },
+        {
+          "id": "P0491",
+          "name": "Jusuf Nurkic",
+          "actual": 2.4648,
+          "expected": 3.3573,
+          "error": -0.8926
+        }
+      ],
+      "largest": [
+        {
+          "id": "P0417",
+          "name": "Deni Avdija",
+          "actual": 2.496,
+          "expected": 4.1081,
+          "error": -1.6121
         },
         {
           "id": "P0423",
           "name": "Scoot Henderson",
-          "actual": 1.9556,
+          "actual": 1.9057,
           "expected": 3.5134,
-          "error": -1.5578
+          "error": -1.6077
         },
         {
-          "id": "P0453",
-          "name": "Stephon Castle",
-          "actual": 2.6105,
-          "expected": 3.84,
-          "error": -1.2295
+          "id": "P0420",
+          "name": "Shaedon Sharpe",
+          "actual": 2.0639,
+          "expected": 3.5976,
+          "error": -1.5336
+        },
+        {
+          "id": "P0419",
+          "name": "Ja Morant",
+          "actual": 2.9913,
+          "expected": 4.4921,
+          "error": -1.5008
+        },
+        {
+          "id": "P0161",
+          "name": "Draymond Green",
+          "actual": 2.0924,
+          "expected": 3.5345,
+          "error": -1.4421
+        },
+        {
+          "id": "P0422",
+          "name": "Jrue Holiday",
+          "actual": 2.0167,
+          "expected": 3.3692,
+          "error": -1.3525
         },
         {
           "id": "P0512",
           "name": "Kyshawn George",
-          "actual": 2.0466,
+          "actual": 2.0992,
           "expected": 3.2351,
-          "error": -1.1885
+          "error": -1.1358
         },
         {
           "id": "P0043",
           "name": "Payton Pritchard",
-          "actual": 2.7375,
+          "actual": 2.6425,
           "expected": 1.5556,
-          "error": 1.182
+          "error": 1.087
         }
       ]
     }
@@ -1701,7 +1701,7 @@
       "scoringLoad": 0.6912,
       "creation": 0.6618,
       "selfCreation": 0.6642,
-      "opportunity": 56.6713,
+      "opportunity": 57.5481,
       "roleGrowth": 1
     },
     "embiid": {
@@ -1711,7 +1711,7 @@
       "scoringLoad": 0.6839,
       "creation": 0.5888,
       "selfCreation": 0.5804,
-      "opportunity": 46.1274,
+      "opportunity": 48.3813,
       "roleGrowth": 1
     },
     "gobert": {
@@ -1721,7 +1721,7 @@
       "scoringLoad": 0.362,
       "creation": 0.2793,
       "selfCreation": 0.2041,
-      "opportunity": 16.1933,
+      "opportunity": 18.6228,
       "roleGrowth": 1
     },
     "gafford": {
@@ -1731,7 +1731,7 @@
       "scoringLoad": 0.4626,
       "creation": 0.34,
       "selfCreation": 0.2615,
-      "opportunity": 7.1061,
+      "opportunity": 18.4645,
       "roleGrowth": 1
     },
     "gobertPhysicalGrowth": {
@@ -1741,7 +1741,7 @@
       "scoringLoad": 0.6048,
       "creation": 0.4485,
       "selfCreation": 0.2284,
-      "opportunity": 13.5123,
+      "opportunity": 19.7075,
       "roleGrowth": 1.0813
     },
     "wembanyamaGrowth": {
@@ -1751,7 +1751,7 @@
       "scoringLoad": 0.9058,
       "creation": 0.7819,
       "selfCreation": 0.6716,
-      "opportunity": 94.056,
+      "opportunity": 92.2253,
       "roleGrowth": 1.5
     },
     "genericRoll": {
@@ -1761,7 +1761,7 @@
       "scoringLoad": 0.4679,
       "creation": 0.2883,
       "selfCreation": 0.0473,
-      "opportunity": 6.8672,
+      "opportunity": 19.0972,
       "roleGrowth": null
     },
     "genericCreator": {
@@ -1771,7 +1771,7 @@
       "scoringLoad": 0.8084,
       "creation": 0.6851,
       "selfCreation": 0.7128,
-      "opportunity": 14.8554,
+      "opportunity": 42.2838,
       "roleGrowth": null
     }
   },
@@ -1827,14 +1827,14 @@
     {
       "pos": "C",
       "profile": "rim_protector",
-      "before": 88,
-      "after": 93
+      "before": 94,
+      "after": 99
     },
     {
       "pos": "C",
       "profile": "skilled_big",
-      "before": 86,
-      "after": 91
+      "before": 90,
+      "after": 95
     }
   ],
   "roleBiasAcceptance": [
@@ -1842,19 +1842,19 @@
       "metric": "pts",
       "id": "P0452",
       "name": "Victor Wembanyama",
-      "actual": 28.4929,
+      "actual": 28.9901,
       "expected": 30.8219,
-      "error": -2.3291,
-      "relativeError": 0.0756
+      "error": -1.8318,
+      "relativeError": 0.0594
     },
     {
       "metric": "ast",
       "id": "P0350",
       "name": "Isaiah Hartenstein",
-      "actual": 5.1503,
+      "actual": 5.0375,
       "expected": 5.2559,
-      "error": -0.1056,
-      "relativeError": 0.0201
+      "error": -0.2184,
+      "relativeError": 0.0416
     }
   ],
   "failureCount": 0,

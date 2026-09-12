@@ -1447,11 +1447,21 @@ function processDraft() {
   });
   if (typeof prepareScheduledStarRookiesForDraft === 'function') prepareScheduledStarRookiesForDraft();
   var targetOvrs = buildGeneratedDraftOvrTargets(teams.length, rngNext);
-  teams.forEach(function(t, idx) {
+  var prospects = teams.map(function() {
     var rookie = generateRookie();
+    if (rookie._fixedProspectRating) syncAuthoredRookieOvr(rookie);
+    rookie._draftTalentSeed = Number(rookie.ovr) || 50;
+    return rookie;
+  }).sort(function(left, right) {
+    return Number(right._draftTalentSeed) - Number(left._draftTalentSeed);
+  });
+  var assignments = assignPositionBalancedDraftTargets(prospects, targetOvrs);
+  assignments.forEach(function(assignment, idx) {
+    var t = teams[idx];
+    var rookie = assignment.player;
     // 当届新秀只在本次休赛期受交易保护，下一休赛期会统一解除。
     rookie._justSigned = true;
-    var targetOvr = targetOvrs[idx] || 60;
+    var targetOvr = assignment.targetOvr || 60;
     prepareDraftProspectForTarget(rookie, targetOvr, rngNext);
     var rookieGene = getPlayerGene(rookie);
     rookieGene.potential = inferLeaguePlayerPotential(rookie, getLeaguePlayerAge(rookie));
@@ -3489,6 +3499,15 @@ var GENERATED_DRAFT_OVR_TIERS = [
   { id: 'longshot', share: 0.067, min: 50, max: 59 }
 ];
 
+function getGeneratedDraftOvrTier(ovr) {
+  var rating = Number(ovr) || 50;
+  for (var i = 0; i < GENERATED_DRAFT_OVR_TIERS.length; i++) {
+    var tier = GENERATED_DRAFT_OVR_TIERS[i];
+    if (rating >= tier.min && rating <= tier.max) return tier.id;
+  }
+  return 'longshot';
+}
+
 function buildGeneratedDraftOvrTargets(count, randomFn) {
   var total = Math.max(0, Math.floor(Number(count) || 0));
   var random = typeof randomFn === 'function' ? randomFn : Math.random;
@@ -3511,6 +3530,57 @@ function buildGeneratedDraftOvrTargets(count, randomFn) {
     }
   });
   return targets.sort(function(left, right) { return right - left; });
+}
+
+function getDraftTierPositionRankLimit(tier) {
+  if (tier === 'elite') return 1;
+  if (tier === 'high') return 2;
+  if (tier === 'rotation') return 3;
+  if (tier === 'development') return 4;
+  return 5;
+}
+
+function getDraftPositionTalentRank(player, prospects) {
+  var position = getGeneratedPlayerMainPos(player);
+  var rank = 0;
+  var talent = Number(player && player._draftTalentSeed) || 0;
+  (prospects || []).forEach(function(candidate) {
+    if (getGeneratedPlayerMainPos(candidate) !== position) return;
+    var candidateTalent = Number(candidate && candidate._draftTalentSeed) || 0;
+    if (candidateTalent > talent
+      || (candidateTalent === talent && String(candidate && candidate.id || '') < String(player && player.id || ''))) {
+      rank++;
+    }
+  });
+  return rank + 1;
+}
+
+/**
+ * 每档首席仍按全局来源评分确定；后续席位在各位置的前 N 名中优先未覆盖位置。
+ * 资格用位置内排名而非绝对分差，避免原始 OVR 公式的中锋偏高使后卫完全失去高潜入口。
+ */
+function assignPositionBalancedDraftTargets(prospects, targetOvrs) {
+  var remaining = (prospects || []).slice();
+  var targets = (targetOvrs || []).slice();
+  var tierPositionCounts = {};
+  var assignments = [];
+  targets.forEach(function(target) {
+    var tier = getGeneratedDraftOvrTier(target);
+    var counts = tierPositionCounts[tier] || (tierPositionCounts[tier] = {});
+    var rankLimit = getDraftTierPositionRankLimit(tier);
+    var diversified = remaining.filter(function(player) {
+      return !counts[getGeneratedPlayerMainPos(player)]
+        && getDraftPositionTalentRank(player, remaining) <= rankLimit;
+    });
+    var pool = diversified.length ? diversified : remaining;
+    var player = pool[0];
+    if (!player) return;
+    var position = getGeneratedPlayerMainPos(player);
+    counts[position] = (counts[position] || 0) + 1;
+    remaining.splice(remaining.indexOf(player), 1);
+    assignments.push({ player: player, targetOvr: target, tier: tier });
+  });
+  return assignments;
 }
 
 /**
@@ -3559,6 +3629,7 @@ function prepareDraftProspectForTarget(player, targetOvr, randomFn) {
   }
   player._rookieSeason = getCurrentLeagueSeasonNumber();
   player._draftOvr = Number(player.ovr) || target;
+  player._draftTier = getGeneratedDraftOvrTier(player._draftOvr);
   refreshGeneratedPlayerType(player);
   return player;
 }
@@ -4104,10 +4175,12 @@ function getGeneratedPlayerPotentialCap(player, draftOvr) {
       return authoredStarCaps[starIndex] || 96;
     }
   }
-  if (draftOvr <= 59) return 80;
-  if (draftOvr <= 67) return 86;
-  if (draftOvr <= 74) return 92;
-  if (draftOvr <= 79) return 96;
+  // 新秀的潜力入口绑定入选档位而不是当前 OVR；这样后续成长不会改写其初始稀有度。
+  var tier = String(player && player._draftTier || getGeneratedDraftOvrTier(draftOvr));
+  if (tier === 'longshot') return 80;
+  if (tier === 'development') return 86;
+  if (tier === 'rotation') return 92;
+  if (tier === 'high') return 96;
   return 98;
 }
 

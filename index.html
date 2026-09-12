@@ -1971,6 +1971,31 @@ function captureBaseLeagueRoster() {
   });
 }
 
+/** 将旧存档中的姓氏显示名迁移到当前名单的 ID 对应全名。 */
+function syncLeagueDisplayNames(leagueData, freeAgentPool, extraPlayers) {
+  if (!_baseLeagueRosterSnapshot) return 0;
+  var namesById = {};
+  Object.keys(_baseLeagueRosterSnapshot).forEach(function(teamId) {
+    (_baseLeagueRosterSnapshot[teamId] || []).forEach(function(player) {
+      if (player && player.id && player.cname) namesById[String(player.id)] = player.cname;
+    });
+  });
+  var changed = 0;
+  function syncPlayer(player) {
+    if (!player || !player.id) return;
+    var fullName = namesById[String(player.id)];
+    if (!fullName || player.cname === fullName) return;
+    player.cname = fullName;
+    changed++;
+  }
+  Object.keys(leagueData || {}).forEach(function(teamId) {
+    if (Array.isArray(leagueData[teamId])) leagueData[teamId].forEach(syncPlayer);
+  });
+  (Array.isArray(freeAgentPool) ? freeAgentPool : []).forEach(syncPlayer);
+  (Array.isArray(extraPlayers) ? extraPlayers : []).forEach(syncPlayer);
+  return changed;
+}
+
 function restoreBaseLeagueRoster() {
   captureBaseLeagueRoster();
   if (!_baseLeagueRosterSnapshot || typeof LEAGUE_PLAYER_DATA === 'undefined' || typeof LEAGUE_TEAM_IDS === 'undefined') return;
@@ -10626,6 +10651,7 @@ function manualLoadGame(slot, options) {
           captureBaseLeagueRoster();
           Object.keys(LEAGUE_PLAYER_DATA).forEach(function(k) { delete LEAGUE_PLAYER_DATA[k]; });
           Object.assign(LEAGUE_PLAYER_DATA, snap.league);
+          syncLeagueDisplayNames(LEAGUE_PLAYER_DATA, STATE._freeAgentPool, STATE.currentRoster);
           normalizeLegacyGeneratedRookieLabels();
           if (typeof syncLeaguePlayerOvrs === 'function') syncLeaguePlayerOvrs();
         }

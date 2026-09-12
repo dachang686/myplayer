@@ -52,7 +52,8 @@ report.teamAverages.freeThrowRate=round(teamTotals.fta/teamTotals.fga);
 report.invariantErrors=invariantErrors;
 report.leaders=Object.fromEntries(['pts','reb','ast','stl','blk','tov'].map(key=>[key,[...totals.values()].filter(t=>t.games>=150&&t.mins/t.games>=15).sort((a,b)=>b[key]/b.games-a[key]/a.games).slice(0,10).map(t=>({id:t.id,name:ratingRows.find(p=>p.id===t.id).cname,value:round(t[key]/t.games),mins:round(t.mins/t.games),maxPts:t.maxPts}))]));
 const auditData = JSON.parse(read('scripts/data/player_semantic_calibration_v9.json')).players;
-report.playerExamples = ratingRows.filter(p => ['戈贝尔','库里','约基奇','德拉蒙德','亚当斯','克拉克斯顿','阿德巴约','西蒙斯','卡佩拉','卡鲁索'].includes(p.cname)).map(p => {
+const playerExampleIds = new Set(['P0298','P0156','P0078','P0180']);
+report.playerExamples = ratingRows.filter(p => playerExampleIds.has(p.id)).map(p => {
   const t = totals.get(p.id); const source = auditData.find(r => r.id === p.id);
   return { id:p.id,team:p.team,name:p.cname,threePT:p.threePT,MID:p.MID,...p.rating, snapshot:source && source.stats, simulated:t && {games:t.games,mins:round(t.mins/t.games),pts:round(t.pts/t.games),threeA:round(t.threeA/t.games),threePct:round(t.threeM/t.threeA),fta:round(t.fta/t.games),ftPct:round(t.ftm/t.fta),fgPct:round(t.fgm/t.fga)} };
 });
@@ -120,6 +121,45 @@ for (const [metric, sourceKey] of Object.entries({pts:'PTS',reb:'REB',ast:'AST',
 }
 const failures=[];
 const check=(ok,message)=>{if(!ok)failures.push(message);};
+function usageProbe(id, changes = {}) {
+  const row = ratingRows.find(player => player.id === id);
+  const base = api.internals.contextForTeam(row.team, { ignoreNpcAvailability: true });
+  const roster = base.players.map(player => ({ ...player }));
+  const index = roster.findIndex(player => player.id === id);
+  Object.assign(roster[index], changes);
+  roster[index].ovr = config.getUnifiedPlayerOvr(roster[index], roster[index].pos);
+  const context = api.internals.contextForTeam(row.team, {
+    ignoreNpcAvailability: true,
+    _preparedRotations: { [row.team]: { players: roster, minutes: base.minutes, roleRanks: base.roleRanks } },
+  });
+  const target = context.players.findIndex(player => player.id === roster[index].id);
+  return {
+    shotLoad: round(context.shotLoad[target]),
+    interiorUsageLoad: round(context.interiorUsageLoad[target]),
+    interiorCreatedUsageLoad: round(context.interiorCreatedUsageLoad[target]),
+    scoringLoad: round(context.scoringLoad[target]),
+    creation: round(context.creation[target]),
+    selfCreation: round(context.selfCreation[target]),
+    opportunity: round(context.opportunity[target]),
+    roleGrowth: context.offensiveRoles[target] ? round(context.offensiveRoles[target].scoringGrowth) : null,
+  };
+}
+const rollBigUsage = {
+  wembanyama: usageProbe('P0452'),
+  embiid: usageProbe('P0382'),
+  gobert: usageProbe('P0298'),
+  gafford: usageProbe('P0110'),
+  gobertPhysicalGrowth: usageProbe('P0298', { FIN: 99, DNK: 99, ATH: 99, STR: 99 }),
+  wembanyamaGrowth: usageProbe('P0452', { FIN: 99, DNK: 99, ATH: 99, STR: 99 }),
+  genericRoll: usageProbe('P0110', { id: 'generic-roll', threePT: 25, MID: 25, HAN: 25, PAS: 35, FIN: 95, DNK: 95, ATH: 85, STR: 85 }),
+  genericCreator: usageProbe('P0110', { id: 'generic-creator', threePT: 25, MID: 90, HAN: 85, PAS: 75, FIN: 95, DNK: 95, ATH: 85, STR: 85 }),
+};
+report.rollBigUsage = rollBigUsage;
+check(rollBigUsage.gobert.interiorCreatedUsageLoad <= rollBigUsage.gobert.shotLoad + 0.001, 'Roll finisher cannot turn rim finishing into autonomous shot load');
+check(rollBigUsage.gafford.interiorCreatedUsageLoad <= rollBigUsage.gafford.shotLoad + 0.001, 'Pick-and-roll center cannot receive the skilled-big usage path');
+check(rollBigUsage.wembanyama.scoringLoad >= rollBigUsage.wembanyama.shotLoad - 0.001 && rollBigUsage.embiid.scoringLoad >= rollBigUsage.embiid.shotLoad - 0.001, 'Skilled scoring centers must retain their own shot load');
+check(rollBigUsage.gobertPhysicalGrowth.roleGrowth < 1.15 && rollBigUsage.wembanyamaGrowth.roleGrowth > rollBigUsage.gobertPhysicalGrowth.roleGrowth + 0.15, 'Physical growth cannot multiply a roll finisher historical FGA36 like a self-creator');
+check(rollBigUsage.genericRoll.scoringLoad < rollBigUsage.genericCreator.scoringLoad - 0.10, 'Roleless roll finisher must not match self-creator shot volume');
 report.generatedPlateaus=[];
 for (const [pos, profiles] of Object.entries(trainingApi.context.ROOKIE_ATTRIBUTE_PROFILES)) {
   for (const profile of profiles) {

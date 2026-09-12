@@ -438,6 +438,11 @@
     var creation = players.map(function(_, index) {
       return profileNorm(index, ['skills', 'shotCreation'], clamp(han[index] * 0.45 + ath[index] * 0.25 + threat[index] * 0.30, 0, 1));
     });
+    // 速度、力量和顺下终结会提高一次既有机会的完成率，但不等于能自己制造出手。
+    // 该指标只用于区分吃饼内线与可自主发起的内线；比赛中的效率仍使用上面的完整 creation。
+    var selfCreation = players.map(function(_, index) {
+      return clamp(han[index] * 0.55 + mid[index] * 0.25 + three[index] * 0.15 + fin[index] * 0.05, 0, 1);
+    });
     var playmaking = players.map(function(_, index) {
       return profileNorm(index, ['skills', 'playmaking'], pas[index] * 0.72 + han[index] * 0.28);
     });
@@ -493,8 +498,15 @@
       return 1;
     });
     // 触球、出手、助攻各有独立权重：高传球中轴可以承担进攻，却不会被迫拥有最高 FGA。
+    // 纯吃饼内线的终结能力决定“拿到机会后能否打进”，不能单独变成大量自主出手。
+    // 只有具备足够持球/创造能力的内线，才能把高内线终结负荷转化为额外的主攻回合。
+    // 这保留文班、恩比德等能自行发起的内线，同时避免高 FIN/DNK 的顺下中锋被普遍抬分。
+    var interiorCreatedUsageLoad = interiorUsageLoad.map(function(value, index) {
+      var selfCreationGate = clamp((selfCreation[index] - 0.42) / 0.25, 0, 1);
+      return shotLoad[index] + Math.max(0, value - shotLoad[index]) * selfCreationGate;
+    });
     var scoringLoads = shotLoad.map(function(value, index) {
-      return Math.max(value, interiorUsageLoad[index], perimeterSpecialistLoad[index]);
+      return Math.max(value, interiorCreatedUsageLoad[index], perimeterSpecialistLoad[index]);
     });
     // Abilities describe execution; a role describes how often the offense
     // asks for it. Historical roles are neutral priors, scaled by current skills
@@ -507,13 +519,20 @@
       }) || role.fga36 <= 0 || role.fga36 > 45 || role.fta36 < 0 || role.fta36 > 25
         || role.ast36 < 0 || role.ast36 > 20 || role.fgm36 < 0 || role.fgm36 > role.fga36) return null;
       var currentLoad = Math.max(shotLoad[index], interiorUsageLoad[index], perimeterUsageLoad[index]);
+      var rawScoringGrowth = Math.pow(
+        Math.max(0.1, currentLoad) / Math.max(0.1, (role.baseLoad - 25) / 74),
+        1.5
+      );
+      // 角色档案保存的是过往出手职责。吃饼中锋成长后可以更高效地完成回合，
+      // 但不应仅靠 FIN/DNK/STR 的提升就把历史 FGA36 成倍放大；自主创造者保留完整适配。
+      var roleUsageAdaptation = clamp((selfCreation[index] - 0.34) / 0.30, 0.08, 1);
       return {
         confidence: clamp(role.confidence, 0, 1),
         fga36: role.fga36,
         fgm36: role.fgm36,
         fta36: role.fta36,
         ast36: role.ast36,
-        scoringGrowth: clamp(Math.pow(Math.max(0.1, currentLoad) / Math.max(0.1, (role.baseLoad - 25) / 74), 1.5), 0.15, 1.8),
+        scoringGrowth: clamp(1 + (rawScoringGrowth - 1) * roleUsageAdaptation, 0.45, 1.5),
         passingGrowth: clamp(Math.pow((0.15 + pas[index]) / Math.max(0.15, 0.15 + (role.basePassing - 25) / 74), 2), 0.15, 2),
       };
     });
@@ -664,12 +683,14 @@
       rimAbility: rimAbility,
       threat: threat,
       creation: creation,
+      selfCreation: selfCreation,
       playmaking: playmaking,
       assistPassing: assistPassing,
       ballSecurity: ballSecurity,
       touchLoad: touchLoad,
       shotLoad: shotLoad,
       scoringLoad: scoringLoads,
+      interiorCreatedUsageLoad: interiorCreatedUsageLoad,
       eliteScoringProfile: eliteScoringProfiles,
       interiorUsageLoad: interiorUsageLoad,
       perimeterUsageLoad: perimeterUsageLoad,

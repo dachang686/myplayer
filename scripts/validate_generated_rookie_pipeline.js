@@ -57,6 +57,62 @@ if (targets.length !== 30 || Math.max(...targets) > 84 || Math.min(...targets) <
 }
 
 const positions = ['PG', 'SG', 'SF', 'PF', 'C'];
+// 每档首席仍由全局最佳候选人取得；后续席位以位置内排名平衡。
+const stackedCenterProspects = Array.from({ length: 30 }, (_, index) => ({
+  id: `R-BALANCE-${index}`,
+  pos: index < 12 ? 'C' : positions[(index - 12) % positions.length],
+  _draftTalentSeed: 95 - index,
+}));
+context.prospectProbe = stackedCenterProspects;
+context.targetProbe = targets;
+const balancedAssignments = vm.runInContext('assignPositionBalancedDraftTargets(prospectProbe, targetProbe)', context);
+const eliteAssignments = balancedAssignments.filter(row => row.tier === 'elite');
+const highAssignments = balancedAssignments.filter(row => row.tier === 'high');
+if (eliteAssignments[0].player._draftTalentSeed !== 95 || new Set(eliteAssignments.map(row => row.player.pos)).size !== 4) {
+  failures.push('精英档未同时保留首席实力与位置多样性');
+}
+const closeProspects = [
+  ['C', 95], ['C', 94], ['PG', 93], ['SG', 92], ['SF', 91], ['PF', 90],
+].map(([pos, seed], index) => ({ id: `R-CLOSE-${index}`, pos, _draftTalentSeed: seed }));
+context.prospectProbe = closeProspects;
+const closeAssignments = vm.runInContext('assignPositionBalancedDraftTargets(prospectProbe, targetProbe)', context);
+const closeElitePositions = closeAssignments.filter(row => row.tier === 'elite').map(row => row.player.pos);
+if (new Set(closeElitePositions).size !== 4 || closeAssignments[1].player._draftTalentSeed < 92) {
+  failures.push('位置内前列候选人未获得精英档位置多样性优先');
+}
+
+// 用完整真实固定候选池采样，防止只在分差很小的人工夹具上通过。
+const fixedProspectPool = Object.entries(vm.runInContext('FUTURE_PROSPECT_RATINGS', context)).map(([id, rating]) => {
+  const player = { id, pos: rating.pos, ...rating.attributes };
+  context.playerProbe = player;
+  player._draftTalentSeed = vm.runInContext('calcOVR(playerProbe, playerProbe.pos)', context);
+  return player;
+});
+const assignmentFn = vm.runInContext('assignPositionBalancedDraftTargets', context);
+let poolRandomState = 20260912;
+function poolRandom() {
+  poolRandomState = (Math.imul(poolRandomState, 1664525) + 1013904223) >>> 0;
+  return poolRandomState / 0x100000000;
+}
+const realPoolElitePositions = Object.fromEntries(positions.map(pos => [pos, 0]));
+const eliteTargets = targets.filter(value => value >= 80);
+for (let sampleIndex = 0; sampleIndex < 10000; sampleIndex++) {
+  const sample = fixedProspectPool.slice();
+  for (let index = 0; index < 30; index++) {
+    const swapIndex = index + Math.floor(poolRandom() * (sample.length - index));
+    [sample[index], sample[swapIndex]] = [sample[swapIndex], sample[index]];
+  }
+  const sampledProspects = sample.slice(0, 30).sort((left, right) =>
+    right._draftTalentSeed - left._draftTalentSeed || left.id.localeCompare(right.id));
+  assignmentFn(sampledProspects, eliteTargets).forEach(({ player }) => {
+    realPoolElitePositions[player.pos]++;
+  });
+}
+const realPoolEliteTotal = Object.values(realPoolElitePositions).reduce((total, count) => total + count, 0);
+const realPoolEliteShares = Object.fromEntries(Object.entries(realPoolElitePositions).map(([pos, count]) => [pos, count / realPoolEliteTotal]));
+if (realPoolEliteShares.C > 0.35 || realPoolEliteShares.PG < 0.08 || realPoolEliteShares.SG < 0.08) {
+  failures.push(`真实固定候选池精英档位置偏置：${JSON.stringify(realPoolEliteShares)}`);
+}
 const generated = [];
 let maximumEntryOvr = 0;
 let maximumTargetResidual = 0;
@@ -160,7 +216,9 @@ if (authoredPlayer.ovr < 69 || authoredPlayer.ovr > 71) {
 }
 
 if (!draftFlowSource.includes('buildGeneratedDraftOvrTargets(prospects.length, rngNext)')
-  || !draftFlowSource.includes('prepareDraftProspectForTarget(player, targetOvrs[index], rngNext)')) {
+  || !draftFlowSource.includes('assignPositionBalancedDraftTargets(prospects, targetOvrs)')
+  || !draftFlowSource.includes('prepareDraftProspectForTarget(assignment.player, assignment.targetOvr, rngNext)')
+  || !offseasonSource.includes('var assignments = assignPositionBalancedDraftTargets(prospects, targetOvrs)')) {
   failures.push('正式选秀面板未接入班级稀有度分布');
 }
 if (!indexSource.includes('function prepareScheduledStarRookiesForDraft()')
@@ -176,6 +234,11 @@ const report = {
   maximumTargetResidual,
   maximumNormalPotential,
   maximumGrowthDelta,
+  stackedEliteTalent: eliteAssignments.map(row => row.player._draftTalentSeed),
+  stackedHighTalent: highAssignments.map(row => row.player._draftTalentSeed),
+  closeElitePositions,
+  realPoolElitePositions,
+  realPoolEliteShares,
   slowAttributeGrowthViolations,
   starCaps,
   legacy99Preserved: legacyPotential === 99,
