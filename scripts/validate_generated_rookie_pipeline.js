@@ -57,7 +57,8 @@ if (targets.length !== 30 || Math.max(...targets) > 84 || Math.min(...targets) <
 }
 
 const positions = ['PG', 'SG', 'SF', 'PF', 'C'];
-// 每档首席仍由全局最佳候选人取得；后续席位以位置内排名平衡。
+const maxPositionPriorityGap = vm.runInContext('DRAFT_POSITION_DIVERSITY_MAX_TALENT_GAP', context);
+// 明显领先的候选人不得因位置优先而降档。
 const stackedCenterProspects = Array.from({ length: 30 }, (_, index) => ({
   id: `R-BALANCE-${index}`,
   pos: index < 12 ? 'C' : positions[(index - 12) % positions.length],
@@ -68,8 +69,9 @@ context.targetProbe = targets;
 const balancedAssignments = vm.runInContext('assignPositionBalancedDraftTargets(prospectProbe, targetProbe)', context);
 const eliteAssignments = balancedAssignments.filter(row => row.tier === 'elite');
 const highAssignments = balancedAssignments.filter(row => row.tier === 'high');
-if (eliteAssignments[0].player._draftTalentSeed !== 95 || new Set(eliteAssignments.map(row => row.player.pos)).size !== 4) {
-  failures.push('精英档未同时保留首席实力与位置多样性');
+if (eliteAssignments.map(row => row.player._draftTalentSeed).join(',') !== '95,94,93,92'
+  || eliteAssignments.some(row => row.sourceTalentGap > maxPositionPriorityGap)) {
+  failures.push('明显领先的候选人被位置优先错误降档');
 }
 const closeProspects = [
   ['C', 95], ['C', 94], ['PG', 93], ['SG', 92], ['SF', 91], ['PF', 90],
@@ -94,8 +96,10 @@ function poolRandom() {
   poolRandomState = (Math.imul(poolRandomState, 1664525) + 1013904223) >>> 0;
   return poolRandomState / 0x100000000;
 }
-const realPoolElitePositions = Object.fromEntries(positions.map(pos => [pos, 0]));
+const realPoolTierPositions = Object.fromEntries(['elite', 'high', 'combined'].map(tier => [tier, Object.fromEntries(positions.map(pos => [pos, 0]))]));
+const realPoolTierGaps = { elite: [], high: [], combined: [] };
 const eliteTargets = targets.filter(value => value >= 80);
+const highTargets = targets.filter(value => value >= 75 && value <= 79);
 for (let sampleIndex = 0; sampleIndex < 10000; sampleIndex++) {
   const sample = fixedProspectPool.slice();
   for (let index = 0; index < 30; index++) {
@@ -104,14 +108,23 @@ for (let sampleIndex = 0; sampleIndex < 10000; sampleIndex++) {
   }
   const sampledProspects = sample.slice(0, 30).sort((left, right) =>
     right._draftTalentSeed - left._draftTalentSeed || left.id.localeCompare(right.id));
-  assignmentFn(sampledProspects, eliteTargets).forEach(({ player }) => {
-    realPoolElitePositions[player.pos]++;
+  assignmentFn(sampledProspects, eliteTargets.concat(highTargets)).forEach(({ player, tier, sourceTalentGap }) => {
+    realPoolTierPositions[tier][player.pos]++;
+    realPoolTierPositions.combined[player.pos]++;
+    realPoolTierGaps[tier].push(sourceTalentGap);
+    realPoolTierGaps.combined.push(sourceTalentGap);
   });
 }
-const realPoolEliteTotal = Object.values(realPoolElitePositions).reduce((total, count) => total + count, 0);
-const realPoolEliteShares = Object.fromEntries(Object.entries(realPoolElitePositions).map(([pos, count]) => [pos, count / realPoolEliteTotal]));
-if (realPoolEliteShares.C > 0.35 || realPoolEliteShares.PG < 0.08 || realPoolEliteShares.SG < 0.08) {
-  failures.push(`真实固定候选池精英档位置偏置：${JSON.stringify(realPoolEliteShares)}`);
+const realPoolTierShares = Object.fromEntries(Object.entries(realPoolTierPositions).map(([tier, counts]) => {
+  const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
+  return [tier, Object.fromEntries(Object.entries(counts).map(([pos, count]) => [pos, count / total]))];
+}));
+const realPoolTierGapSummary = Object.fromEntries(Object.entries(realPoolTierGaps).map(([tier, gaps]) => [tier, {
+  average: gaps.reduce((sum, gap) => sum + gap, 0) / gaps.length,
+  maximum: Math.max(...gaps),
+}]));
+if (Object.values(realPoolTierGapSummary).some(summary => summary.maximum > maxPositionPriorityGap)) {
+  failures.push(`真实固定候选池出现超过 ${maxPositionPriorityGap} 分的高潜提档：${JSON.stringify(realPoolTierGapSummary)}`);
 }
 const generated = [];
 let maximumEntryOvr = 0;
@@ -237,8 +250,10 @@ const report = {
   stackedEliteTalent: eliteAssignments.map(row => row.player._draftTalentSeed),
   stackedHighTalent: highAssignments.map(row => row.player._draftTalentSeed),
   closeElitePositions,
-  realPoolElitePositions,
-  realPoolEliteShares,
+  maxPositionPriorityGap,
+  realPoolTierPositions,
+  realPoolTierShares,
+  realPoolTierGapSummary,
   slowAttributeGrowthViolations,
   starCaps,
   legacy99Preserved: legacyPotential === 99,

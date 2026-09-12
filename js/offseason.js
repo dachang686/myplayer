@@ -3498,6 +3498,7 @@ var GENERATED_DRAFT_OVR_TIERS = [
   { id: 'development', share: 0.267, min: 60, max: 67 },
   { id: 'longshot', share: 0.067, min: 50, max: 59 }
 ];
+var DRAFT_POSITION_DIVERSITY_MAX_TALENT_GAP = 5;
 
 function getGeneratedDraftOvrTier(ovr) {
   var rating = Number(ovr) || 50;
@@ -3556,8 +3557,8 @@ function getDraftPositionTalentRank(player, prospects) {
 }
 
 /**
- * 每档首席仍按全局来源评分确定；后续席位在各位置的前 N 名中优先未覆盖位置。
- * 资格用位置内排名而非绝对分差，避免原始 OVR 公式的中锋偏高使后卫完全失去高潜入口。
+ * 每档首席仍按全局来源评分确定；后续席位仅在位置内前 N 名、且接近全局最佳时优先未覆盖位置。
+ * 位置资格只用于近档平局，绝不能让明显更弱的候选人越档取得高潜入口。
  */
 function assignPositionBalancedDraftTargets(prospects, targetOvrs) {
   var remaining = (prospects || []).slice();
@@ -3568,9 +3569,11 @@ function assignPositionBalancedDraftTargets(prospects, targetOvrs) {
     var tier = getGeneratedDraftOvrTier(target);
     var counts = tierPositionCounts[tier] || (tierPositionCounts[tier] = {});
     var rankLimit = getDraftTierPositionRankLimit(tier);
+    var bestTalent = Number(remaining[0] && remaining[0]._draftTalentSeed) || 0;
     var diversified = remaining.filter(function(player) {
       return !counts[getGeneratedPlayerMainPos(player)]
-        && getDraftPositionTalentRank(player, remaining) <= rankLimit;
+        && getDraftPositionTalentRank(player, remaining) <= rankLimit
+        && bestTalent - (Number(player._draftTalentSeed) || 0) <= DRAFT_POSITION_DIVERSITY_MAX_TALENT_GAP;
     });
     var pool = diversified.length ? diversified : remaining;
     var player = pool[0];
@@ -3578,7 +3581,8 @@ function assignPositionBalancedDraftTargets(prospects, targetOvrs) {
     var position = getGeneratedPlayerMainPos(player);
     counts[position] = (counts[position] || 0) + 1;
     remaining.splice(remaining.indexOf(player), 1);
-    assignments.push({ player: player, targetOvr: target, tier: tier });
+    assignments.push({ player: player, targetOvr: target, tier: tier,
+      sourceTalentGap: Math.max(0, bestTalent - (Number(player._draftTalentSeed) || 0)) });
   });
   return assignments;
 }
