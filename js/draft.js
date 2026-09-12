@@ -626,7 +626,9 @@
       var player = generateRookie();
       if (player._fixedProspectRating) syncAuthoredRookieOvr(player);
       // 固定候选人的历史登记 OVR 可能来自旧公式；统一用当前公式评分作来源种子。
-      player._draftTalentSeed = Number(player.ovr) || 50;
+      player._draftTalentSeed = typeof getDraftTalentSeed === 'function'
+        ? getDraftTalentSeed(player)
+        : (Number(player.ovr) || 50);
       player._draftTie = seededValue(draft.seed, 'board|' + player.id);
       prospects.push(player);
     }

@@ -85,9 +85,11 @@ if (new Set(closeElitePositions).size !== 4 || closeAssignments[1].player._draft
 
 // 用完整真实固定候选池采样，防止只在分差很小的人工夹具上通过。
 const fixedProspectPool = Object.entries(vm.runInContext('FUTURE_PROSPECT_RATINGS', context)).map(([id, rating]) => {
-  const player = { id, pos: rating.pos, ...rating.attributes };
+  const player = { id, pos: rating.pos, _fixedProspectRating: true, ...rating.attributes };
   context.playerProbe = player;
-  player._draftTalentSeed = vm.runInContext('calcOVR(playerProbe, playerProbe.pos)', context);
+  player._sourceFormulaOvr = vm.runInContext('calcOVR(playerProbe, playerProbe.pos)', context);
+  player.ovr = player._sourceFormulaOvr;
+  player._draftTalentSeed = vm.runInContext('getDraftTalentSeed(playerProbe)', context);
   return player;
 });
 const assignmentFn = vm.runInContext('assignPositionBalancedDraftTargets', context);
@@ -126,6 +128,20 @@ const realPoolTierGapSummary = Object.fromEntries(Object.entries(realPoolTierGap
 if (Object.values(realPoolTierGapSummary).some(summary => summary.maximum > maxPositionPriorityGap)) {
   failures.push(`真实固定候选池出现超过 ${maxPositionPriorityGap} 分的高潜提档：${JSON.stringify(realPoolTierGapSummary)}`);
 }
+const minimumGuardShares = { elite: { PG: 0.08, SG: 0.10 }, high: { PG: 0.04, SG: 0.06 }, combined: { PG: 0.08, SG: 0.10 } };
+const maximumCenterShares = { elite: 0.35, high: 0.40, combined: 0.36 };
+Object.entries(minimumGuardShares).forEach(([tier, minimums]) => {
+  Object.entries(minimums).forEach(([position, minimum]) => {
+    if (realPoolTierShares[tier][position] < minimum) {
+      failures.push(`真实固定候选池 ${tier} 档 ${position} 占比 ${realPoolTierShares[tier][position].toFixed(4)} 低于 ${minimum}`);
+    }
+  });
+});
+Object.entries(maximumCenterShares).forEach(([tier, maximum]) => {
+  if (realPoolTierShares[tier].C > maximum) {
+    failures.push(`真实固定候选池 ${tier} 档 C 占比 ${realPoolTierShares[tier].C.toFixed(4)} 高于 ${maximum}`);
+  }
+});
 const generated = [];
 let maximumEntryOvr = 0;
 let maximumTargetResidual = 0;

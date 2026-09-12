@@ -1450,7 +1450,7 @@ function processDraft() {
   var prospects = teams.map(function() {
     var rookie = generateRookie();
     if (rookie._fixedProspectRating) syncAuthoredRookieOvr(rookie);
-    rookie._draftTalentSeed = Number(rookie.ovr) || 50;
+    rookie._draftTalentSeed = getDraftTalentSeed(rookie);
     return rookie;
   }).sort(function(left, right) {
     return Number(right._draftTalentSeed) - Number(left._draftTalentSeed);
@@ -3499,6 +3499,14 @@ var GENERATED_DRAFT_OVR_TIERS = [
   { id: 'longshot', share: 0.067, min: 50, max: 59 }
 ];
 var DRAFT_POSITION_DIVERSITY_MAX_TALENT_GAP = 5;
+var FIXED_PROSPECT_DRAFT_TALENT_OFFSETS = { PG: 4, SG: 4, SF: 1, PF: 1, C: 0 };
+
+function getDraftTalentSeed(player) {
+  var source = Number(player && player.ovr) || 50;
+  if (!player || !player._fixedProspectRating) return source;
+  var position = getGeneratedPlayerMainPos(player);
+  return source + (Number(FIXED_PROSPECT_DRAFT_TALENT_OFFSETS[position]) || 0);
+}
 
 function getGeneratedDraftOvrTier(ovr) {
   var rating = Number(ovr) || 50;
