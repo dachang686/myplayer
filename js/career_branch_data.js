@@ -136,8 +136,8 @@ const BRANCH_EVENTS = [
           '你以为这是身体课，结果一半时间都在看录像。詹姆斯反复暂停同一个回合，问你：如果你是持球人，第三个选择在哪里？'
         ]);
         var extra = agency ? '<br><br>隐藏结果：训练结束后，一支明星经纪团队主动和你聊了几句。他们没有立刻谈合作，但你能感觉到，这条线以后可能会再出现。额外效果：传球+1。' : '';
-        if (great) return scene + '<br><br>特殊结果：你的身体适应速度超出预期，对抗后的起跳和二次发力都有提升。<br><br>效果：运动+2，力量+1，终结+1。' + extra;
-        return scene + '<br><br>普通结果：你的核心力量和冲击篮筐稳定性提升，长赛季身体管理意识也更强。<br><br>效果：运动+1，力量+1，终结+1。' + extra;
+        if (great) return scene + '<br><br>特殊结果：你的身体适应速度超出预期，对抗后的起跳和二次发力都有提升。<br><br>效果：速度/敏捷+2，力量+1，终结+1。' + extra;
+        return scene + '<br><br>普通结果：你的核心力量和冲击篮筐稳定性提升，长赛季身体管理意识也更强。<br><br>效果：速度/敏捷+1，力量+1，终结+1。' + extra;
       }},
       { label: '保罗控场训练', hint: '控球、传球、关键球提升', apply: function() {
         advanceBranch('mentor', 1, { lastMentor: 'paul' });
@@ -283,7 +283,7 @@ const BRANCH_EVENTS = [
         if (roll < 0.55) {
           addAttrDelta('ATH', 1);
           STATE.finalOVR = calcOVR(STATE.attrs);
-          return '你回了一条很短但体面的消息，然后把手机交给训练师保管。整个夏天，你的作息准得像比赛计时器。<br><br>效果：运动+1。';
+          return '你回了一条很短但体面的消息，然后把手机交给训练师保管。整个夏天，你的作息准得像比赛计时器。<br><br>效果：速度/敏捷+1。';
         }
         return '你选择不让这个夏天偏离训练计划。媒体没有故事可写，朋友笑你无趣，但教练组很满意。<br><br>效果：无属性变化，但避免了感情线风险。';
       }}
@@ -335,7 +335,7 @@ const BRANCH_EVENTS = [
         addAttrDelta('MID', 1);
         addAttrDelta('ATH', 1);
         STATE.finalOVR = calcOVR(STATE.attrs);
-        return '你婉拒了球局，把那一整天留给训练馆。助教说你可能错过了一些人脉，但你只回了一句：球会替我介绍自己。<br><br>效果：中投+1，运动+1。';
+        return '你婉拒了球局，把那一整天留给训练馆。助教说你可能错过了一些人脉，但你只回了一句：球会替我介绍自己。<br><br>效果：中投+1，速度/敏捷+1。';
       }}
     ]
   }
@@ -680,7 +680,7 @@ const STAGED_BRANCH_EVENTS = [
       { label: '礼貌拒绝，专注训练', hint: '不开启恋爱线，获得小训练收益', apply: function() {
         setBranchNode('relationship', 'declined', { status: 'declined', declinedSeason: STATE.career.seasonCount });
         addAttrDelta('ATH', 1); STATE.finalOVR = calcOVR(STATE.attrs);
-        return '你回了一条很短但体面的消息，然后把手机交给训练师保管。<br><br>效果：运动+1；恋爱线记录为“曾经拒绝”。';
+        return '你回了一条很短但体面的消息，然后把手机交给训练师保管。<br><br>效果：速度/敏捷+1；恋爱线记录为“曾经拒绝”。';
       }}
     ]
   },
@@ -715,7 +715,7 @@ const STAGED_BRANCH_EVENTS = [
       { label: '再次拒绝，专注篮球', hint: '恋爱线永久收束', apply: function() {
         setBranchNode('relationship', 'declined_closed', { status: 'declined', secondDecline: true });
         addAttrDelta('ATH', 1); STATE.finalOVR = calcOVR(STATE.attrs);
-        return '你回了一条很短的感谢，然后把手机交回训练师。这次你知道，自己选的就是这条路。<br><br>效果：运动+1；恋爱线记录为“二次拒绝”，不再开启。';
+        return '你回了一条很短的感谢，然后把手机交回训练师。这次你知道，自己选的就是这条路。<br><br>效果：速度/敏捷+1；恋爱线记录为“二次拒绝”，不再开启。';
       }}
     ]
   },
@@ -975,7 +975,7 @@ const STAGED_BRANCH_EVENTS = [
         STATE.career.flags.relationshipHurt = true;
         mods.formVariance = Math.max(-3, (mods.formVariance || 0) - 1);
         addAttrDelta('ATH', 1); STATE.finalOVR = calcOVR(STATE.attrs);
-        return intro + '<br><br>你约教练加练，把那些没回的消息全部清空。痛是真的，但你决定不让它定义你。<br><br>重点：你选择走出阴影。<br><br>影响：运动+1；下赛季状态波动略降；获得“走出阴影”标签。';
+        return intro + '<br><br>你约教练加练，把那些没回的消息全部清空。痛是真的，但你决定不让它定义你。<br><br>重点：你选择走出阴影。<br><br>影响：速度/敏捷+1；下赛季状态波动略降；获得“走出阴影”标签。';
       }}
     ]
   },
@@ -994,7 +994,7 @@ const STAGED_BRANCH_EVENTS = [
         setBranchNode('relationship', 'single_focus', { finalStatus: 'focused' });
         addAttrDelta('ATH', 1); STATE.finalOVR = calcOVR(STATE.attrs);
         STATE.career.flags.singleFocus = true;
-        return '你把休赛期重新排满。助教说你又回到了刚进联盟时的样子：眼里只有训练和比赛。<br><br>效果：运动+1；获得“单身专注”标签。';
+        return '你把休赛期重新排满。助教说你又回到了刚进联盟时的样子：眼里只有训练和比赛。<br><br>效果：速度/敏捷+1；获得“单身专注”标签。';
       }},
       { label: '顺其自然', hint: '保持开放，不刻意寻找', apply: function() {
         setBranchNode('relationship', 'single_open', { finalStatus: 'open' });
@@ -1026,7 +1026,7 @@ const STAGED_BRANCH_EVENTS = [
       { label: '拒绝社交，留在训练馆', hint: '放弃社交，把整个夏天留给训练', apply: function() {
         setBranchNode('network', 'training_focus', { status: 'training' });
         addAttrDelta('MID', 1); addAttrDelta('ATH', 1); STATE.finalOVR = calcOVR(STATE.attrs);
-        return '你婉拒了球局，把那一整天留给训练馆。助教说你可能错过了一些人脉，但你只回了一句：球会替我介绍自己。<br><br>效果：中投+1，运动+1。';
+        return '你婉拒了球局，把那一整天留给训练馆。助教说你可能错过了一些人脉，但你只回了一句：球会替我介绍自己。<br><br>效果：中投+1，速度/敏捷+1。';
       }}
     ]
   },
@@ -1110,7 +1110,7 @@ const STAGED_BRANCH_EVENTS = [
       { label: '继续把时间留给训练', hint: '彻底走训练馆路线', apply: function() {
         setBranchNode('network', 'training_resource', { identity: 'training_resource' });
         addAttrDelta('MID', 1); addAttrDelta('ATH', 1); STATE.finalOVR = calcOVR(STATE.attrs);
-        return '你把名片收进抽屉，第二天照常出现在训练馆。助教没有再劝，因为他知道，这条路同样是你想要的。<br><br>效果：中投+1，运动+1；获得“顶级训练资源”标签；人脉线以训练身份收束。';
+        return '你把名片收进抽屉，第二天照常出现在训练馆。助教没有再劝，因为他知道，这条路同样是你想要的。<br><br>效果：中投+1，速度/敏捷+1；获得“顶级训练资源”标签；人脉线以训练身份收束。';
       }}
     ]
   },
@@ -1158,7 +1158,7 @@ const STAGED_BRANCH_EVENTS = [
       { label: '把圈子用于训练资源', hint: '训练收益稳定', apply: function() {
         setBranchNode('network', 'training_resource', { identity: 'training_resource' });
         addAttrDelta('ATH', 1); STATE.finalOVR = calcOVR(STATE.attrs);
-        return '你把人脉主要用在训练师、康复师和高质量陪练上。它不热闹，但非常实用。<br><br>效果：运动+1；获得“顶级训练资源”长期标签。';
+        return '你把人脉主要用在训练师、康复师和高质量陪练上。它不热闹，但非常实用。<br><br>效果：速度/敏捷+1；获得“顶级训练资源”长期标签。';
       }}
     ]
   },
@@ -1221,7 +1221,7 @@ const STAGED_BRANCH_EVENTS = [
         getBranchState('mentor').lastMentor = 'lebron';
         setBranchNode('training', 'mentor_first', { lastMentor: 'lebron' });
         addAttrDelta('ATH', 1); addAttrDelta('STR', 1); addAttrDelta('FIN', 1); STATE.finalOVR = calcOVR(STATE.attrs);
-        return '詹姆斯的训练在冲刺、对抗和阅读之间来回切换。最累的时候，他要你做最清醒的决定。<br><br>效果：运动+1，力量+1，终结+1。';
+        return '詹姆斯的训练在冲刺、对抗和阅读之间来回切换。最累的时候，他要你做最清醒的决定。<br><br>效果：速度/敏捷+1，力量+1，终结+1。';
       }},
       { label: '保罗：控场大师', hint: '控球/传球/关键球', apply: function() {
         getBranchState('mentor').lastMentor = 'paul';
@@ -1280,7 +1280,7 @@ const STAGED_BRANCH_EVENTS = [
         getBranchState('skill_training').lastFocus = 'offball';
         setBranchNode('training', 'skill_first', { lastFocus: 'offball' });
         addAttrDelta('MID', 1); addAttrDelta('ATH', 1); STATE.finalOVR = calcOVR(STATE.attrs);
-        return '你整个夏天都在和助教玩“找空位”游戏：不看球，只看防守人的眼睛。训练结束，你开始能提前半拍出现在正确的位置。<br><br>效果：中投+1，运动+1。';
+        return '你整个夏天都在和助教玩“找空位”游戏：不看球，只看防守人的眼睛。训练结束，你开始能提前半拍出现在正确的位置。<br><br>效果：中投+1，速度/敏捷+1。';
       }},
       { label: '罚球稳定', hint: '关键时刻的心理锚点', apply: function() {
         getBranchState('skill_training').lastFocus = 'free_throw';
@@ -1316,7 +1316,7 @@ const STAGED_BRANCH_EVENTS = [
         setBranchNode('training', 'body_plan', { plan: 'nutrition' });
         addSeasonMod('formVariance', -2, -10, 10);
         addAttrDelta('ATH', 1); STATE.finalOVR = calcOVR(STATE.attrs);
-        return '你戒了夜宵，把手机放在客厅充电。两个月后，队医说你的恢复指标像换了个人。<br><br>效果：状态波动-2；运动+1。';
+        return '你戒了夜宵，把手机放在客厅充电。两个月后，队医说你的恢复指标像换了个人。<br><br>效果：状态波动-2；速度/敏捷+1。';
       }},
       { label: '家人陪伴康复', hint: '心理放松，家人参与训练生活', apply: function() {
         setBranchNode('training', 'body_plan', { plan: 'family' });
@@ -1343,13 +1343,13 @@ const STAGED_BRANCH_EVENTS = [
         setBranchNode('training', 'dual_plan', { plan: 'skill_first' });
         addAttrDelta('MID', 1); addAttrDelta('ATH', 1); STATE.finalOVR = calcOVR(STATE.attrs);
         addSeasonMod('formVariance', -1, -10, 10);
-        return '下午的专项课决定方向，上午的导师课只负责纠错。一个夏天下来，你的动作没变多，但每个动作都变对了。<br><br>效果：中投+1，运动+1；状态波动-1。';
+        return '下午的专项课决定方向，上午的导师课只负责纠错。一个夏天下来，你的动作没变多，但每个动作都变对了。<br><br>效果：中投+1，速度/敏捷+1；状态波动-1。';
       }},
       { label: '轻量双修', hint: '两项都练但都不过载', apply: function() {
         setBranchNode('training', 'dual_plan', { plan: 'light' });
         addAttrDelta('ATH', 1); addAttrDelta('PAS', 1); STATE.finalOVR = calcOVR(STATE.attrs);
         addSeasonMod('injuryRiskBonus', -1, -4, 8);
-        return '你把强度控制在八成，只求每堂课都完整。训练师说：完整比猛烈更能坚持到九月。<br><br>效果：运动+1，传球+1；伤病风险-1。';
+        return '你把强度控制在八成，只求每堂课都完整。训练师说：完整比猛烈更能坚持到九月。<br><br>效果：速度/敏捷+1，传球+1；伤病风险-1。';
       }}
     ]
   },
@@ -1434,13 +1434,13 @@ const STAGED_BRANCH_EVENTS = [
       { label: '补强短板', hint: '低风险均衡成长', apply: function() {
         setBranchNode('training', 'skill_deep', { identityPath: 'balanced' });
         addAttrDelta('ATH', 1); addAttrDelta('PAS', 1); STATE.finalOVR = calcOVR(STATE.attrs);
-        return '你没有继续追逐一个夸张突破，而是把夏天拆给体能、传球和基础动作。<br><br>效果：运动+1，传球+1。';
+        return '你没有继续追逐一个夸张突破，而是把夏天拆给体能、传球和基础动作。<br><br>效果：速度/敏捷+1，传球+1。';
       }},
       { label: '强化体能', hint: '运动与恢复优先', apply: function() {
         setBranchNode('training', 'skill_deep', { identityPath: 'stamina' });
         addAttrDelta('ATH', 2); STATE.finalOVR = calcOVR(STATE.attrs);
         addSeasonMod('injuryRiskBonus', -1, -4, 8);
-        return '你把夏天后半段交给体能师。训练师说：技术决定你有多高，体能决定你能站多高多久。<br><br>效果：运动+2；伤病风险-1。';
+        return '你把夏天后半段交给体能师。训练师说：技术决定你有多高，体能决定你能站多高多久。<br><br>效果：速度/敏捷+2；伤病风险-1。';
       }},
       { label: '实战检验', hint: '用比赛验证训练', apply: function() {
         setBranchNode('training', 'skill_deep', { identityPath: 'live' });
@@ -2231,7 +2231,7 @@ const STAGED_BRANCH_EVENTS = [
       { label: '用训练消化', hint: '保持节奏，把情绪留在球馆', apply: function() {
         setBranchNode('mental_health', 'mh_training', { help: 'training' });
         addAttrDelta('ATH', 1); STATE.finalOVR = calcOVR(STATE.attrs);
-        return '你把自己泡在训练馆里，练到筋疲力尽。身体累了，心反而安静了一点。训练师没有劝你休息，只在你投完最后一球时递了一瓶水。<br><br>效果：运动+1。';
+        return '你把自己泡在训练馆里，练到筋疲力尽。身体累了，心反而安静了一点。训练师没有劝你休息，只在你投完最后一球时递了一瓶水。<br><br>效果：速度/敏捷+1。';
       }},
       { label: '硬扛', hint: '表面没事，风险累积', apply: function() {
         setBranchNode('mental_health', 'mh_tough', { help: 'tough' });
@@ -2580,7 +2580,7 @@ const STAGED_BRANCH_EVENTS = [
       { label: '专业团队', hint: '训练时间更稳', apply: function() {
         setBranchNode('family_children', 'care_help', { care: 'help' });
         addAttrDelta('ATH', 1); STATE.finalOVR = calcOVR(STATE.attrs);
-        return '你请了育儿师，也请了夜班阿姨。训练没落下，但你偶尔会想：他第一次笑的时候，是谁先看见的。<br><br>效果：运动+1。';
+        return '你请了育儿师，也请了夜班阿姨。训练没落下，但你偶尔会想：他第一次笑的时候，是谁先看见的。<br><br>效果：速度/敏捷+1。';
       }}
     ]
   },
@@ -3818,7 +3818,7 @@ const STAGED_BRANCH_EVENTS = [
         setBranchNode('crossover', 'declined', { status: 'declined' });
         addAttrDelta('ATH', 1);
         STATE.finalOVR = calcOVR(STATE.attrs);
-        return '你回了一条很短的感谢，然后把手机交给训练师保管。训练馆里没有舞台，但你听了一晚上《中国人能飞》。<br><br>影响：运动+1；你暂时选择了球馆。';
+        return '你回了一条很短的感谢，然后把手机交给训练师保管。训练馆里没有舞台，但你听了一晚上《中国人能飞》。<br><br>影响：速度/敏捷+1；你暂时选择了球馆。';
       }}
     ]
   },
