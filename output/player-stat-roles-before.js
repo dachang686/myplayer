@@ -70,20 +70,6 @@
     return weightSum > 0 ? sum / weightSum : 0;
   }
 
-  function roleAssistProfile(roles, weights) {
-    var roleMinutes = 0, minutes = 0, assists = 0, makes = 0;
-    weights.forEach(function(weight, index) {
-      minutes += weight;
-      var role = roles && roles[index];
-      if (!role) return;
-      var exposure = weight * role.confidence;
-      roleMinutes += exposure;
-      assists += exposure * role.ast36 * role.passingGrowth;
-      makes += exposure * role.fgm36 * role.scoringGrowth;
-    });
-    return { coverage: minutes > 0 ? roleMinutes / minutes : 0, rate: makes > 0 ? clamp(assists / makes, 0.15, 0.80) : 0.5 };
-  }
-
   function allocateTotal(total, weights, caps) {
     total = Math.max(0, Math.round(Number(total) || 0));
     var safeWeights = weights.map(function(weight) { return Math.max(0, Number(weight) || 0); });
@@ -496,27 +482,6 @@
     var scoringLoads = shotLoad.map(function(value, index) {
       return Math.max(value, interiorUsageLoad[index], perimeterSpecialistLoad[index]);
     });
-    // Abilities describe execution; a role describes how often the offense
-    // asks for it. Historical roles are neutral priors, scaled by current skills
-    // and normalized against today's teammates within the existing team totals.
-    var offensiveRoles = players.map(function(player, index) {
-      var role = player && player._offensiveRole;
-      if (!role || player._isUser || role.playerId !== player.id || role.version !== 4) return null;
-      if (!['fgm36','fga36','fta36','ast36','confidence','baseLoad','basePassing'].every(function(key) {
-        return Number.isFinite(Number(role[key]));
-      }) || role.fga36 <= 0 || role.fga36 > 45 || role.fta36 < 0 || role.fta36 > 25
-        || role.ast36 < 0 || role.ast36 > 20 || role.fgm36 < 0 || role.fgm36 > role.fga36) return null;
-      var currentLoad = Math.max(shotLoad[index], interiorUsageLoad[index], perimeterUsageLoad[index]);
-      return {
-        confidence: clamp(role.confidence, 0, 1),
-        fga36: role.fga36,
-        fgm36: role.fgm36,
-        fta36: role.fta36,
-        ast36: role.ast36,
-        scoringGrowth: clamp(Math.pow(Math.max(0.1, currentLoad) / Math.max(0.1, (role.baseLoad - 25) / 74), 1.5), 0.15, 1.8),
-        passingGrowth: clamp(Math.pow((0.15 + pas[index]) / Math.max(0.15, 0.15 + (role.basePassing - 25) / 74), 2), 0.15, 2),
-      };
-    });
     // 顶级得分画像只识别可见的进攻技能：得分效率、出手负荷、自主创造和组织。
     // 它不读取 OVR、位置、身高、防守或篮板，保证 NPC 与自建球员使用同一套规则。
     // 这层仅拉开真正进攻核心与普通首发之间的既有出手份额，不增加球队总回合或总出手。
@@ -566,11 +531,6 @@
           weights[index] * roleFactor * participationFactor * eliteLoadFactor * eliteScoringPriority * form[index]
         )
         : 0;
-      var role = offensiveRoles[index];
-      if (role && weights[index] > 0) {
-        var roleOpportunity = weights[index] * role.fga36 / 15 * role.scoringGrowth * form[index];
-        baseOpportunity = baseOpportunity * (1 - role.confidence) + roleOpportunity * role.confidence;
-      }
       var isCoreScorer = offensiveRoleRank < 2 && weights[index] >= 28 && scoringLoad >= 0.62;
       // 爆发保留稀有长尾；上限和 legendary 档位避免 50+/60+ 在联盟生态中泛滥。
       var gameMultiplier = weights[index] >= 28
@@ -603,8 +563,7 @@
         : 0;
     });
     // 助攻归因与持球安全分开：高传球内线可作为策应中轴，不能因控球不如后卫而失去传球价值。
-    // 无可靠职责记录时沿用通用画像；有记录时用传球职责分配机会，
-    // 技能变动通过 passingGrowth 生效，失误另按实际决策量与护球风险结算。
+    // 控球仍保留小幅权重；触球量和失误继续读取原有 touchLoad / ballSecurity，避免凭空制造组织回合。
     var assistPassing = players.map(function(_, index) {
       var isInterior = positions[index] === 'C' || positions[index] === 'PF';
       if (!isInterior) return playmaking[index];
@@ -627,8 +586,6 @@
       positions: positions,
       weights: weights,
       opportunity: opportunity,
-      offensiveRoles: offensiveRoles,
-      assistRoleProfile: roleAssistProfile(offensiveRoles, weights),
       legendaryScorerFlags: legendaryScorerFlags,
       touchOpportunity: touchOpportunity,
       three: three,
@@ -746,7 +703,6 @@
 
   function freeThrowOpportunityWeight(context, index) {
     if (!(Number(context.weights[index]) > 0)) return 0;
-    var role = context.offensiveRoles && context.offensiveRoles[index];
     var touchOpportunity = Math.max(0.1, Number(context.touchOpportunity[index]) || 0);
     var scoringOpportunity = Math.max(0.1, Number(context.opportunity[index]) || 0);
     var rimPressure = clamp(Number(context.rimAbility[index]) || 0, 0, 1);
@@ -755,15 +711,12 @@
       touchOpportunity,
       scoringOpportunity * (0.80 + rimPressure * 0.30)
     );
-    var genericWeight = foulOpportunity * (
+    return foulOpportunity * (
       0.20
       + context.volumeRim[index] * 1.55
       + rimPressure * 0.55
       + context.creation[index] * 0.15
     );
-    if (!role) return genericWeight;
-    var roleWeight = context.opportunity[index] * role.fta36 / Math.max(1, role.fga36) * 7.5;
-    return genericWeight * (1 - role.confidence) + roleWeight * role.confidence;
   }
 
   function threeAttemptShare(context, opponent, index, secondChance) {
@@ -790,13 +743,6 @@
     return clamp(0.43 + skill * 0.51 - context.fatigue * 0.003, 0.40, 0.96);
   }
 
-  function turnoverProbability(context, opponent, fatigue) {
-    var generic = 0.105 + (1 - context.handling) * 0.050 + (1 - context.teamCreation) * 0.018;
-    // Historical turnovers belong to an old team and workload. Team totals are
-    // generated from current ball security, pressure and fatigue instead.
-    return clamp(generic + (opponent.perimeterDefense - 0.50) * 0.030 + fatigue * 0.012, 0.080, 0.190);
-  }
-
   function fieldGoalProbabilities(context, opponent, index, bias, isClutch) {
     var defensePenalty = (opponent.rimProtection - 0.50) * 0.18;
     var perimeterPenalty = (opponent.perimeterDefense - 0.50) * 0.13;
@@ -821,7 +767,13 @@
     var weightedThree = weightedMean(context.volumeThree, context.opportunity);
     var weightedMid = weightedMean(context.volumeMid, context.opportunity);
     var weightedRim = weightedMean(context.volumeRim, context.opportunity);
-    var turnoverRate = turnoverProbability(context, opponent, context.fatigue);
+    var turnoverRate = clamp(
+      0.105 + (1 - context.handling) * 0.050
+        + (opponent.perimeterDefense - 0.50) * 0.030
+        + (1 - context.teamCreation) * 0.018
+        + context.fatigue * 0.012,
+      0.080, 0.190,
+    );
     var turnovers = sampleMakes(possessions, turnoverRate);
     var effectivePossessions = Math.max(1, possessions - turnovers);
     var rimAttack = clamp(weightedRim / Math.max(0.01, weightedRim + weightedMid + weightedThree), 0.20, 0.65);
@@ -1012,7 +964,12 @@
     var weightedThree = weightedMean(context.volumeThree, context.opportunity);
     var weightedMid = weightedMean(context.volumeMid, context.opportunity);
     var weightedRim = weightedMean(context.volumeRim, context.opportunity);
-    var turnoverRate = turnoverProbability(context, opponent, 0);
+    var turnoverRate = clamp(
+      0.105 + (1 - context.handling) * 0.050
+        + (opponent.perimeterDefense - 0.50) * 0.030
+        + (1 - context.teamCreation) * 0.018,
+      0.080, 0.190,
+    );
     var effectivePossessions = Math.max(1, possessions * (1 - turnoverRate));
     var rimAttack = clamp(weightedRim / Math.max(0.01, weightedRim + weightedMid + weightedThree), 0.20, 0.65);
     var freeThrowRate = clamp(
@@ -1053,8 +1010,6 @@
           + (shooter._rimA / Math.max(1, shooter.fga)) * 0.06,
         0.12, 0.78,
       );
-      var roleProfile = context.assistRoleProfile;
-      if (roleProfile) probability = probability * (1 - roleProfile.coverage) + roleProfile.rate * roleProfile.coverage;
       var assistedMakes = sampleMakes(shooter.fgm, probability);
       if (!assistedMakes) return;
       var passWeights = context.players.map(function(_, index) {
@@ -1063,14 +1018,7 @@
           ? context.assistPassing[index]
           : (context.playmaking ? context.playmaking[index] : (context.pas[index] * 0.78 + context.han[index] * 0.22));
         var touch = context.touchOpportunity ? context.touchOpportunity[index] : context.weights[index];
-        var genericWeight = touch * (0.005 + Math.pow(passSkill, 3.4) * 3.2);
-        var role = context.offensiveRoles && context.offensiveRoles[index];
-        if (!role) return genericWeight;
-        // The passer cannot assist his own makes. Correct that missing exposure
-        // before excluding the shooter, so a scoring hub isn't penalized twice.
-        var ownMakeShare = quarter.fgm > 0 ? quarter.lines[index].fgm / quarter.fgm : 0;
-        var roleWeight = context.weights[index] * role.ast36 / 4 * role.passingGrowth / Math.max(0.25, 1 - ownMakeShare);
-        return genericWeight * (1 - role.confidence) + roleWeight * role.confidence;
+        return touch * (0.005 + Math.pow(passSkill, 3.4) * 3.2);
       });
       var assists = weightedRandomAllocation(assistedMakes, passWeights, context.players.map(function() { return 17; }));
       assists.forEach(function(value, index) { quarter.lines[index].ast += value; });
@@ -1080,14 +1028,8 @@
   function addTurnovers(context, quarter) {
     var weights = context.players.map(function(_, index) {
       var security = context.ballSecurity ? context.ballSecurity[index] : context.han[index];
-      var line = quarter.lines[index];
-      // Count scoring and passing decisions rather than distributing turnovers
-      // by minutes. Good handles lower risk per decision, not the workload itself.
-      var decisions = line.fga + line.fta * 0.44 + line.ast * 2.5 + context.weights[index] / 192;
-      var rimShare = context.volumeRim[index] / Math.max(0.01,
-        context.volumeRim[index] + context.volumeMid[index] + context.volumeThree[index]);
-      var genericRisk = 0.08 * (0.80 + (1 - security) * 0.35) * (1 + rimShare * 0.50);
-      return decisions * genericRisk;
+      var touch = context.touchOpportunity ? context.touchOpportunity[index] : context.opportunity[index];
+      return touch * (0.30 + (1 - security) * 1.05 + context.usagePressure * 0.20);
     });
     var turnovers = weightedRandomAllocation(quarter.turnovers, weights, context.players.map(function() { return 9; }));
     turnovers.forEach(function(value, index) { quarter.lines[index].tov += value; });
@@ -1148,7 +1090,6 @@
   function recomputeTeamAggregates(context, weights) {
     return Object.assign({}, context, {
       weights: weights,
-      assistRoleProfile: roleAssistProfile(context.offensiveRoles, weights),
       teamCreation: weightedMean(context.creation, weights),
       teamTouchLoad: weightedMean(context.touchLoad || context.creation, weights),
       attack: weightedMean(context.threat.map(function(value, index) {

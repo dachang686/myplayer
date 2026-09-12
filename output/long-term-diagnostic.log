@@ -1,0 +1,302 @@
+{"diagnosticSeason":10,"top":[{"id":"P0120","cname":"约基奇","pos":"C","height":"6'11'","type":"Triple-Double Threat","ovr":98,"threePT":86,"MID":98,"FIN":93,"DNK":82,"HAN":76,"PAS":93,"PDEF":69,"STL":79,"IDEF":81,"BLK":64,"REB":90,"ATH":63,"STR":96,"CLU":75,"gene":{"v":3,"potential":98,"potentialVersion":2,"loyalty":62,"loyaltyVersion":3,"loyaltyRenewals":3,"loyaltyLastEvent":"2年续约","loyaltyTeam":"DEN","roleUnderuseSeasons":0}},{"id":"P0347","cname":"亚历山大","pos":"PG / SG","height":"6'6'","type":"2-Way Mid-Paint Playmaker","ovr":98,"threePT":82,"MID":97,"FIN":97,"DNK":75,"HAN":95,"PAS":91,"PDEF":86,"STL":82,"IDEF":74,"BLK":80,"REB":62,"ATH":86,"STR":62,"CLU":90,"gene":{"v":4,"potential":99,"potentialVersion":2,"loyalty":63,"loyaltyVersion":3,"loyaltyRenewals":3,"loyaltyLastEvent":"1年续约","loyaltyTeam":"OKC","roleUnderuseSeasons":0}},{"id":"P0225","cname":"东契奇","pos":"PG / SG","height":"6'8'","type":"Crafty Offensive Engine","ovr":97,"threePT":85,"MID":88,"FIN":95,"DNK":75,"HAN":95,"PAS":92,"PDEF":60,"STL":74,"IDEF":62,"BLK":68,"REB":84,"ATH":82,"STR":72,"CLU":95,"gene":{"v":4,"potential":99,"potentialVersion":2,"loyalty":59,"loyaltyVersion":3,"loyaltyRenewals":2,"loyaltyLastEvent":"2年续约","loyaltyTeam":"LAL","roleUnderuseSeasons":0}},{"id":"P0264","cname":"阿德托昆博","pos":"PF / C","height":"6'11'","type":"2-Way Crafty PlaySlash Cleaner","ovr":97,"threePT":54,"MID":84,"FIN":95,"DNK":90,"HAN":87,"PAS":86,"PDEF":86,"STL":73,"IDEF":89,"BLK":74,"REB":89,"ATH":88,"STR":94,"CLU":85,"gene":{"v":3,"potential":97,"potentialVersion":2,"loyalty":66,"loyaltyVersion":3,"loyaltyRenewals":4,"loyaltyLastEvent":"2年续约","loyaltyTeam":"MIA","roleUnderuseSeasons":0}},{"id":"P0452","cname":"文班亚马","pos":"C / PF","height":"7'4'","type":"Backline Stretch Post Scorer","ovr":97,"threePT":80,"MID":77,"FIN":88,"DNK":84,"HAN":70,"PAS":75,"PDEF":81,"STL":74,"IDEF":93,"BLK":95,"REB":90,"ATH":67,"STR":59,"CLU":95,"gene":{"v":2,"potential":99,"potentialVersion":2,"loyalty":61,"loyaltyVersion":3,"loyaltyRenewals":2,"loyaltyLastEvent":"4年续约","loyaltyTeam":"SAS","roleUnderuseSeasons":0}}]}
+{"diagnosticSeason":15,"top":[{"id":"P0120","cname":"约基奇","pos":"C","height":"6'11'","type":"Triple-Double Threat","ovr":98,"threePT":86,"MID":98,"FIN":93,"DNK":82,"HAN":76,"PAS":93,"PDEF":69,"STL":79,"IDEF":81,"BLK":64,"REB":90,"ATH":63,"STR":96,"CLU":75,"gene":{"v":3,"potential":98,"potentialVersion":2,"loyalty":62,"loyaltyVersion":3,"loyaltyRenewals":3,"loyaltyLastEvent":"2年续约","loyaltyTeam":"DEN","roleUnderuseSeasons":0}},{"id":"P0347","cname":"亚历山大","pos":"PG / SG","height":"6'6'","type":"2-Way Mid-Paint Playmaker","ovr":98,"threePT":82,"MID":97,"FIN":97,"DNK":75,"HAN":95,"PAS":91,"PDEF":86,"STL":82,"IDEF":74,"BLK":80,"REB":62,"ATH":86,"STR":62,"CLU":90,"gene":{"v":4,"potential":99,"potentialVersion":2,"loyalty":63,"loyaltyVersion":3,"loyaltyRenewals":3,"loyaltyLastEvent":"1年续约","loyaltyTeam":"OKC","roleUnderuseSeasons":0}},{"id":"P0225","cname":"东契奇","pos":"PG / SG","height":"6'8'","type":"Crafty Offensive Engine","ovr":97,"threePT":85,"MID":88,"FIN":95,"DNK":75,"HAN":95,"PAS":92,"PDEF":60,"STL":74,"IDEF":62,"BLK":68,"REB":84,"ATH":82,"STR":72,"CLU":95,"gene":{"v":4,"potential":99,"potentialVersion":2,"loyalty":67,"loyaltyVersion":3,"loyaltyRenewals":4,"loyaltyLastEvent":"2年续约","loyaltyTeam":"LAL","roleUnderuseSeasons":0}},{"id":"P0264","cname":"阿德托昆博","pos":"PF / C","height":"6'11'","type":"2-Way Crafty PlaySlash Cleaner","ovr":97,"threePT":54,"MID":84,"FIN":95,"DNK":90,"HAN":87,"PAS":86,"PDEF":86,"STL":73,"IDEF":89,"BLK":74,"REB":89,"ATH":88,"STR":94,"CLU":85,"gene":{"v":3,"potential":97,"potentialVersion":2,"loyalty":66,"loyaltyVersion":3,"loyaltyRenewals":4,"loyaltyLastEvent":"2年续约","loyaltyTeam":"MIA","roleUnderuseSeasons":0}},{"id":"P0452","cname":"文班亚马","pos":"C / PF","height":"7'4'","type":"Backline Stretch Post Scorer","ovr":97,"threePT":80,"MID":77,"FIN":88,"DNK":84,"HAN":70,"PAS":75,"PDEF":81,"STL":74,"IDEF":93,"BLK":95,"REB":90,"ATH":67,"STR":59,"CLU":95,"gene":{"v":2,"potential":99,"potentialVersion":2,"loyalty":69,"loyaltyVersion":3,"loyaltyRenewals":4,"loyaltyLastEvent":"1年续约","loyaltyTeam":"SAS","roleUnderuseSeasons":0}}]}
+{"diagnosticSeason":20,"top":[{"id":"P0120","cname":"约基奇","pos":"C","height":"6'11'","type":"Triple-Double Threat","ovr":98,"threePT":86,"MID":98,"FIN":93,"DNK":82,"HAN":76,"PAS":93,"PDEF":69,"STL":79,"IDEF":81,"BLK":64,"REB":90,"ATH":63,"STR":96,"CLU":75,"gene":{"v":3,"potential":98,"potentialVersion":2,"loyalty":62,"loyaltyVersion":3,"loyaltyRenewals":3,"loyaltyLastEvent":"2年续约","loyaltyTeam":"DEN","roleUnderuseSeasons":0}},{"id":"P0347","cname":"亚历山大","pos":"PG / SG","height":"6'6'","type":"2-Way Mid-Paint Playmaker","ovr":98,"threePT":82,"MID":97,"FIN":97,"DNK":75,"HAN":95,"PAS":91,"PDEF":86,"STL":82,"IDEF":74,"BLK":80,"REB":62,"ATH":86,"STR":62,"CLU":90,"gene":{"v":4,"potential":99,"potentialVersion":2,"loyalty":63,"loyaltyVersion":3,"loyaltyRenewals":3,"loyaltyLastEvent":"1年续约","loyaltyTeam":"OKC","roleUnderuseSeasons":0}},{"id":"P0225","cname":"东契奇","pos":"PG / SG","height":"6'8'","type":"Crafty Offensive Engine","ovr":97,"threePT":85,"MID":88,"FIN":95,"DNK":75,"HAN":95,"PAS":92,"PDEF":60,"STL":74,"IDEF":62,"BLK":68,"REB":84,"ATH":82,"STR":72,"CLU":95,"gene":{"v":4,"potential":99,"potentialVersion":2,"loyalty":67,"loyaltyVersion":3,"loyaltyRenewals":4,"loyaltyLastEvent":"2年续约","loyaltyTeam":"LAL","roleUnderuseSeasons":0}},{"id":"P0264","cname":"阿德托昆博","pos":"PF / C","height":"6'11'","type":"2-Way Crafty PlaySlash Cleaner","ovr":97,"threePT":54,"MID":84,"FIN":95,"DNK":90,"HAN":87,"PAS":86,"PDEF":86,"STL":73,"IDEF":89,"BLK":74,"REB":89,"ATH":88,"STR":94,"CLU":85,"gene":{"v":3,"potential":97,"potentialVersion":2,"loyalty":66,"loyaltyVersion":3,"loyaltyRenewals":4,"loyaltyLastEvent":"2年续约","loyaltyTeam":"MIA","roleUnderuseSeasons":0}},{"id":"P0452","cname":"文班亚马","pos":"C / PF","height":"7'4'","type":"Backline Stretch Post Scorer","ovr":97,"threePT":80,"MID":77,"FIN":88,"DNK":84,"HAN":70,"PAS":75,"PDEF":81,"STL":74,"IDEF":93,"BLK":95,"REB":90,"ATH":67,"STR":59,"CLU":95,"gene":{"v":2,"potential":99,"potentialVersion":2,"loyalty":72,"loyaltyVersion":3,"loyaltyRenewals":5,"loyaltyLastEvent":"2年续约","loyaltyTeam":"SAS","roleUnderuseSeasons":0}}]}
+{"diagnosticSeason":25,"top":[{"id":"P0120","cname":"约基奇","pos":"C","height":"6'11'","type":"Triple-Double Threat","ovr":98,"threePT":86,"MID":98,"FIN":93,"DNK":82,"HAN":76,"PAS":93,"PDEF":69,"STL":79,"IDEF":81,"BLK":64,"REB":90,"ATH":63,"STR":96,"CLU":75,"gene":{"v":3,"potential":98,"potentialVersion":2,"loyalty":62,"loyaltyVersion":3,"loyaltyRenewals":3,"loyaltyLastEvent":"2年续约","loyaltyTeam":"DEN","roleUnderuseSeasons":0}},{"id":"P0347","cname":"亚历山大","pos":"PG / SG","height":"6'6'","type":"2-Way Mid-Paint Playmaker","ovr":98,"threePT":82,"MID":97,"FIN":97,"DNK":75,"HAN":95,"PAS":91,"PDEF":86,"STL":82,"IDEF":74,"BLK":80,"REB":62,"ATH":86,"STR":62,"CLU":90,"gene":{"v":4,"potential":99,"potentialVersion":2,"loyalty":63,"loyaltyVersion":3,"loyaltyRenewals":3,"loyaltyLastEvent":"1年续约","loyaltyTeam":"OKC","roleUnderuseSeasons":0}},{"id":"P0225","cname":"东契奇","pos":"PG / SG","height":"6'8'","type":"Crafty Offensive Engine","ovr":97,"threePT":85,"MID":88,"FIN":95,"DNK":75,"HAN":95,"PAS":92,"PDEF":60,"STL":74,"IDEF":62,"BLK":68,"REB":84,"ATH":82,"STR":72,"CLU":95,"gene":{"v":4,"potential":99,"potentialVersion":2,"loyalty":67,"loyaltyVersion":3,"loyaltyRenewals":4,"loyaltyLastEvent":"2年续约","loyaltyTeam":"LAL","roleUnderuseSeasons":0}},{"id":"P0264","cname":"阿德托昆博","pos":"PF / C","height":"6'11'","type":"2-Way Crafty PlaySlash Cleaner","ovr":97,"threePT":54,"MID":84,"FIN":95,"DNK":90,"HAN":87,"PAS":86,"PDEF":86,"STL":73,"IDEF":89,"BLK":74,"REB":89,"ATH":88,"STR":94,"CLU":85,"gene":{"v":3,"potential":97,"potentialVersion":2,"loyalty":66,"loyaltyVersion":3,"loyaltyRenewals":4,"loyaltyLastEvent":"2年续约","loyaltyTeam":"MIA","roleUnderuseSeasons":0}},{"id":"P0452","cname":"文班亚马","pos":"C / PF","height":"7'4'","type":"Backline Stretch Post Scorer","ovr":97,"threePT":80,"MID":77,"FIN":88,"DNK":84,"HAN":70,"PAS":75,"PDEF":81,"STL":74,"IDEF":93,"BLK":95,"REB":90,"ATH":67,"STR":59,"CLU":95,"gene":{"v":2,"potential":99,"potentialVersion":2,"loyalty":72,"loyaltyVersion":3,"loyaltyRenewals":5,"loyaltyLastEvent":"2年续约","loyaltyTeam":"SAS","roleUnderuseSeasons":0}}]}
+{"diagnosticSeason":30,"top":[{"id":"P0120","cname":"约基奇","pos":"C","height":"6'11'","type":"Triple-Double Threat","ovr":98,"threePT":86,"MID":98,"FIN":93,"DNK":82,"HAN":76,"PAS":93,"PDEF":69,"STL":79,"IDEF":81,"BLK":64,"REB":90,"ATH":63,"STR":96,"CLU":75,"gene":{"v":3,"potential":98,"potentialVersion":2,"loyalty":62,"loyaltyVersion":3,"loyaltyRenewals":3,"loyaltyLastEvent":"2年续约","loyaltyTeam":"DEN","roleUnderuseSeasons":0}},{"id":"P0347","cname":"亚历山大","pos":"PG / SG","height":"6'6'","type":"2-Way Mid-Paint Playmaker","ovr":98,"threePT":82,"MID":97,"FIN":97,"DNK":75,"HAN":95,"PAS":91,"PDEF":86,"STL":82,"IDEF":74,"BLK":80,"REB":62,"ATH":86,"STR":62,"CLU":90,"gene":{"v":4,"potential":99,"potentialVersion":2,"loyalty":63,"loyaltyVersion":3,"loyaltyRenewals":3,"loyaltyLastEvent":"1年续约","loyaltyTeam":"OKC","roleUnderuseSeasons":0}},{"id":"P0225","cname":"东契奇","pos":"PG / SG","height":"6'8'","type":"Crafty Offensive Engine","ovr":97,"threePT":85,"MID":88,"FIN":95,"DNK":75,"HAN":95,"PAS":92,"PDEF":60,"STL":74,"IDEF":62,"BLK":68,"REB":84,"ATH":82,"STR":72,"CLU":95,"gene":{"v":4,"potential":99,"potentialVersion":2,"loyalty":67,"loyaltyVersion":3,"loyaltyRenewals":4,"loyaltyLastEvent":"2年续约","loyaltyTeam":"LAL","roleUnderuseSeasons":0}},{"id":"P0264","cname":"阿德托昆博","pos":"PF / C","height":"6'11'","type":"2-Way Crafty PlaySlash Cleaner","ovr":97,"threePT":54,"MID":84,"FIN":95,"DNK":90,"HAN":87,"PAS":86,"PDEF":86,"STL":73,"IDEF":89,"BLK":74,"REB":89,"ATH":88,"STR":94,"CLU":85,"gene":{"v":3,"potential":97,"potentialVersion":2,"loyalty":66,"loyaltyVersion":3,"loyaltyRenewals":4,"loyaltyLastEvent":"2年续约","loyaltyTeam":"MIA","roleUnderuseSeasons":0}},{"id":"P0452","cname":"文班亚马","pos":"C / PF","height":"7'4'","type":"Backline Stretch Post Scorer","ovr":97,"threePT":80,"MID":77,"FIN":88,"DNK":84,"HAN":70,"PAS":75,"PDEF":81,"STL":74,"IDEF":93,"BLK":95,"REB":90,"ATH":67,"STR":59,"CLU":95,"gene":{"v":2,"potential":99,"potentialVersion":2,"loyalty":72,"loyaltyVersion":3,"loyaltyRenewals":5,"loyaltyLastEvent":"2年续约","loyaltyTeam":"SAS","roleUnderuseSeasons":0}}]}
+{"diagnosticSeason":35,"top":[{"id":"P0120","cname":"约基奇","pos":"C","height":"6'11'","type":"Triple-Double Threat","ovr":98,"threePT":86,"MID":98,"FIN":93,"DNK":82,"HAN":76,"PAS":93,"PDEF":69,"STL":79,"IDEF":81,"BLK":64,"REB":90,"ATH":63,"STR":96,"CLU":75,"gene":{"v":3,"potential":98,"potentialVersion":2,"loyalty":62,"loyaltyVersion":3,"loyaltyRenewals":3,"loyaltyLastEvent":"2年续约","loyaltyTeam":"DEN","roleUnderuseSeasons":0}},{"id":"P0347","cname":"亚历山大","pos":"PG / SG","height":"6'6'","type":"2-Way Mid-Paint Playmaker","ovr":98,"threePT":82,"MID":97,"FIN":97,"DNK":75,"HAN":95,"PAS":91,"PDEF":86,"STL":82,"IDEF":74,"BLK":80,"REB":62,"ATH":86,"STR":62,"CLU":90,"gene":{"v":4,"potential":99,"potentialVersion":2,"loyalty":63,"loyaltyVersion":3,"loyaltyRenewals":3,"loyaltyLastEvent":"1年续约","loyaltyTeam":"OKC","roleUnderuseSeasons":0}},{"id":"P0225","cname":"东契奇","pos":"PG / SG","height":"6'8'","type":"Crafty Offensive Engine","ovr":97,"threePT":85,"MID":88,"FIN":95,"DNK":75,"HAN":95,"PAS":92,"PDEF":60,"STL":74,"IDEF":62,"BLK":68,"REB":84,"ATH":82,"STR":72,"CLU":95,"gene":{"v":4,"potential":99,"potentialVersion":2,"loyalty":67,"loyaltyVersion":3,"loyaltyRenewals":4,"loyaltyLastEvent":"2年续约","loyaltyTeam":"LAL","roleUnderuseSeasons":0}},{"id":"P0264","cname":"阿德托昆博","pos":"PF / C","height":"6'11'","type":"2-Way Crafty PlaySlash Cleaner","ovr":97,"threePT":54,"MID":84,"FIN":95,"DNK":90,"HAN":87,"PAS":86,"PDEF":86,"STL":73,"IDEF":89,"BLK":74,"REB":89,"ATH":88,"STR":94,"CLU":85,"gene":{"v":3,"potential":97,"potentialVersion":2,"loyalty":66,"loyaltyVersion":3,"loyaltyRenewals":4,"loyaltyLastEvent":"2年续约","loyaltyTeam":"MIA","roleUnderuseSeasons":0}},{"id":"P0452","cname":"文班亚马","pos":"C / PF","height":"7'4'","type":"Backline Stretch Post Scorer","ovr":97,"threePT":80,"MID":77,"FIN":88,"DNK":84,"HAN":70,"PAS":75,"PDEF":81,"STL":74,"IDEF":93,"BLK":95,"REB":90,"ATH":67,"STR":59,"CLU":95,"gene":{"v":2,"potential":99,"potentialVersion":2,"loyalty":72,"loyaltyVersion":3,"loyaltyRenewals":5,"loyaltyLastEvent":"2年续约","loyaltyTeam":"SAS","roleUnderuseSeasons":0}}]}
+{
+  "seeds": 1,
+  "checkpoints": [
+    10,
+    15,
+    20,
+    25,
+    30,
+    35
+  ],
+  "equilibriumCheckpoints": [
+    20,
+    25,
+    30,
+    35
+  ],
+  "summaries": [
+    {
+      "season": 10,
+      "samples": 1,
+      "count90": {
+        "min": 31,
+        "max": 31,
+        "avg": 31
+      },
+      "count85": {
+        "min": 91,
+        "max": 91,
+        "avg": 91
+      },
+      "maxOvr": {
+        "min": 97,
+        "max": 97,
+        "avg": 97
+      },
+      "count99": {
+        "min": 0,
+        "max": 0,
+        "avg": 0
+      },
+      "top35Under30": {
+        "min": 18,
+        "max": 18,
+        "avg": 18
+      },
+      "top35Age30To34": {
+        "min": 13,
+        "max": 13,
+        "avg": 13
+      },
+      "top35Age35Plus": {
+        "min": 4,
+        "max": 4,
+        "avg": 4
+      },
+      "top35AverageAge": {
+        "min": 30.11,
+        "max": 30.11,
+        "avg": 30.11
+      }
+    },
+    {
+      "season": 15,
+      "samples": 1,
+      "count90": {
+        "min": 36,
+        "max": 36,
+        "avg": 36
+      },
+      "count85": {
+        "min": 87,
+        "max": 87,
+        "avg": 87
+      },
+      "maxOvr": {
+        "min": 95,
+        "max": 95,
+        "avg": 95
+      },
+      "count99": {
+        "min": 0,
+        "max": 0,
+        "avg": 0
+      },
+      "top35Under30": {
+        "min": 14,
+        "max": 14,
+        "avg": 14
+      },
+      "top35Age30To34": {
+        "min": 17,
+        "max": 17,
+        "avg": 17
+      },
+      "top35Age35Plus": {
+        "min": 4,
+        "max": 4,
+        "avg": 4
+      },
+      "top35AverageAge": {
+        "min": 30.66,
+        "max": 30.66,
+        "avg": 30.66
+      }
+    },
+    {
+      "season": 20,
+      "samples": 1,
+      "count90": {
+        "min": 37,
+        "max": 37,
+        "avg": 37
+      },
+      "count85": {
+        "min": 84,
+        "max": 84,
+        "avg": 84
+      },
+      "maxOvr": {
+        "min": 94,
+        "max": 94,
+        "avg": 94
+      },
+      "count99": {
+        "min": 0,
+        "max": 0,
+        "avg": 0
+      },
+      "top35Under30": {
+        "min": 14,
+        "max": 14,
+        "avg": 14
+      },
+      "top35Age30To34": {
+        "min": 16,
+        "max": 16,
+        "avg": 16
+      },
+      "top35Age35Plus": {
+        "min": 5,
+        "max": 5,
+        "avg": 5
+      },
+      "top35AverageAge": {
+        "min": 30.51,
+        "max": 30.51,
+        "avg": 30.51
+      }
+    },
+    {
+      "season": 25,
+      "samples": 1,
+      "count90": {
+        "min": 39,
+        "max": 39,
+        "avg": 39
+      },
+      "count85": {
+        "min": 74,
+        "max": 74,
+        "avg": 74
+      },
+      "maxOvr": {
+        "min": 95,
+        "max": 95,
+        "avg": 95
+      },
+      "count99": {
+        "min": 0,
+        "max": 0,
+        "avg": 0
+      },
+      "top35Under30": {
+        "min": 14,
+        "max": 14,
+        "avg": 14
+      },
+      "top35Age30To34": {
+        "min": 16,
+        "max": 16,
+        "avg": 16
+      },
+      "top35Age35Plus": {
+        "min": 5,
+        "max": 5,
+        "avg": 5
+      },
+      "top35AverageAge": {
+        "min": 30.63,
+        "max": 30.63,
+        "avg": 30.63
+      }
+    },
+    {
+      "season": 30,
+      "samples": 1,
+      "count90": {
+        "min": 37,
+        "max": 37,
+        "avg": 37
+      },
+      "count85": {
+        "min": 76,
+        "max": 76,
+        "avg": 76
+      },
+      "maxOvr": {
+        "min": 94,
+        "max": 94,
+        "avg": 94
+      },
+      "count99": {
+        "min": 0,
+        "max": 0,
+        "avg": 0
+      },
+      "top35Under30": {
+        "min": 14,
+        "max": 14,
+        "avg": 14
+      },
+      "top35Age30To34": {
+        "min": 17,
+        "max": 17,
+        "avg": 17
+      },
+      "top35Age35Plus": {
+        "min": 4,
+        "max": 4,
+        "avg": 4
+      },
+      "top35AverageAge": {
+        "min": 30.51,
+        "max": 30.51,
+        "avg": 30.51
+      }
+    },
+    {
+      "season": 35,
+      "samples": 1,
+      "count90": {
+        "min": 33,
+        "max": 33,
+        "avg": 33
+      },
+      "count85": {
+        "min": 71,
+        "max": 71,
+        "avg": 71
+      },
+      "maxOvr": {
+        "min": 96,
+        "max": 96,
+        "avg": 96
+      },
+      "count99": {
+        "min": 0,
+        "max": 0,
+        "avg": 0
+      },
+      "top35Under30": {
+        "min": 15,
+        "max": 15,
+        "avg": 15
+      },
+      "top35Age30To34": {
+        "min": 16,
+        "max": 16,
+        "avg": 16
+      },
+      "top35Age35Plus": {
+        "min": 4,
+        "max": 4,
+        "avg": 4
+      },
+      "top35AverageAge": {
+        "min": 30.4,
+        "max": 30.4,
+        "avg": 30.4
+      }
+    }
+  ],
+  "seedsWith99Overflow": 0,
+  "allowed99OverflowSeeds": 2,
+  "failureCount": 8,
+  "failures": [
+    "第 20 季 90+ 均值 37，目标 18–30",
+    "第 20 季 85+ 均值 84，目标 50–82",
+    "第 20 季最高 OVR 均值 94，目标 95–99",
+    "第 25 季 90+ 均值 39，目标 18–30",
+    "第 30 季 90+ 均值 37，目标 18–30",
+    "第 30 季最高 OVR 均值 94，目标 95–99",
+    "第 35 季 90+ 均值 33，目标 18–30",
+    "第 20→25 季 85+ 均值下滑 10.0，超过允许范围"
+  ]
+}

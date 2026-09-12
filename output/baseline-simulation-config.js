@@ -350,11 +350,11 @@ const SIM_CONFIG = {
   OVR_FIT_MODEL: {
     inputScale: 49,
     weights: {
-      PG: { threePT: 8.961976, MID: 6.235376, FIN: 13.388004, DNK: 1.249489, HAN: 7.222663, PAS: 6.071798, PDEF: 1, STL: 1, IDEF: 3.113556, BLK: 4.141155, REB: 2.120146, ATH: 3.392074, STR: 1.30987, CLU: 2.5 },
-      SG: { threePT: 11.606531, MID: 6.022596, FIN: 10.62091, DNK: 3.168212, HAN: 6.773346, PAS: 5.552865, PDEF: 1.01068, STL: 1, IDEF: 5.149495, BLK: 4.097385, REB: 5.055312, ATH: 1, STR: 1, CLU: 2.5 },
-      SF: { threePT: 15.141098, MID: 4.253771, FIN: 10.785808, DNK: 2.930542, HAN: 3.425843, PAS: 7.462532, PDEF: 4.530365, STL: 1.665956, IDEF: 1.922999, BLK: 1, REB: 3.036117, ATH: 2.999452, STR: 1, CLU: 2.5 },
-      PF: { threePT: 10.019548, MID: 4.423079, FIN: 10.746177, DNK: 6.74187, HAN: 2.880401, PAS: 5.420597, PDEF: 1.250195, STL: 1, IDEF: 1.630013, BLK: 3.857235, REB: 5.859229, ATH: 6.255878, STR: 2.509585, CLU: 2.5 },
-      C: { threePT: 3.472235, MID: 3.654592, FIN: 14.716817, DNK: 10.494447, HAN: 2, PAS: 1.735468, PDEF: 2, STL: 1, IDEF: 7.901674, BLK: 3.860668, REB: 9.322846, ATH: 1.094737, STR: 3.544328, CLU: 2.5 },
+      PG: { threePT: 7.024774, MID: 5.016617, FIN: 12.611013, DNK: 0.735494, HAN: 6.853411, PAS: 6.02368, PDEF: 2.632738, STL: 0.000451, IDEF: 3.379359, BLK: 2.436969, REB: 3.073319, ATH: 4.495648, STR: 1.172392, CLU: 5.987756 },
+      SG: { threePT: 9.778641, MID: 6.547133, FIN: 9.787365, DNK: 2.837988, HAN: 6.712236, PAS: 5.426389, PDEF: 2.470728, STL: 0.795095, IDEF: 4.32783, BLK: 3.245576, REB: 3.268229, ATH: 0.952766, CLU: 5.616237 },
+      SF: { threePT: 13.662255, MID: 4.85091, FIN: 9.146245, DNK: 2.840568, HAN: 3.906061, PAS: 5.842377, PDEF: 6.214763, STL: 1.226264, IDEF: 1.033372, REB: 3.323027, ATH: 4.287358, CLU: 6.266321 },
+      PF: { threePT: 9.501934, MID: 3.502878, FIN: 9.692226, DNK: 6.138289, HAN: 2.840463, PAS: 4.985354, PDEF: 2.297921, IDEF: 2.375294, BLK: 4.130961, REB: 5.758335, ATH: 5.641353, STR: 3.587278, CLU: 4.981197 },
+      C: { threePT: 2.712939, MID: 2.871936, FIN: 13.913314, DNK: 10.044476, PAS: 2.474592, IDEF: 9.359721, BLK: 1.945136, REB: 7.66809, ATH: 2.37895, STR: 4.893746, CLU: 7.834659 },
     },
   },
   // ============================================================
@@ -1030,9 +1030,6 @@ function getUnifiedPlayerRating(player, position) {
   var secondaryOverall = secondaryPosition ? fittedPositionOvr(secondaryPosition) : primaryOverall;
   var rawOverall = primaryOverall * (1 - secondaryWeight) + secondaryOverall * secondaryWeight;
   var overall = clampRating(rawOverall);
-  var clutchWeight = Number((fitWeights[primaryPosition] || {}).CLU || 0) * (1 - secondaryWeight)
-    + Number((fitWeights[secondaryPosition] || {}).CLU || 0) * secondaryWeight;
-  var regulationOverall = clampRating(rawOverall - (attr('CLU') - 50) / inputScale * clutchWeight);
 
   var creationLoadValue = clampRating(
     roleImpact.primaryCreator * 0.55 + touchLoad * 0.25 + ballSecurity * 0.20
@@ -1093,7 +1090,6 @@ function getUnifiedPlayerRating(player, position) {
       primaryOverall: primaryOverall,
       secondaryOverall: secondaryOverall,
       rawOverall: rawOverall,
-      regulationOverall: regulationOverall,
     },
     // 保留旧字段，令页面、存档和现有校验可渐进迁移。
     shooting: shootingGravity, rim: rimScoring, creation: shotCreation,

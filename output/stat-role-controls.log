@@ -1,0 +1,1 @@
+{"profiles":444,"rateProvenance":true,"identityIsolation":true,"skillAdaptation":true,"oldSaveHydration":true,"idempotent":true,"turnoverControls":{"lowHandle":3.365,"highHandle":3.0735,"highWorkload":4.2165},"teammateControls":{"current":{"minutes":33,"pts":23.591428571428573,"fga":15.46},"fewerCreators":{"minutes":33,"pts":28.114285714285714,"fga":18.624285714285715}}}

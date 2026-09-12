@@ -1,0 +1,107 @@
+{
+  "players": 525,
+  "firstSyncChanged": 525,
+  "secondSyncChanged": 0,
+  "topDistribution": {
+    "at99": 0,
+    "at98": 2,
+    "atLeast97": 2
+  },
+  "topFive": [
+    {
+      "id": "P0120",
+      "name": "约基奇",
+      "ovr": 98
+    },
+    {
+      "id": "P0347",
+      "name": "亚历山大",
+      "ovr": 98
+    },
+    {
+      "id": "P0172",
+      "name": "杜兰特",
+      "ovr": 96
+    },
+    {
+      "id": "P0225",
+      "name": "东契奇",
+      "ovr": 96
+    },
+    {
+      "id": "P0452",
+      "name": "文班亚马",
+      "ovr": 96
+    }
+  ],
+  "focus": {
+    "tatum": {
+      "ovr": 92,
+      "HAN": 86
+    },
+    "zubac": {
+      "ovr": 86,
+      "HAN": 35
+    },
+    "calibratedProfiles": {
+      "wembanyama": {
+        "ovr": 96,
+        "HAN": 70,
+        "threePT": 80,
+        "IDEF": 93,
+        "BLK": 95
+      },
+      "holmgren": {
+        "ovr": 86,
+        "HAN": 65,
+        "threePT": 82,
+        "IDEF": 84,
+        "BLK": 93
+      },
+      "brown": {
+        "ovr": 92,
+        "HAN": 86,
+        "FIN": 91,
+        "PDEF": 86
+      },
+      "edwards": {
+        "ovr": 93,
+        "HAN": 86,
+        "FIN": 94,
+        "PDEF": 86
+      },
+      "tatum": {
+        "ovr": 92,
+        "HAN": 86,
+        "FIN": 91,
+        "PDEF": 87
+      },
+      "leonard": {
+        "ovr": 95,
+        "HAN": 86,
+        "FIN": 91,
+        "PDEF": 89
+      }
+    }
+  },
+  "legacyMigration": {
+    "tatum": {
+      "ovr": 92,
+      "HAN": 86
+    },
+    "zubac": {
+      "ovr": 86,
+      "HAN": 35
+    },
+    "johnson": {
+      "ovr": 87,
+      "FIN": 86,
+      "sourceVersion": 2
+    }
+  },
+  "anchoredGrowth": {
+    "beforeOvr": 92,
+    "afterOvr": 94,
+    "formulaDelta": 2
+  }
+}

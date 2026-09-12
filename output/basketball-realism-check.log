@@ -1,0 +1,1685 @@
+{
+  "method": {
+    "engine": "default V2",
+    "rosterPlayers": 525,
+    "rosterSchedule": "Every unordered team pair, 12 matches, alternating home court",
+    "availabilityAgeAssumption": 27,
+    "pairedGamesPerVariant": 2500,
+    "pairedRotation": "8 players x 30 minutes; seven unchanged players and one C under test",
+    "statSnapshot": "scripts/data/player_semantic_calibration_v9.json; 2025-26 season",
+    "scope": "Pure runtime probes; no browser UI or V1 statistical audit"
+  },
+  "ovrZeroWeights": {
+    "PG": [],
+    "SG": [],
+    "SF": [],
+    "PF": [],
+    "C": []
+  },
+  "sameOvrCenter": [
+    {
+      "HAN": 25,
+      "PDEF": 25,
+      "STL": 25,
+      "ovr": 79,
+      "offense": 71.5141,
+      "defense": 73.9688
+    },
+    {
+      "HAN": 99,
+      "PDEF": 99,
+      "STL": 99,
+      "ovr": 87,
+      "offense": 84.3574,
+      "defense": 77.2806
+    }
+  ],
+  "topDefense": [
+    {
+      "team": "WAS",
+      "name": "戴维斯",
+      "ovr": 92,
+      "offense": 80.9592,
+      "defense": 93.6363
+    },
+    {
+      "team": "MIA",
+      "name": "阿德托昆博",
+      "ovr": 95,
+      "offense": 89.9996,
+      "defense": 91.2848
+    },
+    {
+      "team": "SAS",
+      "name": "文班亚马",
+      "ovr": 96,
+      "offense": 76.7022,
+      "defense": 87.7243
+    },
+    {
+      "team": "CLE",
+      "name": "莫布利",
+      "ovr": 87,
+      "offense": 75.7914,
+      "defense": 87.4464
+    },
+    {
+      "team": "POR",
+      "name": "威廉姆斯",
+      "ovr": 81,
+      "offense": 70.8433,
+      "defense": 86.0012
+    },
+    {
+      "team": "DEN",
+      "name": "约基奇",
+      "ovr": 98,
+      "offense": 92.7645,
+      "defense": 84.5986
+    },
+    {
+      "team": "MIN",
+      "name": "戈贝尔",
+      "ovr": 79,
+      "offense": 62.6796,
+      "defense": 83.7458
+    },
+    {
+      "team": "NYK",
+      "name": "德拉蒙德",
+      "ovr": 81,
+      "offense": 68.5576,
+      "defense": 83.6261
+    },
+    {
+      "team": "IND",
+      "name": "祖巴茨",
+      "ovr": 86,
+      "offense": 68.9464,
+      "defense": 83.1099
+    },
+    {
+      "team": "DET",
+      "name": "杜伦",
+      "ovr": 86,
+      "offense": 72.551,
+      "defense": 83.0171
+    },
+    {
+      "team": "BOS",
+      "name": "罗宾逊",
+      "ovr": 81,
+      "offense": 64.4432,
+      "defense": 82.575
+    },
+    {
+      "team": "GSW",
+      "name": "格林",
+      "ovr": 80,
+      "offense": 77.224,
+      "defense": 82.2598
+    },
+    {
+      "team": "HOU",
+      "name": "卡佩拉",
+      "ovr": 77,
+      "offense": 63.8439,
+      "defense": 81.8468
+    },
+    {
+      "team": "PHI",
+      "name": "恩比德",
+      "ovr": 90,
+      "offense": 76.1158,
+      "defense": 81.7067
+    },
+    {
+      "team": "HOU",
+      "name": "亚当斯",
+      "ovr": 79,
+      "offense": 65.5199,
+      "defense": 81.5634
+    },
+    {
+      "team": "UTA",
+      "name": "杰克逊",
+      "ovr": 84,
+      "offense": 74.1399,
+      "defense": 81.1796
+    },
+    {
+      "team": "MIA",
+      "name": "阿德巴约",
+      "ovr": 90,
+      "offense": 77.246,
+      "defense": 81.0852
+    },
+    {
+      "team": "CLE",
+      "name": "阿伦",
+      "ovr": 88,
+      "offense": 75.9576,
+      "defense": 80.9359
+    }
+  ],
+  "simulatedGames": 5220,
+  "teamAverages": {
+    "pts": 115.8855,
+    "fta": 20.8807,
+    "ftm": 16.5989,
+    "fga": 87.6519,
+    "fgm": 43.6694,
+    "threeA": 34.0325,
+    "threeM": 11.9477,
+    "orb": 8.8685,
+    "pace": 101.1556,
+    "reb": 44.4616,
+    "ast": 24.7906,
+    "stl": 7.7933,
+    "blk": 4.4806,
+    "tov": 13.6678,
+    "ftPct": 0.7949,
+    "fgPct": 0.4982,
+    "threePct": 0.3511,
+    "freeThrowRate": 0.2382
+  },
+  "invariantErrors": 0,
+  "leaders": {
+    "pts": [
+      {
+        "id": "P0172",
+        "name": "杜兰特",
+        "value": 31.4727,
+        "mins": 34.0032,
+        "maxPts": 57
+      },
+      {
+        "id": "P0264",
+        "name": "阿德托昆博",
+        "value": 31.0486,
+        "mins": 34.3374,
+        "maxPts": 81
+      },
+      {
+        "id": "P0225",
+        "name": "东契奇",
+        "value": 29,
+        "mins": 34.1433,
+        "maxPts": 60
+      },
+      {
+        "id": "P0091",
+        "name": "米切尔",
+        "value": 28.979,
+        "mins": 33.3293,
+        "maxPts": 59
+      },
+      {
+        "id": "P0156",
+        "name": "库里",
+        "value": 28.227,
+        "mins": 33.1104,
+        "maxPts": 70
+      },
+      {
+        "id": "P0296",
+        "name": "爱德华兹",
+        "value": 27.9892,
+        "mins": 33.3978,
+        "maxPts": 66
+      },
+      {
+        "id": "P0347",
+        "name": "亚历山大",
+        "value": 27.5196,
+        "mins": 33.8912,
+        "maxPts": 76
+      },
+      {
+        "id": "P0040",
+        "name": "塔图姆",
+        "value": 27.3373,
+        "mins": 33.3757,
+        "maxPts": 71
+      },
+      {
+        "id": "P0471",
+        "name": "伦纳德",
+        "value": 27.1384,
+        "mins": 34.3113,
+        "maxPts": 64
+      },
+      {
+        "id": "P0419",
+        "name": "莫兰特",
+        "value": 25.8313,
+        "mins": 31.9578,
+        "maxPts": 53
+      }
+    ],
+    "reb": [
+      {
+        "id": "P0452",
+        "name": "文班亚马",
+        "value": 12.7165,
+        "mins": 33.6829,
+        "maxPts": 32
+      },
+      {
+        "id": "P0120",
+        "name": "约基奇",
+        "value": 12.0517,
+        "mins": 34.4103,
+        "maxPts": 60
+      },
+      {
+        "id": "P0264",
+        "name": "阿德托昆博",
+        "value": 11.8693,
+        "mins": 34.3374,
+        "maxPts": 81
+      },
+      {
+        "id": "P0331",
+        "name": "唐斯",
+        "value": 11.35,
+        "mins": 32.2563,
+        "maxPts": 35
+      },
+      {
+        "id": "P0509",
+        "name": "戴维斯",
+        "value": 11.123,
+        "mins": 33.2298,
+        "maxPts": 59
+      },
+      {
+        "id": "P0191",
+        "name": "祖巴茨",
+        "value": 11.0122,
+        "mins": 31.4559,
+        "maxPts": 28
+      },
+      {
+        "id": "P0434",
+        "name": "萨博尼斯",
+        "value": 10.8042,
+        "mins": 32.1054,
+        "maxPts": 31
+      },
+      {
+        "id": "P0350",
+        "name": "哈尔滕施泰因",
+        "value": 10.7523,
+        "mins": 31.0279,
+        "maxPts": 26
+      },
+      {
+        "id": "P0243",
+        "name": "埃迪",
+        "value": 10.6759,
+        "mins": 31.0793,
+        "maxPts": 22
+      },
+      {
+        "id": "P0421",
+        "name": "克林根",
+        "value": 10.5284,
+        "mins": 31.5493,
+        "maxPts": 28
+      }
+    ],
+    "ast": [
+      {
+        "id": "P0510",
+        "name": "杨",
+        "value": 11.2639,
+        "mins": 31.8446,
+        "maxPts": 54
+      },
+      {
+        "id": "P0347",
+        "name": "亚历山大",
+        "value": 10.142,
+        "mins": 33.8912,
+        "maxPts": 76
+      },
+      {
+        "id": "P0138",
+        "name": "坎宁安",
+        "value": 10.0243,
+        "mins": 33.1884,
+        "maxPts": 44
+      },
+      {
+        "id": "P0105",
+        "name": "欧文",
+        "value": 9.6615,
+        "mins": 32.36,
+        "maxPts": 64
+      },
+      {
+        "id": "P0189",
+        "name": "哈利伯顿",
+        "value": 9.244,
+        "mins": 32.8661,
+        "maxPts": 51
+      },
+      {
+        "id": "P0225",
+        "name": "东契奇",
+        "value": 9.0031,
+        "mins": 34.1433,
+        "maxPts": 60
+      },
+      {
+        "id": "P0120",
+        "name": "约基奇",
+        "value": 8.9696,
+        "mins": 34.4103,
+        "maxPts": 60
+      },
+      {
+        "id": "P0156",
+        "name": "库里",
+        "value": 8.9663,
+        "mins": 33.1104,
+        "maxPts": 70
+      },
+      {
+        "id": "P0208",
+        "name": "加兰",
+        "value": 8.9255,
+        "mins": 31.8975,
+        "maxPts": 46
+      },
+      {
+        "id": "P0091",
+        "name": "米切尔",
+        "value": 8.8503,
+        "mins": 33.3293,
+        "maxPts": 59
+      }
+    ],
+    "stl": [
+      {
+        "id": "P0003",
+        "name": "丹尼尔斯",
+        "value": 2.6785,
+        "mins": 31.4513,
+        "maxPts": 30
+      },
+      {
+        "id": "P0471",
+        "name": "伦纳德",
+        "value": 2.456,
+        "mins": 34.3113,
+        "maxPts": 64
+      },
+      {
+        "id": "P0139",
+        "name": "汤普森",
+        "value": 2.3951,
+        "mins": 31.4599,
+        "maxPts": 54
+      },
+      {
+        "id": "P0027",
+        "name": "埃利斯",
+        "value": 2.2432,
+        "mins": 31.0578,
+        "maxPts": 33
+      },
+      {
+        "id": "P0366",
+        "name": "萨格斯",
+        "value": 2.2141,
+        "mins": 28.9744,
+        "maxPts": 33
+      },
+      {
+        "id": "P0042",
+        "name": "乔治",
+        "value": 2.1152,
+        "mins": 31.8515,
+        "maxPts": 51
+      },
+      {
+        "id": "P0316",
+        "name": "默里",
+        "value": 2.1107,
+        "mins": 31.8926,
+        "maxPts": 52
+      },
+      {
+        "id": "P0231",
+        "name": "范德比尔特",
+        "value": 2.1104,
+        "mins": 30.205,
+        "maxPts": 24
+      },
+      {
+        "id": "P0079",
+        "name": "琼斯",
+        "value": 2.0189,
+        "mins": 31.5678,
+        "maxPts": 31
+      },
+      {
+        "id": "P0120",
+        "name": "约基奇",
+        "value": 1.9696,
+        "mins": 34.4103,
+        "maxPts": 60
+      }
+    ],
+    "blk": [
+      {
+        "id": "P0452",
+        "name": "文班亚马",
+        "value": 2.5335,
+        "mins": 33.6829,
+        "maxPts": 32
+      },
+      {
+        "id": "P0227",
+        "name": "凯斯勒",
+        "value": 1.8393,
+        "mins": 31.7054,
+        "maxPts": 22
+      },
+      {
+        "id": "P0425",
+        "name": "威廉姆斯",
+        "value": 1.8383,
+        "mins": 30.6766,
+        "maxPts": 25
+      },
+      {
+        "id": "P0489",
+        "name": "杰克逊",
+        "value": 1.7046,
+        "mins": 31.9815,
+        "maxPts": 34
+      },
+      {
+        "id": "P0421",
+        "name": "克林根",
+        "value": 1.6507,
+        "mins": 31.5493,
+        "maxPts": 28
+      },
+      {
+        "id": "P0063",
+        "name": "卡尔克布伦纳",
+        "value": 1.641,
+        "mins": 31.2198,
+        "maxPts": 18
+      },
+      {
+        "id": "P0285",
+        "name": "特纳",
+        "value": 1.6352,
+        "mins": 30.6038,
+        "maxPts": 23
+      },
+      {
+        "id": "P0092",
+        "name": "莫布利",
+        "value": 1.6339,
+        "mins": 32.2887,
+        "maxPts": 33
+      },
+      {
+        "id": "P0509",
+        "name": "戴维斯",
+        "value": 1.6311,
+        "mins": 33.2298,
+        "maxPts": 59
+      },
+      {
+        "id": "P0348",
+        "name": "霍姆格伦",
+        "value": 1.5912,
+        "mins": 31.2676,
+        "maxPts": 27
+      }
+    ],
+    "tov": [
+      {
+        "id": "P0105",
+        "name": "欧文",
+        "value": 2.3723,
+        "mins": 32.36,
+        "maxPts": 64
+      },
+      {
+        "id": "P0156",
+        "name": "库里",
+        "value": 2.3282,
+        "mins": 33.1104,
+        "maxPts": 70
+      },
+      {
+        "id": "P0075",
+        "name": "鲍威尔",
+        "value": 2.2594,
+        "mins": 31.7875,
+        "maxPts": 55
+      },
+      {
+        "id": "P0242",
+        "name": "杰罗姆",
+        "value": 2.2565,
+        "mins": 31.5533,
+        "maxPts": 44
+      },
+      {
+        "id": "P0208",
+        "name": "加兰",
+        "value": 2.2516,
+        "mins": 31.8975,
+        "maxPts": 46
+      },
+      {
+        "id": "P0138",
+        "name": "坎宁安",
+        "value": 2.2401,
+        "mins": 33.1884,
+        "maxPts": 44
+      },
+      {
+        "id": "P0043",
+        "name": "普里查德",
+        "value": 2.2317,
+        "mins": 31.0213,
+        "maxPts": 30
+      },
+      {
+        "id": "P0226",
+        "name": "里夫斯",
+        "value": 2.2317,
+        "mins": 31.9501,
+        "maxPts": 59
+      },
+      {
+        "id": "P0207",
+        "name": "英格拉姆",
+        "value": 2.1852,
+        "mins": 32.1142,
+        "maxPts": 47
+      },
+      {
+        "id": "P0040",
+        "name": "塔图姆",
+        "value": 2.1746,
+        "mins": 33.3757,
+        "maxPts": 71
+      }
+    ]
+  },
+  "playerExamples": [
+    {
+      "id": "P0078",
+      "team": "CHI",
+      "name": "克拉克斯顿",
+      "threePT": 64,
+      "MID": 69,
+      "ovr": 81,
+      "offense": 69.2318,
+      "defense": 76.5714,
+      "snapshot": {
+        "PLAYER_ID": 1629651,
+        "PLAYER": "Nic Claxton",
+        "TEAM": "BKN",
+        "GP": 69,
+        "MIN": 27.8,
+        "FG_PCT": 0.571,
+        "FG3_PCT": 0.158,
+        "FT_PCT": 0.616,
+        "REB": 6.9,
+        "AST": 3.7,
+        "STL": 0.7,
+        "BLK": 1.1,
+        "TOV": 1.4,
+        "PTS": 11.7,
+        "EFF": 17.8,
+        "SOURCE": "NBA",
+        "SOURCE_URL": "https://www.nba.com/stats/player/1629651"
+      },
+      "simulated": {
+        "games": 324,
+        "mins": 31.3611,
+        "pts": 13.3302,
+        "threeA": 0.0648,
+        "threePct": 0.1905,
+        "fta": 2.1512,
+        "ftPct": 0.7044,
+        "fgPct": 0.6111
+      }
+    },
+    {
+      "id": "P0120",
+      "team": "DEN",
+      "name": "约基奇",
+      "threePT": 86,
+      "MID": 98,
+      "ovr": 98,
+      "offense": 92.7645,
+      "defense": 84.5986,
+      "snapshot": {
+        "PLAYER_ID": 203999,
+        "PLAYER": "Nikola Jokić",
+        "TEAM": "DEN",
+        "GP": 65,
+        "MIN": 34.8,
+        "FG_PCT": 0.569,
+        "FG3_PCT": 0.38,
+        "FT_PCT": 0.831,
+        "REB": 12.9,
+        "AST": 10.7,
+        "STL": 1.4,
+        "BLK": 0.8,
+        "TOV": 3.7,
+        "PTS": 27.7,
+        "EFF": 41,
+        "SOURCE": "NBA",
+        "SOURCE_URL": "https://www.nba.com/stats/player/203999"
+      },
+      "simulated": {
+        "games": 329,
+        "mins": 34.4103,
+        "pts": 25.5076,
+        "threeA": 8.6474,
+        "threePct": 0.374,
+        "fta": 4.2675,
+        "ftPct": 0.8818,
+        "fgPct": 0.5022
+      }
+    },
+    {
+      "id": "P0156",
+      "team": "GSW",
+      "name": "库里",
+      "threePT": 97,
+      "MID": 97,
+      "ovr": 91,
+      "offense": 96.0487,
+      "defense": 61.7909,
+      "snapshot": {
+        "PLAYER_ID": null,
+        "PLAYER": "Stephen Curry",
+        "TEAM": "GS",
+        "GP": 43,
+        "MIN": 30.906977,
+        "FG_PCT": 0.46808998107910155,
+        "FG3_PCT": 0.39256197214126587,
+        "FT_PCT": 0.9230799865722656,
+        "REB": 3.5813954,
+        "AST": 4.72093,
+        "STL": 1.1395348,
+        "BLK": 0.39534885,
+        "TOV": 2.8139534,
+        "PTS": 26.55814,
+        "EFF": null,
+        "SOURCE": "ESPN",
+        "SOURCE_URL": "https://www.espn.com/nba/player/stats/_/id/3975/stephen-curry"
+      },
+      "simulated": {
+        "games": 326,
+        "mins": 33.1104,
+        "pts": 28.227,
+        "threeA": 10.7853,
+        "threePct": 0.4053,
+        "fta": 4.2117,
+        "ftPct": 0.9301,
+        "fgPct": 0.4752
+      }
+    },
+    {
+      "id": "P0167",
+      "team": "GSW",
+      "name": "库里",
+      "threePT": 89,
+      "MID": 95,
+      "ovr": 73,
+      "offense": 78.1407,
+      "defense": 54.0455,
+      "snapshot": {
+        "PLAYER_ID": null,
+        "PLAYER": "Seth Curry",
+        "TEAM": "GS",
+        "GP": 10,
+        "MIN": 13.3,
+        "FG_PCT": 0.4897999954223633,
+        "FG3_PCT": 0.47999998927116394,
+        "FT_PCT": 0.9166699981689453,
+        "REB": 1.2,
+        "AST": 1,
+        "STL": 0.3,
+        "BLK": 0,
+        "TOV": 0.2,
+        "PTS": 7.1,
+        "EFF": null,
+        "SOURCE": "ESPN",
+        "SOURCE_URL": "https://www.espn.com/nba/player/stats/_/id/2326307/seth-curry"
+      },
+      "simulated": {
+        "games": 1,
+        "mins": 9,
+        "pts": 4,
+        "threeA": 2,
+        "threePct": 0.5,
+        "fta": 1,
+        "ftPct": 1,
+        "fgPct": 0.3333
+      }
+    },
+    {
+      "id": "P0180",
+      "team": "HOU",
+      "name": "卡佩拉",
+      "threePT": 28,
+      "MID": 50,
+      "ovr": 77,
+      "offense": 63.8439,
+      "defense": 81.8468,
+      "snapshot": {
+        "PLAYER_ID": 203991,
+        "PLAYER": "Clint Capela",
+        "TEAM": "HOU",
+        "GP": 75,
+        "MIN": 12.3,
+        "FG_PCT": 0.52,
+        "FG3_PCT": 0.5,
+        "FT_PCT": 0.577,
+        "REB": 4.6,
+        "AST": 0.7,
+        "STL": 0.5,
+        "BLK": 0.8,
+        "TOV": 0.5,
+        "PTS": 3.8,
+        "EFF": 7.9,
+        "SOURCE": "NBA",
+        "SOURCE_URL": "https://www.nba.com/stats/player/203991"
+      },
+      "simulated": {
+        "games": 302,
+        "mins": 10.2152,
+        "pts": 2.2583,
+        "threeA": 0.0066,
+        "threePct": 0,
+        "fta": 0.4901,
+        "ftPct": 0.5135,
+        "fgPct": 0.6247
+      }
+    },
+    {
+      "id": "P0181",
+      "team": "HOU",
+      "name": "亚当斯",
+      "threePT": 29,
+      "MID": 65,
+      "ovr": 79,
+      "offense": 65.5199,
+      "defense": 81.5634,
+      "snapshot": {
+        "PLAYER_ID": null,
+        "PLAYER": "Steven Adams",
+        "TEAM": "HOU",
+        "GP": 32,
+        "MIN": 22.8125,
+        "FG_PCT": 0.5036000061035156,
+        "FG3_PCT": 0,
+        "FT_PCT": 0.580250015258789,
+        "REB": 8.625,
+        "AST": 1.5,
+        "STL": 0.6875,
+        "BLK": 0.625,
+        "TOV": 1.09375,
+        "PTS": 5.84375,
+        "EFF": null,
+        "SOURCE": "ESPN",
+        "SOURCE_URL": "https://www.espn.com/nba/player/stats/_/id/2991235/steven-adams"
+      },
+      "simulated": {
+        "games": 340,
+        "mins": 26.9735,
+        "pts": 9.4559,
+        "threeA": 0.0588,
+        "threePct": 0.15,
+        "fta": 1.5559,
+        "ftPct": 0.5444,
+        "fgPct": 0.6359
+      }
+    },
+    {
+      "id": "P0265",
+      "team": "MIA",
+      "name": "阿德巴约",
+      "threePT": 77,
+      "MID": 88,
+      "ovr": 90,
+      "offense": 77.246,
+      "defense": 81.0852,
+      "snapshot": {
+        "PLAYER_ID": 1628389,
+        "PLAYER": "Bam Adebayo",
+        "TEAM": "MIA",
+        "GP": 73,
+        "MIN": 32.4,
+        "FG_PCT": 0.442,
+        "FG3_PCT": 0.318,
+        "FT_PCT": 0.778,
+        "REB": 10,
+        "AST": 3.2,
+        "STL": 1.2,
+        "BLK": 0.7,
+        "TOV": 1.6,
+        "PTS": 20.1,
+        "EFF": 23.5,
+        "SOURCE": "NBA",
+        "SOURCE_URL": "https://www.nba.com/stats/player/1628389"
+      },
+      "simulated": {
+        "games": 306,
+        "mins": 33.2843,
+        "pts": 18.6928,
+        "threeA": 5.415,
+        "threePct": 0.3337,
+        "fta": 3.4052,
+        "ftPct": 0.8225,
+        "fgPct": 0.4994
+      }
+    },
+    {
+      "id": "P0298",
+      "team": "MIN",
+      "name": "戈贝尔",
+      "threePT": 28,
+      "MID": 54,
+      "ovr": 79,
+      "offense": 62.6796,
+      "defense": 83.7458,
+      "snapshot": {
+        "PLAYER_ID": 203497,
+        "PLAYER": "Rudy Gobert",
+        "TEAM": "MIN",
+        "GP": 76,
+        "MIN": 31.3,
+        "FG_PCT": 0.682,
+        "FG3_PCT": 0,
+        "FT_PCT": 0.526,
+        "REB": 11.5,
+        "AST": 1.7,
+        "STL": 0.8,
+        "BLK": 1.6,
+        "TOV": 1.4,
+        "PTS": 10.9,
+        "EFF": 21.1,
+        "SOURCE": "NBA",
+        "SOURCE_URL": "https://www.nba.com/stats/player/203497"
+      },
+      "simulated": {
+        "games": 342,
+        "mins": 30.4971,
+        "pts": 9.1667,
+        "threeA": 0.0468,
+        "threePct": 0.125,
+        "fta": 1.269,
+        "ftPct": 0.5184,
+        "fgPct": 0.6591
+      }
+    },
+    {
+      "id": "P0339",
+      "team": "NYK",
+      "name": "德拉蒙德",
+      "threePT": 50,
+      "MID": 47,
+      "ovr": 81,
+      "offense": 68.5576,
+      "defense": 83.6261,
+      "snapshot": {
+        "PLAYER_ID": 203083,
+        "PLAYER": "Andre Drummond",
+        "TEAM": "PHI",
+        "GP": 63,
+        "MIN": 19.5,
+        "FG_PCT": 0.472,
+        "FG3_PCT": 0.356,
+        "FT_PCT": 0.631,
+        "REB": 8.4,
+        "AST": 1.3,
+        "STL": 0.6,
+        "BLK": 0.8,
+        "TOV": 1,
+        "PTS": 6.4,
+        "EFF": 13.2,
+        "SOURCE": "NBA",
+        "SOURCE_URL": "https://www.nba.com/stats/player/203083"
+      },
+      "simulated": {
+        "games": 328,
+        "mins": 22.3598,
+        "pts": 8.5122,
+        "threeA": 0.0488,
+        "threePct": 0.25,
+        "fta": 1.4848,
+        "ftPct": 0.5955,
+        "fgPct": 0.6668
+      }
+    },
+    {
+      "id": "P0353",
+      "team": "OKC",
+      "name": "卡鲁索",
+      "threePT": 76,
+      "MID": 82,
+      "ovr": 81,
+      "offense": 76.2877,
+      "defense": 69.2912,
+      "snapshot": {
+        "PLAYER_ID": null,
+        "PLAYER": "Alex Caruso",
+        "TEAM": "OKC",
+        "GP": 56,
+        "MIN": 18.214285,
+        "FG_PCT": 0.4233300018310547,
+        "FG3_PCT": 0.2928176820278168,
+        "FT_PCT": 0.8039199829101562,
+        "REB": 2.767857,
+        "AST": 1.9642857,
+        "STL": 1.2857143,
+        "BLK": 0.30357143,
+        "TOV": 0.85714287,
+        "PTS": 6.214286,
+        "EFF": null,
+        "SOURCE": "ESPN",
+        "SOURCE_URL": "https://www.espn.com/nba/player/stats/_/id/2991350/alex-caruso"
+      },
+      "simulated": {
+        "games": 342,
+        "mins": 21.9152,
+        "pts": 7.8099,
+        "threeA": 2.2515,
+        "threePct": 0.3481,
+        "fta": 1.3129,
+        "ftPct": 0.804,
+        "fgPct": 0.4906
+      }
+    },
+    {
+      "id": "P0384",
+      "team": "PHI",
+      "name": "西蒙斯",
+      "threePT": 82,
+      "MID": 85,
+      "ovr": 79,
+      "offense": 80.6871,
+      "defense": 56.4713,
+      "snapshot": {
+        "PLAYER_ID": null,
+        "PLAYER": "Anfernee Simons",
+        "TEAM": "PHI",
+        "GP": 55,
+        "MIN": 24.945454,
+        "FG_PCT": 0.43980998992919923,
+        "FG3_PCT": 0.38522428274154663,
+        "FT_PCT": 0.8961000061035156,
+        "REB": 2.4545455,
+        "AST": 2.4363637,
+        "STL": 0.4909091,
+        "BLK": 0.14545454,
+        "TOV": 1.2363636,
+        "PTS": 14.272727,
+        "EFF": null,
+        "SOURCE": "ESPN",
+        "SOURCE_URL": "https://www.espn.com/nba/player/stats/_/id/4351851/anfernee-simons"
+      },
+      "simulated": {
+        "games": 324,
+        "mins": 26.4074,
+        "pts": 13.108,
+        "threeA": 4.2654,
+        "threePct": 0.3755,
+        "fta": 1.9907,
+        "ftPct": 0.862,
+        "fgPct": 0.5041
+      }
+    }
+  ],
+  "sameOvrGameImpact": {
+    "low": {
+      "ovr": 79,
+      "offense": 71.5141,
+      "defense": 73.9688,
+      "margin": -1.9704,
+      "firstThreeQuartersMargin": -1.45,
+      "expectedMargin": -2.4057,
+      "winPct": 0.4412
+    },
+    "high": {
+      "ovr": 87,
+      "offense": 84.3574,
+      "defense": 77.2806,
+      "margin": 1.71,
+      "firstThreeQuartersMargin": 1.246,
+      "expectedMargin": 1.9221,
+      "winPct": 0.5316
+    }
+  },
+  "clutchGameImpact": {
+    "low": {
+      "ovr": 82,
+      "offense": 75.51,
+      "defense": 75.86,
+      "margin": 0.2016,
+      "firstThreeQuartersMargin": -0.0304,
+      "expectedMargin": 0,
+      "winPct": 0.4996
+    },
+    "high": {
+      "ovr": 86,
+      "offense": 75.51,
+      "defense": 75.86,
+      "margin": 0.372,
+      "firstThreeQuartersMargin": -0.0304,
+      "expectedMargin": 0,
+      "winPct": 0.5072
+    }
+  },
+  "ftFormulaNeutral": [
+    {
+      "threeAndMid": 25,
+      "freeThrowPct": 0.43
+    },
+    {
+      "threeAndMid": 50,
+      "freeThrowPct": 0.6023
+    },
+    {
+      "threeAndMid": 75,
+      "freeThrowPct": 0.7746
+    },
+    {
+      "threeAndMid": 99,
+      "freeThrowPct": 0.94
+    }
+  ],
+  "injuryRates": [
+    {
+      "age": 22,
+      "perGamePct": 0.65,
+      "conditionalMajorPct": 0.4,
+      "majorPerGamePct": 0.0026
+    },
+    {
+      "age": 25,
+      "perGamePct": 0.65,
+      "conditionalMajorPct": 0.4,
+      "majorPerGamePct": 0.0026
+    },
+    {
+      "age": 26,
+      "perGamePct": 0.7,
+      "conditionalMajorPct": 0.7,
+      "majorPerGamePct": 0.0049
+    },
+    {
+      "age": 30,
+      "perGamePct": 0.8,
+      "conditionalMajorPct": 0.7,
+      "majorPerGamePct": 0.0056
+    },
+    {
+      "age": 34,
+      "perGamePct": 1.4,
+      "conditionalMajorPct": 1.1,
+      "majorPerGamePct": 0.0154
+    },
+    {
+      "age": 38,
+      "perGamePct": 3.2,
+      "conditionalMajorPct": 1.6,
+      "majorPerGamePct": 0.0512
+    }
+  ],
+  "surgery": {
+    "remainingRegularGames": 4,
+    "assignedInjuryGames": 32,
+    "severity": "major",
+    "canOfferPlayThrough": false,
+    "injuryGamesAtPlayoffStart": 28
+  },
+  "concussion": {
+    "severity": "medical",
+    "canOfferPlayThrough": false
+  },
+  "annualAttributeDeltas": {
+    "22": {
+      "threePT": 0.396,
+      "MID": 0.402,
+      "FIN": 0.15,
+      "DNK": 0.168,
+      "HAN": 0.424,
+      "PAS": 0.376,
+      "PDEF": 0.166,
+      "STL": 0.156,
+      "IDEF": 0.146,
+      "BLK": 0.166,
+      "REB": 0.174,
+      "ATH": 0.412,
+      "STR": 0.164,
+      "CLU": 0.156
+    },
+    "28": {
+      "threePT": 0,
+      "MID": 0,
+      "FIN": 0,
+      "DNK": 0,
+      "HAN": 0,
+      "PAS": 0,
+      "PDEF": 0,
+      "STL": 0,
+      "IDEF": 0,
+      "BLK": 0,
+      "REB": 0,
+      "ATH": 0,
+      "STR": 0,
+      "CLU": 0
+    },
+    "32": {
+      "threePT": -0.364,
+      "MID": -0.368,
+      "FIN": -0.762,
+      "DNK": -1.044,
+      "HAN": -0.382,
+      "PAS": -0.382,
+      "PDEF": -1.042,
+      "STL": -1.072,
+      "IDEF": -0.736,
+      "BLK": -0.744,
+      "REB": -0.736,
+      "ATH": -1.064,
+      "STR": -1.052,
+      "CLU": -0.36
+    },
+    "35": {
+      "threePT": -0.74,
+      "MID": -0.76,
+      "FIN": -1.494,
+      "DNK": -2.086,
+      "HAN": -0.76,
+      "PAS": -0.756,
+      "PDEF": -2.08,
+      "STL": -2.05,
+      "IDEF": -1.558,
+      "BLK": -1.55,
+      "REB": -1.532,
+      "ATH": -2.138,
+      "STR": -2.046,
+      "CLU": -0.734
+    },
+    "38": {
+      "threePT": -1.102,
+      "MID": -1.144,
+      "FIN": -2.244,
+      "DNK": -3.118,
+      "HAN": -1.152,
+      "PAS": -1.124,
+      "PDEF": -3.198,
+      "STL": -3.064,
+      "IDEF": -2.202,
+      "BLK": -2.234,
+      "REB": -2.224,
+      "ATH": -3.132,
+      "STR": -3.154,
+      "CLU": -1.094
+    }
+  },
+  "playerStatComparisons": {
+    "pts": {
+      "count": 214,
+      "meanError": -1.1114,
+      "meanAbsoluteError": 3.0086,
+      "largest": [
+        {
+          "id": "P0382",
+          "name": "Joel Embiid",
+          "actual": 15.462,
+          "expected": 30.6045,
+          "error": -15.1425
+        },
+        {
+          "id": "P0452",
+          "name": "Victor Wembanyama",
+          "actual": 16.928,
+          "expected": 30.8219,
+          "error": -13.894
+        },
+        {
+          "id": "P0487",
+          "name": "Lauri Markkanen",
+          "actual": 16.8986,
+          "expected": 28.0166,
+          "error": -11.118
+        },
+        {
+          "id": "P0158",
+          "name": "Kristaps Porzingis",
+          "actual": 14.9207,
+          "expected": 24.9519,
+          "error": -10.0312
+        },
+        {
+          "id": "P0417",
+          "name": "Deni Avdija",
+          "actual": 17.2808,
+          "expected": 26.1622,
+          "error": -8.8814
+        },
+        {
+          "id": "P0195",
+          "name": "Obi Toppin",
+          "actual": 14.8866,
+          "expected": 23.6887,
+          "error": -8.8021
+        },
+        {
+          "id": "P0399",
+          "name": "Dillon Brooks",
+          "actual": 15.3305,
+          "expected": 23.9224,
+          "error": -8.592
+        },
+        {
+          "id": "P0333",
+          "name": "Mikal Bridges",
+          "actual": 23.9956,
+          "expected": 15.8049,
+          "error": 8.1907
+        }
+      ]
+    },
+    "reb": {
+      "count": 214,
+      "meanError": -0.1654,
+      "meanAbsoluteError": 0.899,
+      "largest": [
+        {
+          "id": "P0045",
+          "name": "Mitchell Robinson",
+          "actual": 11.3232,
+          "expected": 16.1633,
+          "error": -4.84
+        },
+        {
+          "id": "P0425",
+          "name": "Robert Williams III",
+          "actual": 11.1626,
+          "expected": 14.7368,
+          "error": -3.5742
+        },
+        {
+          "id": "P0511",
+          "name": "Alex Sarr",
+          "actual": 6.2863,
+          "expected": 9.7931,
+          "error": -3.5069
+        },
+        {
+          "id": "P0421",
+          "name": "Donovan Clingan",
+          "actual": 12.0136,
+          "expected": 15.3529,
+          "error": -3.3393
+        },
+        {
+          "id": "P0283",
+          "name": "Kel'el Ware",
+          "actual": 11.3612,
+          "expected": 14.6606,
+          "error": -3.2995
+        },
+        {
+          "id": "P0110",
+          "name": "Daniel Gafford",
+          "actual": 8.4357,
+          "expected": 11.397,
+          "error": -2.9613
+        },
+        {
+          "id": "P0127",
+          "name": "Marvin Bagley III",
+          "actual": 8.0981,
+          "expected": 10.98,
+          "error": -2.8819
+        },
+        {
+          "id": "P0475",
+          "name": "Collin Murray-Boyles",
+          "actual": 5.3865,
+          "expected": 8.2343,
+          "error": -2.8479
+        }
+      ]
+    },
+    "ast": {
+      "count": 214,
+      "meanError": -0.6303,
+      "meanAbsoluteError": 1.3282,
+      "largest": [
+        {
+          "id": "P0193",
+          "name": "T.J. McConnell",
+          "actual": 5.8811,
+          "expected": 10.729,
+          "error": -4.8479
+        },
+        {
+          "id": "P0491",
+          "name": "Jusuf Nurkic",
+          "actual": 1.8384,
+          "expected": 6.5152,
+          "error": -4.6768
+        },
+        {
+          "id": "P0350",
+          "name": "Isaiah Hartenstein",
+          "actual": 0.722,
+          "expected": 5.2559,
+          "error": -4.5339
+        },
+        {
+          "id": "P0078",
+          "name": "Nic Claxton",
+          "actual": 0.3578,
+          "expected": 4.7914,
+          "error": -4.4335
+        },
+        {
+          "id": "P0156",
+          "name": "Stephen Curry",
+          "actual": 9.7487,
+          "expected": 5.4989,
+          "error": 4.2499
+        },
+        {
+          "id": "P0195",
+          "name": "Obi Toppin",
+          "actual": 0.6367,
+          "expected": 4.6698,
+          "error": -4.0331
+        },
+        {
+          "id": "P0435",
+          "name": "Zach LaVine",
+          "actual": 6.2709,
+          "expected": 2.6176,
+          "error": 3.6533
+        },
+        {
+          "id": "P0347",
+          "name": "Shai Gilgeous-Alexander",
+          "actual": 10.773,
+          "expected": 7.1566,
+          "error": 3.6164
+        }
+      ]
+    },
+    "stl": {
+      "count": 214,
+      "meanError": -0.0901,
+      "meanAbsoluteError": 0.3165,
+      "largest": [
+        {
+          "id": "P0271",
+          "name": "Dru Smith",
+          "actual": 1.677,
+          "expected": 3.092,
+          "error": -1.415
+        },
+        {
+          "id": "P0370",
+          "name": "Goga Bitadze",
+          "actual": 0.3985,
+          "expected": 1.4211,
+          "error": -1.0225
+        },
+        {
+          "id": "P0350",
+          "name": "Isaiah Hartenstein",
+          "actual": 0.5388,
+          "expected": 1.5198,
+          "error": -0.981
+        },
+        {
+          "id": "P0146",
+          "name": "Javonte Green",
+          "actual": 1.5074,
+          "expected": 2.4545,
+          "error": -0.9472
+        },
+        {
+          "id": "P0399",
+          "name": "Dillon Brooks",
+          "actual": 2.1322,
+          "expected": 1.2056,
+          "error": 0.9265
+        },
+        {
+          "id": "P0003",
+          "name": "Dyson Daniels",
+          "actual": 3.0658,
+          "expected": 2.1687,
+          "error": 0.8972
+        },
+        {
+          "id": "P0231",
+          "name": "Jarred Vanderbilt",
+          "actual": 2.5153,
+          "expected": 1.6552,
+          "error": 0.8601
+        },
+        {
+          "id": "P0022",
+          "name": "Day'Ron Sharpe",
+          "actual": 1.2601,
+          "expected": 2.1176,
+          "error": -0.8576
+        }
+      ]
+    },
+    "blk": {
+      "count": 214,
+      "meanError": -0.0905,
+      "meanAbsoluteError": 0.2255,
+      "largest": [
+        {
+          "id": "P0511",
+          "name": "Alex Sarr",
+          "actual": 1.4528,
+          "expected": 2.6207,
+          "error": -1.1679
+        },
+        {
+          "id": "P0452",
+          "name": "Victor Wembanyama",
+          "actual": 2.7078,
+          "expected": 3.8219,
+          "error": -1.1141
+        },
+        {
+          "id": "P0249",
+          "name": "Isaiah Stewart",
+          "actual": 1.5206,
+          "expected": 2.5374,
+          "error": -1.0168
+        },
+        {
+          "id": "P0425",
+          "name": "Robert Williams III",
+          "actual": 2.1573,
+          "expected": 3.1579,
+          "error": -1.0006
+        },
+        {
+          "id": "P0110",
+          "name": "Daniel Gafford",
+          "actual": 1.2847,
+          "expected": 2.0804,
+          "error": -0.7957
+        },
+        {
+          "id": "P0332",
+          "name": "OG Anunoby",
+          "actual": 1.5297,
+          "expected": 0.759,
+          "error": 0.7707
+        },
+        {
+          "id": "P0264",
+          "name": "Giannis Antetokounmpo",
+          "actual": 1.5933,
+          "expected": 0.8316,
+          "error": 0.7618
+        },
+        {
+          "id": "P0515",
+          "name": "Bilal Coulibaly",
+          "actual": 0.5744,
+          "expected": 1.3243,
+          "error": -0.7499
+        }
+      ]
+    },
+    "tov": {
+      "count": 214,
+      "meanError": -0.1622,
+      "meanAbsoluteError": 0.5929,
+      "largest": [
+        {
+          "id": "P0419",
+          "name": "Ja Morant",
+          "actual": 2.2123,
+          "expected": 4.4921,
+          "error": -2.2798
+        },
+        {
+          "id": "P0264",
+          "name": "Giannis Antetokounmpo",
+          "actual": 1.7686,
+          "expected": 3.9846,
+          "error": -2.216
+        },
+        {
+          "id": "P0436",
+          "name": "Russell Westbrook",
+          "actual": 1.9132,
+          "expected": 4.0966,
+          "error": -2.1834
+        },
+        {
+          "id": "P0225",
+          "name": "Luka Dončić",
+          "actual": 2.1153,
+          "expected": 4.0223,
+          "error": -1.907
+        },
+        {
+          "id": "P0417",
+          "name": "Deni Avdija",
+          "actual": 2.3232,
+          "expected": 4.1081,
+          "error": -1.7849
+        },
+        {
+          "id": "P0076",
+          "name": "Josh Giddey",
+          "actual": 2.3385,
+          "expected": 4.0763,
+          "error": -1.7377
+        },
+        {
+          "id": "P0380",
+          "name": "Jaylen Brown",
+          "actual": 2.0559,
+          "expected": 3.7674,
+          "error": -1.7115
+        },
+        {
+          "id": "P0120",
+          "name": "Nikola Jokić",
+          "actual": 2.1751,
+          "expected": 3.8276,
+          "error": -1.6525
+        }
+      ]
+    }
+  },
+  "generatedPlateaus": [
+    {
+      "pos": "PG",
+      "profile": "playmaker",
+      "before": 80,
+      "after": 85
+    },
+    {
+      "pos": "PG",
+      "profile": "scoring_guard",
+      "before": 84,
+      "after": 89
+    },
+    {
+      "pos": "SG",
+      "profile": "perimeter_scorer",
+      "before": 89,
+      "after": 94
+    },
+    {
+      "pos": "SG",
+      "profile": "two_way_slasher",
+      "before": 76,
+      "after": 81
+    },
+    {
+      "pos": "SF",
+      "profile": "two_way_wing",
+      "before": 80,
+      "after": 85
+    },
+    {
+      "pos": "SF",
+      "profile": "point_forward",
+      "before": 81,
+      "after": 86
+    },
+    {
+      "pos": "PF",
+      "profile": "interior_forward",
+      "before": 77,
+      "after": 82
+    },
+    {
+      "pos": "PF",
+      "profile": "stretch_four",
+      "before": 77,
+      "after": 82
+    },
+    {
+      "pos": "C",
+      "profile": "rim_protector",
+      "before": 94,
+      "after": 99
+    },
+    {
+      "pos": "C",
+      "profile": "skilled_big",
+      "before": 90,
+      "after": 95
+    }
+  ],
+  "failureCount": 0,
+  "failures": []
+}

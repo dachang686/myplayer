@@ -1,0 +1,35 @@
+{
+  "players": 525,
+  "realPlayers": 525,
+  "growthCases": 525,
+  "declineCases": 525,
+  "maximumGrowth": 1,
+  "maximumDecline": 2,
+  "minimumTopThreeOverlap": 1,
+  "ageCurve": {
+    "age31": -0.775,
+    "age33": -1.58,
+    "age35": -2.455,
+    "normalAge33": -1.58
+  },
+  "requestPlusOneMax": 1,
+  "requestPlusTwoMax": 2,
+  "requestPlusTwoAverage": 1.96,
+  "requestPlusThreeCount": 0,
+  "saturationDecline": {
+    "before": 93,
+    "afterFirst": 93,
+    "afterSecond": 92
+  },
+  "migrationDelta": 1,
+  "selectedCatchups": 12,
+  "selectedCatchupAgeCounts": {
+    "22": 4,
+    "25": 4,
+    "28": 4
+  },
+  "legacyCompletePreserved": true,
+  "legacyMissingFilled": true,
+  "failures": [],
+  "failureCount": 0
+}

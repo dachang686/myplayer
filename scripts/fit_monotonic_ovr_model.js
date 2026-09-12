@@ -50,6 +50,11 @@ function featureVector(player) {
 }
 
 const expandedFeatureNames = POSITIONS.flatMap(position => featureNames.map(name => `${position}:${name}`));
+// Fit source ratings within basketball constraints: every skill matters, and
+// situational clutch performance cannot substitute for an entire skill package.
+const lowerBounds = POSITIONS.flatMap(position => ATTRIBUTES.map(key =>
+  position === 'C' && ['HAN', 'PDEF'].includes(key) ? 2 : 1));
+const upperBounds = POSITIONS.flatMap(() => ATTRIBUTES.map(key => key === 'CLU' ? 2.5 : 20));
 
 function hashId(id) {
   return String(id).split('').reduce((hash, char) => ((hash * 31) + char.charCodeAt(0)) >>> 0, 7);
@@ -88,7 +93,7 @@ function fit(samples) {
       second[index] = second[index] * 0.999 + gradient[index] * gradient[index] * 0.001;
       const correctedFirst = first[index] / (1 - Math.pow(0.9, iteration));
       const correctedSecond = second[index] / (1 - Math.pow(0.999, iteration));
-      weights[index] = Math.max(0, weight - 0.015 * correctedFirst / (Math.sqrt(correctedSecond) + 1e-8));
+      weights[index] = clamp(weight - 0.015 * correctedFirst / (Math.sqrt(correctedSecond) + 1e-8), lowerBounds[index], upperBounds[index]);
     });
   }
   return weights;

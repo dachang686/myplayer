@@ -1251,11 +1251,11 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 
 <script src="js/data/player_attribute_schema.js?v=20260828-v9"></script>
 <script src="js/data/league_attribute_source_migration.js?v=20260828-v9"></script>
-<script src="js/data/league_players.js?v=20260912-roles-v4"></script>
+<script src="js/data/league_players.js?v=20260828-v9"></script>
 <script src="js/data/player_loyalty.js"></script>
 <script src="js/data/league_schedule.js"></script>
 <script src="js/data/player_archetypes.js"></script>
-<script src="js/data/simulation_config.js?v=20260912-ratings"></script>
+<script src="js/data/simulation_config.js?v=20260828-v9"></script>
 <script src="js/data/fictional_team_names.js"></script>
 <script src="js/cartoon_art.js"></script>
 <script src="js/local_player_profile.js"></script>
@@ -1265,7 +1265,7 @@ body{font-family:var(--font-body);background:var(--bg);color:var(--text);min-hei
 <script src="js/career_narrative_rules.js"></script>
 <script src="js/data/career_biography_text.js"></script>
 <script src="js/playoffs.js"></script>
-<script src="js/simulation_v2.js?v=20260912-role-distribution"></script>
+<script src="js/simulation_v2.js?v=20260829-v10"></script>
 <script src="js/career_legacy_records.js"></script>
 <script>
 // ── Storage 工具 ──
@@ -1506,9 +1506,6 @@ function createSeasonEventState(injuryRiskBonus) {
     suspensionReason: '',
     injuryGamesLeft: 0,
     injuryReason: '',
-    injuryType: '',
-    injurySeverity: '',
-    injuryRequiresClearance: false,
     triggeredIds: [],
     storyTimeline: [],
     lastTriggerGameNum: null,
@@ -5136,7 +5133,6 @@ function calcTeamPowerWithPlayer(team, gameOptions) {
   }
 
   const overall = minuteWeighted('overall');
-  const regulationOverall = minuteWeighted('regulationOverall');
   const lineupFit = rateRotationComposition(minutes, impacts);
   const benchMinutes = minutes.reduce(function(sum, value, index) {
     return sum + (index >= 5 ? (Number(value) || 0) : 0);
@@ -5153,7 +5149,6 @@ function calcTeamPowerWithPlayer(team, gameOptions) {
     clutch: minuteWeighted('clutch'),
     overall: overall,
     structure: lineupFit.total,
-    regulationOverall: regulationOverall,
     lineupFit: lineupFit,
     // depth 只描述替补强度；overall 仍是阵容 OVR，structure 是独立的组合战力。
     depth: benchOverall,
@@ -5168,7 +5163,7 @@ function getTeamCompetitiveRating(power) {
   const overall = Number.isFinite(power && power.overall) ? power.overall : 50;
   const offense = Number(power && power.offense) || overall;
   const defense = Number(power && power.defense) || overall;
-  const rosterRating = Number.isFinite(power && power.regulationOverall) ? power.regulationOverall : overall;
+  const rosterRating = overall;
   const structureRating = Math.max(-8, Math.min(8, Number(power && power.structure) || 0));
   return {
     overall: overall,
@@ -5832,7 +5827,7 @@ function getLeagueDefensiveAnchor(player) {
 
 /**
  * 唯一的球员比赛能力出口。
- * 由当前属性计算实时综合价值；存档中的 ovr 缓存不能覆盖已经改变的技能。
+ * `player.ovr` 是唯一的实时综合价值；属性画像只服务于比赛事件的方向性能力。
  */
 function getPlayerGameImpact(player) {
   const unifiedRating = typeof getUnifiedPlayerRating === 'function'
@@ -5840,11 +5835,9 @@ function getPlayerGameImpact(player) {
     : (typeof SIM_CONFIG !== 'undefined' && SIM_CONFIG && SIM_CONFIG.getUnifiedPlayerRating);
   if (typeof unifiedRating === 'function') {
     const rating = unifiedRating(player, player && player.pos);
-    const overall = Math.round(rating.overall);
+    const overall = leagueStatClamp(Number(player && player.ovr) || 50, 40, 99);
     return {
       overall: overall,
-      // CLU remains part of OVR but acts only in close periods, not this residual.
-      regulationOverall: rating.pricing.regulationOverall,
       offense: rating.offense,
       defense: rating.defense,
       athletic: rating.athletic,
@@ -9021,7 +9014,6 @@ function applyAnnualAttributeDrift() {
   var age = c.currentAge || 22;
   var changes = [];
   var slowTech = ['threePT', 'MID', 'HAN', 'PAS', 'CLU'];
-  var physical = ['ATH', 'STR', 'DNK', 'PDEF', 'STL'];
 
   function applyList(list, minDelta, maxDelta, label) {
     list.forEach(function(k) {
@@ -9043,11 +9035,7 @@ function applyAnnualAttributeDrift() {
   }
 
   function applyPartialDecline(minDelta, maxDelta, label) {
-    var selected = ATTR_KEYS.filter(function(key) {
-      // Athletic decline precedes accumulated technique; all skills can age.
-      var probability = physical.indexOf(key) >= 0 ? 0.70 : (slowTech.indexOf(key) >= 0 ? 0.25 : 0.50);
-      return Math.random() < probability;
-    });
+    var selected = ATTR_KEYS.filter(function() { return Math.random() < 0.5; });
     if (selected.length === 0) {
       selected.push(ATTR_KEYS[Math.floor(Math.random() * ATTR_KEYS.length)]);
     } else if (selected.length === ATTR_KEYS.length) {
@@ -9057,12 +9045,7 @@ function applyAnnualAttributeDrift() {
   }
 
   if (age <= 25) {
-    var position = STATE.position || STATE.finalPosition || 'SF';
-    var development = getLeaguePlayerDevelopmentProfile({ pos: position });
-    ATTR_KEYS.forEach(function(key) {
-      var probability = development.primary.indexOf(key) >= 0 ? 0.40 : 0.16;
-      if (Math.random() < probability) applyList([key], 1, 1, '成长');
-    });
+    applyList(slowTech.concat(['FIN', 'ATH']), 0, 1, '成长');
   } else if (age <= 30) {
     // 巅峰期：属性保持稳定，不进行年度增减。
   } else if (age <= 33) {
@@ -10629,9 +10612,6 @@ function manualLoadGame(slot, options) {
           normalizeLegacyGeneratedRookieLabels();
           if (typeof syncLeaguePlayerOvrs === 'function') syncLeaguePlayerOvrs();
         }
-        if (STATE.attrs && STATE.position && typeof calcOVR === 'function') {
-          STATE.finalOVR = calcOVR(STATE.attrs, STATE.position);
-        }
         // 阵容由联盟名单派生，不能沿用存档中的缓存引用或过期排序。
         STATE._lineupCache = {};
         _playerAges = snap.ages || {};
@@ -11796,7 +11776,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <script src="js/player_build_draft.js?v=20260827-1"></script>
 <script src="js/awards.js"></script>
-<script src="js/offseason.js?v=20260912-role-migration"></script>
+<script src="js/offseason.js?v=20260828-1"></script>
 <script src="js/draft.js?v=20260828-1"></script>
 <script src="js/career_branch_data.js"></script>
 
@@ -11871,9 +11851,6 @@ function showEventModal(data, callback) {
 
 function getInjuryPlaySeverity(ev) {
   var left = ev && ev.injuryGamesLeft ? ev.injuryGamesLeft : 0;
-  // Persist the diagnosis; old saves can still be classified by their reason.
-  if (ev && (ev.injurySeverity === 'major' || /手术|骨折|三级/.test(ev.injuryReason || ''))) return 'major';
-  if (ev && (ev.injuryRequiresClearance || /脑震荡/.test(ev.injuryReason || ''))) return 'medical';
   if ((ev && ev.majorInjuryThisSeason && left >= 12) || left >= 20) return 'major';
   if (left >= 8) return 'medium';
   return 'minor';
@@ -11971,8 +11948,6 @@ function isKeyInjuredPlayoffGame(round, gameNum, winsA, winsB) {
 function shouldOfferPlayThroughInjury(key, isRegular) {
   var ev = STATE.season && STATE.season.events;
   if (!ev || ev.injuryGamesLeft <= 0 || ev.suspensionGamesLeft > 0) return false;
-  if (ev.injuryRequiresClearance || ev.injurySeverity === 'major'
-    || /脑震荡|手术|骨折|三级/.test(ev.injuryReason || '')) return false;
   ev.playThroughPrompted = ev.playThroughPrompted || {};
   if (ev.playThroughPrompted[key]) return false;
   ev.playThroughPrompted[key] = true;
@@ -13942,8 +13917,8 @@ function finalizeSeasonNarrativeAtSeasonEnd() {
 
 function getAgeBasedInjuryRate() {
   var age = (STATE.career && STATE.career.currentAge) ? STATE.career.currentAge : 22;
-  if (age <= 25) return 0.65;
-  if (age <= 28) return 0.70;
+  if (age <= 25) return 0;
+  if (age <= 28) return 0.4;
   if (age <= 31) return 0.8;
   if (age <= 34) return 1.4;
   if (age <= 37) return 2.2;
@@ -13954,7 +13929,7 @@ function getAgeBasedInjuryRate() {
 function getSeasonInjuryEventRate() {
   var ev = STATE.season && STATE.season.events;
   var bonus = ev && ev.injuryRiskBonus ? ev.injuryRiskBonus : 0;
-  return Math.max(0.15, Math.min(12, getAgeBasedInjuryRate() + bonus));
+  return Math.max(0, Math.min(12, getAgeBasedInjuryRate() + bonus));
 }
 
 function getMajorInjuryEventRate() {
@@ -13984,9 +13959,7 @@ function getSeasonEndingInjuryGamesLeft() {
   for (var i = 0; i < schedule.length; i++) {
     if (!schedule[i].simulated) remaining++;
   }
-  // A season-ending injury also excludes the postseason (up to 28 games).
-  // Do not turn a late-season operation into a one-game recovery.
-  return Math.max(24, remaining + 28);
+  return Math.max(1, remaining);
 }
 
 function isSuspensionEventDef(e) {
@@ -14426,10 +14399,6 @@ function checkRandomEvents(game, result, stats, options) {
   if (data._consequence === 'injury' && data._games) {
     ev.injuryGamesLeft += data._games;
     ev.injuryReason = data.desc || data.title;
-    ev.injuryType = picked.id;
-    ev.injurySeverity = data._majorInjury ? 'major' : '';
-    ev.injuryRequiresClearance = !!data._majorInjury || picked.id === 'injury_concussion'
-      || /手术|骨折/.test(ev.injuryReason);
     if (data._majorInjury) {
       ev.majorInjuryThisSeason = true;
       if (STATE.career) {

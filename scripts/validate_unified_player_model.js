@@ -61,8 +61,15 @@ assert(stopper.skills.pointOfAttackDefense > athlete.skills.pointOfAttackDefense
 
 const lowClutch = config.getUnifiedPlayerRating(player({ PAS: 84, HAN: 84, threePT: 84, FIN: 84, CLU: 25 }));
 const highClutch = config.getUnifiedPlayerRating(player({ PAS: 84, HAN: 84, threePT: 84, FIN: 84, CLU: 99 }));
-assert(highClutch.overall > lowClutch.overall + 8,
-  `14 项拟合公式必须读取 CLU：${JSON.stringify({ low: lowClutch.overall, high: highClutch.overall })}`);
+assert(highClutch.overall > lowClutch.overall + 1 && highClutch.overall < lowClutch.overall + 4
+  && Math.abs(highClutch.pricing.regulationOverall - lowClutch.pricing.regulationOverall) < 1e-9,
+  `CLU 应保留有限总评价值且不影响普通回合评级：${JSON.stringify({ low: lowClutch.overall, high: highClutch.overall })}`);
+
+for (const pos of config.POS_LIST) for (const key of config.ATTR_LIST) {
+  const low = config.getUnifiedPlayerRating(player({ [key]: 25 }), pos).overall;
+  const high = config.getUnifiedPlayerRating(player({ [key]: 99 }), pos).overall;
+  assert(high > low + 1, `${pos} ${key} 必须有实际的 OVR 权重`);
+}
 
 const defenseOnly = { PDEF: 82, IDEF: 86, STL: 78, BLK: 88, REB: 90, ATH: 80, STR: 88 };
 const lowOffenseDefender = config.getUnifiedPlayerRating(player(Object.assign({}, defenseOnly, { HAN: 25, PAS: 25 })));

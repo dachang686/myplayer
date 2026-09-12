@@ -1,0 +1,256 @@
+{
+  "mode": "smoke",
+  "engine": "v2",
+  "summary": {
+    "seasons": 12,
+    "teams": 30,
+    "conferenceTop1": {
+      "teamBySeason": [
+        "PHI",
+        "OKC",
+        "PHI",
+        "OKC",
+        "PHI",
+        "OKC",
+        "PHI",
+        "OKC",
+        "PHI",
+        "OKC",
+        "PHI",
+        "OKC",
+        "PHI",
+        "OKC",
+        "PHI",
+        "OKC",
+        "PHI",
+        "OKC",
+        "PHI",
+        "OKC",
+        "PHI",
+        "OKC",
+        "PHI",
+        "OKC"
+      ],
+      "averageRating": 88.12627548873257,
+      "averageWins": 56.875,
+      "minWins": 50,
+      "maxWins": 65,
+      "averageRank": 1.3333333333333333,
+      "playInRate": 0,
+      "outOfPlayoffsRate": 0
+    },
+    "conferenceTop3": {
+      "averageWins": 51.458333333333336,
+      "averageRank": 3.263888888888889,
+      "outOfPlayoffsRate": 0.013888888888888888
+    },
+    "conferenceTop5": {
+      "averageWins": 49.391666666666666,
+      "averageRank": 4.033333333333333,
+      "topSixRate": 0.825,
+      "rankDistribution": {
+        "1": 23,
+        "2": 21,
+        "3": 14,
+        "4": 16,
+        "5": 13,
+        "6": 12,
+        "7": 5,
+        "8": 9,
+        "9": 4,
+        "10": 1,
+        "11": 1,
+        "12": 1
+      }
+    },
+    "preseasonTeamStats": [
+      {
+        "conference": "SOUTH",
+        "team": "PHI",
+        "rating": 87.57,
+        "averageWins": 56.5,
+        "averageRank": 1.25,
+        "playInRate": 0,
+        "outOfPlayoffsRate": 0
+      },
+      {
+        "conference": "SOUTH",
+        "team": "IND",
+        "rating": 86.06,
+        "averageWins": 50.583333333333336,
+        "averageRank": 3.25,
+        "playInRate": 0.08333333333333333,
+        "outOfPlayoffsRate": 0
+      },
+      {
+        "conference": "SOUTH",
+        "team": "NYK",
+        "rating": 85.07,
+        "averageWins": 44.916666666666664,
+        "averageRank": 6.25,
+        "playInRate": 0.3333333333333333,
+        "outOfPlayoffsRate": 0.08333333333333333
+      },
+      {
+        "conference": "SOUTH",
+        "team": "WAS",
+        "rating": 84.91,
+        "averageWins": 45.25,
+        "averageRank": 5.916666666666667,
+        "playInRate": 0.25,
+        "outOfPlayoffsRate": 0.08333333333333333
+      },
+      {
+        "conference": "SOUTH",
+        "team": "CLE",
+        "rating": 84.5,
+        "averageWins": 47.75,
+        "averageRank": 4.416666666666667,
+        "playInRate": 0.25,
+        "outOfPlayoffsRate": 0
+      },
+      {
+        "conference": "NORTH",
+        "team": "OKC",
+        "rating": 88.68,
+        "averageWins": 57.25,
+        "averageRank": 1.4166666666666667,
+        "playInRate": 0,
+        "outOfPlayoffsRate": 0
+      },
+      {
+        "conference": "NORTH",
+        "team": "SAS",
+        "rating": 85.73,
+        "averageWins": 47.833333333333336,
+        "averageRank": 4.416666666666667,
+        "playInRate": 0.16666666666666666,
+        "outOfPlayoffsRate": 0
+      },
+      {
+        "conference": "NORTH",
+        "team": "HOU",
+        "rating": 85.67,
+        "averageWins": 51.666666666666664,
+        "averageRank": 3,
+        "playInRate": 0,
+        "outOfPlayoffsRate": 0
+      },
+      {
+        "conference": "NORTH",
+        "team": "POR",
+        "rating": 85.56,
+        "averageWins": 46,
+        "averageRank": 5.083333333333333,
+        "playInRate": 0.25,
+        "outOfPlayoffsRate": 0
+      },
+      {
+        "conference": "NORTH",
+        "team": "DEN",
+        "rating": 85.27,
+        "averageWins": 46.166666666666664,
+        "averageRank": 5.333333333333333,
+        "playInRate": 0.25,
+        "outOfPlayoffsRate": 0
+      }
+    ],
+    "preseasonTopTen": [
+      {
+        "conference": "SOUTH",
+        "team": "PHI",
+        "rating": 87.57,
+        "rosterRating": 84.15,
+        "structureRating": 3.42
+      },
+      {
+        "conference": "SOUTH",
+        "team": "IND",
+        "rating": 86.06,
+        "rosterRating": 82.96,
+        "structureRating": 3.1
+      },
+      {
+        "conference": "SOUTH",
+        "team": "NYK",
+        "rating": 85.07,
+        "rosterRating": 81.54,
+        "structureRating": 3.53
+      },
+      {
+        "conference": "SOUTH",
+        "team": "WAS",
+        "rating": 84.91,
+        "rosterRating": 81.17,
+        "structureRating": 3.74
+      },
+      {
+        "conference": "SOUTH",
+        "team": "CLE",
+        "rating": 84.5,
+        "rosterRating": 81.4,
+        "structureRating": 3.1
+      },
+      {
+        "conference": "NORTH",
+        "team": "OKC",
+        "rating": 88.68,
+        "rosterRating": 84.64,
+        "structureRating": 4.04
+      },
+      {
+        "conference": "NORTH",
+        "team": "SAS",
+        "rating": 85.73,
+        "rosterRating": 82.73,
+        "structureRating": 3
+      },
+      {
+        "conference": "NORTH",
+        "team": "HOU",
+        "rating": 85.67,
+        "rosterRating": 82.18,
+        "structureRating": 3.49
+      },
+      {
+        "conference": "NORTH",
+        "team": "POR",
+        "rating": 85.56,
+        "rosterRating": 82.21,
+        "structureRating": 3.35
+      },
+      {
+        "conference": "NORTH",
+        "team": "DEN",
+        "rating": 85.27,
+        "rosterRating": 82.14,
+        "structureRating": 3.13
+      }
+    ],
+    "league": {
+      "actualFirstAverageWins": 59,
+      "actualLastAverageWins": 22.833333333333332,
+      "actualFirstMinWins": 54,
+      "actualLastMaxWins": 29
+    },
+    "ratingWinCorrelation": {
+      "bySeason": [
+        0.7695118698558342,
+        0.8361418542927086,
+        0.7755879893146713,
+        0.8627207870101876,
+        0.8835055085834415,
+        0.9184773960450592,
+        0.8473225632393042,
+        0.8415066147315599,
+        0.8362911432105398,
+        0.8925495732343132,
+        0.8991093549103394,
+        0.883023017943593
+      ],
+      "average": 0.8538123060309625,
+      "p10": 0.781643375812475
+    }
+  },
+  "failures": []
+}

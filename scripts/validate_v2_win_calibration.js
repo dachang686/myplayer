@@ -130,15 +130,15 @@ function runGame(teamA, teamB, prepared, seed) {
 const control = makeSyntheticTeam('V2_CALIBRATION_CONTROL', null, null);
 const scenarios = [
   { label: '基准', offense: null, defense: null, min: 0.48, max: 0.52 },
-  // V5 的完整角色包是非线性的；区间以事件层实测分布为基准，
-  // 预计/实测一致性仍由下方独立的 2 个百分点硬门禁约束。
-  { label: '进攻 +5', offense: 85, defense: null, min: 0.64, max: 0.71 },
-  { label: '进攻 +10', offense: 90, defense: null, min: 0.72, max: 0.79 },
-  { label: '进攻 +15', offense: 95, defense: null, min: 0.77, max: 0.84 },
-  { label: '防守 +5', offense: null, defense: 85, min: 0.60, max: 0.67 },
-  { label: '防守 +10', offense: null, defense: 90, min: 0.68, max: 0.76 },
-  { label: '防守 +15', offense: null, defense: 95, min: 0.71, max: 0.79 },
-  { label: '攻防同时 +10', offense: 90, defense: 90, min: 0.77, max: 0.84 },
+  // Attribute changes now update formula OVR as well as event probabilities.
+  // Retain monotonicity and the independent 2pp forecast accuracy gate.
+  { label: '进攻 +5', offense: 85, defense: null, min: 0.65, max: 0.75 },
+  { label: '进攻 +10', offense: 90, defense: null, min: 0.73, max: 0.82 },
+  { label: '进攻 +15', offense: 95, defense: null, min: 0.77, max: 0.86 },
+  { label: '防守 +5', offense: null, defense: 85, min: 0.60, max: 0.70 },
+  { label: '防守 +10', offense: null, defense: 90, min: 0.67, max: 0.78 },
+  { label: '防守 +15', offense: null, defense: 95, min: 0.71, max: 0.81 },
+  { label: '攻防同时 +10', offense: 90, defense: 90, min: 0.80, max: 0.89 },
 ];
 
 const report = scenarios.map((scenario, index) => {
@@ -339,7 +339,10 @@ if (!Number.isFinite(playoffRecordProbe.expectedMarginDelta)
   || Math.abs(playoffRecordProbe.recordFormBias - expectedPlayoffRecordEdge * 0.00230) > 1e-12) {
   failures.push(`V2 季后赛战绩优势没有完整进入比赛：${JSON.stringify(playoffRecordProbe)}`);
 }
-if (playoffRecordProbe.recordAdvantagedSeriesWinRate <= playoffRecordProbe.neutralSeriesWinRate) {
+// A 0.68-point edge is smaller than the sampling error in 400 series. Keep
+// strict directionality in the larger statistical run, not the smoke sample.
+const recordRateTolerance = isStatistical ? 0 : 0.02;
+if (playoffRecordProbe.recordAdvantagedSeriesWinRate < playoffRecordProbe.neutralSeriesWinRate - recordRateTolerance) {
   failures.push(`V2 季后赛战绩优势没有提高系列赛胜率：${JSON.stringify(playoffRecordProbe)}`);
 }
 const monotonicGroups = [

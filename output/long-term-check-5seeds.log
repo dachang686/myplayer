@@ -1,0 +1,301 @@
+{
+  "seeds": 5,
+  "checkpoints": [
+    10,
+    15,
+    20,
+    25,
+    30,
+    35
+  ],
+  "equilibriumCheckpoints": [
+    20,
+    25,
+    30,
+    35
+  ],
+  "summaries": [
+    {
+      "season": 10,
+      "samples": 5,
+      "count90": {
+        "min": 20,
+        "max": 26,
+        "avg": 23
+      },
+      "count85": {
+        "min": 81,
+        "max": 92,
+        "avg": 88
+      },
+      "maxOvr": {
+        "min": 97,
+        "max": 99,
+        "avg": 98
+      },
+      "count99": {
+        "min": 0,
+        "max": 1,
+        "avg": 0.4
+      },
+      "top35Under30": {
+        "min": 13,
+        "max": 15,
+        "avg": 14
+      },
+      "top35Age30To34": {
+        "min": 16,
+        "max": 18,
+        "avg": 17
+      },
+      "top35Age35Plus": {
+        "min": 3,
+        "max": 5,
+        "avg": 4
+      },
+      "top35AverageAge": {
+        "min": 30.26,
+        "max": 31,
+        "avg": 30.67
+      }
+    },
+    {
+      "season": 15,
+      "samples": 5,
+      "count90": {
+        "min": 15,
+        "max": 21,
+        "avg": 19
+      },
+      "count85": {
+        "min": 68,
+        "max": 81,
+        "avg": 73.2
+      },
+      "maxOvr": {
+        "min": 93,
+        "max": 96,
+        "avg": 94.6
+      },
+      "count99": {
+        "min": 0,
+        "max": 0,
+        "avg": 0
+      },
+      "top35Under30": {
+        "min": 12,
+        "max": 15,
+        "avg": 13.2
+      },
+      "top35Age30To34": {
+        "min": 13,
+        "max": 19,
+        "avg": 16.6
+      },
+      "top35Age35Plus": {
+        "min": 3,
+        "max": 7,
+        "avg": 5.2
+      },
+      "top35AverageAge": {
+        "min": 30.43,
+        "max": 31,
+        "avg": 30.77
+      }
+    },
+    {
+      "season": 20,
+      "samples": 5,
+      "count90": {
+        "min": 11,
+        "max": 17,
+        "avg": 14.8
+      },
+      "count85": {
+        "min": 64,
+        "max": 70,
+        "avg": 66.4
+      },
+      "maxOvr": {
+        "min": 92,
+        "max": 94,
+        "avg": 93
+      },
+      "count99": {
+        "min": 0,
+        "max": 0,
+        "avg": 0
+      },
+      "top35Under30": {
+        "min": 13,
+        "max": 16,
+        "avg": 14.6
+      },
+      "top35Age30To34": {
+        "min": 13,
+        "max": 17,
+        "avg": 15.2
+      },
+      "top35Age35Plus": {
+        "min": 4,
+        "max": 6,
+        "avg": 5.2
+      },
+      "top35AverageAge": {
+        "min": 30.06,
+        "max": 30.89,
+        "avg": 30.45
+      }
+    },
+    {
+      "season": 25,
+      "samples": 5,
+      "count90": {
+        "min": 12,
+        "max": 19,
+        "avg": 14.8
+      },
+      "count85": {
+        "min": 61,
+        "max": 69,
+        "avg": 63.6
+      },
+      "maxOvr": {
+        "min": 93,
+        "max": 94,
+        "avg": 93.4
+      },
+      "count99": {
+        "min": 0,
+        "max": 0,
+        "avg": 0
+      },
+      "top35Under30": {
+        "min": 14,
+        "max": 16,
+        "avg": 15.2
+      },
+      "top35Age30To34": {
+        "min": 14,
+        "max": 17,
+        "avg": 15.2
+      },
+      "top35Age35Plus": {
+        "min": 4,
+        "max": 6,
+        "avg": 4.6
+      },
+      "top35AverageAge": {
+        "min": 29.97,
+        "max": 30.4,
+        "avg": 30.22
+      }
+    },
+    {
+      "season": 30,
+      "samples": 5,
+      "count90": {
+        "min": 13,
+        "max": 20,
+        "avg": 16.4
+      },
+      "count85": {
+        "min": 64,
+        "max": 69,
+        "avg": 66
+      },
+      "maxOvr": {
+        "min": 92,
+        "max": 95,
+        "avg": 93.4
+      },
+      "count99": {
+        "min": 0,
+        "max": 0,
+        "avg": 0
+      },
+      "top35Under30": {
+        "min": 13,
+        "max": 18,
+        "avg": 15.4
+      },
+      "top35Age30To34": {
+        "min": 14,
+        "max": 18,
+        "avg": 15.8
+      },
+      "top35Age35Plus": {
+        "min": 2,
+        "max": 5,
+        "avg": 3.8
+      },
+      "top35AverageAge": {
+        "min": 29.6,
+        "max": 30.57,
+        "avg": 30.11
+      }
+    },
+    {
+      "season": 35,
+      "samples": 5,
+      "count90": {
+        "min": 12,
+        "max": 17,
+        "avg": 14.4
+      },
+      "count85": {
+        "min": 63,
+        "max": 68,
+        "avg": 66
+      },
+      "maxOvr": {
+        "min": 92,
+        "max": 94,
+        "avg": 93.2
+      },
+      "count99": {
+        "min": 0,
+        "max": 0,
+        "avg": 0
+      },
+      "top35Under30": {
+        "min": 12,
+        "max": 19,
+        "avg": 14.8
+      },
+      "top35Age30To34": {
+        "min": 13,
+        "max": 19,
+        "avg": 16.2
+      },
+      "top35Age35Plus": {
+        "min": 2,
+        "max": 6,
+        "avg": 4
+      },
+      "top35AverageAge": {
+        "min": 29.63,
+        "max": 30.71,
+        "avg": 30.19
+      }
+    }
+  ],
+  "seedsWith99Overflow": 0,
+  "allowed99OverflowSeeds": 2,
+  "failureCount": 13,
+  "failures": [
+    "seed 20268750 第 15 季 90+ = 15，过渡期预期 18–42",
+    "第 20 季 90+ 均值 14.8，目标 18–30",
+    "第 20 季 90+ 最低 11，低于允许下限 14",
+    "第 20 季最高 OVR 均值 93，目标 95–99",
+    "第 25 季 90+ 均值 14.8，目标 18–30",
+    "第 25 季 90+ 最低 12，低于允许下限 14",
+    "第 25 季最高 OVR 均值 93.4，目标 95–99",
+    "第 30 季 90+ 均值 16.4，目标 18–30",
+    "第 30 季 90+ 最低 13，低于允许下限 14",
+    "第 30 季最高 OVR 均值 93.4，目标 95–99",
+    "第 35 季 90+ 均值 14.4，目标 18–30",
+    "第 35 季 90+ 最低 12，低于允许下限 14",
+    "第 35 季最高 OVR 均值 93.2，目标 95–99"
+  ]
+}

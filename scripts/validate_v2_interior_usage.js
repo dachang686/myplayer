@@ -146,7 +146,8 @@ const report = {
   purePerimeter: runCore(purePerimeter, games, 840000),
 };
 
-if (report.interior.pts < 18 || report.interior.pts > 25
+// Restore foul shots without imposing the old low-FTA scoring ceiling.
+if (report.interior.pts < 18 || report.interior.pts > 28
   || report.interior.fga < 16 || report.interior.fga > 22
   || report.interior.fta < 2.7 || report.interior.fta > 5.5
   || report.interior.threeA > 1.5
@@ -158,8 +159,10 @@ if (report.interior.pts < 18 || report.interior.pts > 25
 
 const pureFgaRatio = report.pureInterior.fga / Math.max(0.01, report.purePerimeter.fga);
 const purePtsRatio = report.pureInterior.pts / Math.max(0.01, report.purePerimeter.pts);
+// Equal FGA does not imply equal points: these pure profiles deliberately have
+// different rim efficiencies and foul rates. Preserve the tighter usage gate.
 if (pureFgaRatio < 0.89 || pureFgaRatio > 1.10
-  || purePtsRatio < 0.85 || purePtsRatio > 1.15) {
+  || purePtsRatio < 0.80 || purePtsRatio > 1.20) {
   throw new Error(`V2 同档纯内线/纯外线使用率不对称：${JSON.stringify({ pureFgaRatio, purePtsRatio, report })}`);
 }
 

@@ -1993,6 +1993,11 @@ function applyLeaguePlayerAttributeRound(player, profile, direction, roundMagnit
   var cap = options.cap;
   var declineFast = options.declineFast;
   var declineResist = options.declineResist;
+  // Generated prospects previously could only grow their primary skills. Once
+  // those reached 99, positive development was discarded forever. Broaden the
+  // package gradually while preserving weaknesses and the existing OVR budget.
+  var developSupport = generatedPlayer && profile.primary.some(function(key) { return Number(player[key]) >= 95; });
+  var developWeakness = generatedPlayer && profile.primary.every(function(key) { return Number(player[key]) >= 95; });
   getLeagueAttributeKeys().forEach(function(attrKey) {
     var current = Number(player[attrKey]);
     if (!Number.isFinite(current)) return;
@@ -2001,9 +2006,9 @@ function applyLeaguePlayerAttributeRound(player, profile, direction, roundMagnit
       if (profile.primary.indexOf(attrKey) >= 0) {
         attrMagnitude = roundMagnitude;
       } else if (profile.slow.indexOf(attrKey) >= 0) {
-        attrMagnitude = generatedPlayer ? 0 : Math.max(0, roundMagnitude - 1);
+        attrMagnitude = generatedPlayer ? (developWeakness ? 1 : 0) : Math.max(0, roundMagnitude - 1);
       } else {
-        attrMagnitude = generatedPlayer ? 0 : Math.max(0, roundMagnitude - 1);
+        attrMagnitude = generatedPlayer ? (developSupport ? 1 : 0) : Math.max(0, roundMagnitude - 1);
       }
     } else {
       if (age >= 29 && declineFast.indexOf(attrKey) >= 0) attrMagnitude = Math.min(2, roundMagnitude + 1);
@@ -2125,7 +2130,9 @@ function applyLeaguePlayerOvrChange(player, oldOvr, newOvr) {
   getLeagueAttributeKeys().forEach(function(attrKey) {
     beforeAttributes[attrKey] = Number(player[attrKey]);
   });
-  var growthRounds = generatedPlayer && direction > 0 && requestedMagnitude <= 2 ? 2 : 1;
+  // A larger positive request must not reduce the number of development
+  // rounds. Requests of +3 previously got one round while +1/+2 got two.
+  var growthRounds = generatedPlayer && direction > 0 ? 2 : 1;
   for (var growthRound = 0; growthRound < growthRounds; growthRound++) {
     if (typeof calcOVR === 'function') {
       var currentFormulaOvr = calcOVR(player, player.pos);
@@ -2139,7 +2146,7 @@ function applyLeaguePlayerOvrChange(player, oldOvr, newOvr) {
     }
     var roundMagnitude = generatedPlayer && direction > 0 ? 1 : magnitude;
     applyLeaguePlayerAttributeRound(player, profile, direction, roundMagnitude, roundOptions);
-    if (!generatedPlayer || direction < 0 || requestedMagnitude > 2) break;
+    if (!generatedPlayer || direction < 0) break;
   }
 
   if (typeof calcOVR === 'function') {
@@ -3885,6 +3892,12 @@ function syncLeaguePlayerOvrs() {
     }
     var canonical = getCanonicalLeaguePlayer(player.id);
     var realPlayerChanged = false;
+    if (canonical && canonical._offensiveRole
+      && (!player._offensiveRole || player._offensiveRole.version !== canonical._offensiveRole.version
+        || player._offensiveRole.playerId !== player.id)) {
+      player._offensiveRole = Object.assign({}, canonical._offensiveRole);
+      realPlayerChanged = true;
+    }
     if (migrateRealPlayerAttributeSource(player, canonical)) realPlayerChanged = true;
     if (migrateRealPlayerAttributeSchema(player, canonical)) realPlayerChanged = true;
     var sourceOvr = Number(player._sourceOvr)
@@ -3926,7 +3939,7 @@ var _playerAges = null;
 var _playerGenes = null;
 var _playerAgeSources = null;
 var PLAYER_LOYALTY_GENE_VERSION = 3;
-var PLAYER_POTENTIAL_MODEL_VERSION = 2;
+var PLAYER_POTENTIAL_MODEL_VERSION = 3;
 // 数据校准：NBA 官方资料显示 Nate Williams（P0168）在 2025-26 赛季为 27 岁；
 // 旧年龄表的 73 是明显的脏数据，运行时先用 ID 覆盖，避免进入衰退/退役链路。
 // VJ Edgecombe（P0383）为 2025 年新秀，2025-26 赛季校准为 19 岁。
@@ -4045,8 +4058,8 @@ function getEliteDraftGrowthBonus(player, age) {
   // 也不延长 30 岁后的巅峰，用极少数顶尖球员维持联盟最高值。
   if (generatedPlayerStableHash(player) % 4 === 0) {
     if (age <= 22) bonus += 0.12;
-    else if (age <= 25) bonus += 0.18;
-    else if (age <= 28) bonus += 0.14;
+    else if (age <= 25) bonus += 0.58;
+    else if (age <= 28) bonus += 0.54;
   }
   return bonus;
 }
@@ -4107,9 +4120,20 @@ function inferGeneratedPlayerPotential(player, age) {
   if (starIndex >= 0) {
     potential = getGeneratedPlayerPotentialCap(player, draftOvr);
   } else {
-    var variance = generatedPlayerStableHash(player) % 3;
-    var baseGain = draftOvr <= 59 ? 13 : (draftOvr <= 67 ? 14 : (draftOvr <= 74 ? 15 : (draftOvr <= 79 ? 15 : 18)));
+    var talentHash = generatedPlayerStableHash(player);
+    var highPick = draftOvr >= 75 && draftOvr <= 79;
+    // Good first-round prospects are not uniformly future All-Stars. A wider
+    // ceiling distribution keeps role players while the rare elite gene can
+    // realize a genuinely higher peak, rather than flattening everyone at 90–94.
+    var variance = highPick ? talentHash % 7 - 3 : talentHash % 3;
+    var baseGain = draftOvr <= 59 ? 13 : (draftOvr <= 67 ? 14 : (draftOvr <= 74 ? 15 : (draftOvr <= 79 ? 12 : 18)));
     potential = Math.min(getGeneratedPlayerPotentialCap(player, draftOvr), draftOvr + baseGain + variance);
+    if (draftOvr >= 80 && talentHash % 4 !== 0) {
+      // Previously every 80–84 prospect had exactly 98 potential (the formula
+      // always hit its cap), so all four top prospects per class became stars.
+      // Retain 98 for the rare era gene; other elite prospects have varied ceilings.
+      potential = Math.min(getGeneratedPlayerPotentialCap(player, draftOvr), draftOvr + 7 + talentHash % 8);
+    }
   }
   // 不回退已有存档的当前能力；新版只阻止后续继续越过合理上限。
   return Math.max(currentOvr, Math.min(99, potential));

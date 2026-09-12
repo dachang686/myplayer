@@ -1,0 +1,324 @@
+{
+  "trainingPointCases": {
+    "noSeason": 0,
+    "minimum": 1,
+    "maximum": 9
+  },
+  "lifecycle": {
+    "mid": 76,
+    "fin": 73,
+    "ovrBefore": 75,
+    "ovrAfter": 77,
+    "age": 25,
+    "contract": 2,
+    "marker": 3,
+    "counters": {
+      "save": 1,
+      "continue": 1,
+      "draft": 0,
+      "render": 0
+    }
+  },
+  "uiAllocation": {
+    "pending": 4,
+    "spent": 7,
+    "preview": 99
+  },
+  "ageCurves": {
+    "22": {
+      "averageTotalDelta": 3.385,
+      "averageOvrDelta": 0.545,
+      "minAttributeDelta": 0,
+      "maxAttributeDelta": 1
+    },
+    "25": {
+      "averageTotalDelta": 3.445,
+      "averageOvrDelta": 0.575,
+      "minAttributeDelta": 0,
+      "maxAttributeDelta": 1
+    },
+    "26": {
+      "averageTotalDelta": 0,
+      "averageOvrDelta": 0,
+      "minAttributeDelta": 0,
+      "maxAttributeDelta": 0
+    },
+    "30": {
+      "averageTotalDelta": 0,
+      "averageOvrDelta": 0,
+      "minAttributeDelta": 0,
+      "maxAttributeDelta": 0
+    },
+    "31": {
+      "averageTotalDelta": -10.1425,
+      "averageOvrDelta": -0.5675,
+      "minAttributeDelta": -2,
+      "maxAttributeDelta": 0
+    },
+    "33": {
+      "averageTotalDelta": -10.235,
+      "averageOvrDelta": -0.555,
+      "minAttributeDelta": -2,
+      "maxAttributeDelta": 0
+    },
+    "34": {
+      "averageTotalDelta": -20.17,
+      "averageOvrDelta": -1.3275,
+      "minAttributeDelta": -4,
+      "maxAttributeDelta": 0
+    },
+    "36": {
+      "averageTotalDelta": -20.2225,
+      "averageOvrDelta": -1.3575,
+      "minAttributeDelta": -4,
+      "maxAttributeDelta": 0
+    },
+    "37": {
+      "averageTotalDelta": -30.4575,
+      "averageOvrDelta": -2.095,
+      "minAttributeDelta": -6,
+      "maxAttributeDelta": 0
+    },
+    "39": {
+      "averageTotalDelta": -30.5875,
+      "averageOvrDelta": -2.095,
+      "minAttributeDelta": -6,
+      "maxAttributeDelta": 0
+    },
+    "40": {
+      "averageTotalDelta": -40.5125,
+      "averageOvrDelta": -2.86,
+      "minAttributeDelta": -8,
+      "maxAttributeDelta": 0
+    }
+  },
+  "bodyManagementImprovement": 1.245,
+  "boundaryReports": {
+    "youngCap": [],
+    "veteranFloor": []
+  },
+  "fullBudgetOvrImpact": {
+    "PG": {
+      "50": {
+        "baseOvr": 50,
+        "affordableAdd": 9,
+        "bestAttribute": "FIN",
+        "maximumOvrGain": 2,
+        "minimumOvrGain": 0
+      },
+      "70": {
+        "baseOvr": 75,
+        "affordableAdd": 9,
+        "bestAttribute": "FIN",
+        "maximumOvrGain": 3,
+        "minimumOvrGain": 0
+      },
+      "80": {
+        "baseOvr": 88,
+        "affordableAdd": 9,
+        "bestAttribute": "FIN",
+        "maximumOvrGain": 2,
+        "minimumOvrGain": 0
+      },
+      "90": {
+        "baseOvr": 99,
+        "affordableAdd": 7,
+        "bestAttribute": "ATH",
+        "maximumOvrGain": 0,
+        "minimumOvrGain": 0
+      },
+      "95": {
+        "baseOvr": 99,
+        "affordableAdd": 4,
+        "bestAttribute": "ATH",
+        "maximumOvrGain": 0,
+        "minimumOvrGain": 0
+      },
+      "99": {
+        "baseOvr": 99,
+        "affordableAdd": 0,
+        "bestAttribute": "ATH",
+        "maximumOvrGain": 0,
+        "minimumOvrGain": 0
+      }
+    },
+    "SG": {
+      "50": {
+        "baseOvr": 50,
+        "affordableAdd": 9,
+        "bestAttribute": "FIN",
+        "maximumOvrGain": 2,
+        "minimumOvrGain": 0
+      },
+      "70": {
+        "baseOvr": 76,
+        "affordableAdd": 9,
+        "bestAttribute": "FIN",
+        "maximumOvrGain": 2,
+        "minimumOvrGain": 1
+      },
+      "80": {
+        "baseOvr": 90,
+        "affordableAdd": 9,
+        "bestAttribute": "threePT",
+        "maximumOvrGain": 2,
+        "minimumOvrGain": 0
+      },
+      "90": {
+        "baseOvr": 99,
+        "affordableAdd": 7,
+        "bestAttribute": "ATH",
+        "maximumOvrGain": 0,
+        "minimumOvrGain": 0
+      },
+      "95": {
+        "baseOvr": 99,
+        "affordableAdd": 4,
+        "bestAttribute": "ATH",
+        "maximumOvrGain": 0,
+        "minimumOvrGain": 0
+      },
+      "99": {
+        "baseOvr": 99,
+        "affordableAdd": 0,
+        "bestAttribute": "ATH",
+        "maximumOvrGain": 0,
+        "minimumOvrGain": 0
+      }
+    },
+    "SF": {
+      "50": {
+        "baseOvr": 50,
+        "affordableAdd": 9,
+        "bestAttribute": "threePT",
+        "maximumOvrGain": 3,
+        "minimumOvrGain": 0
+      },
+      "70": {
+        "baseOvr": 76,
+        "affordableAdd": 9,
+        "bestAttribute": "FIN",
+        "maximumOvrGain": 2,
+        "minimumOvrGain": 0
+      },
+      "80": {
+        "baseOvr": 88,
+        "affordableAdd": 9,
+        "bestAttribute": "threePT",
+        "maximumOvrGain": 3,
+        "minimumOvrGain": 1
+      },
+      "90": {
+        "baseOvr": 99,
+        "affordableAdd": 7,
+        "bestAttribute": "ATH",
+        "maximumOvrGain": 0,
+        "minimumOvrGain": 0
+      },
+      "95": {
+        "baseOvr": 99,
+        "affordableAdd": 4,
+        "bestAttribute": "ATH",
+        "maximumOvrGain": 0,
+        "minimumOvrGain": 0
+      },
+      "99": {
+        "baseOvr": 99,
+        "affordableAdd": 0,
+        "bestAttribute": "ATH",
+        "maximumOvrGain": 0,
+        "minimumOvrGain": 0
+      }
+    },
+    "PF": {
+      "50": {
+        "baseOvr": 50,
+        "affordableAdd": 9,
+        "bestAttribute": "FIN",
+        "maximumOvrGain": 2,
+        "minimumOvrGain": 0
+      },
+      "70": {
+        "baseOvr": 77,
+        "affordableAdd": 9,
+        "bestAttribute": "FIN",
+        "maximumOvrGain": 2,
+        "minimumOvrGain": 0
+      },
+      "80": {
+        "baseOvr": 90,
+        "affordableAdd": 9,
+        "bestAttribute": "FIN",
+        "maximumOvrGain": 2,
+        "minimumOvrGain": 0
+      },
+      "90": {
+        "baseOvr": 99,
+        "affordableAdd": 7,
+        "bestAttribute": "ATH",
+        "maximumOvrGain": 0,
+        "minimumOvrGain": 0
+      },
+      "95": {
+        "baseOvr": 99,
+        "affordableAdd": 4,
+        "bestAttribute": "ATH",
+        "maximumOvrGain": 0,
+        "minimumOvrGain": 0
+      },
+      "99": {
+        "baseOvr": 99,
+        "affordableAdd": 0,
+        "bestAttribute": "ATH",
+        "maximumOvrGain": 0,
+        "minimumOvrGain": 0
+      }
+    },
+    "C": {
+      "50": {
+        "baseOvr": 50,
+        "affordableAdd": 9,
+        "bestAttribute": "FIN",
+        "maximumOvrGain": 3,
+        "minimumOvrGain": 0
+      },
+      "70": {
+        "baseOvr": 77,
+        "affordableAdd": 9,
+        "bestAttribute": "FIN",
+        "maximumOvrGain": 3,
+        "minimumOvrGain": 1
+      },
+      "80": {
+        "baseOvr": 91,
+        "affordableAdd": 9,
+        "bestAttribute": "FIN",
+        "maximumOvrGain": 3,
+        "minimumOvrGain": 0
+      },
+      "90": {
+        "baseOvr": 99,
+        "affordableAdd": 7,
+        "bestAttribute": "ATH",
+        "maximumOvrGain": 0,
+        "minimumOvrGain": 0
+      },
+      "95": {
+        "baseOvr": 99,
+        "affordableAdd": 4,
+        "bestAttribute": "ATH",
+        "maximumOvrGain": 0,
+        "minimumOvrGain": 0
+      },
+      "99": {
+        "baseOvr": 99,
+        "affordableAdd": 0,
+        "bestAttribute": "ATH",
+        "maximumOvrGain": 0,
+        "minimumOvrGain": 0
+      }
+    }
+  },
+  "failureCount": 0,
+  "failures": []
+}

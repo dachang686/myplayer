@@ -1,0 +1,590 @@
+{
+  "inputs": [
+    "threePT",
+    "MID",
+    "FIN",
+    "DNK",
+    "HAN",
+    "PAS",
+    "PDEF",
+    "STL",
+    "IDEF",
+    "BLK",
+    "REB",
+    "ATH",
+    "STR",
+    "CLU"
+  ],
+  "iterations": 12000,
+  "highEndTargetWeight": 0.35,
+  "train": {
+    "count": 420,
+    "meanAbsoluteError": 2.183,
+    "withinThree": 339,
+    "overFive": 18,
+    "largest": [
+      {
+        "id": "P0046",
+        "target": 78,
+        "predicted": 70,
+        "error": -8
+      },
+      {
+        "id": "P0397",
+        "target": 70,
+        "predicted": 78,
+        "error": 8
+      },
+      {
+        "id": "P0430",
+        "target": 73,
+        "predicted": 65,
+        "error": -8
+      },
+      {
+        "id": "P0437",
+        "target": 81,
+        "predicted": 73,
+        "error": -8
+      },
+      {
+        "id": "P0513",
+        "target": 81,
+        "predicted": 73,
+        "error": -8
+      },
+      {
+        "id": "P0099",
+        "target": 74,
+        "predicted": 81,
+        "error": 7
+      },
+      {
+        "id": "P0136",
+        "target": 71,
+        "predicted": 78,
+        "error": 7
+      },
+      {
+        "id": "P0170",
+        "target": 72,
+        "predicted": 79,
+        "error": 7
+      },
+      {
+        "id": "P0250",
+        "target": 78,
+        "predicted": 71,
+        "error": -7
+      },
+      {
+        "id": "P0058",
+        "target": 86,
+        "predicted": 80,
+        "error": -6
+      },
+      {
+        "id": "P0198",
+        "target": 79,
+        "predicted": 73,
+        "error": -6
+      },
+      {
+        "id": "P0203",
+        "target": 73,
+        "predicted": 79,
+        "error": 6
+      }
+    ]
+  },
+  "holdout": {
+    "count": 105,
+    "meanAbsoluteError": 2.238,
+    "withinThree": 80,
+    "overFive": 3,
+    "largest": [
+      {
+        "id": "P0218",
+        "target": 76,
+        "predicted": 69,
+        "error": -7
+      },
+      {
+        "id": "P0290",
+        "target": 74,
+        "predicted": 68,
+        "error": -6
+      },
+      {
+        "id": "P0015",
+        "target": 73,
+        "predicted": 67,
+        "error": -6
+      },
+      {
+        "id": "P0029",
+        "target": 77,
+        "predicted": 72,
+        "error": -5
+      },
+      {
+        "id": "P0047",
+        "target": 78,
+        "predicted": 73,
+        "error": -5
+      },
+      {
+        "id": "P0204",
+        "target": 73,
+        "predicted": 78,
+        "error": 5
+      },
+      {
+        "id": "P0277",
+        "target": 67,
+        "predicted": 72,
+        "error": 5
+      },
+      {
+        "id": "P0317",
+        "target": 84,
+        "predicted": 79,
+        "error": -5
+      },
+      {
+        "id": "P0321",
+        "target": 78,
+        "predicted": 73,
+        "error": -5
+      },
+      {
+        "id": "P0411",
+        "target": 74,
+        "predicted": 79,
+        "error": 5
+      },
+      {
+        "id": "P0457",
+        "target": 79,
+        "predicted": 74,
+        "error": -5
+      },
+      {
+        "id": "P0466",
+        "target": 72,
+        "predicted": 77,
+        "error": 5
+      }
+    ]
+  },
+  "fullRoster": {
+    "count": 525,
+    "meanAbsoluteError": 2.162,
+    "withinThree": 416,
+    "overFive": 18,
+    "largest": [
+      {
+        "id": "P0046",
+        "target": 78,
+        "predicted": 69,
+        "error": -9
+      },
+      {
+        "id": "P0397",
+        "target": 70,
+        "predicted": 79,
+        "error": 9
+      },
+      {
+        "id": "P0430",
+        "target": 73,
+        "predicted": 65,
+        "error": -8
+      },
+      {
+        "id": "P0437",
+        "target": 81,
+        "predicted": 73,
+        "error": -8
+      },
+      {
+        "id": "P0136",
+        "target": 71,
+        "predicted": 78,
+        "error": 7
+      },
+      {
+        "id": "P0170",
+        "target": 72,
+        "predicted": 79,
+        "error": 7
+      },
+      {
+        "id": "P0198",
+        "target": 79,
+        "predicted": 72,
+        "error": -7
+      },
+      {
+        "id": "P0203",
+        "target": 73,
+        "predicted": 80,
+        "error": 7
+      },
+      {
+        "id": "P0250",
+        "target": 78,
+        "predicted": 71,
+        "error": -7
+      },
+      {
+        "id": "P0336",
+        "target": 78,
+        "predicted": 71,
+        "error": -7
+      },
+      {
+        "id": "P0513",
+        "target": 81,
+        "predicted": 74,
+        "error": -7
+      },
+      {
+        "id": "P0058",
+        "target": 86,
+        "predicted": 80,
+        "error": -6
+      }
+    ]
+  },
+  "distribution": {
+    "at99": 0,
+    "atLeast97": 2
+  },
+  "focus": [
+    {
+      "id": "P0120",
+      "name": "约基奇",
+      "sourceOvr": 98,
+      "formulaOvr": 98
+    },
+    {
+      "id": "P0172",
+      "name": "杜兰特",
+      "sourceOvr": 93,
+      "formulaOvr": 96
+    },
+    {
+      "id": "P0225",
+      "name": "东契奇",
+      "sourceOvr": 97,
+      "formulaOvr": 96
+    },
+    {
+      "id": "P0264",
+      "name": "阿德托昆博",
+      "sourceOvr": 97,
+      "formulaOvr": 95
+    },
+    {
+      "id": "P0347",
+      "name": "亚历山大",
+      "sourceOvr": 98,
+      "formulaOvr": 98
+    },
+    {
+      "id": "P0452",
+      "name": "文班亚马",
+      "sourceOvr": 97,
+      "formulaOvr": 96
+    },
+    {
+      "id": "P0509",
+      "name": "戴维斯",
+      "sourceOvr": 92,
+      "formulaOvr": 92
+    }
+  ],
+  "nonZeroWeights": [
+    {
+      "name": "PG:linear:threePT",
+      "value": 8.961976
+    },
+    {
+      "name": "PG:linear:MID",
+      "value": 6.235376
+    },
+    {
+      "name": "PG:linear:FIN",
+      "value": 13.388004
+    },
+    {
+      "name": "PG:linear:DNK",
+      "value": 1.249489
+    },
+    {
+      "name": "PG:linear:HAN",
+      "value": 7.222663
+    },
+    {
+      "name": "PG:linear:PAS",
+      "value": 6.071798
+    },
+    {
+      "name": "PG:linear:PDEF",
+      "value": 1
+    },
+    {
+      "name": "PG:linear:STL",
+      "value": 1
+    },
+    {
+      "name": "PG:linear:IDEF",
+      "value": 3.113556
+    },
+    {
+      "name": "PG:linear:BLK",
+      "value": 4.141155
+    },
+    {
+      "name": "PG:linear:REB",
+      "value": 2.120146
+    },
+    {
+      "name": "PG:linear:ATH",
+      "value": 3.392074
+    },
+    {
+      "name": "PG:linear:STR",
+      "value": 1.30987
+    },
+    {
+      "name": "PG:linear:CLU",
+      "value": 2.5
+    },
+    {
+      "name": "SG:linear:threePT",
+      "value": 11.606531
+    },
+    {
+      "name": "SG:linear:MID",
+      "value": 6.022596
+    },
+    {
+      "name": "SG:linear:FIN",
+      "value": 10.62091
+    },
+    {
+      "name": "SG:linear:DNK",
+      "value": 3.168212
+    },
+    {
+      "name": "SG:linear:HAN",
+      "value": 6.773346
+    },
+    {
+      "name": "SG:linear:PAS",
+      "value": 5.552865
+    },
+    {
+      "name": "SG:linear:PDEF",
+      "value": 1.01068
+    },
+    {
+      "name": "SG:linear:STL",
+      "value": 1
+    },
+    {
+      "name": "SG:linear:IDEF",
+      "value": 5.149495
+    },
+    {
+      "name": "SG:linear:BLK",
+      "value": 4.097385
+    },
+    {
+      "name": "SG:linear:REB",
+      "value": 5.055312
+    },
+    {
+      "name": "SG:linear:ATH",
+      "value": 1
+    },
+    {
+      "name": "SG:linear:STR",
+      "value": 1
+    },
+    {
+      "name": "SG:linear:CLU",
+      "value": 2.5
+    },
+    {
+      "name": "SF:linear:threePT",
+      "value": 15.141098
+    },
+    {
+      "name": "SF:linear:MID",
+      "value": 4.253771
+    },
+    {
+      "name": "SF:linear:FIN",
+      "value": 10.785808
+    },
+    {
+      "name": "SF:linear:DNK",
+      "value": 2.930542
+    },
+    {
+      "name": "SF:linear:HAN",
+      "value": 3.425843
+    },
+    {
+      "name": "SF:linear:PAS",
+      "value": 7.462532
+    },
+    {
+      "name": "SF:linear:PDEF",
+      "value": 4.530365
+    },
+    {
+      "name": "SF:linear:STL",
+      "value": 1.665956
+    },
+    {
+      "name": "SF:linear:IDEF",
+      "value": 1.922999
+    },
+    {
+      "name": "SF:linear:BLK",
+      "value": 1
+    },
+    {
+      "name": "SF:linear:REB",
+      "value": 3.036117
+    },
+    {
+      "name": "SF:linear:ATH",
+      "value": 2.999452
+    },
+    {
+      "name": "SF:linear:STR",
+      "value": 1
+    },
+    {
+      "name": "SF:linear:CLU",
+      "value": 2.5
+    },
+    {
+      "name": "PF:linear:threePT",
+      "value": 10.019548
+    },
+    {
+      "name": "PF:linear:MID",
+      "value": 4.423079
+    },
+    {
+      "name": "PF:linear:FIN",
+      "value": 10.746177
+    },
+    {
+      "name": "PF:linear:DNK",
+      "value": 6.74187
+    },
+    {
+      "name": "PF:linear:HAN",
+      "value": 2.880401
+    },
+    {
+      "name": "PF:linear:PAS",
+      "value": 5.420597
+    },
+    {
+      "name": "PF:linear:PDEF",
+      "value": 1.250195
+    },
+    {
+      "name": "PF:linear:STL",
+      "value": 1
+    },
+    {
+      "name": "PF:linear:IDEF",
+      "value": 1.630013
+    },
+    {
+      "name": "PF:linear:BLK",
+      "value": 3.857235
+    },
+    {
+      "name": "PF:linear:REB",
+      "value": 5.859229
+    },
+    {
+      "name": "PF:linear:ATH",
+      "value": 6.255878
+    },
+    {
+      "name": "PF:linear:STR",
+      "value": 2.509585
+    },
+    {
+      "name": "PF:linear:CLU",
+      "value": 2.5
+    },
+    {
+      "name": "C:linear:threePT",
+      "value": 3.472235
+    },
+    {
+      "name": "C:linear:MID",
+      "value": 3.654592
+    },
+    {
+      "name": "C:linear:FIN",
+      "value": 14.716817
+    },
+    {
+      "name": "C:linear:DNK",
+      "value": 10.494447
+    },
+    {
+      "name": "C:linear:HAN",
+      "value": 2
+    },
+    {
+      "name": "C:linear:PAS",
+      "value": 1.735468
+    },
+    {
+      "name": "C:linear:PDEF",
+      "value": 2
+    },
+    {
+      "name": "C:linear:STL",
+      "value": 1
+    },
+    {
+      "name": "C:linear:IDEF",
+      "value": 7.901674
+    },
+    {
+      "name": "C:linear:BLK",
+      "value": 3.860668
+    },
+    {
+      "name": "C:linear:REB",
+      "value": 9.322846
+    },
+    {
+      "name": "C:linear:ATH",
+      "value": 1.094737
+    },
+    {
+      "name": "C:linear:STR",
+      "value": 3.544328
+    },
+    {
+      "name": "C:linear:CLU",
+      "value": 2.5
+    }
+  ]
+}

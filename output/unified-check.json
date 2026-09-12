@@ -1,0 +1,49 @@
+{
+  "baseline": 50,
+  "hub": {
+    "playmaking": 93.67845985298354,
+    "hubCreator": 98.7964688281888,
+    "touchLoad": 90.04702785938532
+  },
+  "defense": {
+    "athlete": 62.378648277969845,
+    "stopper": 72.76051600689318
+  },
+  "interiorUsage": {
+    "shotLoad": 74.53344452156081,
+    "interiorUsageLoad": 90.89144345510212
+  },
+  "perimeterUsage": {
+    "shotLoad": 75.69821929928847,
+    "perimeterUsageLoad": 93.16071123969651
+  },
+  "lineup": {
+    "fitted": 4.3740000000000006,
+    "unfitted": 2.0027999999999997
+  },
+  "positionFit": {
+    "pointGuard": 91.47893273469388,
+    "center": 92.08212236734694,
+    "dualPosition": 91.5995706612245,
+    "apex": 99
+  },
+  "residuals": {
+    "count": 525,
+    "meanAbsoluteError": 2.1619047619047618,
+    "withinThree": 416,
+    "overFive": 18,
+    "spearman": 0.8646396342948944
+  },
+  "residualsByPosition": {
+    "PG": 0.3238095238095238,
+    "SG": 0.17142857142857143,
+    "SF": -0.24299065420560748,
+    "PF": -0.19791666666666666,
+    "C": -0.4642857142857143
+  },
+  "specialtyResiduals": {
+    "balanced": -0.10476190476190476,
+    "specialist": -0.11428571428571428
+  },
+  "monotonicChecks": 6824
+}

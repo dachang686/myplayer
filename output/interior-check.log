@@ -1,0 +1,38 @@
+{
+  "interior": {
+    "games": 2500,
+    "minutes": 34,
+    "pts": 26.1044,
+    "fga": 18.8568,
+    "fta": 4.9136,
+    "threeA": 0,
+    "fgPct": 0.6210597768444275
+  },
+  "perimeter": {
+    "games": 2500,
+    "minutes": 34,
+    "pts": 25.4688,
+    "fga": 19.8536,
+    "fta": 4.1948,
+    "threeA": 10.0076,
+    "fgPct": 0.45031631542893985
+  },
+  "pureInterior": {
+    "games": 2500,
+    "minutes": 34,
+    "pts": 26.6404,
+    "fga": 19.438,
+    "fta": 5.2212,
+    "threeA": 0,
+    "fgPct": 0.6276983228727235
+  },
+  "purePerimeter": {
+    "games": 2500,
+    "minutes": 34,
+    "pts": 22.6544,
+    "fga": 19.8424,
+    "fta": 2.1524,
+    "threeA": 11.4744,
+    "fgPct": 0.4107769221465145
+  }
+}

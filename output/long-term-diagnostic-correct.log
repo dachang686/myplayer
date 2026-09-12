@@ -1,0 +1,302 @@
+{"diagnosticSeason":10,"top":[{"id":"P0452","cname":"文班亚马","pos":"C / PF","height":"7'4'","type":"Backline Stretch Post Scorer","ovr":97,"threePT":80,"MID":77,"FIN":89,"DNK":83,"HAN":70,"PAS":75,"PDEF":78,"STL":71,"IDEF":94,"BLK":96,"REB":91,"ATH":64,"STR":59,"CLU":95,"_age":31,"_ageSource":"published","_sourceOvr":97,"_sourceFormulaOvr":97,"_ovrAnchorVersion":1,"_teamTenure":12,"_lastTeam":"SAS","_birdTeam":"SAS","salary":32,"_salaryVersion":2,"contract":2,"_justSigned":true,"gene":{"v":2,"potential":99,"potentialVersion":2,"loyalty":61,"loyaltyVersion":3,"loyaltyRenewals":2,"loyaltyLastEvent":"4年续约","loyaltyTeam":"SAS","roleUnderuseSeasons":0},"age":31},{"id":"P0106","cname":"弗拉格","pos":"SF / PG","height":"6'9'","type":"2-Way Mid-Paint Scorer","ovr":96,"threePT":88,"MID":81,"FIN":90,"DNK":85,"HAN":81,"PAS":79,"PDEF":94,"STL":85,"IDEF":84,"BLK":82,"REB":79,"ATH":97,"STR":78,"CLU":89,"_age":28,"_ageSource":"published","_sourceOvr":88,"_sourceFormulaOvr":96,"_ovrAnchorVersion":1,"_teamTenure":10,"_lastTeam":"DAL","salary":28.3,"_salaryVersion":2,"contract":2,"_birdTeam":"DAL","_justSigned":true,"gene":{"v":1,"potential":99,"potentialVersion":2,"loyalty":60,"loyaltyVersion":3,"loyaltyRenewals":2,"loyaltyLastEvent":"4年续约","loyaltyTeam":"DAL","roleUnderuseSeasons":0},"age":28},{"id":"P0138","cname":"坎宁安","pos":"PG / SG","height":"6'6'","type":"2-Way Crafty 3-Level Playmaker","ovr":95,"threePT":85,"MID":89,"FIN":92,"DNK":75,"HAN":90,"PAS":94,"PDEF":75,"STL":72,"IDEF":67,"BLK":75,"REB":71,"ATH":87,"STR":62,"CLU":90,"_age":34,"_ageSource":"published","_sourceOvr":95,"_sourceFormulaOvr":95,"_ovrAnchorVersion":1,"_teamTenure":12,"_lastTeam":"DET","_birdTeam":"DET","salary":26.9,"_salaryVersion":2,"contract":2,"_justSigned":true,"gene":{"v":3,"potential":99,"potentialVersion":2,"loyalty":60,"loyaltyVersion":3,"loyaltyRenewals":2,"loyaltyLastEvent":"3年续约","loyaltyTeam":"DET","roleUnderuseSeasons":0},"age":34},{"id":"P0140","cname":"杜伦","pos":"C","height":"6'10'","type":"Board-Enforcing Power Finisher","ovr":94,"threePT":40,"MID":67,"FIN":88,"DNK":82,"HAN":61,"PAS":62,"PDEF":72,"STL":65,"IDEF":93,"BLK":82,"REB":97,"ATH":74,"STR":89,"CLU":67,"_age":31,"_ageSource":"published","_sourceOvr":89,"_sourceFormulaOvr":94,"_ovrAnchorVersion":1,"_teamTenure":10,"_lastTeam":"DET","salary":27.6,"_salaryVersion":2,"contract":2,"_birdTeam":"DET","_justSigned":true,"gene":{"v":1,"potential":99,"potentialVersion":2,"loyalty":61,"loyaltyVersion":3,"loyaltyRenewals":2,"loyaltyLastEvent":"4年续约","loyaltyTeam":"DET","roleUnderuseSeasons":0},"age":31},{"id":"P0296","cname":"爱德华兹","pos":"SG / SF","height":"6'4'","type":"2-Way Inside-Out Creator","ovr":94,"threePT":89,"MID":81,"FIN":95,"DNK":95,"HAN":88,"PAS":76,"PDEF":86,"STL":72,"IDEF":67,"BLK":74,"REB":66,"ATH":91,"STR":60,"CLU":95,"_age":34,"_ageSource":"published","_sourceOvr":96,"_sourceFormulaOvr":94,"_ovrAnchorVersion":1,"_teamTenure":12,"_lastTeam":"MIN","_birdTeam":"MIN","salary":27.6,"_salaryVersion":2,"contract":2,"_justSigned":true,"gene":{"v":1,"potential":99,"potentialVersion":2,"loyalty":61,"loyaltyVersion":3,"loyaltyRenewals":2,"loyaltyLastEvent":"4年续约","loyaltyTeam":"MIN","roleUnderuseSeasons":0},"age":34}]}
+{"diagnosticSeason":15,"top":[{"id":"P0106","cname":"弗拉格","pos":"SF / PG","height":"6'9'","type":"2-Way Mid-Paint Scorer","ovr":95,"threePT":88,"MID":81,"FIN":89,"DNK":83,"HAN":81,"PAS":79,"PDEF":92,"STL":83,"IDEF":83,"BLK":81,"REB":78,"ATH":95,"STR":76,"CLU":89,"_age":33,"_ageSource":"published","_sourceOvr":88,"_sourceFormulaOvr":95,"_ovrAnchorVersion":1,"_teamTenure":15,"_lastTeam":"DAL","salary":30.1,"_salaryVersion":2,"contract":2,"_birdTeam":"DAL","_justSigned":true,"gene":{"v":1,"potential":99,"potentialVersion":2,"loyalty":66,"loyaltyVersion":3,"loyaltyRenewals":3,"loyaltyLastEvent":"4年续约","loyaltyTeam":"DAL","roleUnderuseSeasons":0},"age":33},{"id":"R000094","_prospectId":"LT-20260831-94","cname":"新秀94","pos":"C","ovr":94,"_age":30,"type":"技术型内线","_justSigned":true,"_rookieProfile":"skilled_big","_rookieGenerationVersion":3,"_rookieSeason":4,"threePT":57,"MID":98,"FIN":97,"DNK":58,"HAN":59,"PAS":97,"PDEF":58,"STL":71,"IDEF":97,"BLK":75,"REB":98,"ATH":60,"STR":72,"CLU":75,"_draftOvr":80,"_ageSource":"player_record","contract":2,"loyalty":66,"_talentBalanceVersion":2,"_teamTenure":11,"_lastTeam":"CHA","salary":27.6,"_salaryVersion":2,"_birdTeam":"CHA","gene":{"v":4,"potential":98,"potentialVersion":2,"loyalty":71,"loyaltyVersion":3,"loyaltyRenewals":3,"loyaltyLastEvent":"3年续约","loyaltyTeam":"CHA","roleUnderuseSeasons":0},"age":30},{"id":"R000121","_prospectId":"LT-20260831-121","cname":"新秀121","pos":"SG","ovr":94,"_age":30,"type":"外线得分手","_justSigned":true,"_rookieProfile":"perimeter_scorer","_rookieGenerationVersion":3,"_rookieSeason":5,"threePT":96,"MID":96,"FIN":97,"DNK":76,"HAN":95,"PAS":79,"PDEF":76,"STL":75,"IDEF":61,"BLK":62,"REB":61,"ATH":75,"STR":60,"CLU":76,"_draftOvr":84,"_ageSource":"player_record","contract":2,"loyalty":66,"_talentBalanceVersion":2,"_teamTenure":10,"_lastTeam":"GSW","salary":27.6,"_salaryVersion":2,"_birdTeam":"GSW","gene":{"v":2,"potential":98,"potentialVersion":2,"loyalty":69,"loyaltyVersion":3,"loyaltyRenewals":2,"loyaltyLastEvent":"4年续约","loyaltyTeam":"GSW","roleUnderuseSeasons":0},"age":30},{"id":"P0452","cname":"文班亚马","pos":"C / PF","height":"7'4'","type":"Backline Stretch Post Scorer","ovr":94,"threePT":80,"MID":77,"FIN":86,"DNK":83,"HAN":70,"PAS":75,"PDEF":72,"STL":65,"IDEF":91,"BLK":93,"REB":88,"ATH":58,"STR":53,"CLU":95,"_age":36,"_ageSource":"published","_sourceOvr":97,"_sourceFormulaOvr":94,"_ovrAnchorVersion":1,"_teamTenure":17,"_lastTeam":"SAS","_birdTeam":"SAS","salary":23.5,"_salaryVersion":2,"contract":1,"_justSigned":true,"gene":{"v":2,"potential":99,"potentialVersion":2,"loyalty":69,"loyaltyVersion":3,"loyaltyRenewals":4,"loyaltyLastEvent":"1年续约","loyaltyTeam":"SAS","roleUnderuseSeasons":0},"age":36},{"id":"R000034","_prospectId":"LT-20260831-34","cname":"新秀34","pos":"C","ovr":93,"_age":32,"type":"护框中锋","_justSigned":true,"_rookieProfile":"rim_protector","_rookieGenerationVersion":3,"_rookieSeason":2,"threePT":60,"MID":55,"FIN":94,"DNK":70,"HAN":57,"PAS":55,"PDEF":56,"STL":69,"IDEF":95,"BLK":95,"REB":92,"ATH":68,"STR":92,"CLU":68,"_draftOvr":81,"_ageSource":"player_record","contract":3,"loyalty":66,"_talentBalanceVersion":2,"_teamTenure":13,"_lastTeam":"LAC","salary":27.6,"_salaryVersion":2,"_birdTeam":"LAC","gene":{"v":2,"potential":98,"potentialVersion":2,"loyalty":74,"loyaltyVersion":3,"loyaltyRenewals":3,"loyaltyLastEvent":"4年续约","loyaltyTeam":"LAC","roleUnderuseSeasons":0},"age":32}]}
+{"diagnosticSeason":20,"top":[{"id":"R000244","_prospectId":"LT-20260831-244","cname":"新秀244","pos":"C","ovr":94,"_age":30,"type":"护框中锋","_justSigned":true,"_rookieProfile":"rim_protector","_rookieGenerationVersion":3,"_rookieSeason":9,"threePT":55,"MID":60,"FIN":95,"DNK":73,"HAN":56,"PAS":57,"PDEF":55,"STL":70,"IDEF":94,"BLK":94,"REB":94,"ATH":69,"STR":97,"CLU":69,"_draftOvr":81,"_ageSource":"player_record","contract":1,"loyalty":66,"_talentBalanceVersion":2,"_teamTenure":11,"_lastTeam":"LAC","salary":27.6,"_salaryVersion":2,"_birdTeam":"LAC","gene":{"v":1,"potential":98,"potentialVersion":2,"loyalty":71,"loyaltyVersion":3,"loyaltyRenewals":3,"loyaltyLastEvent":"3年续约","loyaltyTeam":"LAC","roleUnderuseSeasons":0},"age":30},{"id":"R000301","_prospectId":"LT-20260831-301","cname":"新秀301","pos":"SG","ovr":94,"_age":29,"type":"外线得分手","_justSigned":true,"_rookieProfile":"perimeter_scorer","_rookieGenerationVersion":3,"_rookieSeason":11,"threePT":96,"MID":95,"FIN":94,"DNK":75,"HAN":98,"PAS":76,"PDEF":75,"STL":74,"IDEF":63,"BLK":62,"REB":61,"ATH":79,"STR":60,"CLU":80,"_draftOvr":84,"_ageSource":"player_record","contract":2,"loyalty":66,"_talentBalanceVersion":2,"_teamTenure":9,"_lastTeam":"MEM","salary":27.6,"_salaryVersion":2,"_birdTeam":"MEM","gene":{"v":3,"potential":98,"potentialVersion":2,"loyalty":68,"loyaltyVersion":3,"loyaltyRenewals":2,"loyaltyLastEvent":"3年续约","loyaltyTeam":"MEM","roleUnderuseSeasons":0},"age":29},{"id":"R000331","_prospectId":"LT-20260831-331","cname":"新秀331","pos":"SG","ovr":93,"_age":28,"type":"外线得分手","_justSigned":true,"_rookieProfile":"perimeter_scorer","_rookieGenerationVersion":3,"_rookieSeason":12,"threePT":96,"MID":96,"FIN":94,"DNK":73,"HAN":93,"PAS":77,"PDEF":77,"STL":72,"IDEF":63,"BLK":62,"REB":62,"ATH":74,"STR":62,"CLU":77,"_draftOvr":84,"_ageSource":"player_record","contract":3,"loyalty":66,"_talentBalanceVersion":2,"_teamTenure":8,"_lastTeam":"ATL","salary":27.6,"_salaryVersion":2,"_birdTeam":"ATL","gene":{"v":4,"potential":98,"potentialVersion":2,"loyalty":68,"loyaltyVersion":3,"loyaltyRenewals":2,"loyaltyLastEvent":"3年续约","loyaltyTeam":"ATL","roleUnderuseSeasons":0},"age":28},{"id":"R000242","_prospectId":"LT-20260831-242","cname":"新秀242","pos":"SF","ovr":93,"_age":30,"type":"组织前锋","_justSigned":true,"_rookieProfile":"point_forward","_rookieGenerationVersion":3,"_rookieSeason":9,"threePT":65,"MID":81,"FIN":99,"DNK":84,"HAN":98,"PAS":99,"PDEF":99,"STL":80,"IDEF":83,"BLK":66,"REB":67,"ATH":82,"STR":65,"CLU":85,"_draftOvr":82,"_ageSource":"player_record","contract":3,"loyalty":66,"_talentBalanceVersion":2,"_teamTenure":11,"_lastTeam":"BOS","salary":27.6,"_salaryVersion":2,"_birdTeam":"BOS","gene":{"v":2,"potential":98,"potentialVersion":2,"loyalty":72,"loyaltyVersion":3,"loyaltyRenewals":3,"loyaltyLastEvent":"3年续约","loyaltyTeam":"BOS","roleUnderuseSeasons":0},"age":30},{"id":"R000214","_prospectId":"LT-20260831-214","cname":"新秀214","pos":"C","ovr":93,"_age":31,"type":"护框中锋","_justSigned":true,"_rookieProfile":"rim_protector","_rookieGenerationVersion":3,"_rookieSeason":8,"threePT":59,"MID":56,"FIN":95,"DNK":70,"HAN":60,"PAS":57,"PDEF":57,"STL":67,"IDEF":93,"BLK":92,"REB":92,"ATH":70,"STR":93,"CLU":67,"_draftOvr":81,"_ageSource":"player_record","contract":2,"loyalty":66,"_talentBalanceVersion":2,"_teamTenure":12,"_lastTeam":"DEN","salary":27.6,"_salaryVersion":2,"_birdTeam":"DEN","gene":{"v":4,"potential":98,"potentialVersion":2,"loyalty":72,"loyaltyVersion":3,"loyaltyRenewals":3,"loyaltyLastEvent":"3年续约","loyaltyTeam":"DEN","roleUnderuseSeasons":0},"age":31}]}
+{"diagnosticSeason":25,"top":[{"id":"R000334","_prospectId":"LT-20260831-334","cname":"新秀334","pos":"C","ovr":95,"_age":32,"type":"护框中锋","_justSigned":true,"_rookieProfile":"rim_protector","_rookieGenerationVersion":3,"_rookieSeason":12,"threePT":57,"MID":56,"FIN":93,"DNK":75,"HAN":58,"PAS":56,"PDEF":56,"STL":69,"IDEF":95,"BLK":95,"REB":96,"ATH":71,"STR":96,"CLU":73,"_draftOvr":83,"_ageSource":"player_record","contract":3,"loyalty":66,"_talentBalanceVersion":2,"_teamTenure":13,"_lastTeam":"LAL","salary":28.9,"_salaryVersion":2,"_birdTeam":"LAL","gene":{"v":4,"potential":98,"potentialVersion":2,"loyalty":74,"loyaltyVersion":3,"loyaltyRenewals":3,"loyaltyLastEvent":"4年续约","loyaltyTeam":"LAL","roleUnderuseSeasons":0},"age":32},{"id":"R000364","_prospectId":"LT-20260831-364","cname":"新秀364","pos":"C","ovr":95,"_age":31,"type":"技术型内线","_justSigned":true,"_rookieProfile":"skilled_big","_rookieGenerationVersion":3,"_rookieSeason":13,"threePT":58,"MID":97,"FIN":98,"DNK":62,"HAN":61,"PAS":95,"PDEF":59,"STL":72,"IDEF":96,"BLK":73,"REB":94,"ATH":57,"STR":75,"CLU":76,"_draftOvr":83,"_ageSource":"player_record","contract":3,"loyalty":66,"_talentBalanceVersion":2,"_teamTenure":12,"_lastTeam":"LAL","salary":28.9,"_salaryVersion":2,"_birdTeam":"LAL","gene":{"v":4,"potential":98,"potentialVersion":2,"loyalty":73,"loyaltyVersion":3,"loyaltyRenewals":3,"loyaltyLastEvent":"4年续约","loyaltyTeam":"LAL","roleUnderuseSeasons":0},"age":31},{"id":"R000422","_prospectId":"LT-20260831-422","cname":"新秀422","pos":"SF","ovr":94,"_age":29,"type":"组织前锋","_justSigned":true,"_rookieProfile":"point_forward","_rookieGenerationVersion":3,"_rookieSeason":15,"threePT":68,"MID":84,"FIN":98,"DNK":86,"HAN":98,"PAS":99,"PDEF":99,"STL":82,"IDEF":82,"BLK":70,"REB":68,"ATH":83,"STR":66,"CLU":83,"_draftOvr":84,"_ageSource":"player_record","contract":2,"loyalty":66,"_talentBalanceVersion":2,"_teamTenure":10,"_lastTeam":"CHA","salary":27.6,"_salaryVersion":2,"_birdTeam":"CHA","gene":{"v":3,"potential":98,"potentialVersion":2,"loyalty":71,"loyaltyVersion":3,"loyaltyRenewals":3,"loyaltyLastEvent":"3年续约","loyaltyTeam":"CHA","roleUnderuseSeasons":0},"age":29},{"id":"R000392","_prospectId":"LT-20260831-392","cname":"新秀392","pos":"SF","ovr":94,"_age":30,"type":"组织前锋","_justSigned":true,"_rookieProfile":"point_forward","_rookieGenerationVersion":3,"_rookieSeason":14,"threePT":67,"MID":84,"FIN":99,"DNK":87,"HAN":99,"PAS":98,"PDEF":99,"STL":84,"IDEF":82,"BLK":70,"REB":65,"ATH":85,"STR":67,"CLU":81,"_draftOvr":84,"_ageSource":"player_record","contract":1,"loyalty":66,"_talentBalanceVersion":2,"_teamTenure":11,"_lastTeam":"DEN","salary":27.6,"_salaryVersion":2,"_birdTeam":"DEN","gene":{"v":1,"potential":98,"potentialVersion":2,"loyalty":69,"loyaltyVersion":3,"loyaltyRenewals":2,"loyaltyLastEvent":"4年续约","loyaltyTeam":"DEN","roleUnderuseSeasons":0},"age":30},{"id":"R000451","_prospectId":"LT-20260831-451","cname":"新秀451","pos":"SG","ovr":94,"_age":29,"type":"双向突破手","_justSigned":true,"_rookieProfile":"two_way_slasher","_rookieGenerationVersion":3,"_rookieSeason":16,"threePT":84,"MID":86,"FIN":99,"DNK":99,"HAN":85,"PAS":69,"PDEF":99,"STL":99,"IDEF":66,"BLK":70,"REB":71,"ATH":99,"STR":87,"CLU":84,"_draftOvr":84,"_ageSource":"player_record","contract":2,"loyalty":66,"_talentBalanceVersion":2,"_teamTenure":9,"_lastTeam":"LAL","salary":25.9,"_salaryVersion":2,"_birdTeam":"LAL","gene":{"v":2,"potential":98,"potentialVersion":2,"loyalty":68,"loyaltyVersion":3,"loyaltyRenewals":2,"loyaltyLastEvent":"4年续约","loyaltyTeam":"LAL","roleUnderuseSeasons":0},"age":29}]}
+{"diagnosticSeason":30,"top":[{"id":"R000542","_prospectId":"LT-20260831-542","cname":"新秀542","pos":"SF","ovr":94,"_age":30,"type":"组织前锋","_justSigned":true,"_rookieProfile":"point_forward","_rookieGenerationVersion":3,"_rookieSeason":19,"threePT":66,"MID":87,"FIN":99,"DNK":83,"HAN":99,"PAS":98,"PDEF":99,"STL":85,"IDEF":83,"BLK":67,"REB":65,"ATH":83,"STR":65,"CLU":83,"_draftOvr":84,"_ageSource":"player_record","contract":2,"loyalty":66,"_talentBalanceVersion":2,"_teamTenure":11,"_lastTeam":"ATL","salary":27.6,"_salaryVersion":2,"_birdTeam":"ATL","gene":{"v":1,"potential":98,"potentialVersion":2,"loyalty":71,"loyaltyVersion":3,"loyaltyRenewals":3,"loyaltyLastEvent":"4年续约","loyaltyTeam":"ATL","roleUnderuseSeasons":0},"age":30},{"id":"R000512","_prospectId":"LT-20260831-512","cname":"新秀512","pos":"SF","ovr":94,"_age":31,"type":"组织前锋","_justSigned":true,"_rookieProfile":"point_forward","_rookieGenerationVersion":3,"_rookieSeason":18,"threePT":68,"MID":77,"FIN":99,"DNK":83,"HAN":99,"PAS":99,"PDEF":99,"STL":84,"IDEF":82,"BLK":67,"REB":69,"ATH":83,"STR":69,"CLU":86,"_draftOvr":84,"_ageSource":"player_record","contract":3,"loyalty":66,"_talentBalanceVersion":2,"_teamTenure":12,"_lastTeam":"CHI","salary":27.6,"_salaryVersion":2,"_birdTeam":"CHI","gene":{"v":1,"potential":98,"potentialVersion":2,"loyalty":72,"loyaltyVersion":3,"loyaltyRenewals":3,"loyaltyLastEvent":"4年续约","loyaltyTeam":"CHI","roleUnderuseSeasons":0},"age":31},{"id":"R000421","_prospectId":"LT-20260831-421","cname":"新秀421","pos":"SG","ovr":94,"_age":35,"type":"外线得分手","_justSigned":true,"_rookieProfile":"perimeter_scorer","_rookieGenerationVersion":3,"_rookieSeason":15,"threePT":97,"MID":97,"FIN":95,"DNK":75,"HAN":97,"PAS":78,"PDEF":70,"STL":75,"IDEF":61,"BLK":59,"REB":59,"ATH":72,"STR":61,"CLU":75,"_draftOvr":84,"_ageSource":"player_record","contract":2,"loyalty":66,"_talentBalanceVersion":2,"_teamTenure":15,"_lastTeam":"OKC","salary":24.2,"_salaryVersion":2,"_birdTeam":"OKC","_ovrDeclineRoundingCarry":0.5,"gene":{"v":3,"potential":98,"potentialVersion":2,"loyalty":76,"loyaltyVersion":3,"loyaltyRenewals":4,"loyaltyLastEvent":"2年续约","loyaltyTeam":"OKC","roleUnderuseSeasons":0},"age":35},{"id":"R000511","_prospectId":"LT-20260831-511","cname":"新秀511","pos":"SG","ovr":94,"_age":32,"type":"外线得分手","_justSigned":true,"_rookieProfile":"perimeter_scorer","_rookieGenerationVersion":3,"_rookieSeason":18,"threePT":98,"MID":96,"FIN":95,"DNK":72,"HAN":97,"PAS":77,"PDEF":76,"STL":76,"IDEF":62,"BLK":62,"REB":63,"ATH":74,"STR":57,"CLU":77,"_draftOvr":84,"_ageSource":"player_record","contract":1,"loyalty":66,"_talentBalanceVersion":2,"_teamTenure":12,"_lastTeam":"WAS","salary":27.6,"_salaryVersion":2,"_birdTeam":"WAS","gene":{"v":3,"potential":98,"potentialVersion":2,"loyalty":71,"loyaltyVersion":3,"loyaltyRenewals":3,"loyaltyLastEvent":"4年续约","loyaltyTeam":"WAS","roleUnderuseSeasons":0},"age":32},{"id":"R000422","_prospectId":"LT-20260831-422","cname":"新秀422","pos":"SF","ovr":93,"_age":34,"type":"组织前锋","_justSigned":true,"_rookieProfile":"point_forward","_rookieGenerationVersion":3,"_rookieSeason":15,"threePT":68,"MID":84,"FIN":96,"DNK":82,"HAN":98,"PAS":99,"PDEF":95,"STL":78,"IDEF":80,"BLK":68,"REB":66,"ATH":79,"STR":62,"CLU":83,"_draftOvr":84,"_ageSource":"player_record","contract":2,"loyalty":66,"_talentBalanceVersion":2,"_teamTenure":15,"_lastTeam":"CHA","salary":27.6,"_salaryVersion":2,"_birdTeam":"CHA","_ovrDeclineRoundingCarry":0.5,"gene":{"v":3,"potential":98,"potentialVersion":2,"loyalty":75,"loyaltyVersion":3,"loyaltyRenewals":4,"loyaltyLastEvent":"4年续约","loyaltyTeam":"CHA","roleUnderuseSeasons":0},"age":34}]}
+{"diagnosticSeason":35,"top":[{"id":"R000721","_prospectId":"LT-20260831-721","cname":"新秀721","pos":"SG","ovr":96,"_age":30,"type":"外线得分手","_justSigned":true,"_rookieProfile":"perimeter_scorer","_rookieGenerationVersion":3,"_rookieSeason":25,"threePT":96,"MID":95,"FIN":99,"DNK":79,"HAN":95,"PAS":77,"PDEF":79,"STL":79,"IDEF":63,"BLK":63,"REB":63,"ATH":77,"STR":63,"CLU":80,"_draftOvr":84,"_ageSource":"player_record","contract":3,"loyalty":66,"_talentBalanceVersion":2,"_teamTenure":10,"_lastTeam":"CLE","salary":27.6,"_salaryVersion":2,"_birdTeam":"CLE","gene":{"v":4,"potential":98,"potentialVersion":2,"loyalty":69,"loyaltyVersion":3,"loyaltyRenewals":2,"loyaltyLastEvent":"4年续约","loyaltyTeam":"CLE","roleUnderuseSeasons":0},"age":30},{"id":"R000631","_prospectId":"LT-20260831-631","cname":"新秀631","pos":"SG","ovr":94,"_age":33,"type":"双向突破手","_justSigned":true,"_rookieProfile":"two_way_slasher","_rookieGenerationVersion":3,"_rookieSeason":22,"threePT":84,"MID":87,"FIN":98,"DNK":97,"HAN":86,"PAS":68,"PDEF":97,"STL":97,"IDEF":67,"BLK":67,"REB":69,"ATH":97,"STR":81,"CLU":85,"_draftOvr":84,"_ageSource":"player_record","contract":1,"loyalty":66,"_talentBalanceVersion":2,"_teamTenure":13,"_lastTeam":"CLE","salary":27.6,"_salaryVersion":2,"_birdTeam":"CLE","_ovrDeclineRoundingCarry":0.5,"gene":{"v":3,"potential":98,"potentialVersion":2,"loyalty":72,"loyaltyVersion":3,"loyaltyRenewals":3,"loyaltyLastEvent":"4年续约","loyaltyTeam":"CLE","roleUnderuseSeasons":0},"age":33},{"id":"R000692","_prospectId":"LT-20260831-692","cname":"新秀692","pos":"SF","ovr":94,"_age":30,"type":"组织前锋","_justSigned":true,"_rookieProfile":"point_forward","_rookieGenerationVersion":3,"_rookieSeason":24,"threePT":68,"MID":83,"FIN":99,"DNK":85,"HAN":99,"PAS":99,"PDEF":99,"STL":81,"IDEF":82,"BLK":70,"REB":65,"ATH":80,"STR":69,"CLU":85,"_draftOvr":83,"_ageSource":"player_record","contract":3,"loyalty":66,"_talentBalanceVersion":2,"_teamTenure":11,"_lastTeam":"LAL","salary":27.6,"_salaryVersion":2,"_birdTeam":"LAL","gene":{"v":1,"potential":98,"potentialVersion":2,"loyalty":72,"loyaltyVersion":3,"loyaltyRenewals":3,"loyaltyLastEvent":"4年续约","loyaltyTeam":"LAL","roleUnderuseSeasons":0},"age":30},{"id":"R000724","_prospectId":"LT-20260831-724","cname":"新秀724","pos":"C","ovr":94,"_age":29,"type":"技术型内线","_justSigned":true,"_rookieProfile":"skilled_big","_rookieGenerationVersion":3,"_rookieSeason":25,"threePT":55,"MID":98,"FIN":97,"DNK":58,"HAN":56,"PAS":94,"PDEF":58,"STL":72,"IDEF":98,"BLK":75,"REB":97,"ATH":56,"STR":76,"CLU":72,"_draftOvr":81,"_ageSource":"player_record","contract":2,"loyalty":66,"_talentBalanceVersion":2,"_teamTenure":10,"_lastTeam":"MEM","salary":25.9,"_salaryVersion":2,"_birdTeam":"MEM","gene":{"v":2,"potential":98,"potentialVersion":2,"loyalty":69,"loyaltyVersion":3,"loyaltyRenewals":2,"loyaltyLastEvent":"4年续约","loyaltyTeam":"MEM","roleUnderuseSeasons":0},"age":29},{"id":"R000694","_prospectId":"LT-20260831-694","cname":"新秀694","pos":"C","ovr":94,"_age":30,"type":"护框中锋","_justSigned":true,"_rookieProfile":"rim_protector","_rookieGenerationVersion":3,"_rookieSeason":24,"threePT":55,"MID":59,"FIN":97,"DNK":69,"HAN":57,"PAS":56,"PDEF":58,"STL":73,"IDEF":94,"BLK":95,"REB":94,"ATH":74,"STR":93,"CLU":74,"_draftOvr":81,"_ageSource":"player_record","contract":4,"loyalty":66,"_talentBalanceVersion":2,"_teamTenure":11,"_lastTeam":"MIA","salary":27.6,"_salaryVersion":2,"_birdTeam":"MIA","gene":{"v":4,"potential":98,"potentialVersion":2,"loyalty":73,"loyaltyVersion":3,"loyaltyRenewals":3,"loyaltyLastEvent":"4年续约","loyaltyTeam":"MIA","roleUnderuseSeasons":0},"age":30}]}
+{
+  "seeds": 1,
+  "checkpoints": [
+    10,
+    15,
+    20,
+    25,
+    30,
+    35
+  ],
+  "equilibriumCheckpoints": [
+    20,
+    25,
+    30,
+    35
+  ],
+  "summaries": [
+    {
+      "season": 10,
+      "samples": 1,
+      "count90": {
+        "min": 31,
+        "max": 31,
+        "avg": 31
+      },
+      "count85": {
+        "min": 91,
+        "max": 91,
+        "avg": 91
+      },
+      "maxOvr": {
+        "min": 97,
+        "max": 97,
+        "avg": 97
+      },
+      "count99": {
+        "min": 0,
+        "max": 0,
+        "avg": 0
+      },
+      "top35Under30": {
+        "min": 18,
+        "max": 18,
+        "avg": 18
+      },
+      "top35Age30To34": {
+        "min": 13,
+        "max": 13,
+        "avg": 13
+      },
+      "top35Age35Plus": {
+        "min": 4,
+        "max": 4,
+        "avg": 4
+      },
+      "top35AverageAge": {
+        "min": 30.11,
+        "max": 30.11,
+        "avg": 30.11
+      }
+    },
+    {
+      "season": 15,
+      "samples": 1,
+      "count90": {
+        "min": 36,
+        "max": 36,
+        "avg": 36
+      },
+      "count85": {
+        "min": 87,
+        "max": 87,
+        "avg": 87
+      },
+      "maxOvr": {
+        "min": 95,
+        "max": 95,
+        "avg": 95
+      },
+      "count99": {
+        "min": 0,
+        "max": 0,
+        "avg": 0
+      },
+      "top35Under30": {
+        "min": 14,
+        "max": 14,
+        "avg": 14
+      },
+      "top35Age30To34": {
+        "min": 17,
+        "max": 17,
+        "avg": 17
+      },
+      "top35Age35Plus": {
+        "min": 4,
+        "max": 4,
+        "avg": 4
+      },
+      "top35AverageAge": {
+        "min": 30.66,
+        "max": 30.66,
+        "avg": 30.66
+      }
+    },
+    {
+      "season": 20,
+      "samples": 1,
+      "count90": {
+        "min": 37,
+        "max": 37,
+        "avg": 37
+      },
+      "count85": {
+        "min": 84,
+        "max": 84,
+        "avg": 84
+      },
+      "maxOvr": {
+        "min": 94,
+        "max": 94,
+        "avg": 94
+      },
+      "count99": {
+        "min": 0,
+        "max": 0,
+        "avg": 0
+      },
+      "top35Under30": {
+        "min": 14,
+        "max": 14,
+        "avg": 14
+      },
+      "top35Age30To34": {
+        "min": 16,
+        "max": 16,
+        "avg": 16
+      },
+      "top35Age35Plus": {
+        "min": 5,
+        "max": 5,
+        "avg": 5
+      },
+      "top35AverageAge": {
+        "min": 30.51,
+        "max": 30.51,
+        "avg": 30.51
+      }
+    },
+    {
+      "season": 25,
+      "samples": 1,
+      "count90": {
+        "min": 39,
+        "max": 39,
+        "avg": 39
+      },
+      "count85": {
+        "min": 74,
+        "max": 74,
+        "avg": 74
+      },
+      "maxOvr": {
+        "min": 95,
+        "max": 95,
+        "avg": 95
+      },
+      "count99": {
+        "min": 0,
+        "max": 0,
+        "avg": 0
+      },
+      "top35Under30": {
+        "min": 14,
+        "max": 14,
+        "avg": 14
+      },
+      "top35Age30To34": {
+        "min": 16,
+        "max": 16,
+        "avg": 16
+      },
+      "top35Age35Plus": {
+        "min": 5,
+        "max": 5,
+        "avg": 5
+      },
+      "top35AverageAge": {
+        "min": 30.63,
+        "max": 30.63,
+        "avg": 30.63
+      }
+    },
+    {
+      "season": 30,
+      "samples": 1,
+      "count90": {
+        "min": 37,
+        "max": 37,
+        "avg": 37
+      },
+      "count85": {
+        "min": 76,
+        "max": 76,
+        "avg": 76
+      },
+      "maxOvr": {
+        "min": 94,
+        "max": 94,
+        "avg": 94
+      },
+      "count99": {
+        "min": 0,
+        "max": 0,
+        "avg": 0
+      },
+      "top35Under30": {
+        "min": 14,
+        "max": 14,
+        "avg": 14
+      },
+      "top35Age30To34": {
+        "min": 17,
+        "max": 17,
+        "avg": 17
+      },
+      "top35Age35Plus": {
+        "min": 4,
+        "max": 4,
+        "avg": 4
+      },
+      "top35AverageAge": {
+        "min": 30.51,
+        "max": 30.51,
+        "avg": 30.51
+      }
+    },
+    {
+      "season": 35,
+      "samples": 1,
+      "count90": {
+        "min": 33,
+        "max": 33,
+        "avg": 33
+      },
+      "count85": {
+        "min": 71,
+        "max": 71,
+        "avg": 71
+      },
+      "maxOvr": {
+        "min": 96,
+        "max": 96,
+        "avg": 96
+      },
+      "count99": {
+        "min": 0,
+        "max": 0,
+        "avg": 0
+      },
+      "top35Under30": {
+        "min": 15,
+        "max": 15,
+        "avg": 15
+      },
+      "top35Age30To34": {
+        "min": 16,
+        "max": 16,
+        "avg": 16
+      },
+      "top35Age35Plus": {
+        "min": 4,
+        "max": 4,
+        "avg": 4
+      },
+      "top35AverageAge": {
+        "min": 30.4,
+        "max": 30.4,
+        "avg": 30.4
+      }
+    }
+  ],
+  "seedsWith99Overflow": 0,
+  "allowed99OverflowSeeds": 2,
+  "failureCount": 8,
+  "failures": [
+    "第 20 季 90+ 均值 37，目标 18–30",
+    "第 20 季 85+ 均值 84，目标 50–82",
+    "第 20 季最高 OVR 均值 94，目标 95–99",
+    "第 25 季 90+ 均值 39，目标 18–30",
+    "第 30 季 90+ 均值 37，目标 18–30",
+    "第 30 季最高 OVR 均值 94，目标 95–99",
+    "第 35 季 90+ 均值 33，目标 18–30",
+    "第 20→25 季 85+ 均值下滑 10.0，超过允许范围"
+  ]
+}

@@ -116,7 +116,10 @@ for (let seedIndex = 0; seedIndex < 5; seedIndex++) {
         ATTR_KEYS.forEach(key => {
           const delta = Number(player[key]) - before[key];
           maximumSeasonAttributeChange = Math.max(maximumSeasonAttributeChange, Math.abs(delta));
-          const cap = requestedDelta > 0 && player._age <= 23 && Math.abs(requestedDelta) >= 2 ? 3 : 2;
+          // The formal decline path allows one carried rounding point for
+          // physical skills; technical decline still must respect its own cap.
+          const physicalDecline = requestedDelta < 0 && ['ATH','STR','PDEF','STL','DNK'].includes(key);
+          const cap = physicalDecline || (requestedDelta > 0 && player._age <= 23 && Math.abs(requestedDelta) >= 2) ? 3 : 2;
           if (Math.abs(delta) > cap || (delta && Math.sign(delta) !== Math.sign(requestedDelta))) {
             failures.push(`seed${seedIndex}/s${season}/${player.id}/${key} 属性变化 ${delta} 与方向 ${requestedDelta} 不符`);
           }

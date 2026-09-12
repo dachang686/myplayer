@@ -1,0 +1,208 @@
+{
+  "mode": "smoke",
+  "gamesPerOrientation": 500,
+  "report": [
+    {
+      "label": "基准",
+      "games": 1000,
+      "offenseGap": 0,
+      "defenseGap": 0,
+      "pregameAttackGap": 0,
+      "pregameDefenseGap": 0,
+      "rawMatchupEdge": 0,
+      "projectedDirectEdge": 0,
+      "eliteSkillMarginEdge": 0,
+      "matchupEdge": 0,
+      "rawRosterEdge": 0,
+      "rosterEdge": 0,
+      "rawStructureEdge": 0,
+      "structureEdge": 0,
+      "teamResidualMarginEdge": 0,
+      "expectedMargin": 0,
+      "estimatedWinRate": 50,
+      "empiricalWinRate": 48,
+      "averageMargin": -0.94,
+      "invariantErrors": 0
+    },
+    {
+      "label": "进攻 +5",
+      "games": 1000,
+      "offenseGap": 6.1,
+      "defenseGap": 0,
+      "pregameAttackGap": 0.070569,
+      "pregameDefenseGap": 0,
+      "rawMatchupEdge": 2.112,
+      "projectedDirectEdge": 2.112,
+      "eliteSkillMarginEdge": 0,
+      "matchupEdge": 2.112,
+      "rawRosterEdge": 0,
+      "rosterEdge": 0,
+      "rawStructureEdge": 0.752,
+      "structureEdge": 0.489,
+      "teamResidualMarginEdge": 0.489,
+      "expectedMargin": 2.601,
+      "estimatedWinRate": 56.24,
+      "empiricalWinRate": 55.7,
+      "averageMargin": 2.8,
+      "invariantErrors": 0
+    },
+    {
+      "label": "进攻 +10",
+      "games": 1000,
+      "offenseGap": 18.9728,
+      "defenseGap": 0,
+      "pregameAttackGap": 0.20476,
+      "pregameDefenseGap": 0,
+      "rawMatchupEdge": 4.423,
+      "projectedDirectEdge": 4.423,
+      "eliteSkillMarginEdge": 0,
+      "matchupEdge": 4.423,
+      "rawRosterEdge": 0,
+      "rosterEdge": 0,
+      "rawStructureEdge": 1.995,
+      "structureEdge": 1.297,
+      "teamResidualMarginEdge": 1.297,
+      "expectedMargin": 5.719,
+      "estimatedWinRate": 63.26,
+      "empiricalWinRate": 61.5,
+      "averageMargin": 5.07,
+      "invariantErrors": 0
+    },
+    {
+      "label": "进攻 +15",
+      "games": 1000,
+      "offenseGap": 23.2385,
+      "defenseGap": 0,
+      "pregameAttackGap": 0.248643,
+      "pregameDefenseGap": 0,
+      "rawMatchupEdge": 6.757,
+      "projectedDirectEdge": 6.757,
+      "eliteSkillMarginEdge": 0,
+      "matchupEdge": 6.757,
+      "rawRosterEdge": 0,
+      "rosterEdge": 0,
+      "rawStructureEdge": 2.888,
+      "structureEdge": 1.877,
+      "teamResidualMarginEdge": 1.877,
+      "expectedMargin": 8.634,
+      "estimatedWinRate": 69.56,
+      "empiricalWinRate": 68.5,
+      "averageMargin": 8.2,
+      "invariantErrors": 0
+    },
+    {
+      "label": "防守 +5",
+      "games": 1000,
+      "offenseGap": 0.0626,
+      "defenseGap": 4.8624,
+      "pregameAttackGap": 0.000626,
+      "pregameDefenseGap": 0.048624,
+      "rawMatchupEdge": 1.214,
+      "projectedDirectEdge": 1.214,
+      "eliteSkillMarginEdge": 0,
+      "matchupEdge": 1.214,
+      "rawRosterEdge": 0,
+      "rosterEdge": 0,
+      "rawStructureEdge": 0.646,
+      "structureEdge": 0.42,
+      "teamResidualMarginEdge": 0.42,
+      "expectedMargin": 1.634,
+      "estimatedWinRate": 53.87,
+      "empiricalWinRate": 53.8,
+      "averageMargin": 1.48,
+      "invariantErrors": 0
+    },
+    {
+      "label": "防守 +10",
+      "games": 1000,
+      "offenseGap": 0.1557,
+      "defenseGap": 15.4366,
+      "pregameAttackGap": 0.001557,
+      "pregameDefenseGap": 0.154366,
+      "rawMatchupEdge": 2.41,
+      "projectedDirectEdge": 2.41,
+      "eliteSkillMarginEdge": 0,
+      "matchupEdge": 2.41,
+      "rawRosterEdge": 0,
+      "rosterEdge": 0,
+      "rawStructureEdge": 1.76,
+      "structureEdge": 1.144,
+      "teamResidualMarginEdge": 1.144,
+      "expectedMargin": 3.554,
+      "estimatedWinRate": 58.36,
+      "empiricalWinRate": 58.7,
+      "averageMargin": 3.62,
+      "invariantErrors": 0
+    },
+    {
+      "label": "防守 +15",
+      "games": 1000,
+      "offenseGap": 0.6171,
+      "defenseGap": 20.8414,
+      "pregameAttackGap": 0.006171,
+      "pregameDefenseGap": 0.208414,
+      "rawMatchupEdge": 3.587,
+      "projectedDirectEdge": 3.587,
+      "eliteSkillMarginEdge": 0,
+      "matchupEdge": 3.587,
+      "rawRosterEdge": 0,
+      "rosterEdge": 0,
+      "rawStructureEdge": 2.864,
+      "structureEdge": 1.861,
+      "teamResidualMarginEdge": 1.861,
+      "expectedMargin": 5.448,
+      "estimatedWinRate": 62.65,
+      "empiricalWinRate": 61,
+      "averageMargin": 5.33,
+      "invariantErrors": 0
+    },
+    {
+      "label": "攻防同时 +10",
+      "games": 1000,
+      "offenseGap": 19.3188,
+      "defenseGap": 15.4366,
+      "pregameAttackGap": 0.20822,
+      "pregameDefenseGap": 0.154366,
+      "rawMatchupEdge": 6.897,
+      "projectedDirectEdge": 6.897,
+      "eliteSkillMarginEdge": 0,
+      "matchupEdge": 6.897,
+      "rawRosterEdge": 0,
+      "rosterEdge": 0,
+      "rawStructureEdge": 3.764,
+      "structureEdge": 2.446,
+      "teamResidualMarginEdge": 2.446,
+      "expectedMargin": 9.344,
+      "estimatedWinRate": 70.72,
+      "empiricalWinRate": 68.9,
+      "averageMargin": 8.61,
+      "invariantErrors": 0
+    }
+  ],
+  "archetypeReport": [],
+  "playoffRecordProbe": {
+    "series": 400,
+    "neutralSeriesWinRate": 0.55,
+    "recordAdvantagedSeriesWinRate": 0.585,
+    "expectedMarginDelta": 0.6829268292682933,
+    "recordFormEdge": 0.6829268292682933,
+    "recordFormBias": 0.0015707317073170746
+  }
+}
+<anonymous_script>:363
+  throw new Error(`V2 攻防胜率校准失败：${failures.join('；')}`);
+  ^
+
+Error: V2 攻防胜率校准失败：进攻 +5 实测胜率越界：55.7%（目标 64%~71%）；进攻 +10 实测胜率越界：61.5%（目标 72%~79%）；进攻 +15 实测胜率越界：68.5%（目标 77%~84%）；防守 +10 实测胜率越界：58.7%（目标 68%~76%）；防守 +15 实测胜率越界：61%（目标 71%~79%）；攻防同时 +10 实测胜率越界：68.9%（目标 77%~84%）
+    at eval (eval at <anonymous> ([stdin]:4:1), <anonymous>:363:9)
+    at [stdin]:4:111
+    at runScriptInThisContext (node:internal/vm:209:10)
+    at node:internal/process/execution:446:12
+    at [stdin]-wrapper:6:24
+    at runScriptInContext (node:internal/process/execution:444:60)
+    at evalFunction (node:internal/process/execution:279:30)
+    at evalTypeScript (node:internal/process/execution:291:3)
+    at node:internal/main/eval_stdin:53:5
+    at Socket.<anonymous> (node:internal/process/execution:201:5)
+
+Node.js v22.20.0

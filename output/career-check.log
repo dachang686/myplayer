@@ -1,0 +1,18 @@
+{
+  "seeds": 5,
+  "seasonsPerSeed": 10,
+  "playersPerSeason": 100,
+  "ovrConsistencyChecks": 5000,
+  "serializationChecks": 5000,
+  "maximumSeasonAttributeChange": 3,
+  "maximumMeanDrift": 6.45,
+  "replacements": [
+    45,
+    45,
+    45,
+    45,
+    45
+  ],
+  "failureCount": 0,
+  "failures": []
+}

@@ -1,0 +1,11 @@
+{
+  "players": 525,
+  "checkedFields": 7350,
+  "sourceCounts": {
+    "2k-semantic": 478,
+    "local-reviewed": 47
+  },
+  "statsInformed": 445,
+  "failureCount": 0,
+  "failures": []
+}

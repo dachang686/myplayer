@@ -20,7 +20,7 @@
   // 但球队攻防诊断仍保留原始能力，用于统一的赛前胜率分差。
   var ATTRIBUTE_ANCHOR = (80 - 25) / 74;
   var OFFENSE_EFFECT_SCALE = 0.45;
-  var DEFENSE_EFFECT_SCALE = 0.85;
+  var DEFENSE_EFFECT_SCALE = 0.55;
   // 所有赛外优势先用“预期分差”表示，再由唯一系数转换成双方对称的事件偏置。
   // 配对校准目标：输入边际 ≈ expectedMargin 增量 ≈ 长期实际平均分差增量。
   var MARGIN_TO_BIAS_PER_SIDE = 0.00230;
@@ -68,20 +68,6 @@
       weightSum += weight;
     });
     return weightSum > 0 ? sum / weightSum : 0;
-  }
-
-  function roleAssistProfile(roles, weights) {
-    var roleMinutes = 0, minutes = 0, assists = 0, makes = 0;
-    weights.forEach(function(weight, index) {
-      minutes += weight;
-      var role = roles && roles[index];
-      if (!role) return;
-      var exposure = weight * role.confidence;
-      roleMinutes += exposure;
-      assists += exposure * role.ast36 * role.passingGrowth;
-      makes += exposure * role.fgm36 * role.scoringGrowth;
-    });
-    return { coverage: minutes > 0 ? roleMinutes / minutes : 0, rate: makes > 0 ? clamp(assists / makes, 0.15, 0.80) : 0.5 };
   }
 
   function allocateTotal(total, weights, caps) {
@@ -385,15 +371,8 @@
     var blk = rawBlk.map(defenseMetric);
     var positions = players.map(function(player) { return String(player.pos || 'SF').split('/')[0].trim(); });
 
-    // Ability is not a mandatory attempt quota. Weak shooters can decline
-    // jump shots; skilled perimeter players carry the team's spacing.
-    var volumeThree = players.map(function(_, index) {
-      var shootingReadiness = clamp((25 + three[index] * 74 - 65) / 25, 0, 1);
-      return 0.01 + 1.25 * shootingReadiness;
-    });
-    var volumeMid = players.map(function(_, index) {
-      return (0.04 + mid[index] * mid[index] * 0.42) * (0.20 + han[index] * 0.80);
-    });
+    var volumeThree = players.map(function(_, index) { return 0.18 + three[index] * 0.52; });
+    var volumeMid = players.map(function(_, index) { return 0.16 + mid[index] * 0.30; });
     var volumeRim = players.map(function(_, index) {
       return 0.22 + fin[index] * 0.32 + dnk[index] * 0.18 + ath[index] * 0.10 + str[index] * 0.06;
     });
@@ -496,27 +475,6 @@
     var scoringLoads = shotLoad.map(function(value, index) {
       return Math.max(value, interiorUsageLoad[index], perimeterSpecialistLoad[index]);
     });
-    // Abilities describe execution; a role describes how often the offense
-    // asks for it. Historical roles are neutral priors, scaled by current skills
-    // and normalized against today's teammates within the existing team totals.
-    var offensiveRoles = players.map(function(player, index) {
-      var role = player && player._offensiveRole;
-      if (!role || player._isUser || role.playerId !== player.id || role.version !== 4) return null;
-      if (!['fgm36','fga36','fta36','ast36','confidence','baseLoad','basePassing'].every(function(key) {
-        return Number.isFinite(Number(role[key]));
-      }) || role.fga36 <= 0 || role.fga36 > 45 || role.fta36 < 0 || role.fta36 > 25
-        || role.ast36 < 0 || role.ast36 > 20 || role.fgm36 < 0 || role.fgm36 > role.fga36) return null;
-      var currentLoad = Math.max(shotLoad[index], interiorUsageLoad[index], perimeterUsageLoad[index]);
-      return {
-        confidence: clamp(role.confidence, 0, 1),
-        fga36: role.fga36,
-        fgm36: role.fgm36,
-        fta36: role.fta36,
-        ast36: role.ast36,
-        scoringGrowth: clamp(Math.pow(Math.max(0.1, currentLoad) / Math.max(0.1, (role.baseLoad - 25) / 74), 1.5), 0.15, 1.8),
-        passingGrowth: clamp(Math.pow((0.15 + pas[index]) / Math.max(0.15, 0.15 + (role.basePassing - 25) / 74), 2), 0.15, 2),
-      };
-    });
     // 顶级得分画像只识别可见的进攻技能：得分效率、出手负荷、自主创造和组织。
     // 它不读取 OVR、位置、身高、防守或篮板，保证 NPC 与自建球员使用同一套规则。
     // 这层仅拉开真正进攻核心与普通首发之间的既有出手份额，不增加球队总回合或总出手。
@@ -566,11 +524,6 @@
           weights[index] * roleFactor * participationFactor * eliteLoadFactor * eliteScoringPriority * form[index]
         )
         : 0;
-      var role = offensiveRoles[index];
-      if (role && weights[index] > 0) {
-        var roleOpportunity = weights[index] * role.fga36 / 15 * role.scoringGrowth * form[index];
-        baseOpportunity = baseOpportunity * (1 - role.confidence) + roleOpportunity * role.confidence;
-      }
       var isCoreScorer = offensiveRoleRank < 2 && weights[index] >= 28 && scoringLoad >= 0.62;
       // 爆发保留稀有长尾；上限和 legendary 档位避免 50+/60+ 在联盟生态中泛滥。
       var gameMultiplier = weights[index] >= 28
@@ -603,8 +556,7 @@
         : 0;
     });
     // 助攻归因与持球安全分开：高传球内线可作为策应中轴，不能因控球不如后卫而失去传球价值。
-    // 无可靠职责记录时沿用通用画像；有记录时用传球职责分配机会，
-    // 技能变动通过 passingGrowth 生效，失误另按实际决策量与护球风险结算。
+    // 控球仍保留小幅权重；触球量和失误继续读取原有 touchLoad / ballSecurity，避免凭空制造组织回合。
     var assistPassing = players.map(function(_, index) {
       var isInterior = positions[index] === 'C' || positions[index] === 'PF';
       if (!isInterior) return playmaking[index];
@@ -627,8 +579,6 @@
       positions: positions,
       weights: weights,
       opportunity: opportunity,
-      offensiveRoles: offensiveRoles,
-      assistRoleProfile: roleAssistProfile(offensiveRoles, weights),
       legendaryScorerFlags: legendaryScorerFlags,
       touchOpportunity: touchOpportunity,
       three: three,
@@ -734,19 +684,18 @@
     var rimShareBase = context.volumeRim[index]
       / Math.max(0.01, context.volumeRim[index] + context.volumeMid[index]);
     var rimDeterrence = clamp((opponent.rimProtection - 0.50) * 0.75, -0.15, 0.30);
-    // 普通球员保留 80% 上限；明确的篮下终结者可以把几乎全部两分机会留在篮下。
+    // 普通球员仍保留 75% 上限；只有篮下倾向显著高于中投倾向的球员才连续开放到最多 90%。
     var interiorSpecialization = clamp(
       (context.volumeRim[index] - context.volumeMid[index]) / 0.55,
       0,
       1
     );
-    var rimShareCeiling = 0.80 + interiorSpecialization * 0.18;
+    var rimShareCeiling = 0.75 + interiorSpecialization * 0.15;
     return clamp(rimShareBase * (1 - rimDeterrence), 0.15, rimShareCeiling);
   }
 
   function freeThrowOpportunityWeight(context, index) {
     if (!(Number(context.weights[index]) > 0)) return 0;
-    var role = context.offensiveRoles && context.offensiveRoles[index];
     var touchOpportunity = Math.max(0.1, Number(context.touchOpportunity[index]) || 0);
     var scoringOpportunity = Math.max(0.1, Number(context.opportunity[index]) || 0);
     var rimPressure = clamp(Number(context.rimAbility[index]) || 0, 0, 1);
@@ -755,21 +704,20 @@
       touchOpportunity,
       scoringOpportunity * (0.80 + rimPressure * 0.30)
     );
-    var genericWeight = foulOpportunity * (
+    return foulOpportunity * (
       0.20
       + context.volumeRim[index] * 1.55
       + rimPressure * 0.55
       + context.creation[index] * 0.15
     );
-    if (!role) return genericWeight;
-    var roleWeight = context.opportunity[index] * role.fta36 / Math.max(1, role.fga36) * 7.5;
-    return genericWeight * (1 - role.confidence) + roleWeight * role.confidence;
   }
 
-  function threeAttemptShare(context, opponent, index, secondChance) {
-    var share = context.volumeThree[index] / Math.max(0.01,
-      context.volumeThree[index] + context.volumeMid[index] + context.volumeRim[index]);
-    return clamp(share - (opponent.perimeterDefense - 0.50) * 0.055, 0, 0.85) * (secondChance ? 0.72 : 1);
+  function threePointOpportunityWeight(context, index) {
+    var threeVolume = clamp(Number(context.volumeThree[index]) || 0, 0, 1);
+    var baseWeight = 0.35 + threeVolume * 1.45;
+    // 只压低明确缺乏外线倾向的球员；中高档射手之间沿用原分布，避免三分过度集中到单一核心。
+    var lowVolumeGate = clamp((threeVolume - 0.20) / 0.25, 0, 1);
+    return context.opportunity[index] * baseWeight * (0.25 + lowVolumeGate * 0.75);
   }
 
   function secondChanceOpportunityWeight(context, index) {
@@ -783,45 +731,17 @@
     return 1 + finishingGate * reboundingBonus * 0.18;
   }
 
-  // All players use the same raw shooting skill scale, including custom builds.
-  // Compressing these inputs around 80 erased both poor and elite FT shooters.
-  function freeThrowProbability(context, index) {
-    var skill = context.three[index] * 0.52 + context.mid[index] * 0.48;
-    return clamp(0.43 + skill * 0.51 - context.fatigue * 0.003, 0.40, 0.96);
-  }
-
-  function turnoverProbability(context, opponent, fatigue) {
-    var generic = 0.105 + (1 - context.handling) * 0.050 + (1 - context.teamCreation) * 0.018;
-    // Historical turnovers belong to an old team and workload. Team totals are
-    // generated from current ball security, pressure and fatigue instead.
-    return clamp(generic + (opponent.perimeterDefense - 0.50) * 0.030 + fatigue * 0.012, 0.080, 0.190);
-  }
-
-  function fieldGoalProbabilities(context, opponent, index, bias, isClutch) {
-    var defensePenalty = (opponent.rimProtection - 0.50) * 0.18;
-    var perimeterPenalty = (opponent.perimeterDefense - 0.50) * 0.13;
-    var clutchBonus = isClutch ? (context.clu[index] - 0.50) * 0.045 : 0;
-    var qualityBias = bias + (context.passing - 0.50) * 0.014 - context.fatigue * 0.004;
-    // A dunk/roll finisher can convert created chances without possessing the
-    // handle and layup package needed to create those chances independently.
-    var selfFinish = 0.430 + context.effectiveFin[index] * 0.200 + context.effectiveDnk[index] * 0.080
-      + context.ath[index] * 0.025 + context.str[index] * 0.035;
-    var assistedFinish = 0.52 + context.dnk[index] * 0.16 + context.str[index] * 0.10 + context.passing * 0.02;
-    return {
-      three: clamp(0.335 + (context.three[index] - 45 / 74) * (context.three[index] >= 45 / 74 ? 0.19 : 0.35)
-        - perimeterPenalty + qualityBias + clutchBonus, 0.08, 0.55),
-      mid: clamp(0.300 + context.effectiveMid[index] * 0.170 - perimeterPenalty * 0.55 + qualityBias + clutchBonus, 0.23, 0.60),
-      // Max preserves a roll finisher's advantage without making improved FIN
-      // or HAN reduce conversion efficiency through a shrinking skill-gap bonus.
-      rim: clamp(Math.max(selfFinish, assistedFinish) - defensePenalty + qualityBias + clutchBonus, 0.28, 0.82),
-    };
-  }
-
-  function makeQuarter(context, opponent, possessions, bias, isClutch, fgaLedger) {
+  function makeQuarter(context, opponent, possessions, bias, isClutch, fgaLedger, threeLedger) {
     var weightedThree = weightedMean(context.volumeThree, context.opportunity);
     var weightedMid = weightedMean(context.volumeMid, context.opportunity);
     var weightedRim = weightedMean(context.volumeRim, context.opportunity);
-    var turnoverRate = turnoverProbability(context, opponent, context.fatigue);
+    var turnoverRate = clamp(
+      0.105 + (1 - context.handling) * 0.050
+        + (opponent.perimeterDefense - 0.50) * 0.030
+        + (1 - context.teamCreation) * 0.018
+        + context.fatigue * 0.012,
+      0.080, 0.190,
+    );
     var turnovers = sampleMakes(possessions, turnoverRate);
     var effectivePossessions = Math.max(1, possessions - turnovers);
     var rimAttack = clamp(weightedRim / Math.max(0.01, weightedRim + weightedMid + weightedThree), 0.20, 0.65);
@@ -831,7 +751,7 @@
       0.075, 0.185,
     );
     // 罚球先按“造犯规回合”抽样，再按 1/2/3 罚决定实际 FTA；这样单节可以自然出现 0 次或较高罚球量。
-    var freeThrowTripRate = clamp(freeThrowRate * 0.95, 0.030, 0.20);
+    var freeThrowTripRate = clamp(freeThrowRate * 0.60, 0.030, 0.14);
     var freeThrowTrips = sampleMakes(effectivePossessions, freeThrowTripRate);
     var freeThrowTripSizes = [];
     for (var trip = 0; trip < freeThrowTrips; trip++) {
@@ -839,14 +759,20 @@
       freeThrowTripSizes.push(tripRoll < 0.08 ? 3 : (tripRoll < 0.28 ? 1 : 2));
     }
     var fta = freeThrowTripSizes.reduce(function(sum, value) { return sum + value; }, 0);
-    // Offensive boards are sampled from misses at NBA-like opportunity rates.
+    // OREB 只从真实投丢产生；率区间校准到约 5-9 个/队/场，避免二次进攻消失或泛滥。
     var offensiveReboundRate = clamp(
-      0.185 + context.offensiveRebound * 0.100 - opponent.defensiveRebound * 0.035,
-      0.16, 0.30,
+      0.095 + context.offensiveRebound * 0.100 - opponent.defensiveRebound * 0.035,
+      0.085, 0.180,
     );
     // 先生成基础投篮，等真实 miss 出现后再生成二次进攻；OREB 不再凭空创造可抢篮板。
     var rawFga = Math.round(effectivePossessions - fta * 0.44);
     var fga = Math.max(1, rawFga);
+    var threeRate = clamp(
+      weightedThree / Math.max(0.01, weightedThree + weightedMid + weightedRim)
+        - (opponent.perimeterDefense - 0.50) * 0.055,
+      0.24, 0.54,
+    );
+    var threeA = Math.max(0, Math.min(fga, Math.round(fga * threeRate)));
     var fgaCaps = context.players.map(function(_, index) {
       var legendaryCapBonus = context.legendaryScorerFlags && context.legendaryScorerFlags[index] ? 0.06 : 0;
       // 单节 FGA 上限也必须跟终结负荷一致，而不是跟 threat（偏向跳投效率）绑定。
@@ -857,11 +783,11 @@
       return Math.max(4, Math.round(fga * (0.30 + scoringLoad * 0.13 + legendaryCapBonus)));
     });
     var fgaByPlayer = allocatePeriodQuota(fga, context.opportunity, fgaCaps, fgaLedger);
-    // Choose the location of each player's allocated attempts. Redistributing
-    // team 3PA with the FGA priority algorithm gave stars a second usage bonus.
-    var threeByPlayer = fgaByPlayer.map(function(attempts, index) {
-      return sampleMakes(attempts, threeAttemptShare(context, opponent, index, false));
+    var threeWeights = context.players.map(function(_, index) {
+      return threePointOpportunityWeight(context, index);
     });
+    // 三分配额与 FGA 一样跨节累计，且逐节硬受 FGA 约束，避免替补分钟跨过整数阈值时突增。
+    var threeByPlayer = allocatePeriodQuota(threeA, threeWeights, fgaByPlayer, threeLedger);
     var ftaWeights = context.players.map(function(_, index) {
       return freeThrowOpportunityWeight(context, index);
     });
@@ -883,10 +809,17 @@
       // 防守属性跨阈值时的篮下出手断崖。
       var rimAttempts = sampleMakes(twoAttempts, rimShare);
       var midAttempts = twoAttempts - rimAttempts;
-      var probabilities = fieldGoalProbabilities(context, opponent, index, bias, isClutch);
-      var threePct = probabilities.three;
-      var midPct = probabilities.mid;
-      var rimPct = probabilities.rim;
+      var defensePenalty = (opponent.rimProtection - 0.50) * 0.11;
+      var perimeterPenalty = (opponent.perimeterDefense - 0.50) * 0.085;
+      var clutchBonus = isClutch ? (context.clutch - 0.50) * 0.045 : 0;
+      var qualityBias = bias + (context.passing - 0.50) * 0.014 - context.fatigue * 0.004;
+      var threePct = clamp(0.255 + context.effectiveThree[index] * 0.210 - perimeterPenalty + qualityBias + clutchBonus, 0.20, 0.58);
+      var midPct = clamp(0.300 + context.effectiveMid[index] * 0.170 - perimeterPenalty * 0.55 + qualityBias + clutchBonus, 0.23, 0.60);
+      var rimPct = clamp(
+        0.400 + context.effectiveFin[index] * 0.200 + context.effectiveDnk[index] * 0.040
+          + context.ath[index] * 0.025 + context.str[index] * 0.035 - defensePenalty + qualityBias + clutchBonus,
+        0.28, 0.72,
+      );
       var rawBlockProtection = Number(opponent.rawRimProtection);
       var blockProtection = Number.isFinite(rawBlockProtection)
         ? rawBlockProtection * 0.70 + opponent.rimProtection * 0.30
@@ -899,7 +832,7 @@
       // 盖帽既包括直接改变出手结果的封盖，也包括原本已落入投失集合的封盖记录。
       // 后一部分只补齐事件归因，不再二次降低命中率，避免校准盖帽时破坏球队得分环境。
       var uncreditedRimMisses = Math.max(0, rimAttempts - preventedBlocks - rimMakes);
-      var creditedMissBlockRate = clamp(0.020 + blockProtection * 0.320, 0.015, 0.25);
+      var creditedMissBlockRate = clamp(0.020 + blockProtection * 0.245, 0.015, 0.21);
       var blocked = preventedBlocks + sampleMakes(uncreditedRimMisses, creditedMissBlockRate);
       line.fga += threeAttempts + twoAttempts;
       line.threeA += threeAttempts;
@@ -921,7 +854,9 @@
       line._rimA = 0;
       line._blocked = 0;
       addFieldGoalAttempts(line, index, threeAttempts, twoAttempts);
-      var ftPct = freeThrowProbability(context, index);
+      var ftSkill = context.effectiveThree[index] * 0.52 + context.effectiveMid[index] * 0.48;
+      var qualityBias = bias + (context.passing - 0.50) * 0.014 - context.fatigue * 0.004;
+      var ftPct = clamp(0.60 + ftSkill * 0.30 + qualityBias * 0.35, 0.56, 0.94);
       var ftMakes = sampleMakes(ftaByPlayer[index], ftPct);
       line.fta = ftaByPlayer[index];
       line.ftm = ftMakes;
@@ -944,9 +879,12 @@
       }),
       context.players.map(function() { return 24; }),
     );
-    var extraThreeByPlayer = extraFgaByPlayer.map(function(attempts, index) {
-      return sampleMakes(attempts, threeAttemptShare(context, opponent, index, true));
-    });
+    var extraThree = sampleMakes(offensiveRebounds, clamp(threeRate * 0.72, 0.16, 0.44));
+    var extraThreeByPlayer = weightedRandomAllocation(
+      extraThree,
+      context.players.map(function(_, index) { return context.opportunity[index] * (0.35 + context.volumeThree[index] * 1.45); }),
+      extraFgaByPlayer,
+    );
     extraFgaByPlayer.forEach(function(extraAttempts, index) {
       var extraThreeAttempts = extraThreeByPlayer[index] || 0;
       addFieldGoalAttempts(lines[index], index, extraThreeAttempts, Math.max(0, extraAttempts - extraThreeAttempts));
@@ -971,30 +909,33 @@
   // 使用与 makeQuarter 相同的事件概率解析估算单场得分，只服务于赛前分差诊断。
   // 它不会抽样，也不会反向写入比赛事件，因此能避免用统一 OVR/综合攻防分重复猜测事件结果。
   function estimateExpectedScore(context, opponent, possessions, bias) {
-    // The fatigue margin is added by the caller; keep this projection neutral.
-    var neutralContext = Object.assign({}, context, { fatigue: 0 });
     function shares(values) {
       var total = values.reduce(function(sum, value) { return sum + Math.max(0, Number(value) || 0); }, 0);
       if (total <= 0) return values.map(function() { return 1 / Math.max(1, values.length); });
       return values.map(function(value) { return Math.max(0, Number(value) || 0) / total; });
     }
 
-    function expectedFieldGoals(attempts, attemptWeights, secondChance) {
+    function expectedFieldGoals(attempts, threeRate, attemptWeights, threeAttemptWeights) {
       var fgaShares = shares(attemptWeights);
+      var threeShares = shares(threeAttemptWeights);
       var points = 0;
       var makes = 0;
       context.players.forEach(function(_, index) {
-        var playerAttempts = attempts * fgaShares[index];
-        var playerThreeRate = threeAttemptShare(context, opponent, index, secondChance);
-        var threeAttempts = playerAttempts * playerThreeRate;
-        var twoAttempts = playerAttempts - threeAttempts;
+        var threeAttempts = attempts * threeRate * threeShares[index];
+        var twoAttempts = attempts * (1 - threeRate) * fgaShares[index];
         var rimShare = rimAttemptShare(context, opponent, index);
         var rimAttempts = twoAttempts * rimShare;
         var midAttempts = twoAttempts - rimAttempts;
-        var probabilities = fieldGoalProbabilities(neutralContext, opponent, index, bias, false);
-        var threePct = probabilities.three;
-        var midPct = probabilities.mid;
-        var rimPct = probabilities.rim;
+        var defensePenalty = (opponent.rimProtection - 0.50) * 0.11;
+        var perimeterPenalty = (opponent.perimeterDefense - 0.50) * 0.085;
+        var qualityBias = bias + (context.passing - 0.50) * 0.014;
+        var threePct = clamp(0.255 + context.effectiveThree[index] * 0.210 - perimeterPenalty + qualityBias, 0.20, 0.58);
+        var midPct = clamp(0.300 + context.effectiveMid[index] * 0.170 - perimeterPenalty * 0.55 + qualityBias, 0.23, 0.60);
+        var rimPct = clamp(
+          0.400 + context.effectiveFin[index] * 0.200 + context.effectiveDnk[index] * 0.040
+            + context.ath[index] * 0.025 + context.str[index] * 0.035 - defensePenalty + qualityBias,
+          0.28, 0.72,
+        );
         var rawBlockProtection = Number(opponent.rawRimProtection);
         var blockProtection = Number.isFinite(rawBlockProtection)
           ? rawBlockProtection * 0.70 + opponent.rimProtection * 0.30
@@ -1012,7 +953,12 @@
     var weightedThree = weightedMean(context.volumeThree, context.opportunity);
     var weightedMid = weightedMean(context.volumeMid, context.opportunity);
     var weightedRim = weightedMean(context.volumeRim, context.opportunity);
-    var turnoverRate = turnoverProbability(context, opponent, 0);
+    var turnoverRate = clamp(
+      0.105 + (1 - context.handling) * 0.050
+        + (opponent.perimeterDefense - 0.50) * 0.030
+        + (1 - context.teamCreation) * 0.018,
+      0.080, 0.190,
+    );
     var effectivePossessions = Math.max(1, possessions * (1 - turnoverRate));
     var rimAttack = clamp(weightedRim / Math.max(0.01, weightedRim + weightedMid + weightedThree), 0.20, 0.65);
     var freeThrowRate = clamp(
@@ -1020,28 +966,46 @@
         - opponent.rimProtection * 0.015,
       0.075, 0.185,
     );
-    var freeThrowTrips = effectivePossessions * clamp(freeThrowRate * 0.95, 0.030, 0.20);
+    var freeThrowTrips = effectivePossessions * clamp(freeThrowRate * 0.60, 0.030, 0.14);
     var fta = freeThrowTrips * 1.88;
     var ftaWeights = context.players.map(function(_, index) {
       return freeThrowOpportunityWeight(context, index);
     });
     var ftaShares = shares(ftaWeights);
     var freeThrowPct = context.players.reduce(function(sum, _, index) {
-      return sum + ftaShares[index] * freeThrowProbability(neutralContext, index);
+      var ftSkill = context.effectiveThree[index] * 0.52 + context.effectiveMid[index] * 0.48;
+      var qualityBias = bias + (context.passing - 0.50) * 0.014;
+      return sum + ftaShares[index] * clamp(0.60 + ftSkill * 0.30 + qualityBias * 0.35, 0.56, 0.94);
     }, 0);
     var fga = Math.max(1, effectivePossessions - fta * 0.44);
-    var primary = expectedFieldGoals(fga, context.opportunity, false);
+    var threeRate = clamp(
+      weightedThree / Math.max(0.01, weightedThree + weightedMid + weightedRim)
+        - (opponent.perimeterDefense - 0.50) * 0.055,
+      0.24, 0.54,
+    );
+    var threeWeights = context.players.map(function(_, index) {
+      return threePointOpportunityWeight(context, index);
+    });
+    var primary = expectedFieldGoals(fga, threeRate, context.opportunity, threeWeights);
     var missedField = Math.max(0, fga - primary.makes);
     var missedFt = fta * (1 - freeThrowPct);
     var offensiveReboundRate = clamp(
-      0.185 + context.offensiveRebound * 0.100 - opponent.defensiveRebound * 0.035,
-      0.16, 0.30,
+      0.095 + context.offensiveRebound * 0.100 - opponent.defensiveRebound * 0.035,
+      0.085, 0.180,
     );
     var extraAttempts = (missedField + missedFt * 0.45) * offensiveReboundRate;
     var extraWeights = context.players.map(function(_, index) {
       return context.opportunity[index] * (0.72 + context.volumeRim[index] * 0.60);
     });
-    var extra = expectedFieldGoals(extraAttempts, extraWeights, true);
+    var extraThreeWeights = context.players.map(function(_, index) {
+      return context.opportunity[index] * (0.35 + context.volumeThree[index] * 1.45);
+    });
+    var extra = expectedFieldGoals(
+      extraAttempts,
+      clamp(threeRate * 0.72, 0.16, 0.44),
+      extraWeights,
+      extraThreeWeights,
+    );
     return primary.points + fta * freeThrowPct + extra.points;
   }
 
@@ -1053,8 +1017,6 @@
           + (shooter._rimA / Math.max(1, shooter.fga)) * 0.06,
         0.12, 0.78,
       );
-      var roleProfile = context.assistRoleProfile;
-      if (roleProfile) probability = probability * (1 - roleProfile.coverage) + roleProfile.rate * roleProfile.coverage;
       var assistedMakes = sampleMakes(shooter.fgm, probability);
       if (!assistedMakes) return;
       var passWeights = context.players.map(function(_, index) {
@@ -1063,14 +1025,7 @@
           ? context.assistPassing[index]
           : (context.playmaking ? context.playmaking[index] : (context.pas[index] * 0.78 + context.han[index] * 0.22));
         var touch = context.touchOpportunity ? context.touchOpportunity[index] : context.weights[index];
-        var genericWeight = touch * (0.005 + Math.pow(passSkill, 3.4) * 3.2);
-        var role = context.offensiveRoles && context.offensiveRoles[index];
-        if (!role) return genericWeight;
-        // The passer cannot assist his own makes. Correct that missing exposure
-        // before excluding the shooter, so a scoring hub isn't penalized twice.
-        var ownMakeShare = quarter.fgm > 0 ? quarter.lines[index].fgm / quarter.fgm : 0;
-        var roleWeight = context.weights[index] * role.ast36 / 4 * role.passingGrowth / Math.max(0.25, 1 - ownMakeShare);
-        return genericWeight * (1 - role.confidence) + roleWeight * role.confidence;
+        return touch * (0.005 + Math.pow(passSkill, 3.4) * 3.2);
       });
       var assists = weightedRandomAllocation(assistedMakes, passWeights, context.players.map(function() { return 17; }));
       assists.forEach(function(value, index) { quarter.lines[index].ast += value; });
@@ -1080,21 +1035,15 @@
   function addTurnovers(context, quarter) {
     var weights = context.players.map(function(_, index) {
       var security = context.ballSecurity ? context.ballSecurity[index] : context.han[index];
-      var line = quarter.lines[index];
-      // Count scoring and passing decisions rather than distributing turnovers
-      // by minutes. Good handles lower risk per decision, not the workload itself.
-      var decisions = line.fga + line.fta * 0.44 + line.ast * 2.5 + context.weights[index] / 192;
-      var rimShare = context.volumeRim[index] / Math.max(0.01,
-        context.volumeRim[index] + context.volumeMid[index] + context.volumeThree[index]);
-      var genericRisk = 0.08 * (0.80 + (1 - security) * 0.35) * (1 + rimShare * 0.50);
-      return decisions * genericRisk;
+      var touch = context.touchOpportunity ? context.touchOpportunity[index] : context.opportunity[index];
+      return touch * (0.30 + (1 - security) * 1.05 + context.usagePressure * 0.20);
     });
     var turnovers = weightedRandomAllocation(quarter.turnovers, weights, context.players.map(function() { return 9; }));
     turnovers.forEach(function(value, index) { quarter.lines[index].tov += value; });
   }
 
   function addDefensiveEvents(defender, offense) {
-    var steals = sampleMakes(offense.turnovers, clamp(0.22 + defender.rawStealing * 0.60, 0, 1));
+    var steals = sampleMakes(offense.turnovers, clamp(0.15 + defender.rawStealing * 0.48, 0, 1));
     var stealsByPlayer = weightedRandomAllocation(
       steals,
       defender.players.map(function(_, index) {
@@ -1124,12 +1073,12 @@
     var secondTotal = secondQuarter.offensiveRebounds + Math.max(0, secondReboundable - firstQuarter.offensiveRebounds);
     var firstByPlayer = weightedRandomAllocation(
       firstTotal,
-      firstContext.players.map(function(_, index) { return firstContext.weights[index] * (0.18 + Math.pow(firstContext.reb[index], 1.8) * 2.5); }),
+      firstContext.players.map(function(_, index) { return firstContext.weights[index] * (0.20 + Math.pow(firstContext.reb[index], 1.32) * 1.58); }),
       firstContext.players.map(function() { return 24; }),
     );
     var secondByPlayer = weightedRandomAllocation(
       secondTotal,
-      secondContext.players.map(function(_, index) { return secondContext.weights[index] * (0.18 + Math.pow(secondContext.reb[index], 1.8) * 2.5); }),
+      secondContext.players.map(function(_, index) { return secondContext.weights[index] * (0.20 + Math.pow(secondContext.reb[index], 1.32) * 1.58); }),
       secondContext.players.map(function() { return 24; }),
     );
     firstByPlayer.forEach(function(value, index) { firstQuarter.lines[index].reb += value; });
@@ -1148,7 +1097,6 @@
   function recomputeTeamAggregates(context, weights) {
     return Object.assign({}, context, {
       weights: weights,
-      assistRoleProfile: roleAssistProfile(context.offensiveRoles, weights),
       teamCreation: weightedMean(context.creation, weights),
       teamTouchLoad: weightedMean(context.touchLoad || context.creation, weights),
       attack: weightedMean(context.threat.map(function(value, index) {
@@ -1313,10 +1261,10 @@
     var biasB = -contextualBias;
     var recordFormBias = recordFormEdge * MARGIN_TO_BIAS_PER_SIDE;
     var rosterStarBias = teamResidualMarginEdge * MARGIN_TO_BIAS_PER_SIDE;
-    // 恢复造犯规与二次进攻后，用约 100 回合的现代节奏生成比赛，
-    // 避免依赖额外回合抵消罚球不足造成的低分。
+    // V11：现代得分环境轻微提速。只增加约 1-2 个全场回合，不改投篮命中率或球员属性；
+    // 与队内得分层级微调配合，把长期偏低的个人得分榜整体抬高，但避免直接给球星加隐藏得分。
     var basePace = clamp(Math.round(
-      100 + ((first.pace + second.pace) / 2 - 0.50) * 7
+      107 + ((first.pace + second.pace) / 2 - 0.50) * 7
         - (first.fatigue + second.fatigue) * 1.5 + normal(0, 1.8),
     ), 90, 110);
     var totalLinesA = first.players.map(function(player, index) { return emptyLine(player, first, index); });
@@ -1332,6 +1280,8 @@
     var periodDiagnostics = [];
     var fgaLedgerA = { quotaCarry: first.players.map(function() { return 0; }) };
     var fgaLedgerB = { quotaCarry: second.players.map(function() { return 0; }) };
+    var threeLedgerA = { quotaCarry: first.players.map(function() { return 0; }) };
+    var threeLedgerB = { quotaCarry: second.players.map(function() { return 0; }) };
 
     function runQuarter(possessions, quarterIndex, isOvertime) {
       var clutch = (quarterIndex === 3 && Math.abs(scoreA - scoreB) <= 8)
@@ -1345,8 +1295,8 @@
       contextA.usagePressure = clamp((contextA.effectiveAttack - 0.50) * 0.50, 0, 0.25);
       contextB.usagePressure = clamp((contextB.effectiveAttack - 0.50) * 0.50, 0, 0.25);
       var periodPossessions = Math.max(1, possessions + Math.round(normal(0, 0.7)));
-      var quarterA = makeQuarter(contextA, contextB, periodPossessions, biasA, clutch, fgaLedgerA);
-      var quarterB = makeQuarter(contextB, contextA, periodPossessions, biasB, clutch, fgaLedgerB);
+      var quarterA = makeQuarter(contextA, contextB, periodPossessions, biasA, clutch, fgaLedgerA, threeLedgerA);
+      var quarterB = makeQuarter(contextB, contextA, periodPossessions, biasB, clutch, fgaLedgerB, threeLedgerB);
       rimAttemptsA += quarterA.rimAttempts;
       rimAttemptsB += quarterB.rimAttempts;
       contextA._quarterLines = quarterA.lines;

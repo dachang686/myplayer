@@ -1,0 +1,17 @@
+<anonymous_script>:216
+  throw new Error(`同档内外双核心得分仍不对称：${JSON.stringify(report)}`);
+  ^
+
+Error: 同档内外双核心得分仍不对称：{"games":10000,"profileRatings":{"interior":{"offense":87.67867638059242,"scoringLoad":91.60583802656504,"creation":68.82612526389592},"perimeter":{"offense":88.56462270320455,"scoringLoad":93.16071123969651,"creation":87.15622369970787}},"firstOrder":{"interior":{"pts":25.3604,"fga":18.4296,"fta":5.2094,"threeA":0,"fgPct":0.6269913617224465},"perimeter":{"pts":21.6662,"fga":18.844,"fta":1.9796,"threeA":10.9708,"fgPct":0.41480577372107835}},"swappedOrder":{"interior":{"pts":25.542,"fga":18.5282,"fta":5.1334,"threeA":0,"fgPct":0.630217722174847},"perimeter":{"pts":21.636,"fga":18.8032,"fta":2.0498,"threeA":10.8612,"fgPct":0.41422736555479917}},"combined":{"interior":{"pts":25.4512,"fga":18.4789,"fta":5.1714,"threeA":0,"fgPct":0.6286045419486468},"perimeter":{"pts":21.6511,"fga":18.8236,"fta":2.0147,"threeA":10.916,"fgPct":0.41451656963793876}},"fgaRatio":0.9816878811704456,"ptsRatio":1.1755153317845284,"orderInteriorFgaGap":0.09859999999999758,"orderPerimeterFgaGap":0.040800000000000836,"realPair":{"games":5000,"profiles":[{"id":"P0120","name":"约基奇","pos":"C","offense":92.76445545876508},{"id":"P0105","name":"欧文","pos":"PG / SG","offense":92.48173285166564}],"first":{"pts":21.8718,"fga":16.7162,"fta":3.8814,"threeA":7.6868,"fgPct":0.4691137938048121},"second":{"pts":19.367,"fga":16.2498,"fta":2.8586,"threeA":7.7042,"fgPct":0.43316225430466837},"fgaRatio":1.0287018917155903,"ptsRatio":1.1293334021789643}}
+    at eval (eval at <anonymous> ([stdin]:2:1), <anonymous>:216:9)
+    at [stdin]:2:101
+    at runScriptInThisContext (node:internal/vm:209:10)
+    at node:internal/process/execution:446:12
+    at [stdin]-wrapper:6:24
+    at runScriptInContext (node:internal/process/execution:444:60)
+    at evalFunction (node:internal/process/execution:279:30)
+    at evalTypeScript (node:internal/process/execution:291:3)
+    at node:internal/main/eval_stdin:53:5
+    at Socket.<anonymous> (node:internal/process/execution:201:5)
+
+Node.js v22.20.0

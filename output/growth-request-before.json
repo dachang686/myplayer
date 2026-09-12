@@ -1,0 +1,82 @@
+[
+  {
+    "pos": "PG",
+    "profile": "playmaker",
+    "before": 81,
+    "request1": 1,
+    "request2": 1,
+    "request3": 0
+  },
+  {
+    "pos": "PG",
+    "profile": "scoring_guard",
+    "before": 84,
+    "request1": 1,
+    "request2": 1,
+    "request3": 0
+  },
+  {
+    "pos": "SG",
+    "profile": "perimeter_scorer",
+    "before": 86,
+    "request1": 1,
+    "request2": 1,
+    "request3": 1
+  },
+  {
+    "pos": "SG",
+    "profile": "two_way_slasher",
+    "before": 78,
+    "request1": 1,
+    "request2": 1,
+    "request3": 0
+  },
+  {
+    "pos": "SF",
+    "profile": "two_way_wing",
+    "before": 80,
+    "request1": 1,
+    "request2": 1,
+    "request3": 1
+  },
+  {
+    "pos": "SF",
+    "profile": "point_forward",
+    "before": 80,
+    "request1": 1,
+    "request2": 1,
+    "request3": 0
+  },
+  {
+    "pos": "PF",
+    "profile": "interior_forward",
+    "before": 78,
+    "request1": 1,
+    "request2": 1,
+    "request3": 0
+  },
+  {
+    "pos": "PF",
+    "profile": "stretch_four",
+    "before": 79,
+    "request1": 1,
+    "request2": 1,
+    "request3": 0
+  },
+  {
+    "pos": "C",
+    "profile": "rim_protector",
+    "before": 90,
+    "request1": 1,
+    "request2": 1,
+    "request3": 1
+  },
+  {
+    "pos": "C",
+    "profile": "skilled_big",
+    "before": 86,
+    "request1": 1,
+    "request2": 2,
+    "request3": 1
+  }
+]

@@ -138,7 +138,7 @@ const positionRegressionAttrs = {
 context.STATE = { attrs: Object.assign({}, positionRegressionAttrs), position: 'PG' };
 const positionAwareOvr = context.calcOVR(context.STATE.attrs, 'PG');
 const implicitPositionOvr = context.calcOVR(context.STATE.attrs);
-check(positionAwareOvr === 90, `PG 回归样本建档 OVR 异常：${positionAwareOvr}`);
+check(positionAwareOvr === config.getUnifiedPlayerOvr(context.STATE.attrs, 'PG'), `PG 回归样本建档 OVR 异常：${positionAwareOvr}`);
 check(implicitPositionOvr === positionAwareOvr,
   `未传位置时 OVR 未沿用自建位置：PG ${positionAwareOvr}，实际 ${implicitPositionOvr}`);
 
@@ -239,7 +239,8 @@ for (let sample = 1; sample <= 400; sample++) {
   ATTR_KEYS.forEach(key => check(protectedPlayer.deltas[key] >= normal.deltas[key], `身体管理反而加速${key}衰退`));
 }
 bodyManagementImprovement /= 400;
-check(bodyManagementImprovement >= 1.5 && bodyManagementImprovement <= 3.5,
+// Technical skills now decline in 25% of seasons rather than 50%.
+check(bodyManagementImprovement >= 0.8 && bodyManagementImprovement <= 1.8,
   `身体管理的平均保护效果异常：${bodyManagementImprovement}`);
 
 const youngCap = runAnnual(22, 9991, 99);

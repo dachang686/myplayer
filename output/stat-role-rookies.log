@@ -1,0 +1,61 @@
+{
+  "targetCount": 30,
+  "tierCounts": {
+    "elite": 4,
+    "high": 3,
+    "rotation": 13,
+    "development": 8,
+    "longshot": 2
+  },
+  "targetRange": [
+    54,
+    84
+  ],
+  "maximumEntryOvr": 84,
+  "maximumTargetResidual": 1,
+  "maximumNormalPotential": 98,
+  "maximumGrowthDelta": 2,
+  "slowAttributeGrowthViolations": 0,
+  "starCaps": [
+    {
+      "id": "D26-01",
+      "cap": 98
+    },
+    {
+      "id": "D26-02",
+      "cap": 96
+    },
+    {
+      "id": "D26-03",
+      "cap": 95
+    },
+    {
+      "id": "S001",
+      "cap": 99
+    },
+    {
+      "id": "S002",
+      "cap": 97
+    },
+    {
+      "id": "S003",
+      "cap": 96
+    },
+    {
+      "id": "S004",
+      "cap": 99
+    },
+    {
+      "id": "S005",
+      "cap": 97
+    },
+    {
+      "id": "S006",
+      "cap": 96
+    }
+  ],
+  "legacy99Preserved": true,
+  "authoredTargetOvr": 70,
+  "failures": [],
+  "failureCount": 0
+}
