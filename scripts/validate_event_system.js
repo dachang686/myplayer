@@ -131,6 +131,20 @@ if (registryStart < 0 || registryEnd < 0) {
   const ids = registry.map(event => event.id);
   if (registry.length < 98) failures.push(`事件数量不足：${registry.length}`);
   if (new Set(ids).size !== ids.length) failures.push('事件 ID 存在重复');
+  // 随机事件在赛后才结算。凡是会禁赛或伤停、且原本叙述为比赛中发生的事件，必须改为赛后复核/诊断，不能再暗示已经改变本场出场或数据。
+  const postGameSettlementIds = [
+    'fight_hard_foul', 'fight_bench_clearing', 'fight_tech_escalation', 'fight_dirty_play',
+    'injury_back', 'injury_concussion', 'injury_shoulder', 'injury_quad', 'injury_wrist',
+    'injury_groin', 'injury_calf_cramp', 'injury_eye', 'injury_rib', 'injury_tooth',
+    'injury_major_hamstring', 'injury_major_meniscus_surgery',
+  ];
+  for (const id of postGameSettlementIds) {
+    const event = registry.find(item => item.id === id);
+    const body = event?.execute({ game: { opponent: 'AWAY' }, result: { won: false }, stats: {} })?.body || '';
+    if (!/赛后|终场后/.test(body) || /必须离场|被驱逐|教练无奈地把你换下|命中率明显下降/.test(body)) {
+      failures.push(`${id} 的赛后结算文案仍暗示已改写本场出场或数据`);
+    }
+  }
 
   const requiredCareerEvents = [
     'career_rivalry_spark',
@@ -312,6 +326,22 @@ if (registryStart < 0 || registryEnd < 0) {
   state.season.events.seasonTheme = { id: 'title' };
   if (playoffAdjustment && eventModule.getSeasonThemeEventWeight(playoffAdjustment) <= playoffAdjustment.weight) {
     failures.push('赛季主题没有改变对应职业事件权重');
+  }
+  if (playoffAdjustment) {
+    state.season.isPlayoffs = true;
+    state.season.playoffStats = { games: 1 };
+    state.season.events = createEventState(0);
+    const eliminatedSeries = playoffAdjustment.condition({
+      result: { won: false }, game: { playoffSeries: { opponentWins: 4, isDecided: true } },
+    });
+    const liveSeries = playoffAdjustment.condition({
+      result: { won: false }, game: { playoffSeries: { opponentWins: 2, isDecided: false } },
+    });
+    if (eliminatedSeries || !liveSeries) failures.push('季后赛录像调整没有正确区分淘汰局与仍在继续的系列赛');
+    if (!/playoffSeries:\s*\{[\s\S]*opponentWins:\s*newWinsB/.test(playoffsSource)) {
+      failures.push('季后赛比赛没有把系列赛状态传给事件系统');
+    }
+    state.season.isPlayoffs = false;
   }
   state.career.flags = { seasonThemeHistory: [{ id: 'title', variantId: 'title_all_in', season: 3 }] };
   state.career.currentAge = 28;
@@ -869,6 +899,11 @@ if (registryStart < 0 || registryEnd < 0) {
   }
   if (!eventModule.isNarrativeThreadReadyToOpen(playoffFormerThread, 1001, {}, { game: { opponent: 'PLAYOFF_OLD' } })) {
     failures.push('旧队友转会后的真实季后赛对阵无法开场');
+  }
+  playoffFormerThread.payload.matchupResult = { opponent: 'PLAYOFF_OLD', won: true, gameNum: 1001, phase: 'playoffs' };
+  const immediateFormerResult = eventModule.commitDirectorThreadChoice(playoffFormerThread, 'welcome');
+  if (playoffFormerThread.state !== 'resolved' || !/赛后你们拥抱/.test(immediateFormerResult)) {
+    failures.push('旧队友对阵线没有在实际交手后立即结算');
   }
 
   // 多名旧友同时存在时，首次重逢优先于已经反复出现的旧友，并执行完整赛季冷却。
@@ -1638,6 +1673,7 @@ if (failures.length) {
     eventChoiceResultCount,
     teamChangeDescriptionCount,
     registryValidated: true,
+    postGameNarrativeTiming: true,
     legacySaveRepair: true,
     suspensionFlow: true,
     interactiveChoices: true,
@@ -1659,6 +1695,8 @@ if (failures.length) {
     careerEventVariantConsequences: true,
     formerTeammateScheduling: true,
     formerTeammateMatchupGuard: true,
+    immediateMatchupResolution: true,
+    playoffAdjustmentSeriesGuard: true,
     currentAndFormerTeammateSlots: true,
     reunitedTeammateCarryOver: true,
     reunitedTeammateChoiceReachability: true,

@@ -13255,6 +13255,10 @@ function updateSeasonNarrativeSignals(ctx) {
 }
 
 /** 非角色线会优先等待比赛给出导火索；到保底场次仍会推进，避免长线被赛程完全饿死。 */
+function isImmediateMatchupNarrativeThread(thread) {
+  return !!(thread && ['former_teammate', 'rivalry', 'rivalry_reckoning'].indexOf(thread.kind) >= 0);
+}
+
 function isNarrativeThreadReadyToOpen(thread, gameNum, signals, ctx) {
   if (!thread || gameNum < (Number(thread.openingGame) || 99)) return false;
   if (thread.kind === 'rivalry' || thread.kind === 'rivalry_reckoning') return isNarrativeRivalryThreadInGame(thread, ctx);
@@ -13390,18 +13394,18 @@ function getDirectorThreadOpening(thread) {
     var playerLeft = thread.payload && thread.payload.separationCause === 'player_left';
     var reunionBody = thread.payload && thread.payload.isFirstReunion
       ? (playerLeft
-        ? '你换上新球衣后，第一次在场上遇到' + formerName + '。赛前他主动走来打招呼，但这场比赛会让你们过去共同经历的那些时刻拥有新的含义。'
-        : formerName + '离队后第一次站在了你的对面。赛前他主动走来打招呼，但这场比赛会让你们过去共同经历的那些时刻拥有新的含义。')
-      : '你和' + formerName + '再次作为对手相遇。最初重逢时的情绪已经沉淀，如今真正被检验的是这段关系会走向长期尊重，还是越来越尖锐的竞争。';
+        ? '终场后，你换上新球衣后第一次与' + formerName + '在场边致意。这场交手让过去共同经历的那些时刻拥有了新的含义。'
+        : formerName + '离队后第一次站在了你的对面。终场后，你们在中圈短暂交谈，过去的关系也有了新的位置。')
+      : '终场后，你和' + formerName + '再次作为对手致意。最初重逢时的情绪已经沉淀，如今这段关系更接近长期尊重，还是更强烈的竞争，也由这场交手给出了答案。';
     return {
       emoji: thread.emoji,
       title: thread.title,
       body: reunionBody,
       desc: '与' + formerName + '的关系进入新的球队阶段',
       choices: [
-        { label: '赛前主动向他致意', hint: '保留情谊，也让球迷看见彼此的尊重', _directorChoice: 'welcome' },
-        { label: '让比赛替你们说话', hint: '把旧日默契变成新的竞争', _directorChoice: 'compete' },
-        { label: '不让情绪影响球队', hint: '把注意力放在现在的队友身上', _directorChoice: 'move_on' }
+        { label: '赛后主动致意', hint: '保留情谊，也让球迷看见彼此的尊重', _directorChoice: 'welcome' },
+        { label: '让这场比赛替你们说话', hint: '把旧日默契变成新的竞争', _directorChoice: 'compete' },
+        { label: '把注意力留给球队', hint: '不让情绪延续到下一场', _directorChoice: 'move_on' }
       ]
     };
   }
@@ -13534,6 +13538,17 @@ function getNarrativeThreadOutcome(thread) {
   var newMajorInjury = !!(before && !before.majorInjuryThisSeason && now.majorInjuryThisSeason);
   var injuryRiskDelta = before ? now.injuryRiskBonus - (Number(before.injuryRiskBonus) || 0) : 0;
   var success = postGames >= 3 && postWinPct >= 0.5;
+  var matchupResult = thread && thread.payload && thread.payload.matchupResult;
+  if (isImmediateMatchupNarrativeThread(thread) && matchupResult) {
+    postGames = 1;
+    wins = matchupResult.won ? 1 : 0;
+    losses = matchupResult.won ? 0 : 1;
+    decidedGames = 1;
+    postWinPct = matchupResult.won ? 1 : 0;
+    postTeamGames = 1;
+    postTeamWinPct = postWinPct;
+    success = !!matchupResult.won;
+  }
   var teammate = getSeasonNarrativeTeammate();
   if (thread && thread.kind === 'locker_room') success = postGames >= 3 && postWinPct >= 0.5 && now.lossStreak < 4;
   else if (thread && thread.kind === 'media') success = postGames >= 3 && postWinPct >= 0.45 && (postPts >= 24 || postAst >= 8 || now.standoutStreak >= 2);
@@ -13608,6 +13623,11 @@ function commitDirectorThreadChoice(thread, choiceKey) {
       former.reunionCount = (Number(former.reunionCount) || 0) + 1;
       former.lastReunionSeason = getNarrativeSeasonNumber();
     }
+  }
+  if (isImmediateMatchupNarrativeThread(thread) && thread.payload && thread.payload.matchupResult) {
+    // 对阵叙事在赛后才弹出；选择应结算这次已发生的交手，不能再拖到无关对手的比赛。
+    var immediateResolution = resolveDirectorThread(thread);
+    return immediateResolution && immediateResolution.body || '这次交手的结果已被写进赛季轨迹。';
   }
   return '决定已被写进赛季轨迹。接下来的比赛会决定它带来的是机会，还是代价。';
 }
@@ -13856,6 +13876,15 @@ function checkSeasonNarrativeDirector(ctx) {
     return thread && thread.state === 'queued' && isNarrativeThreadInCurrentTeamContext(thread) && isNarrativeThreadReadyToOpen(thread, gameNum, events.storySignals, ctx);
   });
   if (!opening) return null;
+  if (isImmediateMatchupNarrativeThread(opening)) {
+    opening.payload = opening.payload || {};
+    opening.payload.matchupResult = {
+      opponent: ctx && ctx.game && ctx.game.opponent || null,
+      won: !!(ctx && ctx.result && ctx.result.won),
+      gameNum: gameNum,
+      phase: STATE.season && STATE.season.isPlayoffs ? 'playoffs' : 'regular'
+    };
+  }
   var data = getDirectorThreadOpening(opening);
   if (!data) return null;
   (data.choices || []).forEach(function(choice) {
@@ -14501,7 +14530,7 @@ EVENT_REGISTRY.push({
   weight: 15,
   condition: (ctx) => true,
   execute: (ctx) => {
-    return { emoji:'💢', title:'恶意犯规爆发冲突', body:'对手在一次快攻中从侧面狠狠撞向正在上篮的你，你整个人横着摔出了场外，背部重重砸在地板上。你躺在地上缓了两秒，然后爬起来直接冲向了那个球员。两人头顶头对峙，口水几乎喷到对方脸上，队友和裁判飞扑过来把你们隔开。裁判回看录像后给了对方一个一级恶意犯规，也给了你一个技术犯规。赛后联盟追加处罚，你被禁赛1场。赛后采访你说："我接受他的犯规，不接受他的态度。"', desc:'恶意犯规冲突', _consequence:'suspension', _games:1 };
+    return { emoji:'💢', title:'恶意犯规爆发冲突', body:'赛后录像复核确认，比赛中一次快攻犯规后你与对位球员发生了短暂对峙。双方被及时拉开并完成了比赛；联盟认定你的后续动作越界，追加禁赛1场。', desc:'恶意犯规冲突', _consequence:'suspension', _games:1 };
   },
 });
 
@@ -14518,7 +14547,7 @@ EVENT_REGISTRY.push({
   weight: 10,
   condition: (ctx) => true,
   execute: (ctx) => {
-    return { emoji:'🌪️', title:'板凳清空', body:'一次快攻中对手从背后将你一把拉下，你的身体失控后撞翻了场边的技术台。你的队友立刻冲上去推了对方一把，对方替补席所有人站了起来冲上场。十多个人挤在中圈互相推搡，场面一度完全失控。教练们冲进球场把自家球员往回拉，安保人员组成人墙把两队隔开。混乱持续了整整五分钟。赛后联盟开出了总额超过500万美元的罚单，你被禁赛5场。', desc:'板凳清空禁赛', _consequence:'suspension', _games:5 };
+    return { emoji:'🌪️', title:'板凳清空', body:'赛后报告记录了比赛中一次快攻犯规后的替补席冲突。安保和教练迅速控制局面，比赛没有中断到需要重算数据；联盟随后公布处罚，你因参与冲突被禁赛5场。', desc:'板凳清空禁赛', _consequence:'suspension', _games:5 };
   },
 });
 
@@ -14535,7 +14564,7 @@ EVENT_REGISTRY.push({
   weight: 12,
   condition: (ctx) => true,
   execute: (ctx) => {
-    return { emoji:'🔥', title:'累积技犯被驱逐', body:'你第一节吃到了一个技术犯规，心里一直憋着一股火。第三节你被吹了一个进攻犯规后终于爆发了——你把球狠狠砸在地板上，球弹起来飞上了观众席。裁判立刻吹了你第二个技术犯规，举起右手做出驱逐手势。你愣住了，然后开始朝裁判走去，队友赶紧抱住你。"别！别！他把你驱逐了！你再过去又要追加禁赛！"你被队友们架着走向更衣室，全场响起了震天的嘘声。赛后联盟果然追加处罚，你被禁赛多场。', desc:'技犯被驱逐', _consequence:'suspension', _games:(1 + Math.floor(Math.random() * 2)) };
+    return { emoji:'🔥', title:'累积技犯追加处罚', body:'赛后裁判报告确认，你在比赛中因连续抱怨和摔球吃到技术犯规。由于没有进一步驱逐，已完成的本场数据不回写；联盟仍对不当行为追加禁赛{n}场。', desc:'累积技犯追加处罚', _consequence:'suspension', _games:(1 + Math.floor(Math.random() * 2)) };
   },
 });
 
@@ -14561,7 +14590,7 @@ EVENT_REGISTRY.push({
   weight: 12,
   condition: (ctx) => true,
   execute: (ctx) => {
-    return { emoji:'🪚', title:'报复性恶犯', body:'你的队友在一次上篮中被对手从空中硬生生拉了下来，摔在地上半天没起来。裁判只吹了一个普通犯规。你火了。下一回合防守中，你直接一肩膀撞向了持球的对方球员——动作不大，但足够狠。他摔倒在地，球丢了。裁判给了你一个一级恶意犯规。你走下球场时，你的队友拍了拍你的肩膀："兄弟，够意思。"你回头看了一眼对面愤怒的教练席，觉得值了。赛后联盟回看录像，认为动作具有明显报复性，对你追加禁赛。', desc:'报复恶犯', _consequence:'suspension', _games:(1 + Math.floor(Math.random() * 2)) };
+    return { emoji:'🪚', title:'报复性恶犯', body:'赛后联盟回看确认，你在一次队友被犯规后的防守回合做出了报复性动作。裁判当时给出的一级恶意犯规没有中断你本场的已记录数据，但联盟认定动作越界，追加禁赛{n}场。', desc:'报复恶犯', _consequence:'suspension', _games:(1 + Math.floor(Math.random() * 2)) };
   },
 });
 
@@ -15283,7 +15312,7 @@ EVENT_REGISTRY.push({
   weight: 15,
   condition: (ctx) => true,
   execute: (ctx) => {
-    return { emoji:'💆', title:'背部痉挛', body:'你刚做了一个变向动作，突然感觉下背部像被电击了一样——肌肉完全锁死了。你僵在原地动弹不得，连呼吸都小心翼翼。队医把你扶到训练室，你趴在按摩床上发出了痛苦的呻吟。队医说："背部痉挛，至少休息几天。我知道你不愿意，但你的身体替你做了决定。"你没法反驳。', desc:'背部痉挛', _consequence:'injury', _games:(1 + Math.floor(Math.random() * 2)) };
+    return { emoji:'💆', title:'背部痉挛', body:'赛后放松时，你报告下背部突然出现强烈痉挛。队医结合比赛负荷和触诊判断为急性肌肉保护性痉挛，要求你先停止高强度训练。接下来的恢复期由身体而不是意愿决定。', desc:'背部痉挛', _consequence:'injury', _games:(1 + Math.floor(Math.random() * 2)) };
   },
 });
 
@@ -15294,7 +15323,7 @@ EVENT_REGISTRY.push({
   weight: 10,
   condition: (ctx) => true,
   execute: (ctx) => {
-    return { emoji:'😵', title:'脑震荡', body:'你在争抢篮板时和对手的脑袋撞在了一起——一声闷响后你眼前一黑。你摔倒在地上，看什么都是双层的。队友的脸在你面前晃来晃去，但你听不清他们在说什么。队医用手电筒照了照你的瞳孔："可能脑震荡，必须离场。"你被送去医院做CT检查，头上缠着纱布的照片很快出现在了新闻上。', desc:'脑震荡', _consequence:'injury', _games:(5 + Math.floor(Math.random() * 6)) };
+    return { emoji:'😵', title:'脑震荡', body:'赛后随访时，你报告比赛中的一次头部碰撞后持续头痛和视物不清。队医按脑震荡流程完成检查并安排影像评估；在通过复出程序前，你不会进入下一场轮换。', desc:'脑震荡', _consequence:'injury', _games:(5 + Math.floor(Math.random() * 6)) };
   },
 });
 
@@ -15441,7 +15470,7 @@ EVENT_REGISTRY.push({
   weight: 15,
   condition: (ctx) => true,
   execute: (ctx) => {
-    return { emoji:'🦴', title:'肩膀脱臼', body:'你在一次凶狠的拼抢中重重摔倒在地，左肩先着地——一阵剧痛从肩膀传来，你发现自己的左臂完全使不上力了。你试图活动肩膀，但每动一下都疼得龇牙咧嘴。队医检查后说肩膀脱臼了，需要休养{n}场。', desc:'肩膀脱臼', _consequence:'injury', _games:(4 + Math.floor(Math.random() * 5)) };
+    return { emoji:'🦴', title:'肩膀脱臼', body:'赛后检查确认，你在比赛中的一次倒地造成左肩脱臼。球队医疗组完成复位和影像评估后，将你列入伤病名单；接下来的{n}场比赛需要恢复肩关节稳定性。', desc:'肩膀脱臼', _consequence:'injury', _games:(4 + Math.floor(Math.random() * 5)) };
   },
 });
 
@@ -15474,7 +15503,7 @@ EVENT_REGISTRY.push({
   weight: 15,
   condition: (ctx) => true,
   execute: (ctx) => {
-    return { emoji:'🦵', title:'大腿肌肉拉伤', body:'你在一次全力冲刺中突然感觉大腿前侧像被撕裂了一样——你立刻慢下来一瘸一拐地走向场边。你试图在边线上拉伸后继续比赛，但每发力一步都钻心地疼。队医宣布大腿肌肉二级拉伤，需要休养{n}场。', desc:'大腿拉伤', _consequence:'injury', _games:(5 + Math.floor(Math.random() * 6)) };
+    return { emoji:'🦵', title:'大腿肌肉拉伤', body:'赛后你反馈大腿前侧在冲刺后的疼痛持续加重。影像和力量测试确认二级拉伤，医疗组决定从下一场起安排{n}场恢复，避免把一次肌肉损伤拖成长期问题。', desc:'大腿拉伤', _consequence:'injury', _games:(5 + Math.floor(Math.random() * 6)) };
   },
 });
 
@@ -15485,7 +15514,7 @@ EVENT_REGISTRY.push({
   weight: 15,
   condition: (ctx) => true,
   execute: (ctx) => {
-    return { emoji:'✋', title:'手腕扭伤', body:'你在一次摔倒时本能地用手撑地——手腕传来一阵剧痛。你甩了甩手想继续打，但每次投篮发力时手腕都会剧烈疼痛。你的命中率明显下降，教练最终决定让你轮休。队医给你缠上了护腕，建议休养{n}场。', desc:'手腕扭伤', _consequence:'injury', _games:(2 + Math.floor(Math.random() * 3)) };
+    return { emoji:'✋', title:'手腕扭伤', body:'赛后检查发现，你在比赛中的一次撑地造成手腕扭伤。队医完成固定后建议从下一场起休养{n}场；本场记录保持不回写，恢复安排从后续赛程生效。', desc:'手腕扭伤', _consequence:'injury', _games:(2 + Math.floor(Math.random() * 3)) };
   },
 });
 
@@ -15507,7 +15536,7 @@ EVENT_REGISTRY.push({
   weight: 15,
   condition: (ctx) => true,
   execute: (ctx) => {
-    return { emoji:'🤕', title:'腹股沟拉伤', body:'你在一次防守滑步中突然感觉大腿根部一阵撕裂感——你立刻停下来扶着腰，表情痛苦。腹股沟拉伤是运动员最烦人的伤病之一，虽然不算严重但非常容易复发。队医建议你休养{n}场以避免变成慢性伤病。', desc:'腹股沟拉伤', _consequence:'injury', _games:(3 + Math.floor(Math.random() * 4)) };
+    return { emoji:'🤕', title:'腹股沟拉伤', body:'赛后检查确认，你在防守滑步后的腹股沟反应是轻度拉伤。它不算严重但复发风险高，队医建议从下一场起休养{n}场，避免把问题拖成慢性伤病。', desc:'腹股沟拉伤', _consequence:'injury', _games:(3 + Math.floor(Math.random() * 4)) };
   },
 });
 
@@ -15518,7 +15547,7 @@ EVENT_REGISTRY.push({
   weight: 15,
   condition: (ctx) => true,
   execute: (ctx) => {
-    return { emoji:'🦵', title:'小腿肌肉痉挛', body:'第四节刚开始你的小腿突然抽筋了——肌肉硬得像一块石头，你痛得单膝跪地。队医上场给你拉伸，但每次你试图跑动时都会再次抽筋。教练无奈地把你换下。赛后队医说你严重脱水，需要休息{n}场来恢复。', desc:'小腿痉挛', _consequence:'injury', _games:(1 + Math.floor(Math.random() * 2)) };
+    return { emoji:'🦵', title:'小腿肌肉痉挛', body:'终场后的体液和肌肉检查显示，你的小腿痉挛与明显脱水有关。医疗组建议休息{n}场并完成补液恢复，防止疲劳在下一次高强度冲刺中放大。', desc:'小腿痉挛', _consequence:'injury', _games:(1 + Math.floor(Math.random() * 2)) };
   },
 });
 
@@ -15529,7 +15558,7 @@ EVENT_REGISTRY.push({
   weight: 15,
   condition: (ctx) => true,
   execute: (ctx) => {
-    return { emoji:'👁️', title:'眼角膜擦伤', body:'争抢篮板时对方的手指直接戳进了你的眼睛——你惨叫一声捂着眼睛蹲在地上。泪水不停地流，你几乎睁不开那只眼睛。队医检查后发现你的眼角膜被划伤了，至少需要休养{n}场来恢复视力。', desc:'眼角膜擦伤', _consequence:'injury', _games:(2 + Math.floor(Math.random() * 3)) };
+    return { emoji:'👁️', title:'眼角膜擦伤', body:'赛后眼科检查确认，你在篮板争抢中的手指接触造成眼角膜擦伤。医疗组要求你休养{n}场并等待视力和疼痛恢复后再复查。', desc:'眼角膜擦伤', _consequence:'injury', _games:(2 + Math.floor(Math.random() * 3)) };
   },
 });
 
@@ -15540,7 +15569,7 @@ EVENT_REGISTRY.push({
   weight: 15,
   condition: (ctx) => true,
   execute: (ctx) => {
-    return { emoji:'🩻', title:'肋骨挫伤', body:'你被对方一肘重重击中了侧腹部——你当场感觉呼吸都困难了。你捂着肋骨弯着腰，每一次深呼吸都伴随着刺痛。队医检查后说肋骨骨膜挫伤，虽然没有骨折但非常疼。你被列入每日观察名单，最终决定休养{n}场。', desc:'肋骨挫伤', _consequence:'injury', _games:(3 + Math.floor(Math.random() * 4)) };
+    return { emoji:'🩻', title:'肋骨挫伤', body:'赛后影像排除骨折，但确认比赛中的肘击造成肋骨骨膜挫伤。深呼吸仍有刺痛，球队将你列入每日观察名单，并安排休养{n}场。', desc:'肋骨挫伤', _consequence:'injury', _games:(3 + Math.floor(Math.random() * 4)) };
   },
 });
 
@@ -15562,7 +15591,7 @@ EVENT_REGISTRY.push({
   weight: 15,
   condition: (ctx) => true,
   execute: (ctx) => {
-    return { emoji:'🦷', title:'牙槽骨折', body:'你在争抢中被对方肘部击中了嘴巴——你吐出了半颗牙齿和一嘴血。队医把你带到更衣室止血，牙医检查后发现牙槽骨有轻微骨折。你需要在休赛期做牙科手术，目前只能吃流食。你缺席{n}场比赛。', desc:'牙齿受伤', _consequence:'injury', _games:(1 + Math.floor(Math.random() * 3)) };
+    return { emoji:'🦷', title:'牙槽骨折', body:'赛后牙医确认，比赛中的肘击造成轻微牙槽骨折。你将在休赛期接受后续处理；在此之前只能进流食，并需缺席{n}场比赛。', desc:'牙齿受伤', _consequence:'injury', _games:(1 + Math.floor(Math.random() * 3)) };
   },
 });
 
@@ -15575,7 +15604,7 @@ EVENT_REGISTRY.push({
   condition: (ctx) => true,
   execute: (ctx) => {
     var games = 22 + Math.floor(Math.random() * 12);
-    return { emoji:'🏥', title:'腿筋三级拉伤', body:'你在一次反击冲刺中突然停住，右手立刻摸向大腿后侧。回放里没有对抗，只有你起速那一下身体明显一顿。MRI结果显示腿筋三级拉伤，队医给出的恢复周期接近两个月。球队宣布你将缺席{n}场比赛，所有训练计划都要重新排。', desc:'腿筋三级拉伤', _consequence:'injury', _games:games, _majorInjury:true };
+    return { emoji:'🏥', title:'腿筋三级拉伤', body:'赛后 MRI 确认，比赛中的一次冲刺造成腿筋三级拉伤。恢复周期接近两个月，球队宣布你将缺席{n}场比赛，所有训练计划都要重新安排。', desc:'腿筋三级拉伤', _consequence:'injury', _games:games, _majorInjury:true };
   },
 });
 
@@ -15601,7 +15630,7 @@ EVENT_REGISTRY.push({
   condition: (ctx) => true,
   execute: (ctx) => {
     var games = getSeasonEndingInjuryGamesLeft();
-    return { emoji:'🚑', title:'膝盖半月板手术', body:'你在一次急停转身后坐在地上很久没有起来。队友围过来时，你只是摇头。检查结果出来后，更衣室安静得可怕：半月板撕裂，需要手术处理。球队随后宣布你将缺席本赛季剩余比赛，接下来的一切都从康复室重新开始。', desc:'膝盖半月板手术', _consequence:'injury', _games:games, _majorInjury:true };
+    return { emoji:'🚑', title:'膝盖半月板手术', body:'赛后检查显示，比赛中的急停动作造成半月板撕裂，需要手术处理。球队宣布你将缺席本赛季剩余比赛，接下来的一切都从康复室重新开始。', desc:'膝盖半月板手术', _consequence:'injury', _games:games, _majorInjury:true };
   },
 });
 
@@ -15668,7 +15697,7 @@ EVENT_REGISTRY.push({
     return {
       emoji: '🔥',
       title: '宿敌再会',
-      body: '赛前热身时，{宿敌}从另一侧球场看了你很久。上一次交锋的片段又被节目反复播放，这场普通赛程已经被包装成全国直播焦点。终场后，你们在中圈再次碰面。',
+      body: '终场后，{宿敌}从另一侧球场看了你很久。上一次交锋的片段又被节目反复播放，这场比赛也被包装成全国直播焦点。你们随后在中圈再次碰面。',
       desc: '宿敌关系进入新阶段',
       choices: [
         { label: '继续把对抗推高', hint: '球迷热度最高，但争议也会增加', apply: function() {
@@ -15794,6 +15823,9 @@ EVENT_REGISTRY.push({
   eventRate: 72,
   condition: function(ctx) {
     if (!STATE.season.isPlayoffs || !ctx.result || ctx.result.won) return false;
+    var series = ctx.game && ctx.game.playoffSeries;
+    // 系列赛已被淘汰时不存在“下一场”的调整空间，不能再弹出战术选择。
+    if (series && (series.isDecided || (Number(series.opponentWins) || 0) >= 4)) return false;
     var events = ensureSeasonEventState();
     return !events.playoffAdjustmentDone && ((STATE.season.playoffStats && STATE.season.playoffStats.games) || 0) >= 1;
   },

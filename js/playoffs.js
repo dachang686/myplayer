@@ -1222,7 +1222,20 @@ function simOnePlayoffGame(round, seriesIdx, teamA, teamB, isMySeries, gameNum, 
     // ★ 赛后检测随机事件（仅限用户系列赛，简报显示完后才触发）
     if (isMySeries) {
       try {
-        var poEvData = checkRandomEvents({ opponent: teamB, isWin: won, day: 0, simulated: true }, { won: won, scoreA: finalA, scoreB: finalB }, gameEntry.myStats || null);
+        var poEvData = checkRandomEvents({
+          opponent: teamB,
+          isWin: won,
+          day: 0,
+          simulated: true,
+          playoffSeries: {
+            round: round,
+            seriesIdx: seriesIdx,
+            gameNumber: gameNum + 1,
+            userWins: newWinsA,
+            opponentWins: newWinsB,
+            isDecided: newWinsA >= 4 || newWinsB >= 4
+          }
+        }, { won: won, scoreA: finalA, scoreB: finalB }, gameEntry.myStats || null);
         if (poEvData) {
           if (poEvData._consequence === 'suspension') {
             STATE.season.events.suspensionReason = poEvData.desc;

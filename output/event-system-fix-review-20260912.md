@@ -13,6 +13,25 @@
 
 验证：`npm run test:events` 新增 `formerTeammateMatchupGuard`。该用例断言在 `PLAYOFF_OTHER` 的首轮不触发，在旧友转会后的 `PLAYOFF_OLD` 对阵中触发。
 
+### 对阵事件的时点与结算
+
+- 旧队友、宿敌和季后赛旧债线原本会在真实交手后等待 12 场再结算，且可能落在无关对手的比赛。它们现在记录这次实际交手的胜负，并在赛后选择后立即结算。
+- 旧队友文字统一改为赛后致意；`career_rivalry_rematch` 同样改为终场后叙述，不再在赛后弹窗声称仍处于赛前热身。
+- 季后赛录像调整现在接收当前系列赛比分。若本场失利已令对手拿到第四胜，则不再弹出“下一场调整”事件。
+
+实现：[对阵线即时结算](/C:/kevin/myplayer/index.html:13258)、[季后赛系列赛状态](/C:/kevin/myplayer/js/playoffs.js:1230)、[淘汰局守卫](/C:/kevin/myplayer/index.html:15819)。
+
+### 赛后事件与本场数据
+
+逐条枚举 98 个 `EVENT_REGISTRY` 条目后，发现 16 个会造成伤停或禁赛的条目把赛后结算写成了本场已离场、被驱逐或命中率下降；引擎已经写完本场箱分，无法支持这些事实。
+
+- `fight_hard_foul`、`fight_bench_clearing`、`fight_tech_escalation`、`fight_dirty_play` 改为赛后录像复核与追加处罚，保留已完成本场数据。
+- `injury_back`、`injury_concussion`、`injury_shoulder`、`injury_quad`、`injury_wrist`、`injury_groin`、`injury_calf_cramp`、`injury_eye`、`injury_rib`、`injury_tooth`、`injury_major_hamstring`、`injury_major_meniscus_surgery` 改为赛后诊断，伤停从下一场生效。
+
+实现：[统一赛后结算入口](/C:/kevin/myplayer/index.html:14495)、[事件文案](/C:/kevin/myplayer/index.html:14527)、[伤病文案](/C:/kevin/myplayer/index.html:15309)。
+
+验证：`postGameNarrativeTiming` 覆盖上述 16 条事件，断言其文案含赛后时点且不再包含“必须离场”“被驱逐”“换下”或“本场命中率下降”等无法由赛后引擎兑现的承诺。
+
 ### 纪律事件概率与因果
 
 - 常规赛纪律通道基础检查率由 0.55% 调整为 0.18%，季后赛为 0.25%。
