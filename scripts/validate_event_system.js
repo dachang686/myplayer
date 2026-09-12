@@ -113,7 +113,7 @@ if (registryStart < 0 || registryEnd < 0) {
     'getUserAvg',
     'getBondedTeammateName',
     'ensureSeasonEventState',
-    `${indexSource.slice(registryStart, registryEnd)}\nreturn { EVENT_REGISTRY, checkRandomEvents, resolveEventVars, getRandomEventLane, getEventNoiseLevel, getEventNoiseTheme, getEventNoiseThemeCooldown, isRandomEventNoiseEligible, shouldPresentRandomEvent, initializeSeasonNarrative, canTriggerEventByLifecycle, recordEventLifecycle, meetsCareerEventIdentity, meetsRandomEventContext, meetsDisciplineEventContext, getRandomEventLaneRate, isCloseGame, applyAutomaticEventImpact, recordNarrativePlayoffSeries, finalizeSeasonNarrativeAtSeasonEnd, commitDirectorThreadChoice, resolveDirectorThread, getNarrativeThreadOutcome, getSeasonThemeEventWeight, chooseSeasonNarrativeTheme, chooseNarrativeThemeVariant, getSeasonThemeStoryline, getSeasonNarrativeTeammate, getNarrativeFormerTeammates, getDirectorThreadOpening, queueGameDrivenPressureThread, getActiveNarrativeThreadCount, selectNarrativeFormerTeammate, checkSeasonNarrativeDirector, consumeActiveEventEffectsForCareerGame, afterCareerTeamGame, findNarrativePlayer, syncNarrativeReunitedTeammates, syncNarrativeAfterPlayerTeamChange, isNarrativeThreadInCurrentTeamContext };`,
+    `${indexSource.slice(registryStart, registryEnd)}\nreturn { EVENT_REGISTRY, checkRandomEvents, resolveEventVars, getRandomEventLane, getEventNoiseLevel, getEventNoiseTheme, getEventNoiseThemeCooldown, isRandomEventNoiseEligible, shouldPresentRandomEvent, initializeSeasonNarrative, canTriggerEventByLifecycle, recordEventLifecycle, meetsCareerEventIdentity, meetsRandomEventContext, meetsDisciplineEventContext, getRandomEventLaneRate, isCloseGame, applyAutomaticEventImpact, recordNarrativePlayoffSeries, finalizeSeasonNarrativeAtSeasonEnd, commitDirectorThreadChoice, resolveDirectorThread, getNarrativeThreadOutcome, getSeasonThemeEventWeight, chooseSeasonNarrativeTheme, chooseNarrativeThemeVariant, getSeasonThemeStoryline, getSeasonNarrativeTeammate, getNarrativeFormerTeammates, getDirectorThreadOpening, queueGameDrivenPressureThread, getActiveNarrativeThreadCount, selectNarrativeFormerTeammate, isNarrativeThreadReadyToOpen, checkSeasonNarrativeDirector, consumeActiveEventEffectsForCareerGame, afterCareerTeamGame, findNarrativePlayer, syncNarrativeReunitedTeammates, syncNarrativeAfterPlayerTeamChange, isNarrativeThreadInCurrentTeamContext };`,
   )({}, state, leagueData, addProfileDelta, profile, () => {
     const stats = state.season?.playerStats || {};
     const games = stats.games || 1;
@@ -849,6 +849,26 @@ if (registryStart < 0 || registryEnd < 0) {
   eventModule.recordNarrativePlayoffSeries({ isMySeries: true, teamA: 'HOME', teamB: 'MULTI_OLD', aWon: true });
   if (!state.career.flags.formerStoryTeammates.every(mate => mate.playoffMeetings === 1 && mate.lastPlayoffResult === 'won')) {
     failures.push('同一季后赛对手中的多名旧友没有全部记录系列赛结果');
+  }
+
+  // 季后赛场次会使用 1000+ 的内部编号。旧友线必须核对本场实际对手，不能因为都在首轮便在另一组系列赛开场；且必须跟随旧友的实时转会球队。
+  leagueData.PLAYOFF_OLD = [{ id: 'playoff-former', cname: '季后赛旧友', ovr: 84 }];
+  state.career.flags = {
+    formerStoryTeammates: [{ id: 'playoff-former', cname: '季后赛旧友', team: 'STALE_OLD', active: true, affinity: 4 }],
+  };
+  state.season = {
+    games: [], wins: 0, losses: 0, isPlayoffs: true, isUserStarter: true,
+    playoffStats: { games: 1 }, playerStats: {}, schedule: [], events: createEventState(0),
+  };
+  const playoffFormerThread = {
+    kind: 'former_teammate', state: 'queued', openingGame: 8,
+    payload: { teammateId: 'playoff-former', teammateName: '季后赛旧友', opponent: 'STALE_OLD' },
+  };
+  if (eventModule.isNarrativeThreadReadyToOpen(playoffFormerThread, 1001, {}, { game: { opponent: 'PLAYOFF_OTHER' } })) {
+    failures.push('旧队友在未交手的季后赛首轮比赛中仍然开场');
+  }
+  if (!eventModule.isNarrativeThreadReadyToOpen(playoffFormerThread, 1001, {}, { game: { opponent: 'PLAYOFF_OLD' } })) {
+    failures.push('旧队友转会后的真实季后赛对阵无法开场');
   }
 
   // 多名旧友同时存在时，首次重逢优先于已经反复出现的旧友，并执行完整赛季冷却。
@@ -1638,6 +1658,7 @@ if (failures.length) {
     careerEventRecurrentPool: true,
     careerEventVariantConsequences: true,
     formerTeammateScheduling: true,
+    formerTeammateMatchupGuard: true,
     currentAndFormerTeammateSlots: true,
     reunitedTeammateCarryOver: true,
     reunitedTeammateChoiceReachability: true,

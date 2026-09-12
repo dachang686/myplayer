@@ -1,7 +1,7 @@
 const LEAGUE_PLAYER_DATA = {
   "ATL": [{
     "id": "P0001",
-    "cname": "约翰逊",
+    "cname": "杰伦-约翰逊",
     "pos": "PF / SF",
     "height": "6'8'",
     "type": "Mid-Post Playmaking Cleaner",
@@ -22,7 +22,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0002",
-    "cname": "沃克",
+    "cname": "亚历山大-沃克",
     "pos": "SG / PG",
     "height": "6'5'",
     "type": "3 & D Two Guard",
@@ -43,7 +43,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0003",
-    "cname": "丹尼尔斯",
+    "cname": "戴森-丹尼尔斯",
     "pos": "SF / SG",
     "height": "6'7'",
     "type": "Defensive Playmaker",
@@ -64,7 +64,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0004",
-    "cname": "麦科勒姆",
+    "cname": "CJ-麦科勒姆",
     "pos": "PG / SG",
     "height": "6'3'",
     "type": "Crafty Iso Sniper",
@@ -85,7 +85,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0005",
-    "cname": "奥孔古",
+    "cname": "奥涅卡-奥孔古",
     "pos": "C",
     "height": "6'10'",
     "type": "3-Level Scorer",
@@ -106,7 +106,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0006",
-    "cname": "兰代尔",
+    "cname": "乔克-兰代尔",
     "pos": "C",
     "height": "6'11'",
     "type": "Post-Scoring Stretch Crasher",
@@ -127,7 +127,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0008",
-    "cname": "卡特",
+    "cname": "德文-卡特",
     "pos": "PG / SG",
     "height": "6'2'",
     "type": "Blow-By High Flyer",
@@ -148,7 +148,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0009",
-    "cname": "基斯珀特",
+    "cname": "科里-基斯珀特",
     "pos": "SG / SF",
     "height": "6'6'",
     "type": "Crafty Sharpshooter",
@@ -169,7 +169,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0010",
-    "cname": "希尔德",
+    "cname": "巴迪-希尔德",
     "pos": "SG / SF",
     "height": "6'4'",
     "type": "3PT-Sniping Creator",
@@ -190,7 +190,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0011",
-    "cname": "纽厄尔",
+    "cname": "阿萨-纽厄尔",
     "pos": "PF / C",
     "height": "6'10'",
     "type": "Stretch Rim Wrecker",
@@ -211,7 +211,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0012",
-    "cname": "古耶",
+    "cname": "穆罕默德-古耶",
     "pos": "PF / C",
     "height": "6'11'",
     "type": "Ball-Hawking Rim Wrecker",
@@ -232,7 +232,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0013",
-    "cname": "布拉德利",
+    "cname": "托尼-布拉德利",
     "pos": "C",
     "height": "6'10'",
     "type": "Crafty Post-Scoring Crasher",
@@ -253,7 +253,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0014",
-    "cname": "文森特",
+    "cname": "盖布-文森特",
     "pos": "PG / SG",
     "height": "6'2'",
     "type": "Playmaking 3PT Creator",
@@ -274,7 +274,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0016",
-    "cname": "华莱士",
+    "cname": "基顿-华莱士",
     "pos": "PG / SG",
     "height": "6'3'",
     "type": "Ball-Hawking 3PT Shot Hunter",
@@ -295,7 +295,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0017",
-    "cname": "丹尼斯",
+    "cname": "雷-J-丹尼斯",
     "pos": "PG / SG",
     "height": "6'1'",
     "type": "Iso Sniper",
@@ -316,7 +316,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0018",
-    "cname": "吉尔伯特",
+    "cname": "凯雄-吉尔伯特",
     "pos": "SG / SF",
     "height": "6'4'",
     "type": "2-Way Combo Guard",
@@ -337,7 +337,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0115",
-    "cname": "内姆哈德",
+    "cname": "瑞安-内姆哈德",
     "pos": "PG",
     "height": "5'11'",
     "type": "Playmaking 3PT Creator",
@@ -358,7 +358,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0358",
-    "cname": "威金斯",
+    "cname": "阿龙-威金斯",
     "pos": "SF / PF",
     "height": "6'5'",
     "type": "Iso Sniper",
@@ -380,7 +380,7 @@ const LEAGUE_PLAYER_DATA = {
   }],
   "BKN": [{
     "id": "P0019",
-    "cname": "波特",
+    "cname": "小迈克尔-波特",
     "pos": "SF / PF",
     "height": "6'10'",
     "type": "3PT-Sniping Cleaner",
@@ -401,7 +401,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0020",
-    "cname": "兰德尔",
+    "cname": "朱利叶斯-兰德尔",
     "pos": "PF / C",
     "height": "6'9'",
     "type": "Physical Post Creator",
@@ -422,7 +422,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0022",
-    "cname": "夏普",
+    "cname": "戴龙-夏普",
     "pos": "C",
     "height": "6'9'",
     "type": "Ball Snatcher",
@@ -443,7 +443,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0023",
-    "cname": "德明",
+    "cname": "叶戈尔-德明",
     "pos": "SG / PG",
     "height": "6'8'",
     "type": "Crafty Inside-Out Combo Guard",
@@ -464,7 +464,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0024",
-    "cname": "米诺特",
+    "cname": "乔什-米诺特",
     "pos": "PF / C",
     "height": "6'8'",
     "type": "Ball-Hawking Stretch Four",
@@ -485,7 +485,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0025",
-    "cname": "瓦格纳",
+    "cname": "莫里茨-瓦格纳",
     "pos": "C / PF",
     "height": "6'11'",
     "type": "Stretch Five Cleaner",
@@ -506,7 +506,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0026",
-    "cname": "沃尔夫",
+    "cname": "丹尼-沃尔夫",
     "pos": "PF / SF",
     "height": "6'11'",
     "type": "Break-Starting Stretch Four",
@@ -527,7 +527,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0027",
-    "cname": "埃利斯",
+    "cname": "基恩-埃利斯",
     "pos": "SF / SG",
     "height": "6'4'",
     "type": "2-Way Crafty Finisher",
@@ -548,7 +548,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0028",
-    "cname": "特拉奥雷",
+    "cname": "诺兰-特拉奥雷",
     "pos": "PG / SG",
     "height": "6'3'",
     "type": "Speedy Blow-By Ace",
@@ -569,7 +569,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0029",
-    "cname": "克洛尼",
+    "cname": "诺厄-克洛尼",
     "pos": "PF / C",
     "height": "6'10'",
     "type": "Stretch Rim Wrecker",
@@ -590,7 +590,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0030",
-    "cname": "曼",
+    "cname": "特伦斯-曼",
     "pos": "SG / SF",
     "height": "6'6'",
     "type": "Crafty 3-Level Dime-Dropper",
@@ -611,7 +611,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0031",
-    "cname": "阿巴吉",
+    "cname": "奥查伊-阿巴吉",
     "pos": "SF / PF",
     "height": "6'5'",
     "type": "Mid-Range Menace",
@@ -632,7 +632,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0032",
-    "cname": "萨拉夫",
+    "cname": "本-萨拉夫",
     "pos": "PG / SG",
     "height": "6'6'",
     "type": "Point-Fading Wizard",
@@ -653,7 +653,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0033",
-    "cname": "威尔逊",
+    "cname": "杰伦-威尔逊",
     "pos": "SF / PF",
     "height": "6'6'",
     "type": "Athletic Stretch Four",
@@ -674,7 +674,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0034",
-    "cname": "鲍威尔",
+    "cname": "德雷克-鲍威尔",
     "pos": "SG / PG",
     "height": "6'5'",
     "type": "High-Flying Wing Runner",
@@ -695,7 +695,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0035",
-    "cname": "约翰逊",
+    "cname": "钱尼-约翰逊",
     "pos": "SF / PF",
     "height": "6'7'",
     "type": "High-Flying Putback Pro",
@@ -716,7 +716,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 45,
   },{
     "id": "P0036",
-    "cname": "艾蒂安",
+    "cname": "泰森-艾蒂安",
     "pos": "PG / SG",
     "height": "6'0'",
     "type": "3PT Shot Hunter",
@@ -737,7 +737,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0037",
-    "cname": "史密斯",
+    "cname": "玛拉基-史密斯",
     "pos": "PG / SG",
     "height": "6'4'",
     "type": "Ball-Hawking Sharpshooter",
@@ -758,7 +758,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0038",
-    "cname": "利德尔",
+    "cname": "E.J.-利德尔",
     "pos": "PF / SF",
     "height": "6'6'",
     "type": "Shot-Erasing Mid-Range Scorer",
@@ -779,7 +779,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0039",
-    "cname": "斯科特",
+    "cname": "特雷文-斯科特",
     "pos": "PF / SF",
     "height": "6'8'",
     "type": "Crafty 3-Level Scoring Crasher",
@@ -801,7 +801,7 @@ const LEAGUE_PLAYER_DATA = {
   }],
   "BOS": [{
     "id": "P0040",
-    "cname": "塔图姆",
+    "cname": "杰森-塔图姆",
     "pos": "PF / SF",
     "height": "6'8'",
     "type": "2-Way Crafty Slashing Cleaner",
@@ -822,7 +822,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 89,
   },{
     "id": "P0041",
-    "cname": "怀特",
+    "cname": "德里克-怀特",
     "pos": "PG / SG",
     "height": "6'4'",
     "type": "2-Way Middy Playmaker",
@@ -843,7 +843,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0042",
-    "cname": "乔治",
+    "cname": "保罗-乔治",
     "pos": "PF / SF",
     "height": "6'8'",
     "type": "Ball-Hawking PlayShot",
@@ -864,7 +864,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0043",
-    "cname": "普里查德",
+    "cname": "佩顿-普里查德",
     "pos": "PG",
     "height": "6'1'",
     "type": "Crafty Sharpshooter",
@@ -885,7 +885,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0044",
-    "cname": "克塔",
+    "cname": "内米亚斯-克塔",
     "pos": "C",
     "height": "7'0'",
     "type": "Shot-Erasing Putback Pro",
@@ -906,7 +906,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0045",
-    "cname": "罗宾逊",
+    "cname": "米切尔-罗宾逊",
     "pos": "C",
     "height": "7'0'",
     "type": "Lob Threat Board Enforcer",
@@ -927,7 +927,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0046",
-    "cname": "加尔扎",
+    "cname": "卢卡-加尔扎",
     "pos": "C / PF",
     "height": "6'10'",
     "type": "Crafty Stretch Five Crasher",
@@ -948,7 +948,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0047",
-    "cname": "豪瑟",
+    "cname": "萨姆-豪瑟",
     "pos": "SF / PF",
     "height": "6'7'",
     "type": "Crafty Sharpshooter",
@@ -969,7 +969,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0048",
-    "cname": "康利",
+    "cname": "迈克-康利",
     "pos": "PG",
     "height": "6'1'",
     "type": "2-Way Blow-By Ace",
@@ -990,7 +990,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 55,
   },{
     "id": "P0049",
-    "cname": "沃尔什",
+    "cname": "乔丹-沃尔什",
     "pos": "PF / SF",
     "height": "6'6'",
     "type": "2-Way Stretch Four",
@@ -1011,7 +1011,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0050",
-    "cname": "沙伊尔曼",
+    "cname": "贝勒-沙伊尔曼",
     "pos": "SG / SF",
     "height": "6'6'",
     "type": "Wing-Running Sharpshooter",
@@ -1032,7 +1032,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0051",
-    "cname": "冈萨雷斯",
+    "cname": "乌戈-冈萨雷斯",
     "pos": "SF / PG",
     "height": "6'6'",
     "type": "2-Way Sharpshooter",
@@ -1053,7 +1053,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0052",
-    "cname": "班顿",
+    "cname": "达拉诺-班顿",
     "pos": "PG / SG",
     "height": "6'8'",
     "type": "Shot-Erasing Power Finisher",
@@ -1074,7 +1074,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0053",
-    "cname": "哈珀",
+    "cname": "小罗恩-哈珀",
     "pos": "SF / SG",
     "height": "6'5'",
     "type": "Iso Sniper",
@@ -1095,7 +1095,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0054",
-    "cname": "威廉姆斯",
+    "cname": "阿马里-威廉姆斯",
     "pos": "C / PF",
     "height": "6'11'",
     "type": "Slashing Point Center",
@@ -1116,7 +1116,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0055",
-    "cname": "汤杰",
+    "cname": "约翰-汤杰",
     "pos": "SF / SG",
     "height": "6'4'",
     "type": "Crafty 3-Level Scorer",
@@ -1137,7 +1137,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0056",
-    "cname": "舒尔加",
+    "cname": "马克斯-舒尔加",
     "pos": "PG / SG",
     "height": "6'4'",
     "type": "Ball-Hawking Sharpshooter",
@@ -1159,7 +1159,7 @@ const LEAGUE_PLAYER_DATA = {
   }],
   "CHA": [{
     "id": "P0057",
-    "cname": "米勒",
+    "cname": "布兰登-米勒",
     "pos": "SG / SF",
     "height": "6'7'",
     "type": "Inside-Out High-Flying Slasher",
@@ -1180,7 +1180,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 88,
   },{
     "id": "P0058",
-    "cname": "克努佩尔",
+    "cname": "康-克努佩尔",
     "pos": "SF / SG",
     "height": "6'6'",
     "type": "Crafty 3PT-Sniping Dimer",
@@ -1201,7 +1201,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0059",
-    "cname": "里德",
+    "cname": "纳兹-里德",
     "pos": "C / PF",
     "height": "6'9'",
     "type": "Stretch Five Layup Bully",
@@ -1222,7 +1222,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0060",
-    "cname": "怀特",
+    "cname": "科比-怀特",
     "pos": "PG / SG",
     "height": "6'4'",
     "type": "3PT-Sniping Creator",
@@ -1243,7 +1243,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0061",
-    "cname": "阿伦",
+    "cname": "格雷森-阿伦",
     "pos": "SG / SF",
     "height": "6'3'",
     "type": "Iso Sniper",
@@ -1264,7 +1264,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0062",
-    "cname": "迪亚巴特",
+    "cname": "穆萨-迪亚巴特",
     "pos": "C / PF",
     "height": "6'10'",
     "type": "Rim-Rocking Putback Pro",
@@ -1285,7 +1285,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0063",
-    "cname": "卡尔克布伦纳",
+    "cname": "瑞安-卡尔克布伦纳",
     "pos": "C",
     "height": "7'1'",
     "type": "Shot-Erasing Putback Pro",
@@ -1306,7 +1306,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0064",
-    "cname": "奥尼尔",
+    "cname": "罗伊斯-奥尼尔",
     "pos": "PF / SF",
     "height": "6'6'",
     "type": "2-Way Stretch Four",
@@ -1327,7 +1327,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0065",
-    "cname": "威廉姆斯",
+    "cname": "格兰特-威廉姆斯",
     "pos": "PF / C",
     "height": "6'7'",
     "type": "Crafty Stretch Four",
@@ -1348,7 +1348,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0066",
-    "cname": "萨隆",
+    "cname": "蒂贾内-萨隆",
     "pos": "PF / SF",
     "height": "6'10'",
     "type": "Stretch Four Cleaner",
@@ -1369,7 +1369,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0067",
-    "cname": "史密斯",
+    "cname": "多里安-芬尼-史密斯",
     "pos": "PF / SF",
     "height": "6'7'",
     "type": "2-Way Dual Finisher",
@@ -1390,7 +1390,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0068",
-    "cname": "詹姆斯",
+    "cname": "锡安-詹姆斯",
     "pos": "SG / SF",
     "height": "6'5'",
     "type": "Catch & Shoot 3PT Sniper",
@@ -1411,7 +1411,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0070",
-    "cname": "康诺顿",
+    "cname": "帕特-康诺顿",
     "pos": "SG / SF",
     "height": "6'5'",
     "type": "Bouncy High Flyer",
@@ -1432,7 +1432,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 55,
   },{
     "id": "P0071",
-    "cname": "蒂尔曼",
+    "cname": "泽维尔-蒂尔曼",
     "pos": "C / PF",
     "height": "6'8'",
     "type": "2-Way Crafty Paint Finisher",
@@ -1453,7 +1453,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0072",
-    "cname": "霍尔",
+    "cname": "PJ-霍尔",
     "pos": "C / PF",
     "height": "6'8'",
     "type": "Stretch Five Crasher",
@@ -1474,7 +1474,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0073",
-    "cname": "麦克尼利",
+    "cname": "利亚姆-麦克尼利",
     "pos": "SF / SG",
     "height": "6'7'",
     "type": "3PT-Creating Point Forward",
@@ -1495,7 +1495,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0074",
-    "cname": "里夫斯",
+    "cname": "安东尼奥-里夫斯",
     "pos": "SG / SF",
     "height": "6'5'",
     "type": "Crafty 3PT Sniper",
@@ -1516,7 +1516,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0096",
-    "cname": "施罗德",
+    "cname": "丹尼斯-施罗德",
     "pos": "PG / SG",
     "height": "6'1'",
     "type": "Speedy Blow-By Ace",
@@ -1538,7 +1538,7 @@ const LEAGUE_PLAYER_DATA = {
   }],
   "CHI": [{
     "id": "P0075",
-    "cname": "鲍威尔",
+    "cname": "诺曼-鲍威尔",
     "pos": "SG / SF",
     "height": "6'4'",
     "type": "Crafty 3PT Sniper",
@@ -1559,7 +1559,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0076",
-    "cname": "吉迪",
+    "cname": "乔什-吉迪",
     "pos": "PG / SG",
     "height": "6'8'",
     "type": "Crafty Playmaking Cleaner",
@@ -1580,7 +1580,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0077",
-    "cname": "布泽利斯",
+    "cname": "马塔斯-布泽利斯",
     "pos": "PF / SF",
     "height": "6'8'",
     "type": "Shot-Erasing 3-Level Creator",
@@ -1601,7 +1601,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0078",
-    "cname": "克拉克斯顿",
+    "cname": "尼古拉斯-克拉克斯顿",
     "pos": "C",
     "height": "6'11'",
     "type": "Lockdown Defender",
@@ -1622,7 +1622,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0079",
-    "cname": "琼斯",
+    "cname": "特雷-琼斯",
     "pos": "PG",
     "height": "6'1'",
     "type": "Crafty Mid-Range Menace",
@@ -1643,7 +1643,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0080",
-    "cname": "史密斯",
+    "cname": "杰伦-史密斯",
     "pos": "C / PF",
     "height": "6'8'",
     "type": "Stretch Lob Threat Cleaner",
@@ -1664,7 +1664,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0081",
-    "cname": "科林斯",
+    "cname": "扎克-科林斯",
     "pos": "C",
     "height": "6'9'",
     "type": "Post-Scoring Stretch",
@@ -1685,7 +1685,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0082",
-    "cname": "奥科罗",
+    "cname": "艾萨克-奥科罗",
     "pos": "SF / SG",
     "height": "6'4'",
     "type": "2-Way 3PT Sniper",
@@ -1706,7 +1706,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0083",
-    "cname": "米勒",
+    "cname": "伦纳德-米勒",
     "pos": "PF / SF",
     "height": "6'10'",
     "type": "Versatile Paint Finisher",
@@ -1727,7 +1727,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0084",
-    "cname": "威廉姆斯",
+    "cname": "帕特里克-威廉姆斯",
     "pos": "PF / SF",
     "height": "6'6'",
     "type": "2-Way Stretch Four",
@@ -1748,7 +1748,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0085",
-    "cname": "理查兹",
+    "cname": "尼克-理查兹",
     "pos": "C",
     "height": "6'11'",
     "type": "Rim-Reaping Mid-Range Scorer",
@@ -1769,7 +1769,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0086",
-    "cname": "迪林厄姆",
+    "cname": "罗布-迪林厄姆",
     "pos": "PG / SG",
     "height": "6'2'",
     "type": "Speedy Blow-By Ace",
@@ -1790,7 +1790,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0087",
-    "cname": "河村",
+    "cname": "河村勇辉",
     "pos": "PG",
     "height": "5'8'",
     "type": "Table Setter",
@@ -1811,7 +1811,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0088",
-    "cname": "埃森格",
+    "cname": "诺阿-埃森格",
     "pos": "PF / SF",
     "height": "6'8'",
     "type": "Rim-Running Rim Rocker",
@@ -1832,7 +1832,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0089",
-    "cname": "麦克朗",
+    "cname": "麦克-麦克朗",
     "pos": "SG / PG",
     "height": "6'2'",
     "type": "Slashing Combo Guard",
@@ -1853,7 +1853,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0090",
-    "cname": "奥尔布里奇",
+    "cname": "拉克伦-奥尔布里奇",
     "pos": "C / PF",
     "height": "6'8'",
     "type": "Glass Visionary",
@@ -1875,7 +1875,7 @@ const LEAGUE_PLAYER_DATA = {
   }],
   "CLE": [{
     "id": "P0091",
-    "cname": "米切尔",
+    "cname": "多诺万-米切尔",
     "pos": "SG / PG",
     "height": "6'2'",
     "type": "Mid-Range Slasher",
@@ -1896,7 +1896,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0092",
-    "cname": "莫布利",
+    "cname": "埃文-莫布利",
     "pos": "PF / C",
     "height": "6'11'",
     "type": "Backline Post Scorer",
@@ -1917,7 +1917,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0093",
-    "cname": "阿伦",
+    "cname": "贾勒特-阿伦",
     "pos": "C",
     "height": "6'9'",
     "type": "2-Way Crafty Paint Prodigy",
@@ -1938,7 +1938,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0095",
-    "cname": "梅里尔",
+    "cname": "萨姆-梅里尔",
     "pos": "SG / SF",
     "height": "6'4'",
     "type": "Dime-Dropping 3PT Gunner",
@@ -1959,7 +1959,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0097",
-    "cname": "泰森",
+    "cname": "杰伦-泰森",
     "pos": "SF / PF",
     "height": "6'6'",
     "type": "3PT-Sniping Creator",
@@ -1980,7 +1980,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0098",
-    "cname": "布莱恩特",
+    "cname": "托马斯-布莱恩特",
     "pos": "C",
     "height": "6'9'",
     "type": "Crafty Stretch Five",
@@ -2001,7 +2001,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0099",
-    "cname": "波特",
+    "cname": "小克雷格-波特",
     "pos": "PG",
     "height": "6'1'",
     "type": "Chaos Trigger",
@@ -2022,7 +2022,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0100",
-    "cname": "汤姆林",
+    "cname": "纳伊夸恩-汤姆林",
     "pos": "PF / C",
     "height": "6'8'",
     "type": "Putback Dual-Finishing Eraser",
@@ -2043,7 +2043,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0101",
-    "cname": "普罗克特",
+    "cname": "泰雷斯-普罗克特",
     "pos": "SG / PG",
     "height": "6'4'",
     "type": "Point-Fading Wizard",
@@ -2064,7 +2064,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 45,
   },{
     "id": "P0102",
-    "cname": "萨尔",
+    "cname": "奥利维耶-萨尔",
     "pos": "C",
     "height": "6'10'",
     "type": "Shot-Erasing Mid-Paint Scorer",
@@ -2085,7 +2085,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0103",
-    "cname": "埃纳鲁纳",
+    "cname": "特里斯坦-埃纳鲁纳",
     "pos": "SF / SG",
     "height": "6'6'",
     "type": "Blow-By High Flyer",
@@ -2106,7 +2106,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 30,
   },{
     "id": "P0104",
-    "cname": "米尼克斯",
+    "cname": "赖利-米尼克斯",
     "pos": "PF / SF",
     "height": "6'7'",
     "type": "Ball-Hawking Stretch Four",
@@ -2127,7 +2127,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0123",
-    "cname": "沃特森",
+    "cname": "佩顿-沃特森",
     "pos": "SF / PF",
     "height": "6'7'",
     "type": "Shot-Erasing Sharpshooter",
@@ -2148,7 +2148,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0523",
-    "cname": "惠特莫尔",
+    "cname": "卡姆-惠特莫尔",
     "pos": "SF / PF",
     "height": "6'6'",
     "type": "Athletic Blow-By Ace",
@@ -2170,7 +2170,7 @@ const LEAGUE_PLAYER_DATA = {
   }],
   "DAL": [{
     "id": "P0105",
-    "cname": "欧文",
+    "cname": "凯里-欧文",
     "pos": "PG / SG",
     "height": "6'2'",
     "type": "Crafty Iso Savant",
@@ -2191,7 +2191,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0106",
-    "cname": "弗拉格",
+    "cname": "库珀-弗拉格",
     "pos": "SF / PG",
     "height": "6'9'",
     "type": "2-Way Mid-Paint Scorer",
@@ -2212,7 +2212,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 84,
   },{
     "id": "P0107",
-    "cname": "马歇尔",
+    "cname": "纳吉-马歇尔",
     "pos": "SF / PG",
     "height": "6'6'",
     "type": "Diming Crafty Layup Artist",
@@ -2233,7 +2233,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0108",
-    "cname": "阿尔达马",
+    "cname": "桑蒂-阿尔达马",
     "pos": "PF / C",
     "height": "7'0'",
     "type": "Crafty Stretch Four",
@@ -2254,7 +2254,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0109",
-    "cname": "华盛顿",
+    "cname": "PJ-华盛顿",
     "pos": "PF / SF",
     "height": "6'7'",
     "type": "2-Way Rim Rocker",
@@ -2275,7 +2275,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0110",
-    "cname": "加福德",
+    "cname": "丹尼尔-加福德",
     "pos": "C",
     "height": "6'10'",
     "type": "2-Way Rim-Running Lob Threat",
@@ -2296,7 +2296,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0111",
-    "cname": "莱夫利",
+    "cname": "德雷克-莱夫利二世",
     "pos": "C",
     "height": "7'1'",
     "type": "2-Way Versatile Paint Finisher",
@@ -2317,7 +2317,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0113",
-    "cname": "克里斯蒂",
+    "cname": "马克斯-克里斯蒂",
     "pos": "SG / SF",
     "height": "6'5'",
     "type": "3 & D Two Guard",
@@ -2338,7 +2338,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0114",
-    "cname": "马丁",
+    "cname": "凯莱布-马丁",
     "pos": "PF / SF",
     "height": "6'5'",
     "type": "2-Way Crafty Stretch Four",
@@ -2359,7 +2359,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0116",
-    "cname": "鲍威尔",
+    "cname": "德怀特-鲍威尔",
     "pos": "C",
     "height": "6'10'",
     "type": "Crafty Post-Scoring Stretch",
@@ -2380,7 +2380,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 30,
   },{
     "id": "P0117",
-    "cname": "西塞",
+    "cname": "穆萨-西塞",
     "pos": "C",
     "height": "6'11'",
     "type": "Putback Rim-Rocking Eraser",
@@ -2401,7 +2401,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0118",
-    "cname": "普拉基达斯",
+    "cname": "约翰-普拉基达斯",
     "pos": "SG / SF",
     "height": "6'6'",
     "type": "Physical Sharpshooter",
@@ -2422,7 +2422,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0119",
-    "cname": "史密斯",
+    "cname": "泰勒-史密斯",
     "pos": "C / PF",
     "height": "6'9'",
     "type": "Rim-Rocking Stretch Five",
@@ -2443,7 +2443,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0007",
-    "cname": "里萨谢",
+    "cname": "扎卡里-里萨谢",
     "pos": "SF / SG",
     "height": "6'8'",
     "type": "Crafty 3 & D Creator",
@@ -2464,7 +2464,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 65,
   },{
     "id": "P0149",
-    "cname": "萨瑟",
+    "cname": "马库斯-萨瑟",
     "pos": "PG / SG",
     "height": "6'1'",
     "type": "3PT Shot Hunter",
@@ -2486,7 +2486,7 @@ const LEAGUE_PLAYER_DATA = {
   }],
   "DEN": [{
     "id": "P0120",
-    "cname": "约基奇",
+    "cname": "尼古拉-约基奇",
     "pos": "C",
     "height": "6'11'",
     "type": "Triple-Double Threat",
@@ -2507,7 +2507,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0121",
-    "cname": "默里",
+    "cname": "贾马尔-默里",
     "pos": "PG / SG",
     "height": "6'4'",
     "type": "Iso Savant",
@@ -2528,7 +2528,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0122",
-    "cname": "戈登",
+    "cname": "阿龙-戈登",
     "pos": "PF / C",
     "height": "6'8'",
     "type": "2-Way Rim-Wrecking Stretch",
@@ -2549,7 +2549,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0124",
-    "cname": "布劳恩",
+    "cname": "克里斯蒂安-布劳恩",
     "pos": "SG / SF",
     "height": "6'6'",
     "type": "Versatile Paint Finisher",
@@ -2570,7 +2570,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0125",
-    "cname": "约翰逊",
+    "cname": "卡梅伦-约翰逊",
     "pos": "SF / SG",
     "height": "6'8'",
     "type": "3PT Layup Artist",
@@ -2591,7 +2591,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0126",
-    "cname": "哈达威",
+    "cname": "小蒂姆-哈达威",
     "pos": "SG / SF",
     "height": "6'5'",
     "type": "Crafty 3-Level Scorer",
@@ -2612,7 +2612,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0127",
-    "cname": "巴格利",
+    "cname": "马文-巴格利三世",
     "pos": "C / PF",
     "height": "6'11'",
     "type": "Stretch Five Crasher",
@@ -2633,7 +2633,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0128",
-    "cname": "斯特劳瑟",
+    "cname": "朱利安-斯特劳瑟",
     "pos": "SF / SG",
     "height": "6'6'",
     "type": "3PT-Sniping Creator",
@@ -2654,7 +2654,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0129",
-    "cname": "布朗",
+    "cname": "布鲁斯-布朗",
     "pos": "SF / PG",
     "height": "6'4'",
     "type": "3PT-Creating Point Forward",
@@ -2675,7 +2675,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0130",
-    "cname": "纳吉",
+    "cname": "齐克-纳吉",
     "pos": "C / PF",
     "height": "6'9'",
     "type": "Rim Runner",
@@ -2696,7 +2696,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 65,
   },{
     "id": "P0131",
-    "cname": "琼斯",
+    "cname": "泰厄斯-琼斯",
     "pos": "PG",
     "height": "6'1'",
     "type": "Crafty Table Setter",
@@ -2717,7 +2717,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0133",
-    "cname": "霍姆斯",
+    "cname": "达隆-霍姆斯二世",
     "pos": "C / PF",
     "height": "6'10'",
     "type": "Athletic Stretch Five",
@@ -2738,7 +2738,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 65,
   },{
     "id": "P0134",
-    "cname": "辛普森",
+    "cname": "KJ-辛普森",
     "pos": "PG",
     "height": "6'2'",
     "type": "Tempo Setter",
@@ -2759,7 +2759,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0135",
-    "cname": "琼斯",
+    "cname": "斯潘塞-琼斯",
     "pos": "PF / SF",
     "height": "6'7'",
     "type": "Crafty Stretch Four",
@@ -2780,7 +2780,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0136",
-    "cname": "罗迪",
+    "cname": "戴维-罗迪",
     "pos": "PF / SF",
     "height": "6'4'",
     "type": "Crafty 3-Level Scoring Cleaner",
@@ -2801,7 +2801,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0137",
-    "cname": "琼斯",
+    "cname": "柯蒂斯-琼斯",
     "pos": "SG / PG",
     "height": "6'3'",
     "type": "Iso Sniper",
@@ -2822,7 +2822,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0520",
-    "cname": "里斯",
+    "cname": "朱利安-里斯",
     "pos": "C / PF",
     "height": "6'9'",
     "type": "Board-Hunting Crafty Finisher",
@@ -2844,7 +2844,7 @@ const LEAGUE_PLAYER_DATA = {
   }],
   "DET": [{
     "id": "P0138",
-    "cname": "坎宁安",
+    "cname": "凯德-坎宁安",
     "pos": "PG / SG",
     "height": "6'6'",
     "type": "2-Way Crafty 3-Level Playmaker",
@@ -2865,7 +2865,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0139",
-    "cname": "汤普森",
+    "cname": "奥萨尔-汤普森",
     "pos": "SF / PF",
     "height": "6'7'",
     "type": "2-Way Blow-By High Flyer",
@@ -2886,7 +2886,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0140",
-    "cname": "杜伦",
+    "cname": "杰伦-杜伦",
     "pos": "C",
     "height": "6'10'",
     "type": "Board-Enforcing Power Finisher",
@@ -2907,7 +2907,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 65,
   },{
     "id": "P0141",
-    "cname": "科林斯",
+    "cname": "约翰-科林斯",
     "pos": "PF / C",
     "height": "6'9'",
     "type": "Stretch Rim Wrecker",
@@ -2928,7 +2928,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 86,
   },{
     "id": "P0142",
-    "cname": "詹金斯",
+    "cname": "达尼斯-詹金斯",
     "pos": "PG / SG",
     "height": "6'4'",
     "type": "Iso Sniper",
@@ -2949,7 +2949,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0143",
-    "cname": "罗宾逊",
+    "cname": "邓肯-罗宾逊",
     "pos": "SG / SF",
     "height": "6'7'",
     "type": "Crafty Sharpshooter",
@@ -2970,7 +2970,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0144",
-    "cname": "里德",
+    "cname": "保罗-里德",
     "pos": "C / PF",
     "height": "6'9'",
     "type": "Disruptive Crafty Putback Pro",
@@ -2991,7 +2991,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0145",
-    "cname": "乔",
+    "cname": "以赛亚-乔",
     "pos": "SG / PG",
     "height": "6'4'",
     "type": "Crafty 3-Level Scorer",
@@ -3012,7 +3012,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0146",
-    "cname": "格林",
+    "cname": "贾冯特-格林",
     "pos": "SF / SG",
     "height": "6'5'",
     "type": "Ball-Hawking High Flyer",
@@ -3033,7 +3033,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0147",
-    "cname": "霍兰德",
+    "cname": "罗纳德-霍兰德二世",
     "pos": "PF / SF",
     "height": "6'8'",
     "type": "2-Way Blow-By Laymaker",
@@ -3054,7 +3054,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0148",
-    "cname": "赫尔特",
+    "cname": "凯文-赫尔特",
     "pos": "SG / SF",
     "height": "6'6'",
     "type": "Crafty Laymaker",
@@ -3075,7 +3075,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0150",
-    "cname": "普林斯",
+    "cname": "托里恩-普林斯",
     "pos": "SF / SG",
     "height": "6'6'",
     "type": "3PT-Sniping Lob Threat",
@@ -3096,7 +3096,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0151",
-    "cname": "哈里斯",
+    "cname": "加里-哈里斯",
     "pos": "SG / SF",
     "height": "6'4'",
     "type": "3 & D Dime Dropper",
@@ -3117,7 +3117,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0152",
-    "cname": "琼斯",
+    "cname": "艾萨克-琼斯",
     "pos": "PF / C",
     "height": "6'8'",
     "type": "Shot-Erasing Putback Pro",
@@ -3138,7 +3138,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0153",
-    "cname": "摩尔",
+    "cname": "小温德尔-摩尔",
     "pos": "SF / SG",
     "height": "6'5'",
     "type": "High-Flying 3PT Sniper",
@@ -3159,7 +3159,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 30,
   },{
     "id": "P0154",
-    "cname": "拉尼尔",
+    "cname": "查兹-拉尼尔",
     "pos": "SG / SF",
     "height": "6'3'",
     "type": "Speedy Blow-By Ace",
@@ -3180,7 +3180,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0155",
-    "cname": "史密斯",
+    "cname": "托卢-史密斯",
     "pos": "C / PF",
     "height": "6'11'",
     "type": "Board-Hunting Post Scorer",
@@ -3202,7 +3202,7 @@ const LEAGUE_PLAYER_DATA = {
   }],
   "GSW": [{
     "id": "P0156",
-    "cname": "库里",
+    "cname": "斯蒂芬-库里",
     "pos": "PG / SG",
     "height": "6'2'",
     "type": "Crafty Offensive Engine",
@@ -3223,7 +3223,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0157",
-    "cname": "巴特勒",
+    "cname": "吉米-巴特勒",
     "pos": "SF / PF",
     "height": "6'6'",
     "type": "2-Way Bullmaker",
@@ -3244,7 +3244,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0158",
-    "cname": "波尔津吉斯",
+    "cname": "克里斯塔普斯-波尔津吉斯",
     "pos": "C / PF",
     "height": "7'2'",
     "type": "Stretch Lob Threat",
@@ -3265,7 +3265,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0159",
-    "cname": "波杰姆斯基",
+    "cname": "布兰丁-波杰姆斯基",
     "pos": "PG / SG",
     "height": "6'4'",
     "type": "Crafty 3PT Sniper",
@@ -3286,7 +3286,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0160",
-    "cname": "桑托斯",
+    "cname": "吉-桑托斯",
     "pos": "SF / PF",
     "height": "6'7'",
     "type": "Crafty 3PT Sniper",
@@ -3307,7 +3307,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0161",
-    "cname": "格林",
+    "cname": "德雷蒙德-格林",
     "pos": "PF / C",
     "height": "6'6'",
     "type": "Defensive Playmaking Bully",
@@ -3328,7 +3328,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 35,
   },{
     "id": "P0162",
-    "cname": "梅尔顿",
+    "cname": "德安东尼-梅尔顿",
     "pos": "SG / PG",
     "height": "6'2'",
     "type": "2-Way Tempo Pusher",
@@ -3349,7 +3349,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0163",
-    "cname": "霍福德",
+    "cname": "艾尔-霍福德",
     "pos": "C / PF",
     "height": "6'8'",
     "type": "Diming Pick & Popper",
@@ -3370,7 +3370,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0164",
-    "cname": "佩顿",
+    "cname": "加里-佩顿二世",
     "pos": "SF / PF",
     "height": "6'2'",
     "type": "2-Way Blow-By Laymaker",
@@ -3391,7 +3391,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0165",
-    "cname": "穆迪",
+    "cname": "摩西-穆迪",
     "pos": "SF / SG",
     "height": "6'5'",
     "type": "Crafty 3PT-Sniping Creator",
@@ -3412,7 +3412,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0166",
-    "cname": "理查德",
+    "cname": "威尔-理查德",
     "pos": "SG / SF",
     "height": "6'3'",
     "type": "Ball-Hawking Sharpshooter",
@@ -3433,7 +3433,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0167",
-    "cname": "库里",
+    "cname": "塞思-库里",
     "pos": "SG / PG",
     "height": "6'1'",
     "type": "Crafty 3-Level Scorer",
@@ -3454,7 +3454,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0168",
-    "cname": "威廉姆斯",
+    "cname": "内特-威廉姆斯",
     "pos": "SF / SG",
     "height": "6'5'",
     "type": "Sharpshooting Crasher",
@@ -3475,7 +3475,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0169",
-    "cname": "克赖尔",
+    "cname": "LJ-克赖尔",
     "pos": "PG",
     "height": "6'1'",
     "type": "Iso Sniper",
@@ -3496,7 +3496,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0170",
-    "cname": "巴塞",
+    "cname": "查尔斯-巴塞",
     "pos": "C",
     "height": "6'10'",
     "type": "Glass Guardian",
@@ -3517,7 +3517,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 35,
   },{
     "id": "P0171",
-    "cname": "莱昂斯",
+    "cname": "马莱维-莱昂斯",
     "pos": "PF / C",
     "height": "6'9'",
     "type": "Disruptive Stretch Crasher",
@@ -3539,7 +3539,7 @@ const LEAGUE_PLAYER_DATA = {
   }],
   "HOU": [{
     "id": "P0172",
-    "cname": "杜兰特",
+    "cname": "凯文-杜兰特",
     "pos": "SF / SG",
     "height": "6'11'",
     "type": "Crafty Walking Bucket",
@@ -3560,7 +3560,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0173",
-    "cname": "申京",
+    "cname": "阿尔佩伦-申京",
     "pos": "C / PF",
     "height": "6'11'",
     "type": "Dime-Dropping Post Bully",
@@ -3581,7 +3581,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0174",
-    "cname": "汤普森",
+    "cname": "阿门-汤普森",
     "pos": "SG / PG",
     "height": "6'7'",
     "type": "2-Way Blow-By High Flyer",
@@ -3602,7 +3602,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0175",
-    "cname": "史密斯",
+    "cname": "小贾巴里-史密斯",
     "pos": "PF / SF",
     "height": "6'10'",
     "type": "Crafty Rim-Rocking Stretch",
@@ -3623,7 +3623,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0176",
-    "cname": "谢泼德",
+    "cname": "里德-谢泼德",
     "pos": "PG / SG",
     "height": "6'2'",
     "type": "Ball-Hawking 3PT Shot Hunter",
@@ -3644,7 +3644,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0177",
-    "cname": "范弗利特",
+    "cname": "弗雷德-范弗利特",
     "pos": "PG",
     "height": "6'0'",
     "type": "2-Way Blow-By Ace",
@@ -3665,7 +3665,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0178",
-    "cname": "斯马特",
+    "cname": "马库斯-斯马特",
     "pos": "SF / SG",
     "height": "6'3'",
     "type": "2-Way Mid-Range Bully",
@@ -3686,7 +3686,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0179",
-    "cname": "伊森",
+    "cname": "塔里-伊森",
     "pos": "SF / SG",
     "height": "6'8'",
     "type": "Physical Perimeter Lock",
@@ -3707,7 +3707,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0180",
-    "cname": "卡佩拉",
+    "cname": "克林特-卡佩拉",
     "pos": "C",
     "height": "6'10'",
     "type": "Rim-Protecting Crasher",
@@ -3728,7 +3728,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0181",
-    "cname": "亚当斯",
+    "cname": "史蒂文-亚当斯",
     "pos": "C",
     "height": "6'11'",
     "type": "Paint Crasher",
@@ -3749,7 +3749,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0182",
-    "cname": "霍勒迪",
+    "cname": "阿龙-霍勒迪",
     "pos": "SG / PG",
     "height": "6'0'",
     "type": "Shot-Creating Combo Guard",
@@ -3770,7 +3770,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0183",
-    "cname": "波格丹诺维奇",
+    "cname": "波格丹-波格丹诺维奇",
     "pos": "SG / SF",
     "height": "6'5'",
     "type": "3PT Shot Hunter",
@@ -3791,7 +3791,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0184",
-    "cname": "泰特",
+    "cname": "杰肖恩-泰特",
     "pos": "SF / PF",
     "height": "6'4'",
     "type": "Crafty Laymaker",
@@ -3812,7 +3812,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 30,
   },{
     "id": "P0185",
-    "cname": "格林",
+    "cname": "杰夫-格林",
     "pos": "PF / C",
     "height": "6'8'",
     "type": "Skilled Stretch Four",
@@ -3833,7 +3833,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0186",
-    "cname": "戴维森",
+    "cname": "JD-戴维森",
     "pos": "PG / SG",
     "height": "6'1'",
     "type": "Blow-By High Flyer",
@@ -3854,7 +3854,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0187",
-    "cname": "牛顿",
+    "cname": "特里斯坦-牛顿",
     "pos": "SG / PG",
     "height": "6'5'",
     "type": "Combo Guard",
@@ -3875,7 +3875,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 45,
   },{
     "id": "P0188",
-    "cname": "克劳福德",
+    "cname": "以赛亚-克劳福德",
     "pos": "SF / SG",
     "height": "6'6'",
     "type": "Crafty 3-Level Scorer",
@@ -3896,7 +3896,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0224",
-    "cname": "佩杜拉",
+    "cname": "肖恩-佩杜拉",
     "pos": "PG",
     "height": "6'1'",
     "type": "Playmaking Shot Creator",
@@ -3918,7 +3918,7 @@ const LEAGUE_PLAYER_DATA = {
   }],
   "IND": [{
     "id": "P0189",
-    "cname": "哈利伯顿",
+    "cname": "泰雷塞-哈利伯顿",
     "pos": "PG / SG",
     "height": "6'5'",
     "type": "Crafty Offensive Engine",
@@ -3939,7 +3939,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 98,
   },{
     "id": "P0190",
-    "cname": "西亚卡姆",
+    "cname": "帕斯卡尔-西亚卡姆",
     "pos": "PF / C",
     "height": "6'8'",
     "type": "2-Way Inside-Out Creator",
@@ -3960,7 +3960,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0191",
-    "cname": "祖巴茨",
+    "cname": "伊维察-祖巴茨",
     "pos": "C",
     "height": "7'0'",
     "type": "2-Way Post Bully Cleaner",
@@ -3981,7 +3981,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0192",
-    "cname": "内姆哈德",
+    "cname": "安德鲁-内姆哈德",
     "pos": "PG / SG",
     "height": "6'4'",
     "type": "2-Way Finisher",
@@ -4002,7 +4002,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0193",
-    "cname": "麦康奈尔",
+    "cname": "TJ-麦康奈尔",
     "pos": "PG",
     "height": "6'1'",
     "type": "2-Way Crafty Mid-Paint Maestro",
@@ -4023,7 +4023,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0194",
-    "cname": "沃克",
+    "cname": "贾拉斯-沃克",
     "pos": "SF / PF",
     "height": "6'7'",
     "type": "3PT-Sniping Posterizer",
@@ -4044,7 +4044,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0195",
-    "cname": "托平",
+    "cname": "奥比-托平",
     "pos": "PF / C",
     "height": "6'9'",
     "type": "Paint-Finishing Cleaner",
@@ -4065,7 +4065,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 86,
   },{
     "id": "P0196",
-    "cname": "内史密斯",
+    "cname": "阿龙-内史密斯",
     "pos": "SF / SG",
     "height": "6'6'",
     "type": "Crafty 3 & D Wing",
@@ -4086,7 +4086,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0197",
-    "cname": "乌布雷",
+    "cname": "小凯利-乌布雷",
     "pos": "SF / PF",
     "height": "6'8'",
     "type": "Mid-Range High Flyer",
@@ -4107,7 +4107,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0198",
-    "cname": "赫夫",
+    "cname": "杰伊-赫夫",
     "pos": "C",
     "height": "7'1'",
     "type": "Shot-Erasing Mid-Range Scorer",
@@ -4128,7 +4128,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0199",
-    "cname": "杰克逊",
+    "cname": "昆顿-杰克逊",
     "pos": "SG / PG",
     "height": "6'4'",
     "type": "Dime-Dropping 3PT Gunner",
@@ -4149,7 +4149,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0200",
-    "cname": "布朗",
+    "cname": "科比-布朗",
     "pos": "PF / SF",
     "height": "6'7'",
     "type": "Crafty Stretch Four Crasher",
@@ -4170,7 +4170,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0201",
-    "cname": "谢泼德",
+    "cname": "本-谢泼德",
     "pos": "SG / SF",
     "height": "6'6'",
     "type": "2-Way Sharpshooter",
@@ -4191,7 +4191,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0202",
-    "cname": "弗菲",
+    "cname": "约翰尼-弗菲",
     "pos": "SF / SG",
     "height": "6'8'",
     "type": "Crafty 3PT-Sniping Cleaner",
@@ -4212,7 +4212,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0203",
-    "cname": "南斯",
+    "cname": "小拉里-南斯",
     "pos": "C / PF",
     "height": "6'6'",
     "type": "Ball-Hawking Rim Rocker",
@@ -4233,7 +4233,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0204",
-    "cname": "斯劳森",
+    "cname": "杰伦-斯劳森",
     "pos": "SF / PF",
     "height": "6'7'",
     "type": "Disruptive High Flyer",
@@ -4254,7 +4254,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0205",
-    "cname": "汤普森",
+    "cname": "伊桑-汤普森",
     "pos": "SG / SF",
     "height": "6'5'",
     "type": "Crafty Sharpshooter",
@@ -4275,7 +4275,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0206",
-    "cname": "彼得",
+    "cname": "塔隆-彼得",
     "pos": "PG / SG",
     "height": "6'3'",
     "type": "3-Level Scorer",
@@ -4297,7 +4297,7 @@ const LEAGUE_PLAYER_DATA = {
   }],
   "LAC": [{
     "id": "P0208",
-    "cname": "加兰",
+    "cname": "达里厄斯-加兰",
     "pos": "PG / SG",
     "height": "6'1'",
     "type": "Iso Sniper",
@@ -4318,7 +4318,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0209",
-    "cname": "马图林",
+    "cname": "本内迪克特-马图林",
     "pos": "SG / SF",
     "height": "6'5'",
     "type": "Slashing Combo Guard",
@@ -4339,7 +4339,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0210",
-    "cname": "八村",
+    "cname": "八村垒",
     "pos": "PF / SF",
     "height": "6'8'",
     "type": "Stretch Lob Threat",
@@ -4360,7 +4360,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 65,
   },{
     "id": "P0211",
-    "cname": "琼斯",
+    "cname": "小德里克-琼斯",
     "pos": "PF / SF",
     "height": "6'6'",
     "type": "2-Way Mid-Paint Scorer",
@@ -4381,7 +4381,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0212",
-    "cname": "洛佩斯",
+    "cname": "布鲁克-洛佩斯",
     "pos": "C",
     "height": "7'1'",
     "type": "Shot-Erasing Pick & Popper",
@@ -4402,7 +4402,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0213",
-    "cname": "邓恩",
+    "cname": "克里斯-邓恩",
     "pos": "PG / SG",
     "height": "6'3'",
     "type": "Clamp Thief",
@@ -4423,7 +4423,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0214",
-    "cname": "米勒",
+    "cname": "乔丹-米勒",
     "pos": "SF / SG",
     "height": "6'5'",
     "type": "Mid-Paint Scorer",
@@ -4444,7 +4444,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0215",
-    "cname": "杰克逊",
+    "cname": "以赛亚-杰克逊",
     "pos": "C / PF",
     "height": "6'9'",
     "type": "Putback Pro",
@@ -4465,7 +4465,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0216",
-    "cname": "比尔",
+    "cname": "布拉德利-比尔",
     "pos": "SG / SF",
     "height": "6'4'",
     "type": "Laymaking Two Guard",
@@ -4486,7 +4486,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0218",
-    "cname": "桑德斯",
+    "cname": "科比-桑德斯",
     "pos": "PG / SF",
     "height": "6'8'",
     "type": "3PT-Sniping Rim Wrecker",
@@ -4507,7 +4507,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0219",
-    "cname": "尼德豪泽",
+    "cname": "亚尼克-科南-尼德豪泽",
     "pos": "C / PF",
     "height": "6'11'",
     "type": "Shot-Erasing Masher",
@@ -4528,7 +4528,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 65,
   },{
     "id": "P0220",
-    "cname": "巴图姆",
+    "cname": "尼古拉-巴图姆",
     "pos": "PF / SF",
     "height": "6'8'",
     "type": "2-Way Stretch Dime-Dropper",
@@ -4549,7 +4549,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0221",
-    "cname": "华盛顿",
+    "cname": "小泰泰-华盛顿",
     "pos": "PG / SG",
     "height": "6'3'",
     "type": "Blow-By High Flyer",
@@ -4570,7 +4570,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0222",
-    "cname": "克里斯蒂",
+    "cname": "卡姆-克里斯蒂",
     "pos": "SG / SF",
     "height": "6'6'",
     "type": "Mid-Range Menace",
@@ -4591,7 +4591,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0223",
-    "cname": "奥米尔",
+    "cname": "诺查德-奥米尔",
     "pos": "PF / C",
     "height": "6'7'",
     "type": "Board-Hunting Rim Rocker",
@@ -4612,7 +4612,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0094",
-    "cname": "斯特鲁斯",
+    "cname": "马克斯-斯特鲁斯",
     "pos": "SF / SG",
     "height": "6'5'",
     "type": "Sharpshooting Cleaner",
@@ -4633,7 +4633,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0132",
-    "cname": "皮克特",
+    "cname": "杰伦-皮克特",
     "pos": "PG / SG",
     "height": "6'2'",
     "type": "Physical 3PT Sniper",
@@ -4654,7 +4654,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0396",
-    "cname": "布鲁姆",
+    "cname": "约翰尼-布鲁姆",
     "pos": "PF / C",
     "height": "6'10'",
     "type": "Shot-Erasing Middy Crasher",
@@ -4675,7 +4675,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0471",
-    "cname": "伦纳德",
+    "cname": "科怀-伦纳德",
     "pos": "SF / SG",
     "height": "6'7'",
     "type": "2-Way Mid-Range Menace",
@@ -4697,7 +4697,7 @@ const LEAGUE_PLAYER_DATA = {
   }],
   "LAL": [{
     "id": "P0225",
-    "cname": "东契奇",
+    "cname": "卢卡-东契奇",
     "pos": "PG / SG",
     "height": "6'8'",
     "type": "Crafty Offensive Engine",
@@ -4718,7 +4718,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 95,
   },{
     "id": "P0226",
-    "cname": "里夫斯",
+    "cname": "奥斯汀-里夫斯",
     "pos": "SG / SF",
     "height": "6'5'",
     "type": "Crafty Iniside-Out Combo Guard",
@@ -4739,7 +4739,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0227",
-    "cname": "凯斯勒",
+    "cname": "沃克-凯斯勒",
     "pos": "C",
     "height": "7'2'",
     "type": "Crafty Mashing Board Enforcer",
@@ -4760,7 +4760,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0228",
-    "cname": "塞克斯顿",
+    "cname": "科林-塞克斯顿",
     "pos": "SG / PG",
     "height": "6'3'",
     "type": "3PT Creator",
@@ -4781,7 +4781,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0229",
-    "cname": "格兰姆斯",
+    "cname": "昆廷-格兰姆斯",
     "pos": "SG / SF",
     "height": "6'4'",
     "type": "Physical Perimeter Lock",
@@ -4802,7 +4802,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0230",
-    "cname": "马穆凯拉什维利",
+    "cname": "桑德罗-马穆凯拉什维利",
     "pos": "PF / C",
     "height": "6'9'",
     "type": "Crafty Stretch Four Cleaner",
@@ -4823,7 +4823,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0231",
-    "cname": "范德比尔特",
+    "cname": "贾里德-范德比尔特",
     "pos": "PF / C",
     "height": "6'8'",
     "type": "Lockdown Defender",
@@ -4844,7 +4844,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0232",
-    "cname": "哈迪",
+    "cname": "杰登-哈迪",
     "pos": "SG / PG",
     "height": "6'3'",
     "type": "Iso Sniper",
@@ -4865,7 +4865,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0233",
-    "cname": "拉雷维亚",
+    "cname": "杰克-拉雷维亚",
     "pos": "SF / SG",
     "height": "6'7'",
     "type": "2-Way Crafty Finisher",
@@ -4886,7 +4886,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0234",
-    "cname": "克勒贝尔",
+    "cname": "马克西-克勒贝尔",
     "pos": "C / PF",
     "height": "6'10'",
     "type": "2-Way Table Setter",
@@ -4907,7 +4907,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0235",
-    "cname": "克内克特",
+    "cname": "多尔顿-克内克特",
     "pos": "SF / SG",
     "height": "6'6'",
     "type": "Mid-Paint Scorer",
@@ -4928,7 +4928,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0236",
-    "cname": "卢尼",
+    "cname": "凯文-卢尼",
     "pos": "C",
     "height": "6'9'",
     "type": "Board-Hunting Stretch Five",
@@ -4949,7 +4949,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0237",
-    "cname": "史密斯",
+    "cname": "小尼克-史密斯",
     "pos": "PG / SG",
     "height": "6'2'",
     "type": "Inside-Out High-Flying Slasher",
@@ -4970,7 +4970,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 65,
   },{
     "id": "P0238",
-    "cname": "蒂米",
+    "cname": "德鲁-蒂米",
     "pos": "C / PF",
     "height": "6'10'",
     "type": "Crafty Stretch Five",
@@ -4991,7 +4991,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0239",
-    "cname": "詹姆斯",
+    "cname": "布朗尼-詹姆斯",
     "pos": "PG / SG",
     "height": "6'2'",
     "type": "Blow-By High Flyer",
@@ -5012,7 +5012,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0240",
-    "cname": "蒂耶罗",
+    "cname": "阿杜-蒂耶罗",
     "pos": "SF / PF",
     "height": "6'7'",
     "type": "High-Flying Wing Runner",
@@ -5033,7 +5033,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 25,
   },{
     "id": "P0241",
-    "cname": "马农",
+    "cname": "克里斯-马农",
     "pos": "SG / SF",
     "height": "6'4'",
     "type": "Ball-Hawking High Flyer",
@@ -5054,7 +5054,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0021",
-    "cname": "威廉姆斯",
+    "cname": "宰伊尔-威廉姆斯",
     "pos": "SF / SG",
     "height": "6'9'",
     "type": "Ball-Hawking Blow-By Ace",
@@ -5075,7 +5075,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0426",
-    "cname": "赛布尔",
+    "cname": "马蒂斯-赛布尔",
     "pos": "SG / SF",
     "height": "6'5'",
     "type": "Ball-Hawking 3 & D Two Guard",
@@ -5097,7 +5097,7 @@ const LEAGUE_PLAYER_DATA = {
   }],
   "MEM": [{
     "id": "P0242",
-    "cname": "杰罗姆",
+    "cname": "泰-杰罗姆",
     "pos": "PG / SG",
     "height": "6'5'",
     "type": "Crafty Iso Savant",
@@ -5118,7 +5118,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0243",
-    "cname": "埃迪",
+    "cname": "扎克-埃迪",
     "pos": "C",
     "height": "7'4'",
     "type": "Glass Guardian Crafty Finisher",
@@ -5139,7 +5139,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 65,
   },{
     "id": "P0244",
-    "cname": "格兰特",
+    "cname": "杰拉米-格兰特",
     "pos": "SF / PF",
     "height": "6'7'",
     "type": "Crafty Inside-Out Creator",
@@ -5160,7 +5160,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0245",
-    "cname": "科沃德",
+    "cname": "塞德里克-科沃德",
     "pos": "SG / SF",
     "height": "6'5'",
     "type": "Wing-Running Finisher",
@@ -5181,7 +5181,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 86,
   },{
     "id": "P0246",
-    "cname": "杰克逊",
+    "cname": "GG-杰克逊",
     "pos": "PF / SF",
     "height": "6'9'",
     "type": "Rim-Rocking Mid-Range Slasher",
@@ -5202,7 +5202,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0247",
-    "cname": "威尔斯",
+    "cname": "杰伦-威尔斯",
     "pos": "SF / SG",
     "height": "6'8'",
     "type": "Mid-Paint Scorer",
@@ -5223,7 +5223,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0248",
-    "cname": "斯潘塞",
+    "cname": "卡姆-斯潘塞",
     "pos": "SG / PG",
     "height": "6'3'",
     "type": "Diming Crafty Sharpshooter",
@@ -5244,7 +5244,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0249",
-    "cname": "斯图尔特",
+    "cname": "以赛亚-斯图尔特",
     "pos": "C / PF",
     "height": "6'8'",
     "type": "2-Way Pick & Popper",
@@ -5265,7 +5265,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0250",
-    "cname": "普罗斯珀",
+    "cname": "奥利维耶-马克桑斯-普罗斯珀",
     "pos": "C / PF",
     "height": "6'7'",
     "type": "Rim-Rocking Stretch Five",
@@ -5286,7 +5286,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0251",
-    "cname": "斯莫尔",
+    "cname": "贾冯-斯莫尔",
     "pos": "PG / SG",
     "height": "6'1'",
     "type": "Inside-Out High-Flying Slasher",
@@ -5307,7 +5307,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0252",
-    "cname": "皮蓬",
+    "cname": "小斯科蒂-皮蓬",
     "pos": "PG / SG",
     "height": "6'1'",
     "type": "Chaos General",
@@ -5328,7 +5328,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0253",
-    "cname": "拉塞尔",
+    "cname": "丹吉洛-拉塞尔",
     "pos": "PG / SG",
     "height": "6'3'",
     "type": "Crafty Mid-Range Menace",
@@ -5349,7 +5349,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0254",
-    "cname": "波斯特",
+    "cname": "昆滕-波斯特",
     "pos": "C",
     "height": "7'0'",
     "type": "Crafty Stretch Five",
@@ -5370,7 +5370,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0255",
-    "cname": "亨德里克斯",
+    "cname": "泰勒-亨德里克斯",
     "pos": "PF / SF",
     "height": "6'9'",
     "type": "Crafty Mid-Paint Scorer",
@@ -5391,7 +5391,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0256",
-    "cname": "克莱顿",
+    "cname": "小沃尔特-克莱顿",
     "pos": "PG / SG",
     "height": "6'4'",
     "type": "Crafty Mid-Range Menace",
@@ -5412,7 +5412,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0258",
-    "cname": "默里",
+    "cname": "克里斯-默里",
     "pos": "PF / SF",
     "height": "6'8'",
     "type": "Crafty Mid-Paint Scorer",
@@ -5433,7 +5433,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0259",
-    "cname": "马沙克",
+    "cname": "贾迈-马沙克",
     "pos": "SG / SF",
     "height": "6'4'",
     "type": "Clamp Thief",
@@ -5454,7 +5454,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0260",
-    "cname": "约翰逊",
+    "cname": "AJ-约翰逊",
     "pos": "SG / PG",
     "height": "6'5'",
     "type": "Blow-By High Flyer",
@@ -5475,7 +5475,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0261",
-    "cname": "怀特黑德",
+    "cname": "达里克-怀特黑德",
     "pos": "SG / SF",
     "height": "6'6'",
     "type": "Inside-Out High-Flying Slasher",
@@ -5496,7 +5496,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0262",
-    "cname": "吉布森",
+    "cname": "泰-吉布森",
     "pos": "C",
     "height": "6'9'",
     "type": "Mid-Range-Scoring Crasher",
@@ -5517,7 +5517,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 30,
   },{
     "id": "P0263",
-    "cname": "巴尔",
+    "cname": "阿达马-巴尔",
     "pos": "SG / PG",
     "height": "6'7'",
     "type": "3PT Shot Hunter",
@@ -5539,7 +5539,7 @@ const LEAGUE_PLAYER_DATA = {
   }],
   "MIA": [{
     "id": "P0264",
-    "cname": "阿德托昆博",
+    "cname": "扬尼斯-阿德托昆博",
     "pos": "PF / C",
     "height": "6'11'",
     "type": "2-Way Crafty PlaySlash Cleaner",
@@ -5560,7 +5560,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0265",
-    "cname": "阿德巴约",
+    "cname": "巴姆-阿德巴约",
     "pos": "C / PF",
     "height": "6'9'",
     "type": "2-Way Paint-Finishing Cleaner",
@@ -5581,7 +5581,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0266",
-    "cname": "威金斯",
+    "cname": "安德鲁-威金斯",
     "pos": "PF / SF",
     "height": "6'7'",
     "type": "Inside-Out Rim-Rocking Slasher",
@@ -5602,7 +5602,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0267",
-    "cname": "波蒂斯",
+    "cname": "博比-波蒂斯",
     "pos": "C / PF",
     "height": "6'10'",
     "type": "Crafty Post-Scoring Stretch",
@@ -5623,7 +5623,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0268",
-    "cname": "拉松",
+    "cname": "佩莱-拉松",
     "pos": "SF / SG",
     "height": "6'5'",
     "type": "Mid-Paint Scorer",
@@ -5644,7 +5644,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0269",
-    "cname": "米切尔",
+    "cname": "戴维恩-米切尔",
     "pos": "PG / SG",
     "height": "6'0'",
     "type": "3 & D Creator",
@@ -5665,7 +5665,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 65,
   },{
     "id": "P0270",
-    "cname": "丰泰基奥",
+    "cname": "西莫内-丰泰基奥",
     "pos": "SF / PF",
     "height": "6'7'",
     "type": "Crafty 3-Level Scorer",
@@ -5686,7 +5686,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0271",
-    "cname": "史密斯",
+    "cname": "德鲁-史密斯",
     "pos": "PG / SG",
     "height": "6'2'",
     "type": "2-Way Crafty Finisher",
@@ -5707,7 +5707,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0272",
-    "cname": "加德纳",
+    "cname": "迈伦-加德纳",
     "pos": "SF / SG",
     "height": "6'5'",
     "type": "Board-Hunting 3PT Sniper",
@@ -5728,7 +5728,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 65,
   },{
     "id": "P0273",
-    "cname": "约维奇",
+    "cname": "尼古拉-约维奇",
     "pos": "C / PF",
     "height": "6'10'",
     "type": "Crafty Inside-Out Point Center",
@@ -5749,7 +5749,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0274",
-    "cname": "约翰逊",
+    "cname": "凯沙德-约翰逊",
     "pos": "PF / SF",
     "height": "6'6'",
     "type": "Rim-Running Rim Rocker",
@@ -5770,7 +5770,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0275",
-    "cname": "基尔斯",
+    "cname": "特雷弗-基尔斯",
     "pos": "SG",
     "height": "6'4'",
     "type": "Physical Combo Guard",
@@ -5791,7 +5791,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 30,
   },{
     "id": "P0276",
-    "cname": "戈尔丁",
+    "cname": "弗拉季斯拉夫-戈尔丁",
     "pos": "C",
     "height": "7'0'",
     "type": "Stretch Lob Threat",
@@ -5812,7 +5812,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0277",
-    "cname": "扬",
+    "cname": "贾米尔-扬",
     "pos": "PG",
     "height": "6'2'",
     "type": "Mid-Range Menace",
@@ -5833,7 +5833,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0112",
-    "cname": "汤普森",
+    "cname": "克莱-汤普森",
     "pos": "SG / SF",
     "height": "6'5'",
     "type": "Physical 3 & D Sniper",
@@ -5855,7 +5855,7 @@ const LEAGUE_PLAYER_DATA = {
   }],
   "MIL": [{
     "id": "P0278",
-    "cname": "希罗",
+    "cname": "泰勒-希罗",
     "pos": "SG / PG",
     "height": "6'5'",
     "type": "Crafty Offensive Engine",
@@ -5876,7 +5876,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0279",
-    "cname": "波特",
+    "cname": "小凯文-波特",
     "pos": "PG / SG",
     "height": "6'4'",
     "type": "Ball-Hawking Mid-Paint Scorer",
@@ -5897,7 +5897,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0280",
-    "cname": "罗林斯",
+    "cname": "瑞安-罗林斯",
     "pos": "PG / SG",
     "height": "6'3'",
     "type": "Crafty 3PT-Sniping Creator",
@@ -5918,7 +5918,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0281",
-    "cname": "库兹马",
+    "cname": "凯尔-库兹马",
     "pos": "SF / PF",
     "height": "6'9'",
     "type": "Drive & Rise Bully",
@@ -5939,7 +5939,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0282",
-    "cname": "哈克斯",
+    "cname": "小海梅-哈克斯",
     "pos": "PF / SF",
     "height": "6'6'",
     "type": "Versatile Paint Finisher",
@@ -5960,7 +5960,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0283",
-    "cname": "韦尔",
+    "cname": "凯尔-韦尔",
     "pos": "C / PF",
     "height": "7'0'",
     "type": "Board-Hunting Stretch Dunker",
@@ -5981,7 +5981,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0284",
-    "cname": "勒韦尔",
+    "cname": "卡里斯-勒韦尔",
     "pos": "SF / SG",
     "height": "6'7'",
     "type": "Shot-Erasing Mid-Range Menace",
@@ -6002,7 +6002,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 55,
   },{
     "id": "P0285",
-    "cname": "特纳",
+    "cname": "迈尔斯-特纳",
     "pos": "C",
     "height": "6'11'",
     "type": "2-Way Stretch Five",
@@ -6023,7 +6023,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 35,
   },{
     "id": "P0286",
-    "cname": "迪昂",
+    "cname": "乌斯曼-迪昂",
     "pos": "SF / PF",
     "height": "6'9'",
     "type": "Iso Sniper",
@@ -6044,7 +6044,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0287",
-    "cname": "格林",
+    "cname": "AJ-格林",
     "pos": "SG / SF",
     "height": "6'4'",
     "type": "Crafty Sharpshooter",
@@ -6065,7 +6065,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0288",
-    "cname": "雅库西奥尼斯",
+    "cname": "卡斯帕拉斯-雅库西奥尼斯",
     "pos": "PG / SG",
     "height": "6'6'",
     "type": "3PT Shot Hunter",
@@ -6086,7 +6086,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0289",
-    "cname": "特伦特",
+    "cname": "小加里-特伦特",
     "pos": "SG / SF",
     "height": "6'5'",
     "type": "Sharpshooter",
@@ -6107,7 +6107,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 65,
   },{
     "id": "P0290",
-    "cname": "西姆斯",
+    "cname": "杰里科-西姆斯",
     "pos": "C",
     "height": "6'10'",
     "type": "Rim-Running Rim Rocker",
@@ -6128,7 +6128,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0291",
-    "cname": "琼斯",
+    "cname": "卡姆-琼斯",
     "pos": "SG / PG",
     "height": "6'4'",
     "type": "Crafty Laymaking Combo Guard",
@@ -6149,7 +6149,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0292",
-    "cname": "杰克逊",
+    "cname": "小安德烈-杰克逊",
     "pos": "SF / SG",
     "height": "6'6'",
     "type": "High-Flying Wing Runner",
@@ -6170,7 +6170,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 30,
   },{
     "id": "P0293",
-    "cname": "瑞安",
+    "cname": "科马克-瑞安",
     "pos": "SG / SF",
     "height": "6'5'",
     "type": "Diming Sharpshooter",
@@ -6191,7 +6191,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0294",
-    "cname": "阿德托昆博",
+    "cname": "萨纳西斯-阿德托昆博",
     "pos": "PF / C",
     "height": "6'7'",
     "type": "Crafty Blow-By Dual Finisher",
@@ -6212,7 +6212,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 65,
   },{
     "id": "P0295",
-    "cname": "阿德托昆博",
+    "cname": "亚历克斯-阿德托昆博",
     "pos": "SF / PF",
     "height": "6'8'",
     "type": "Slashing Point Forward",
@@ -6234,7 +6234,7 @@ const LEAGUE_PLAYER_DATA = {
   }],
   "MIN": [{
     "id": "P0296",
-    "cname": "爱德华兹",
+    "cname": "安东尼-爱德华兹",
     "pos": "SG / SF",
     "height": "6'4'",
     "type": "2-Way Inside-Out Creator",
@@ -6255,7 +6255,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 95,
   },{
     "id": "P0297",
-    "cname": "鲍尔",
+    "cname": "拉梅洛-鲍尔",
     "pos": "PG / SG",
     "height": "6'7'",
     "type": "Playmaking 3PT Creator",
@@ -6276,7 +6276,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0298",
-    "cname": "戈贝尔",
+    "cname": "鲁迪-戈贝尔",
     "pos": "C",
     "height": "7'1'",
     "type": "Lob Threat Board Enforcer",
@@ -6297,7 +6297,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0299",
-    "cname": "麦克丹尼尔斯",
+    "cname": "贾登-麦克丹尼尔斯",
     "pos": "SF / PF",
     "height": "6'9'",
     "type": "2-Way Off-Screen Shooter",
@@ -6318,7 +6318,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0300",
-    "cname": "多孙穆",
+    "cname": "阿约-多孙穆",
     "pos": "SG / PG",
     "height": "6'4'",
     "type": "Crafty 3-Level Scorer",
@@ -6339,7 +6339,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0301",
-    "cname": "迪温琴佐",
+    "cname": "唐特-迪温琴佐",
     "pos": "PG / SG",
     "height": "6'4'",
     "type": "2-Way Off-Screen Shooter",
@@ -6360,7 +6360,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0302",
-    "cname": "香农",
+    "cname": "小特伦斯-香农",
     "pos": "SF / PF",
     "height": "6'6'",
     "type": "Inside-Out Slasher",
@@ -6381,7 +6381,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 65,
   },{
     "id": "P0303",
-    "cname": "海兰",
+    "cname": "伯恩斯-海兰",
     "pos": "PG / SG",
     "height": "6'2'",
     "type": "Iso Sniper",
@@ -6402,7 +6402,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0304",
-    "cname": "格林",
+    "cname": "乔什-格林",
     "pos": "SF / SG",
     "height": "6'6'",
     "type": "3PT Sniper",
@@ -6423,7 +6423,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0305",
-    "cname": "莱尔斯",
+    "cname": "Trey Lyles",
     "pos": "PF / C",
     "height": "6'9",
     "type": "Stretch Four Cleaner",
@@ -6444,7 +6444,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0306",
-    "cname": "克拉克",
+    "cname": "杰伦-克拉克",
     "pos": "SG / SF",
     "height": "6'4'",
     "type": "Clamp Thief",
@@ -6465,7 +6465,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0307",
-    "cname": "英格尔斯",
+    "cname": "乔-英格尔斯",
     "pos": "PF / SF",
     "height": "6'8'",
     "type": "2-Way Stretch Four",
@@ -6486,7 +6486,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 65,
   },{
     "id": "P0308",
-    "cname": "菲利普斯",
+    "cname": "朱利安-菲利普斯",
     "pos": "SF / PF",
     "height": "6'6'",
     "type": "High-Flying 3PT Sniper",
@@ -6507,7 +6507,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0309",
-    "cname": "贝林格",
+    "cname": "若昂-贝林格",
     "pos": "C",
     "height": "6'11'",
     "type": "Rim-Wrecking Putback Pro",
@@ -6528,7 +6528,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0310",
-    "cname": "弗里曼",
+    "cname": "恩里克-弗里曼",
     "pos": "PF / C",
     "height": "6'9'",
     "type": "Bouncy Dual Finisher",
@@ -6549,7 +6549,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0311",
-    "cname": "齐卡尔斯基",
+    "cname": "罗科-齐卡尔斯基",
     "pos": "C",
     "height": "7'3'",
     "type": "Shot-Erasing Putback Pro",
@@ -6570,7 +6570,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 65,
   },{
     "id": "P0312",
-    "cname": "古耶",
+    "cname": "穆罕默杜-古耶",
     "pos": "C / PF",
     "height": "6'9'",
     "type": "Putback Rim-Rocking Eraser",
@@ -6591,7 +6591,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0313",
-    "cname": "普林",
+    "cname": "齐昂-普林",
     "pos": "PG / SG",
     "height": "6'4'",
     "type": "3PT Shot Hunter",
@@ -6613,7 +6613,7 @@ const LEAGUE_PLAYER_DATA = {
   }],
   "NOP": [{
     "id": "P0314",
-    "cname": "威廉姆森",
+    "cname": "锡安-威廉姆森",
     "pos": "PF / PG",
     "height": "6'6'",
     "type": "Versatile Paint Bully",
@@ -6634,7 +6634,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0315",
-    "cname": "墨菲",
+    "cname": "特雷-墨菲三世",
     "pos": "SG / SF",
     "height": "6'8'",
     "type": "Crafty Inside-Out Scorer",
@@ -6655,7 +6655,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0316",
-    "cname": "默里",
+    "cname": "德章泰-默里",
     "pos": "PG / SG",
     "height": "6'4'",
     "type": "2-Way Mid-Range Menace",
@@ -6676,7 +6676,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0317",
-    "cname": "贝",
+    "cname": "萨迪克-贝",
     "pos": "SF / PF",
     "height": "6'8'",
     "type": "3PT-Sniping Layup Bully",
@@ -6697,7 +6697,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0318",
-    "cname": "费尔斯",
+    "cname": "杰里迈亚-费尔斯",
     "pos": "PG / SG",
     "height": "6'3'",
     "type": "Speedy Blow-By Ace",
@@ -6718,7 +6718,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0319",
-    "cname": "奎因",
+    "cname": "德里克-奎因",
     "pos": "C / PF",
     "height": "6'9'",
     "type": "Break-Starting Crafty Finisher",
@@ -6739,7 +6739,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0320",
-    "cname": "琼斯",
+    "cname": "赫伯特-琼斯",
     "pos": "SF / SG",
     "height": "6'7'",
     "type": "Lockdown Defender",
@@ -6760,7 +6760,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 30,
   },{
     "id": "P0321",
-    "cname": "米西",
+    "cname": "伊夫-米西",
     "pos": "C / PF",
     "height": "6'11'",
     "type": "Rim-Running Putback Eraser",
@@ -6781,7 +6781,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0322",
-    "cname": "乔丹",
+    "cname": "德安德烈-乔丹",
     "pos": "C",
     "height": "6'11'",
     "type": "Physical Glass Guardian",
@@ -6802,7 +6802,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0323",
-    "cname": "普尔",
+    "cname": "乔丹-普尔",
     "pos": "SG / PG",
     "height": "6'4'",
     "type": "Combo Guard",
@@ -6823,7 +6823,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0324",
-    "cname": "马特科维奇",
+    "cname": "卡洛-马特科维奇",
     "pos": "PF / C",
     "height": "6'10'",
     "type": "Shot-Erasing Stretch Riser",
@@ -6844,7 +6844,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0325",
-    "cname": "麦高恩斯",
+    "cname": "布赖斯-麦高恩斯",
     "pos": "SF / SG",
     "height": "6'6'",
     "type": "3-Level Scorer",
@@ -6865,7 +6865,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0326",
-    "cname": "霍金斯",
+    "cname": "乔丹-霍金斯",
     "pos": "SG / PG",
     "height": "6'5'",
     "type": "3PT-Creating Combo Guard",
@@ -6886,7 +6886,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0327",
-    "cname": "皮维",
+    "cname": "迈卡-皮维",
     "pos": "SF / SG",
     "height": "6'7'",
     "type": "Slashing Point Forward",
@@ -6907,7 +6907,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0328",
-    "cname": "迪金森",
+    "cname": "亨特-迪金森",
     "pos": "C",
     "height": "7'1'",
     "type": "Stretch Five Cleaner",
@@ -6928,7 +6928,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0329",
-    "cname": "奥杜罗",
+    "cname": "乔什-奥杜罗",
     "pos": "PF / C",
     "height": "6'9'",
     "type": "Board-Hunting Middy Scorer",
@@ -6949,7 +6949,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0015",
-    "cname": "科洛科",
+    "cname": "克里斯蒂安-科洛科",
     "pos": "C",
     "height": "6'11'",
     "type": "Disruptive Defender",
@@ -6970,7 +6970,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0386",
-    "cname": "沃特福德",
+    "cname": "特伦登-沃特福德",
     "pos": "PF / PG",
     "height": "6'8'",
     "type": "Versatile Paint Finisher",
@@ -6992,7 +6992,7 @@ const LEAGUE_PLAYER_DATA = {
   }],
   "NYK": [{
     "id": "P0330",
-    "cname": "布伦森",
+    "cname": "杰伦-布伦森",
     "pos": "PG",
     "height": "6'2'",
     "type": "Crafty Offensive Engine",
@@ -7013,7 +7013,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0331",
-    "cname": "唐斯",
+    "cname": "卡尔-安东尼-唐斯",
     "pos": "C / PF",
     "height": "7'0'",
     "type": "Inside-Out Break Starter",
@@ -7034,7 +7034,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0332",
-    "cname": "阿奴诺比",
+    "cname": "OG-阿奴诺比",
     "pos": "SF / PF",
     "height": "6'7'",
     "type": "2-Way 3PT-Sniping High Flyer",
@@ -7055,7 +7055,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0333",
-    "cname": "布里奇斯",
+    "cname": "米卡尔-布里奇斯",
     "pos": "SG / SF",
     "height": "6'6'",
     "type": "2-Way Combo Guard Creator",
@@ -7076,7 +7076,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0334",
-    "cname": "哈特",
+    "cname": "约什-哈特",
     "pos": "PF / SF",
     "height": "6'5'",
     "type": "2-Way Skilled Stretch Cleaner",
@@ -7097,7 +7097,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0335",
-    "cname": "麦克布莱德",
+    "cname": "迈尔斯-麦克布莱德",
     "pos": "SG / PG",
     "height": "6'2'",
     "type": "2-Way Iso Sniper",
@@ -7118,7 +7118,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0336",
-    "cname": "阿尔瓦拉多",
+    "cname": "何塞-阿尔瓦拉多",
     "pos": "PG / SG",
     "height": "6'0'",
     "type": "2-Way Crafty Finisher",
@@ -7139,7 +7139,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0337",
-    "cname": "沙梅特",
+    "cname": "兰德里-沙梅特",
     "pos": "SG / SF",
     "height": "6'5'",
     "type": "Shot-Creating Combo Guard",
@@ -7160,7 +7160,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0338",
-    "cname": "克拉克森",
+    "cname": "乔丹-克拉克森",
     "pos": "SG / SF",
     "height": "6'5'",
     "type": "Laymaking Two Guard",
@@ -7181,7 +7181,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0339",
-    "cname": "德拉蒙德",
+    "cname": "安德烈-德拉蒙德",
     "pos": "C",
     "height": "6'11'",
     "type": "Board-Hunting Stretch Riser",
@@ -7202,7 +7202,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0341",
-    "cname": "科莱克",
+    "cname": "泰勒-科莱克",
     "pos": "PG / SG",
     "height": "6'2'",
     "type": "Crafty 3-Level Scorer",
@@ -7223,7 +7223,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0342",
-    "cname": "迪亚瓦拉",
+    "cname": "穆罕默德-迪亚瓦拉",
     "pos": "PF / SF",
     "height": "6'9'",
     "type": "Rim-Rocking Stretch Four",
@@ -7244,7 +7244,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0343",
-    "cname": "杰米森",
+    "cname": "特雷-杰米森三世",
     "pos": "C",
     "height": "6'10'",
     "type": "Ball-Snatching Rim Rocker",
@@ -7265,7 +7265,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0344",
-    "cname": "麦卡拉",
+    "cname": "小凯文-麦卡拉",
     "pos": "SF / SG",
     "height": "6'6'",
     "type": "3-Level-Diming Crasher",
@@ -7286,7 +7286,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0345",
-    "cname": "达迪耶",
+    "cname": "帕科姆-达迪耶",
     "pos": "SF / PF",
     "height": "6'9'",
     "type": "Iso Sniper",
@@ -7307,7 +7307,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0346",
-    "cname": "琼斯",
+    "cname": "狄龙-琼斯",
     "pos": "PF / C",
     "height": "6'5'",
     "type": "Speedy Point Four",
@@ -7329,7 +7329,7 @@ const LEAGUE_PLAYER_DATA = {
   }],
   "OKC": [{
     "id": "P0347",
-    "cname": "亚历山大",
+    "cname": "谢伊-吉尔杰斯-亚历山大",
     "pos": "PG / SG",
     "height": "6'6'",
     "type": "2-Way Mid-Paint Playmaker",
@@ -7350,7 +7350,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0348",
-    "cname": "霍姆格伦",
+    "cname": "切特-霍姆格伦",
     "pos": "PF / C",
     "height": "7'1'",
     "type": "Backline Crafty 3-Level Scorer",
@@ -7371,7 +7371,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0349",
-    "cname": "威廉姆斯",
+    "cname": "杰伦-威廉姆斯",
     "pos": "SF / PF",
     "height": "6'5'",
     "type": "2-Way Point Forward",
@@ -7392,7 +7392,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0350",
-    "cname": "哈尔滕施泰因",
+    "cname": "以赛亚-哈尔滕施泰因",
     "pos": "C",
     "height": "7'0'",
     "type": "Crafty Mashing Board Enforcer",
@@ -7413,7 +7413,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 65,
   },{
     "id": "P0351",
-    "cname": "米切尔",
+    "cname": "阿贾伊-米切尔",
     "pos": "PG / SG",
     "height": "6'4'",
     "type": "Crafty 3PT Sniper",
@@ -7434,7 +7434,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0352",
-    "cname": "华莱士",
+    "cname": "卡森-华莱士",
     "pos": "SG / PG",
     "height": "6'3'",
     "type": "2-Way 3PT-Sniping Layup Artist",
@@ -7455,7 +7455,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0353",
-    "cname": "卡鲁索",
+    "cname": "亚历克斯-卡鲁索",
     "pos": "SF / PG",
     "height": "6'5'",
     "type": "2-Way Iso Sniper",
@@ -7476,7 +7476,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0354",
-    "cname": "多尔特",
+    "cname": "吕冈茨-多尔特",
     "pos": "SG / SF",
     "height": "6'4'",
     "type": "2-Way Mid-Paint Bully",
@@ -7497,7 +7497,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0355",
-    "cname": "麦凯恩",
+    "cname": "贾里德-麦凯恩",
     "pos": "PG / SG",
     "height": "6'3'",
     "type": "Iso Sniper",
@@ -7518,7 +7518,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0356",
-    "cname": "威廉姆斯",
+    "cname": "杰林-威廉姆斯",
     "pos": "C",
     "height": "6'9'",
     "type": "Stretch Five Cleaner",
@@ -7539,7 +7539,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0357",
-    "cname": "威廉姆斯",
+    "cname": "肯里奇-威廉姆斯",
     "pos": "PF / C",
     "height": "6'7'",
     "type": "2-Way Stretch Four",
@@ -7560,7 +7560,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0359",
-    "cname": "托皮奇",
+    "cname": "尼古拉-托皮奇",
     "pos": "PG / SG",
     "height": "6'6'",
     "type": "Table Setter",
@@ -7581,7 +7581,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0360",
-    "cname": "索伯",
+    "cname": "托马斯-索伯",
     "pos": "C / PF",
     "height": "6'9'",
     "type": "Slashing Point Center",
@@ -7602,7 +7602,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 45,
   },{
     "id": "P0361",
-    "cname": "巴恩希泽",
+    "cname": "布鲁克斯-巴恩希泽",
     "pos": "SF / SG",
     "height": "6'5'",
     "type": "Physical Middy Maestro",
@@ -7624,7 +7624,7 @@ const LEAGUE_PLAYER_DATA = {
   }],
   "ORL": [{
     "id": "P0362",
-    "cname": "班凯罗",
+    "cname": "保罗-班凯罗",
     "pos": "PF / SF",
     "height": "6'10'",
     "type": "Glass-Cleaning Rim Runner",
@@ -7645,7 +7645,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0363",
-    "cname": "瓦格纳",
+    "cname": "弗朗茨-瓦格纳",
     "pos": "SF / PF",
     "height": "6'10'",
     "type": "Crafty Mid-Paint Point Forward",
@@ -7666,7 +7666,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0364",
-    "cname": "贝恩",
+    "cname": "德斯蒙德-贝恩",
     "pos": "SG / SF",
     "height": "6'6'",
     "type": "Crafty 3PT Sniper",
@@ -7687,7 +7687,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0365",
-    "cname": "布莱克",
+    "cname": "安东尼-布莱克",
     "pos": "PG / SG",
     "height": "6'7'",
     "type": "2-Way Crafty Laymaker",
@@ -7708,7 +7708,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0366",
-    "cname": "萨格斯",
+    "cname": "杰伦-萨格斯",
     "pos": "PG / SG",
     "height": "6'5'",
     "type": "2-Way Mid-Range Slasher",
@@ -7729,7 +7729,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0367",
-    "cname": "卡特",
+    "cname": "小温德尔-卡特",
     "pos": "C / PF",
     "height": "6'10'",
     "type": "Post-Scoring Stretch",
@@ -7750,7 +7750,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0368",
-    "cname": "武切维奇",
+    "cname": "尼古拉-武切维奇",
     "pos": "C",
     "height": "6'9'",
     "type": "Triple-Double Threat",
@@ -7771,7 +7771,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0369",
-    "cname": "达席尔瓦",
+    "cname": "特里斯坦-达席尔瓦",
     "pos": "SF / PF",
     "height": "6'8'",
     "type": "3PT Sniper",
@@ -7792,7 +7792,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0370",
-    "cname": "比塔泽",
+    "cname": "戈加-比塔泽",
     "pos": "C",
     "height": "6'11'",
     "type": "Putback Power-Finishing Eraser",
@@ -7813,7 +7813,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0371",
-    "cname": "卡特",
+    "cname": "杰文-卡特",
     "pos": "PG / SG",
     "height": "6'0'",
     "type": "2-Way Sharpshooter",
@@ -7834,7 +7834,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0372",
-    "cname": "彭达",
+    "cname": "诺亚-彭达",
     "pos": "PF / SF",
     "height": "6'7'",
     "type": "Stretch Four Crasher",
@@ -7855,7 +7855,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0373",
-    "cname": "凯恩",
+    "cname": "贾马尔-凯恩",
     "pos": "SF / PF",
     "height": "6'7'",
     "type": "Crafty 3PT Sniper",
@@ -7876,7 +7876,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0374",
-    "cname": "霍华德",
+    "cname": "杰特-霍华德",
     "pos": "SG / SF",
     "height": "6'8'",
     "type": "3PT-Creating Combo Guard",
@@ -7897,7 +7897,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0375",
-    "cname": "艾萨克",
+    "cname": "乔纳森-艾萨克",
     "pos": "PF / C",
     "height": "6'10'",
     "type": "Lockdown Defender",
@@ -7918,7 +7918,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 25,
   },{
     "id": "P0376",
-    "cname": "理查德森",
+    "cname": "杰斯-理查德森",
     "pos": "SG / PG",
     "height": "6'1'",
     "type": "Crafty 3-Level Scorer",
@@ -7939,7 +7939,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0377",
-    "cname": "卡斯尔顿",
+    "cname": "科林-卡斯尔顿",
     "pos": "PF / C",
     "height": "6'10'",
     "type": "Stretch Four Crasher",
@@ -7960,7 +7960,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 55,
   },{
     "id": "P0378",
-    "cname": "莫拉莱斯",
+    "cname": "亚历克斯-莫拉莱斯",
     "pos": "SG / SF",
     "height": "6'6'",
     "type": "3PT High-Flying Ball Hawk",
@@ -7984,7 +7984,7 @@ const LEAGUE_PLAYER_DATA = {
     "id": "P0379",
     "_age": 40,
     "_protectedRetirementAge": 65,
-    "cname": "詹姆斯",
+    "cname": "勒布朗-詹姆斯",
     "pos": "PF / SF",
     "height": "6'9'",
     "type": "PlaySlash Bully",
@@ -8005,7 +8005,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0380",
-    "cname": "布朗",
+    "cname": "杰伦-布朗",
     "pos": "SG / SF",
     "height": "6'6'",
     "type": "Physical 2-Way Middy Slasher",
@@ -8026,7 +8026,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 98,
   },{
     "id": "P0381",
-    "cname": "马克西",
+    "cname": "泰雷塞-马克西",
     "pos": "PG / SG",
     "height": "6'2'",
     "type": "Ankle Taker",
@@ -8047,7 +8047,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 98,
   },{
     "id": "P0382",
-    "cname": "恩比德",
+    "cname": "乔尔-恩比德",
     "pos": "C",
     "height": "7'0'",
     "type": "Physical 2-Way 3-Level Cleaner",
@@ -8068,7 +8068,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0383",
-    "cname": "埃奇库姆",
+    "cname": "VJ-埃奇库姆",
     "pos": "SG / PG",
     "height": "6'4'",
     "type": "Mid-Range High Flyer",
@@ -8089,7 +8089,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0384",
-    "cname": "西蒙斯",
+    "cname": "安芬尼-西蒙斯",
     "pos": "SG / PG",
     "height": "6'3'",
     "type": "Inside-Out Creator",
@@ -8110,7 +8110,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0385",
-    "cname": "韦德",
+    "cname": "迪恩-韦德",
     "pos": "PF / SF",
     "height": "6'9'",
     "type": "2-Way Masher",
@@ -8131,7 +8131,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0387",
-    "cname": "爱德华兹",
+    "cname": "贾斯汀-爱德华兹",
     "pos": "SF / PF",
     "height": "6'7'",
     "type": "Ball-Hawking 3PT Shot Hunter",
@@ -8152,7 +8152,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0388",
-    "cname": "巴洛",
+    "cname": "多米尼克-巴洛",
     "pos": "PF / C",
     "height": "6'9'",
     "type": "Crafty Putback Pro",
@@ -8173,7 +8173,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0389",
-    "cname": "乐福",
+    "cname": "凯莱布-乐福",
     "pos": "PG / SG",
     "height": "6'3'",
     "type": "Iso Sniper",
@@ -8194,7 +8194,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0390",
-    "cname": "博纳",
+    "cname": "阿代姆-博纳",
     "pos": "C",
     "height": "6'10'",
     "type": "Shot Eraser",
@@ -8215,7 +8215,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0391",
-    "cname": "吕佩尔",
+    "cname": "拉扬-吕佩尔",
     "pos": "SF / SG",
     "height": "6'6'",
     "type": "Crafty 3PT-Sniping Creator",
@@ -8236,7 +8236,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0392",
-    "cname": "胡克波尔蒂",
+    "cname": "阿里埃尔-胡克波尔蒂",
     "pos": "C / PF",
     "height": "7'0'",
     "type": "Putback Rim-Rocking Eraser",
@@ -8257,7 +8257,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0393",
-    "cname": "马丁",
+    "cname": "泰雷斯-马丁",
     "pos": "SG / PG",
     "height": "6'6'",
     "type": "3PT-Creating Combo Guard",
@@ -8278,7 +8278,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0394",
-    "cname": "特里",
+    "cname": "达伦-特里",
     "pos": "SG / SF",
     "height": "6'6'",
     "type": "Ball-Hawking PlaySlash",
@@ -8299,7 +8299,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0395",
-    "cname": "沃克",
+    "cname": "贾巴里-沃克",
     "pos": "PF / SF",
     "height": "6'7'",
     "type": "Skilled Stretch Crasher",
@@ -8320,7 +8320,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0397",
-    "cname": "博尚",
+    "cname": "马乔恩-博尚",
     "pos": "SF / SG",
     "height": "6'7'",
     "type": "Crafty 3-Level Scorer",
@@ -8341,7 +8341,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0257",
-    "cname": "波普",
+    "cname": "肯塔维奥斯-考德威尔-波普",
     "pos": "SG / SF",
     "height": "6'5'",
     "type": "2-Way Iso Sniper",
@@ -8363,7 +8363,7 @@ const LEAGUE_PLAYER_DATA = {
   },{
     "id": "P0482",
     "_veteranTribute": true,
-    "cname": "洛瑞",
+    "cname": "凯尔-洛瑞",
     "pos": "PG / SG",
     "height": "6'0'",
     "type": "2-Way Mid-Range Menace",
@@ -8385,7 +8385,7 @@ const LEAGUE_PLAYER_DATA = {
   }],
   "PHX": [{
     "id": "P0398",
-    "cname": "布克",
+    "cname": "德文-布克",
     "pos": "SG / PG",
     "height": "6'5'",
     "type": "Crafty Offensive Engine",
@@ -8406,7 +8406,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0399",
-    "cname": "布鲁克斯",
+    "cname": "狄龙-布鲁克斯",
     "pos": "SF / PF",
     "height": "6'7'",
     "type": "2-Way Finisher",
@@ -8427,7 +8427,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0400",
-    "cname": "格林",
+    "cname": "杰伦-格林",
     "pos": "SG / SF",
     "height": "6'4'",
     "type": "Mid-Range High Flyer",
@@ -8448,7 +8448,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0401",
-    "cname": "威廉姆斯",
+    "cname": "马克-威廉姆斯",
     "pos": "C",
     "height": "7'1'",
     "type": "Bullmashing Putback Pro",
@@ -8469,7 +8469,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0402",
-    "cname": "布里奇斯",
+    "cname": "迈尔斯-布里奇斯",
     "pos": "PF / SF",
     "height": "6'7'",
     "type": "Versatile Post Bully",
@@ -8490,7 +8490,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 25,
   },{
     "id": "P0403",
-    "cname": "吉莱斯皮",
+    "cname": "科林-吉莱斯皮",
     "pos": "PG",
     "height": "6'1'",
     "type": "3PT-Sniping Creator",
@@ -8511,7 +8511,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0404",
-    "cname": "肯纳德",
+    "cname": "卢克-肯纳德",
     "pos": "SG / PG",
     "height": "6'5'",
     "type": "Crafty Sharpshooter",
@@ -8532,7 +8532,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0405",
-    "cname": "古德温",
+    "cname": "乔丹-古德温",
     "pos": "PG / SG",
     "height": "6'3'",
     "type": "3 & D Crasher",
@@ -8553,7 +8553,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0406",
-    "cname": "伊戈达罗",
+    "cname": "奥索-伊戈达罗",
     "pos": "C / PF",
     "height": "6'11'",
     "type": "Rim-Running Finisher",
@@ -8574,7 +8574,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0407",
-    "cname": "斯潘塞",
+    "cname": "帕特-斯潘塞",
     "pos": "PG / SG",
     "height": "6'3'",
     "type": "High-Flying 3PT Sniper",
@@ -8595,7 +8595,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0408",
-    "cname": "弗莱明",
+    "cname": "拉希尔-弗莱明",
     "pos": "PF / C",
     "height": "6'9'",
     "type": "Skilled Stretch Crasher",
@@ -8616,7 +8616,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0409",
-    "cname": "邓恩",
+    "cname": "瑞安-邓恩",
     "pos": "PF / SF",
     "height": "6'7'",
     "type": "Perimeter Lock",
@@ -8637,7 +8637,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0410",
-    "cname": "马卢阿奇",
+    "cname": "卡曼-马卢阿奇",
     "pos": "C",
     "height": "7'1'",
     "type": "Shot-Erasing Rim Wrecker",
@@ -8658,7 +8658,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0411",
-    "cname": "布耶",
+    "cname": "贾马里-布耶",
     "pos": "PG / SG",
     "height": "6'2'",
     "type": "Disruptive Blow-By Ace",
@@ -8679,7 +8679,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0412",
-    "cname": "科菲",
+    "cname": "阿米尔-科菲",
     "pos": "SF / SG",
     "height": "6'7'",
     "type": "Crafty Mid-Range Menace",
@@ -8700,7 +8700,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0413",
-    "cname": "海史密斯",
+    "cname": "海伍德-海史密斯",
     "pos": "SF / PF",
     "height": "6'5'",
     "type": "Crafty 3 & D Wing",
@@ -8721,7 +8721,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0414",
-    "cname": "利弗斯",
+    "cname": "以赛亚-利弗斯",
     "pos": "SF / PF",
     "height": "6'6'",
     "type": "Iso Sniper",
@@ -8742,7 +8742,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0415",
-    "cname": "布雷亚",
+    "cname": "科比-布雷亚",
     "pos": "SG / SF",
     "height": "6'5'",
     "type": "Diming Sharpshooter",
@@ -8763,7 +8763,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0416",
-    "cname": "亨特利",
+    "cname": "CJ-亨特利",
     "pos": "PF / C",
     "height": "6'9'",
     "type": "Rim-Wrecking Putback Pro",
@@ -8785,7 +8785,7 @@ const LEAGUE_PLAYER_DATA = {
   }],
   "POR": [{
     "id": "P0417",
-    "cname": "阿夫迪亚",
+    "cname": "德尼-阿夫迪亚",
     "pos": "SF / SG",
     "height": "6'8'",
     "type": "Crafty Mid-Paint Maestro",
@@ -8806,7 +8806,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0418",
-    "cname": "利拉德",
+    "cname": "达米安-利拉德",
     "pos": "PG",
     "height": "6'2'",
     "type": "Versatile Paint Bully",
@@ -8827,7 +8827,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0419",
-    "cname": "莫兰特",
+    "cname": "贾-莫兰特",
     "pos": "PG / SG",
     "height": "6'2'",
     "type": "Blow-By Dual Finisher",
@@ -8848,7 +8848,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0420",
-    "cname": "夏普",
+    "cname": "谢登-夏普",
     "pos": "SG / PG",
     "height": "6'5'",
     "type": "Blow-By Dual Finisher",
@@ -8869,7 +8869,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0421",
-    "cname": "克林根",
+    "cname": "多诺万-克林根",
     "pos": "C",
     "height": "7'2'",
     "type": "Glass Guardian Lob Threat",
@@ -8890,7 +8890,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0422",
-    "cname": "霍勒迪",
+    "cname": "朱-霍勒迪",
     "pos": "PG / SG",
     "height": "6'4'",
     "type": "Ball-Hawking 3 & D Point",
@@ -8911,7 +8911,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 35,
   },{
     "id": "P0423",
-    "cname": "亨德森",
+    "cname": "斯库特-亨德森",
     "pos": "PG / SG",
     "height": "6'3'",
     "type": "Mid-Range High Flyer",
@@ -8932,7 +8932,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0424",
-    "cname": "卡马拉",
+    "cname": "图马尼-卡马拉",
     "pos": "PF / SF",
     "height": "6'7'",
     "type": "2-Way Stretch Four",
@@ -8953,7 +8953,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0425",
-    "cname": "威廉姆斯",
+    "cname": "罗伯特-威廉姆斯三世",
     "pos": "C / PF",
     "height": "6'9'",
     "type": "Paint-Finishing Board Enforcer",
@@ -8974,7 +8974,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0427",
-    "cname": "克雷伊奇",
+    "cname": "维特-克雷伊奇",
     "pos": "SF / PG",
     "height": "6'8'",
     "type": "3PT-Sniping Creator",
@@ -8995,7 +8995,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0428",
-    "cname": "西索科",
+    "cname": "西迪-西索科",
     "pos": "SF / SG",
     "height": "6'6'",
     "type": "Crafty Inside-Out Scorer",
@@ -9016,7 +9016,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0429",
-    "cname": "韦斯利",
+    "cname": "布莱克-韦斯利",
     "pos": "PG / SG",
     "height": "6'4'",
     "type": "Ball-Hawking High Flyer",
@@ -9037,7 +9037,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0430",
-    "cname": "卡尔森",
+    "cname": "布兰登-卡尔森",
     "pos": "C",
     "height": "7'0'",
     "type": "Shot-Erasing Stretch Five",
@@ -9058,7 +9058,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0431",
-    "cname": "杨",
+    "cname": "杨瀚森",
     "pos": "C",
     "height": "7'1'",
     "type": "Rim-Wrecking Distributor",
@@ -9079,7 +9079,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0432",
-    "cname": "扬布拉德",
+    "cname": "克里斯-扬布拉德",
     "pos": "SG / SF",
     "height": "6'4'",
     "type": "Sharpshooting Cleaner",
@@ -9100,7 +9100,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0433",
-    "cname": "肯特",
+    "cname": "杰森-肯特",
     "pos": "SF / SG",
     "height": "6'8'",
     "type": "High-Flying 3PT Sniper",
@@ -9121,7 +9121,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0340",
-    "cname": "索汉",
+    "cname": "杰里米-索汉",
     "pos": "PF / C",
     "height": "6'8'",
     "type": "Crafty Laymaking Point Four",
@@ -9143,7 +9143,7 @@ const LEAGUE_PLAYER_DATA = {
   }],
   "SAC": [{
     "id": "P0434",
-    "cname": "萨博尼斯",
+    "cname": "多曼塔斯-萨博尼斯",
     "pos": "C",
     "height": "6'10'",
     "type": "Crafty Mid-Post Break Starter",
@@ -9164,7 +9164,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0435",
-    "cname": "拉文",
+    "cname": "扎克-拉文",
     "pos": "SG / SF",
     "height": "6'5'",
     "type": "Inside-Out Creator",
@@ -9185,7 +9185,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0436",
-    "cname": "威斯布鲁克",
+    "cname": "拉塞尔-威斯布鲁克",
     "pos": "PG / SG",
     "height": "6'4'",
     "type": "Explosive Blow-By High Flyer",
@@ -9206,7 +9206,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0437",
-    "cname": "雷诺",
+    "cname": "马克西姆-雷诺",
     "pos": "C",
     "height": "7'1'",
     "type": "Mid-Range Scoring Cleaner",
@@ -9227,7 +9227,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0438",
-    "cname": "蒙克",
+    "cname": "马利克-蒙克",
     "pos": "SG / PG",
     "height": "6'3'",
     "type": "Inside-Out Combo Guard",
@@ -9248,7 +9248,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0439",
-    "cname": "默里",
+    "cname": "基根-默里",
     "pos": "PF / SF",
     "height": "6'8'",
     "type": "2-Way Crafty Finisher",
@@ -9269,7 +9269,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0440",
-    "cname": "亨特",
+    "cname": "德安德烈-亨特",
     "pos": "SF / PF",
     "height": "6'7'",
     "type": "Crafty 2-Way Middy Scorer",
@@ -9290,7 +9290,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0441",
-    "cname": "阿丘瓦",
+    "cname": "普雷舍斯-阿丘瓦",
     "pos": "PF / C",
     "height": "6'8'",
     "type": "Crafty Putback Masher",
@@ -9311,7 +9311,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0442",
-    "cname": "克利福德",
+    "cname": "尼克-克利福德",
     "pos": "SF / SG",
     "height": "6'5'",
     "type": "3PT-Sniping Creator",
@@ -9332,7 +9332,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0443",
-    "cname": "卡德韦尔",
+    "cname": "迪伦-卡德韦尔",
     "pos": "C / PF",
     "height": "6'10'",
     "type": "Glass Guardian Lob Threat",
@@ -9353,7 +9353,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 55,
   },{
     "id": "P0444",
-    "cname": "尤班克斯",
+    "cname": "德鲁-尤班克斯",
     "pos": "C",
     "height": "6'10'",
     "type": "Shot-Erasing Crafty Stretch",
@@ -9374,7 +9374,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0445",
-    "cname": "莫格博",
+    "cname": "乔纳森-莫格博",
     "pos": "PF / C",
     "height": "6'9'",
     "type": "Board-Hunting Rim Runner",
@@ -9395,7 +9395,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0446",
-    "cname": "普洛登",
+    "cname": "戴克万-普洛登",
     "pos": "SF / SG",
     "height": "6'4'",
     "type": "Blow-By High Flyer",
@@ -9416,7 +9416,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0447",
-    "cname": "海斯",
+    "cname": "基利安-海斯",
     "pos": "PG / SG",
     "height": "6'5'",
     "type": "2-Way Playmaker",
@@ -9437,7 +9437,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0448",
-    "cname": "鲍德温",
+    "cname": "小帕特里克-鲍德温",
     "pos": "PF / SF",
     "height": "6'9'",
     "type": "Stretch Four Cleaner",
@@ -9458,7 +9458,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0449",
-    "cname": "麦克德莫特",
+    "cname": "道格-麦克德莫特",
     "pos": "SF / PF",
     "height": "6'7'",
     "type": "Crafty 3-Level Scorer",
@@ -9479,7 +9479,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 30,
   },{
     "id": "P0450",
-    "cname": "史蒂文斯",
+    "cname": "以赛亚-史蒂文斯",
     "pos": "PG / SG",
     "height": "5'11'",
     "type": "Speedy Blow-By Ace",
@@ -9500,7 +9500,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0451",
-    "cname": "弗拉格勒",
+    "cname": "Adam Flagler",
     "pos": "PG / SG",
     "height": "6'3",
     "type": "Sharpshooter",
@@ -9522,7 +9522,7 @@ const LEAGUE_PLAYER_DATA = {
   }],
   "SAS": [{
     "id": "P0452",
-    "cname": "文班亚马",
+    "cname": "维克托-文班亚马",
     "pos": "C / PF",
     "height": "7'4'",
     "type": "Backline Stretch Post Scorer",
@@ -9543,7 +9543,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 95
   },{
     "id": "P0453",
-    "cname": "卡斯尔",
+    "cname": "斯蒂芬-卡斯尔",
     "pos": "SG / PG",
     "height": "6'6'",
     "type": "2-Way Slashing Combo Guard",
@@ -9564,7 +9564,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 88,
   },{
     "id": "P0454",
-    "cname": "福克斯",
+    "cname": "达龙-福克斯",
     "pos": "PG / SG",
     "height": "6'3'",
     "type": "2-Way Mid-Range Menace",
@@ -9585,7 +9585,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0455",
-    "cname": "哈珀",
+    "cname": "迪伦-哈珀",
     "pos": "PG / SG",
     "height": "6'5'",
     "type": "Mid-Range Slasher",
@@ -9606,7 +9606,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0456",
-    "cname": "哈里斯",
+    "cname": "托拜厄斯-哈里斯",
     "pos": "PF / SF",
     "height": "6'8'",
     "type": "Crafty Mid-Post Point Four",
@@ -9627,7 +9627,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0457",
-    "cname": "尚帕尼",
+    "cname": "朱利安-尚帕尼",
     "pos": "PF / SF",
     "height": "6'7'",
     "type": "2-Way Stretch Four",
@@ -9648,7 +9648,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0458",
-    "cname": "瓦塞尔",
+    "cname": "德文-瓦塞尔",
     "pos": "SF / SG",
     "height": "6'5'",
     "type": "Shot-Creating Point Forward",
@@ -9669,7 +9669,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0459",
-    "cname": "约翰逊",
+    "cname": "凯尔登-约翰逊",
     "pos": "SG / SF",
     "height": "6'6'",
     "type": "Power Finisher",
@@ -9690,7 +9690,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0460",
-    "cname": "科内特",
+    "cname": "卢克-科内特",
     "pos": "C",
     "height": "7'1'",
     "type": "Shot-Erasing Post Crasher",
@@ -9711,7 +9711,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 65,
   },{
     "id": "P0461",
-    "cname": "巴恩斯",
+    "cname": "哈里森-巴恩斯",
     "pos": "PF / SF",
     "height": "6'7'",
     "type": "Skilled Stretch Four",
@@ -9732,7 +9732,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0462",
-    "cname": "布赖恩特",
+    "cname": "卡特-布赖恩特",
     "pos": "SF / PF",
     "height": "6'6'",
     "type": "High-Flying Wing Runner",
@@ -9753,7 +9753,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0463",
-    "cname": "普拉姆利",
+    "cname": "梅森-普拉姆利",
     "pos": "C",
     "height": "7'0'",
     "type": "Break-Starting Paint Finisher",
@@ -9774,7 +9774,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 35,
   },{
     "id": "P0464",
-    "cname": "奥利尼克",
+    "cname": "凯利-奥利尼克",
     "pos": "C / PF",
     "height": "7'0'",
     "type": "Crafty Stretch Five Dimer",
@@ -9795,7 +9795,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0465",
-    "cname": "沃特斯",
+    "cname": "林迪-沃特斯三世",
     "pos": "SG / SF",
     "height": "6'5'",
     "type": "Crafty Sharpshooter",
@@ -9816,7 +9816,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0466",
-    "cname": "麦克劳克林",
+    "cname": "乔丹-麦克劳克林",
     "pos": "PG",
     "height": "5'11'",
     "type": "Ball-Hawking 3PT Shot Hunter",
@@ -9837,7 +9837,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0467",
-    "cname": "加西亚",
+    "cname": "戴维-琼斯-加西亚",
     "pos": "SG / PG",
     "height": "6'4'",
     "type": "Diming Inside-Out Scorer",
@@ -9858,7 +9858,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0468",
-    "cname": "比永博",
+    "cname": "俾斯麦-比永博",
     "pos": "C",
     "height": "6'8'",
     "type": "2-Way Crafty Finisher",
@@ -9879,7 +9879,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 35,
   },{
     "id": "P0469",
-    "cname": "英格拉姆",
+    "cname": "哈里森-英格拉姆",
     "pos": "SF / SG",
     "height": "6'5'",
     "type": "Blow-By Bully",
@@ -9900,7 +9900,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 30,
   },{
     "id": "P0470",
-    "cname": "米勒",
+    "cname": "伊曼纽尔-米勒",
     "pos": "SF / SG",
     "height": "6'5'",
     "type": "High-Flying Wing Runner",
@@ -9922,7 +9922,7 @@ const LEAGUE_PLAYER_DATA = {
   }],
   "TOR": [{
     "id": "P0472",
-    "cname": "巴恩斯",
+    "cname": "斯科蒂-巴恩斯",
     "pos": "PF / PG",
     "height": "6'8'",
     "type": "Mid-Paint Playmaking Eraser",
@@ -9943,7 +9943,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0473",
-    "cname": "奎克利",
+    "cname": "伊曼纽尔-奎克利",
     "pos": "PG / SG",
     "height": "6'2'",
     "type": "2-Way Mid-Range Menace",
@@ -9964,7 +9964,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0474",
-    "cname": "巴雷特",
+    "cname": "RJ-巴雷特",
     "pos": "SG / SF",
     "height": "6'6'",
     "type": "2-Way Bullmaker",
@@ -9985,7 +9985,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0475",
-    "cname": "博伊尔斯",
+    "cname": "科林-默里-博伊尔斯",
     "pos": "C / PF",
     "height": "6'7'",
     "type": "Ball-Hawking Blow-By Laymaker",
@@ -10006,7 +10006,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 86,
   },{
     "id": "P0476",
-    "cname": "珀尔特尔",
+    "cname": "雅各布-珀尔特尔",
     "pos": "C",
     "height": "7'0'",
     "type": "Crafty Mid-Post Scorer",
@@ -10027,7 +10027,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0477",
-    "cname": "沃尔特",
+    "cname": "贾科比-沃尔特",
     "pos": "SG / SF",
     "height": "6'4'",
     "type": "Ball-Hawking 3PT Sniper",
@@ -10048,7 +10048,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0478",
-    "cname": "谢德",
+    "cname": "贾马尔-谢德",
     "pos": "PG / SG",
     "height": "6'1'",
     "type": "Speedy Blow-By Ace",
@@ -10069,7 +10069,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0479",
-    "cname": "巴特尔",
+    "cname": "贾米森-巴特尔",
     "pos": "SF / PF",
     "height": "6'7'",
     "type": "Crafty Sharpshooter",
@@ -10090,7 +10090,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 55,
   },{
     "id": "P0480",
-    "cname": "安德森",
+    "cname": "凯尔-安德森",
     "pos": "PF / C",
     "height": "6'8'",
     "type": "Defensive Playmaker",
@@ -10111,7 +10111,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0481",
-    "cname": "劳森",
+    "cname": "A.J.-劳森",
     "pos": "SF / SG",
     "height": "6'6'",
     "type": "Crafty 3PT-Sniping Dimer",
@@ -10132,7 +10132,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0483",
-    "cname": "戴维斯",
+    "cname": "特雷斯-杰克逊-戴维斯",
     "pos": "C / PF",
     "height": "6'9'",
     "type": "Rim-Running Rim Rocker",
@@ -10153,7 +10153,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0484",
-    "cname": "马丁",
+    "cname": "阿利雅-马丁",
     "pos": "SG / PG",
     "height": "6'2'",
     "type": "Ball-Hawking Wing Runner",
@@ -10174,7 +10174,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0485",
-    "cname": "坦普尔",
+    "cname": "加勒特-坦普尔",
     "pos": "SG / SF",
     "height": "6'5'",
     "type": "2-Way Combo Guard",
@@ -10195,7 +10195,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0486",
-    "cname": "赫普伯恩",
+    "cname": "查基-赫普伯恩",
     "pos": "PG",
     "height": "6'0'",
     "type": "Clamp Thief",
@@ -10216,7 +10216,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 25,
   },{
     "id": "P0207",
-    "cname": "英格拉姆",
+    "cname": "布兰登-英格拉姆",
     "pos": "SF / PF",
     "height": "6'8'",
     "type": "Crafty Mid-Range Menace",
@@ -10237,7 +10237,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0217",
-    "cname": "迪克",
+    "cname": "格雷迪-迪克",
     "pos": "SF / SG",
     "height": "6'7'",
     "type": "Mid-Range Menace",
@@ -10259,7 +10259,7 @@ const LEAGUE_PLAYER_DATA = {
   }],
   "UTA": [{
     "id": "P0487",
-    "cname": "马尔卡宁",
+    "cname": "劳里-马尔卡宁",
     "pos": "SF / PF",
     "height": "7'1'",
     "type": "Crafty Post-Scoring 3PT Sniper",
@@ -10280,7 +10280,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0488",
-    "cname": "乔治",
+    "cname": "基扬特-乔治",
     "pos": "PG / SG",
     "height": "6'4'",
     "type": "Crafty Laymaker",
@@ -10301,7 +10301,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 88,
   },{
     "id": "P0489",
-    "cname": "杰克逊",
+    "cname": "小贾伦-杰克逊",
     "pos": "PF / C",
     "height": "6'10'",
     "type": "2-Way Paint Pounder",
@@ -10322,7 +10322,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0490",
-    "cname": "科利尔",
+    "cname": "以赛亚-科利尔",
     "pos": "PG / SG",
     "height": "6'4'",
     "type": "Playmaker",
@@ -10343,7 +10343,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0491",
-    "cname": "努尔基奇",
+    "cname": "优素福-努尔基奇",
     "pos": "C",
     "height": "6'11'",
     "type": "Ball-Snatching Popper",
@@ -10364,7 +10364,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0492",
-    "cname": "贝利",
+    "cname": "埃斯-贝利",
     "pos": "SG / SF",
     "height": "6'9'",
     "type": "Crafty Blow-By High Flyer",
@@ -10385,7 +10385,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 86,
   },{
     "id": "P0493",
-    "cname": "森萨博",
+    "cname": "布赖斯-森萨博",
     "pos": "SF / SG",
     "height": "6'6'",
     "type": "Crafty 3PT Sniper",
@@ -10406,7 +10406,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 90,
   },{
     "id": "P0494",
-    "cname": "菲利波夫斯基",
+    "cname": "凯尔-菲利波夫斯基",
     "pos": "C / PF",
     "height": "6'11'",
     "type": "Glass-Cleaning Rim Runner",
@@ -10427,7 +10427,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0495",
-    "cname": "海斯",
+    "cname": "贾克森-海斯",
     "pos": "C / PF",
     "height": "7'0'",
     "type": "Crafty Rim Wrecker",
@@ -10448,7 +10448,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0496",
-    "cname": "乐福",
+    "cname": "凯文-乐福",
     "pos": "C / PF",
     "height": "6'8'",
     "type": "Crafty Stretch Five Cleaner",
@@ -10469,7 +10469,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0497",
-    "cname": "威廉姆斯",
+    "cname": "科迪-威廉姆斯",
     "pos": "PF / SF",
     "height": "6'8'",
     "type": "Mid-Range Menace",
@@ -10490,7 +10490,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0498",
-    "cname": "康查尔",
+    "cname": "约翰-康查尔",
     "pos": "SF / PF",
     "height": "6'5'",
     "type": "Disruptive Crafty Finisher",
@@ -10511,7 +10511,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0499",
-    "cname": "米哈伊柳克",
+    "cname": "斯维亚托斯拉夫-米哈伊柳克",
     "pos": "SG / SF",
     "height": "6'7'",
     "type": "Crafty Sharpshooter",
@@ -10532,7 +10532,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0500",
-    "cname": "奥科吉",
+    "cname": "乔什-奥科吉",
     "pos": "SG / SF",
     "height": "6'4'",
     "type": "Catch & Shoot 3PT Sniper",
@@ -10553,7 +10553,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0501",
-    "cname": "奇布韦",
+    "cname": "奥斯卡-奇布韦",
     "pos": "C / PF",
     "height": "6'8'",
     "type": "Rim-Running Putback Pro",
@@ -10574,7 +10574,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 40,
   },{
     "id": "P0502",
-    "cname": "欣森",
+    "cname": "布莱克-欣森",
     "pos": "PF / SF",
     "height": "6'8'",
     "type": "Skilled Stretch Four",
@@ -10595,7 +10595,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0503",
-    "cname": "哈克利斯",
+    "cname": "伊莱贾-哈克利斯",
     "pos": "PG / SG",
     "height": "6'3'",
     "type": "2-Way Blow-By Ace",
@@ -10616,7 +10616,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 65,
   },{
     "id": "P0504",
-    "cname": "班巴",
+    "cname": "Mo Bamba",
     "pos": "C",
     "height": "7'0'",
     "type": "Rim-Reaping Stretch Five",
@@ -10637,7 +10637,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0505",
-    "cname": "姆本格",
+    "cname": "贝兹-姆本格",
     "pos": "SG / PG",
     "height": "6'4'",
     "type": "2-Way Blow-By Ace",
@@ -10658,7 +10658,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0506",
-    "cname": "亚历山大",
+    "cname": "特雷-亚历山大",
     "pos": "PG / SG",
     "height": "6'5'",
     "type": "Iso Sniper",
@@ -10679,7 +10679,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0507",
-    "cname": "贝茨",
+    "cname": "Tamar Bates",
     "pos": "SG / SF",
     "height": "6'5",
     "type": "Iso Sniper",
@@ -10700,7 +10700,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0508",
-    "cname": "格雷",
+    "cname": "海登-格雷",
     "pos": "SG / PG",
     "height": "6'4'",
     "type": "Ball-Hawking Table Setter",
@@ -10722,7 +10722,7 @@ const LEAGUE_PLAYER_DATA = {
   }],
   "WAS": [{
     "id": "P0509",
-    "cname": "戴维斯",
+    "cname": "安东尼-戴维斯",
     "pos": "PF / C",
     "height": "6'10'",
     "type": "Backline Post Bully",
@@ -10743,7 +10743,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0510",
-    "cname": "杨",
+    "cname": "特雷-杨",
     "pos": "PG",
     "height": "6'2'",
     "type": "Crafty Offensive Engine",
@@ -10764,7 +10764,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0511",
-    "cname": "萨尔",
+    "cname": "亚历克斯-萨尔",
     "pos": "C / PF",
     "height": "7'0'",
     "type": "Shot-Erasing Versatile Slasher",
@@ -10785,7 +10785,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 86,
   },{
     "id": "P0512",
-    "cname": "乔治",
+    "cname": "凯肖恩-乔治",
     "pos": "PF / SF",
     "height": "6'8'",
     "type": "Crafty 3-Level Scorer",
@@ -10806,7 +10806,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 86,
   },{
     "id": "P0513",
-    "cname": "莱利",
+    "cname": "威尔-莱利",
     "pos": "SF / PF",
     "height": "6'9'",
     "type": "Blow-By Laymaking Four",
@@ -10827,7 +10827,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 86,
   },{
     "id": "P0514",
-    "cname": "艾顿",
+    "cname": "德安德烈-艾顿",
     "pos": "C",
     "height": "7'0'",
     "type": "Physical Mid-Range Lob Threat",
@@ -10848,7 +10848,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 45,
   },{
     "id": "P0515",
-    "cname": "库利巴利",
+    "cname": "比拉勒-库利巴利",
     "pos": "SF / SG",
     "height": "6'7'",
     "type": "High Flyer",
@@ -10869,7 +10869,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0516",
-    "cname": "尚帕尼",
+    "cname": "贾斯廷-尚帕尼",
     "pos": "PF / SF",
     "height": "6'6'",
     "type": "Crafty 3-Level Scoring Crasher",
@@ -10890,7 +10890,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 85,
   },{
     "id": "P0517",
-    "cname": "约翰逊",
+    "cname": "特雷-约翰逊",
     "pos": "SG / PG",
     "height": "6'5'",
     "type": "Mid-Range Menace",
@@ -10911,7 +10911,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0518",
-    "cname": "卡林顿",
+    "cname": "巴布-卡林顿",
     "pos": "PG / SG",
     "height": "6'4'",
     "type": "Iso Sniper",
@@ -10932,7 +10932,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 80,
   },{
     "id": "P0519",
-    "cname": "武克切维奇",
+    "cname": "特里斯坦-武克切维奇",
     "pos": "C / PF",
     "height": "7'0'",
     "type": "Crafty Stretch Five",
@@ -10953,7 +10953,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 75,
   },{
     "id": "P0521",
-    "cname": "沃特金斯",
+    "cname": "贾米尔-沃特金斯",
     "pos": "SF / PF",
     "height": "6'6'",
     "type": "Ball-Hawking Slasher",
@@ -10974,7 +10974,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 50,
   },{
     "id": "P0522",
-    "cname": "米德尔顿",
+    "cname": "克里斯-米德尔顿",
     "pos": "SF / PF",
     "height": "6'7'",
     "type": "Physical Middy Maestro",
@@ -10995,7 +10995,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 35,
   },{
     "id": "P0524",
-    "cname": "库珀",
+    "cname": "谢里夫-库珀",
     "pos": "PG",
     "height": "6'0'",
     "type": "Mid-Range Menace",
@@ -11016,7 +11016,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 60,
   },{
     "id": "P0525",
-    "cname": "吉尔",
+    "cname": "安东尼-吉尔",
     "pos": "PF / C",
     "height": "6'7'",
     "type": "Crafty Paint-Mashing Popper",
@@ -11037,7 +11037,7 @@ const LEAGUE_PLAYER_DATA = {
     "CLU": 70,
   },{
     "id": "P0069",
-    "cname": "曼",
+    "cname": "特雷-曼",
     "pos": "PG / SG",
     "height": "6'4'",
     "type": "Crafty 3PT-Sniping Creator",

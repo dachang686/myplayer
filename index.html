@@ -13258,7 +13258,14 @@ function updateSeasonNarrativeSignals(ctx) {
 function isNarrativeThreadReadyToOpen(thread, gameNum, signals, ctx) {
   if (!thread || gameNum < (Number(thread.openingGame) || 99)) return false;
   if (thread.kind === 'rivalry' || thread.kind === 'rivalry_reckoning') return isNarrativeRivalryThreadInGame(thread, ctx);
-  if (thread.kind === 'role' || thread.kind === 'former_teammate' || thread.kind === 'reunited_teammate' || thread.kind === 'media' || thread.kind === 'locker_room') return true;
+  if (thread.kind === 'former_teammate') {
+    var former = getNarrativeFormerTeammate(thread.payload && thread.payload.teammateId);
+    var opponent = ctx && ctx.game && ctx.game.opponent;
+    // 季后赛场次使用 1000+ 编号，不能只因“同在首轮”就把旧友线开在另一组对阵中。
+    // 以实时名单为准，避免旧友转会后仍按旧球队或缓存的 payload 触发。
+    return !!(former && former.active && opponent && former.team === opponent);
+  }
+  if (thread.kind === 'role' || thread.kind === 'reunited_teammate' || thread.kind === 'media' || thread.kind === 'locker_room') return true;
   var wins = Number(signals && signals.winStreak) || 0;
   var losses = Number(signals && signals.lossStreak) || 0;
   var standout = Number(signals && signals.standoutStreak) || 0;
