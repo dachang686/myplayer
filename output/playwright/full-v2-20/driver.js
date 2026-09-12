@@ -21,9 +21,17 @@ async (page) => {
   }
 
   async function handleModal() {
-    const contractModal = page.locator('#contract-modal');
+    const poster = page.locator('#posterOverlay');
+    if (await poster.count()) {
+      const close = poster.getByRole('button', { name: '关闭' });
+      if (await close.count()) await close.click();
+      else await page.evaluate(() => { const node = document.getElementById('posterOverlay'); if (node) node.remove(); });
+      await sleep(120);
+      return true;
+    }
+    const contractModal = page.locator('#contract-modal:visible');
     if (await contractModal.count()) {
-      const card = contractModal.locator('.team-pick-card').first();
+      const card = contractModal.locator('.team-pick-card[onclick]:visible').first();
       if (await card.count()) {
         await card.click();
         await sleep(150);
@@ -32,6 +40,8 @@ async (page) => {
         await sleep(150);
         return true;
       }
+      await sleep(120);
+      return true;
     }
 
     const preview = page.locator('#team-roster-preview-overlay');
@@ -46,7 +56,7 @@ async (page) => {
       return true;
     }
 
-    const retirement = page.locator('#player-retirement-choice');
+    const retirement = page.locator('#player-retirement-choice:visible');
     if (await retirement.count()) {
       const continueButton = retirement.getByRole('button', { name: /继续战斗/ });
       if (await continueButton.count()) await continueButton.click();
@@ -54,7 +64,7 @@ async (page) => {
       return true;
     }
 
-    const contractRetirement = page.locator('#contract-retirement-choice');
+    const contractRetirement = page.locator('#contract-retirement-choice:visible');
     if (await contractRetirement.count()) {
       const back = contractRetirement.getByRole('button', { name: /返回合同选择/ });
       if (await back.count()) await back.click();
@@ -62,7 +72,7 @@ async (page) => {
       return true;
     }
 
-    const overlays = page.locator('.awards-overlay,.team-picker-overlay');
+    const overlays = page.locator('.awards-overlay:visible,.team-picker-overlay:visible');
     if (await overlays.count()) {
       const overlay = overlays.last();
       const text = (await overlay.innerText()).slice(0, 240);
@@ -125,6 +135,8 @@ async (page) => {
     const phase = await page.evaluate(() => STATE.offseasonDraft && STATE.offseasonDraft.phase);
     if (phase === 'lottery') {
       await page.evaluate(() => revealAllLotteryPicks());
+      await sleep(450);
+      await page.evaluate(() => completeOffseasonDraftLottery());
       await sleep(450);
       await page.evaluate(() => {
         STATE.offseasonDraft.pickTrades.strategy = 'hold';

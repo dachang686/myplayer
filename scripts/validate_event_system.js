@@ -113,7 +113,7 @@ if (registryStart < 0 || registryEnd < 0) {
     'getUserAvg',
     'getBondedTeammateName',
     'ensureSeasonEventState',
-    `${indexSource.slice(registryStart, registryEnd)}\nreturn { EVENT_REGISTRY, checkRandomEvents, resolveEventVars, getRandomEventLane, getEventNoiseLevel, getEventNoiseTheme, getEventNoiseThemeCooldown, isRandomEventNoiseEligible, shouldPresentRandomEvent, initializeSeasonNarrative, canTriggerEventByLifecycle, recordEventLifecycle, meetsCareerEventIdentity, recordNarrativePlayoffSeries, finalizeSeasonNarrativeAtSeasonEnd, commitDirectorThreadChoice, resolveDirectorThread, getNarrativeThreadOutcome, getSeasonThemeEventWeight, chooseSeasonNarrativeTheme, chooseNarrativeThemeVariant, getSeasonThemeStoryline, getSeasonNarrativeTeammate, getNarrativeFormerTeammates, getDirectorThreadOpening, queueGameDrivenPressureThread, getActiveNarrativeThreadCount, selectNarrativeFormerTeammate, checkSeasonNarrativeDirector, consumeActiveEventEffectsForCareerGame, afterCareerTeamGame, findNarrativePlayer, syncNarrativeReunitedTeammates, syncNarrativeAfterPlayerTeamChange, isNarrativeThreadInCurrentTeamContext };`,
+    `${indexSource.slice(registryStart, registryEnd)}\nreturn { EVENT_REGISTRY, checkRandomEvents, resolveEventVars, getRandomEventLane, getEventNoiseLevel, getEventNoiseTheme, getEventNoiseThemeCooldown, isRandomEventNoiseEligible, shouldPresentRandomEvent, initializeSeasonNarrative, canTriggerEventByLifecycle, recordEventLifecycle, meetsCareerEventIdentity, meetsRandomEventContext, meetsDisciplineEventContext, getRandomEventLaneRate, isCloseGame, applyAutomaticEventImpact, recordNarrativePlayoffSeries, finalizeSeasonNarrativeAtSeasonEnd, commitDirectorThreadChoice, resolveDirectorThread, getNarrativeThreadOutcome, getSeasonThemeEventWeight, chooseSeasonNarrativeTheme, chooseNarrativeThemeVariant, getSeasonThemeStoryline, getSeasonNarrativeTeammate, getNarrativeFormerTeammates, getDirectorThreadOpening, queueGameDrivenPressureThread, getActiveNarrativeThreadCount, selectNarrativeFormerTeammate, checkSeasonNarrativeDirector, consumeActiveEventEffectsForCareerGame, afterCareerTeamGame, findNarrativePlayer, syncNarrativeReunitedTeammates, syncNarrativeAfterPlayerTeamChange, isNarrativeThreadInCurrentTeamContext };`,
   )({}, state, leagueData, addProfileDelta, profile, () => {
     const stats = state.season?.playerStats || {};
     const games = stats.games || 1;
@@ -1120,9 +1120,56 @@ if (registryStart < 0 || registryEnd < 0) {
   Object.keys(state).forEach(key => { delete state[key]; });
   Object.assign(state, auditStateSnapshot);
 
+  // 轻微健康事件必须落到下一场可用性，而不是只讲“扭伤/减分钟”的文本。
+  ['shower_slip', 'food_poisoning', 'towel_slip'].forEach(id => {
+    const def = registry.find(item => item.id === id);
+    const data = def && def.execute({});
+    if (!data || data._consequence !== 'injury' || data._games !== 1) {
+      failures.push(`${id} 没有结算为一场轻微伤停`);
+    }
+  });
+
+  // 绝杀类文字已降级为险胜末段叙事，必须有真实的险胜和对应数据门槛。
+  state.season.games = Array.from({ length: 20 }, () => ({ game: { opponent: 'AWAY' } }));
+  state.season.isPlayoffs = false;
+  state.career.profile = { controversy: 0 };
+  const closeWin = { game: { opponent: 'AWAY' }, result: { won: true, scoreA: 108, scoreB: 106 }, stats: { pts: 36, ast: 9, reb: 6 } };
+  const blowoutWin = { game: { opponent: 'AWAY' }, result: { won: true, scoreA: 122, scoreB: 100 }, stats: { pts: 36, ast: 9, reb: 6 } };
+  ['behind_the_back', 'gamemom_call', 'towel_celebration', 'celebrate_coach'].forEach(id => {
+    const def = registry.find(item => item.id === id);
+    if (!def || !eventModule.meetsRandomEventContext(def, closeWin) || eventModule.meetsRandomEventContext(def, blowoutWin)) {
+      failures.push(`${id} 没有正确要求险胜上下文`);
+    }
+  });
+
+  const doping = registry.find(item => item.id === 'susp_doping');
+  if (!doping || eventModule.meetsDisciplineEventContext(doping, closeWin)) {
+    failures.push('药检事件仍会在没有明确调查标记时随机触发');
+  }
+  state.career.flags = { supplementViolationPending: true };
+  if (!eventModule.meetsDisciplineEventContext(doping, closeWin)) {
+    failures.push('有明确补剂调查标记时药检事件无法结算');
+  }
+  const dopingData = doping.execute(closeWin);
+  if (dopingData._games !== 25 || state.career.flags.supplementViolationPending) {
+    failures.push('药检事件没有按调查结论结算25场并清理标记');
+  }
+  const pressFine = registry.find(item => item.id === 'susp_press_taunt');
+  state.career.profile = {};
+  const fineData = pressFine && pressFine.execute(closeWin);
+  eventModule.applyAutomaticEventImpact(pressFine, fineData);
+  if (!fineData || fineData._consequence !== 'fine' || state.career.profile.mediaTrust !== -1 || state.career.profile.controversy !== 1) {
+    failures.push('媒体失当罚款没有正确写入档案后果');
+  }
+  if (eventModule.getRandomEventLaneRate('discipline') !== 0.18) failures.push('常规赛纪律事件概率没有降低到0.18%');
+  state.season.isPlayoffs = true;
+  if (eventModule.getRandomEventLaneRate('discipline') !== 0.25) failures.push('季后赛纪律事件概率没有降低到0.25%');
+  state.season.isPlayoffs = false;
+  state.career.flags = {};
+
   registry.splice(0, registry.length,
     {
-      id: 'validation_suspension',
+      id: 'susp_validation',
       lane: 'discipline',
       weight: 1,
       condition: () => true,
@@ -1141,23 +1188,27 @@ if (registryStart < 0 || registryEnd < 0) {
   );
   // 前面的职业剧情条件测试会把比赛数推进到第 20 场；重置为独立的调度器用例，
   // 避免赛季导演按真实赛程优先推进角色线而抢占禁赛验证。
-  state.season.games = [{ game: { opponent: 'AWAY' } }];
+  state.season.games = Array.from({ length: 10 }, () => ({ game: { opponent: 'AWAY' } }));
   state.season.events = createEventState(0);
   const originalRandom = Math.random;
   try {
     Math.random = () => 0;
+    state.career.profile = { controversy: 0 };
+    const cleanContext = { game: { opponent: 'AWAY' }, result: { won: false, scoreA: 105, scoreB: 110 }, stats: { pts: 20, reb: 5, ast: 5 } };
+    if (eventModule.meetsRandomEventContext(registry[0], cleanContext)) failures.push('干净档案仍可无前置触发严重纪律事件');
+    state.career.profile.controversy = 4;
     const result = eventModule.checkRandomEvents(
       { opponent: 'AWAY' },
-      { won: true, scoreA: 110, scoreB: 105 },
+      { won: false, scoreA: 105, scoreB: 110 },
       { pts: 20, reb: 5, ast: 5 },
     );
     if (!result || result.title !== '测试禁赛') failures.push('纪律事件无法通过调度器触发');
     if (state.season.events.suspensionGamesLeft !== 2) failures.push('禁赛事件没有正确累计缺席场次');
-    if (!state.season.events.triggeredIds.includes('validation_suspension')) failures.push('事件去重记录未写入');
+    if (!state.season.events.triggeredIds.includes('susp_validation')) failures.push('事件去重记录未写入');
     if (state.season.events.storyTimeline.length !== 1) failures.push('事件生涯时间线未写入');
     const duplicateResult = eventModule.checkRandomEvents(
       { opponent: 'AWAY' },
-      { won: true, scoreA: 110, scoreB: 105 },
+      { won: false, scoreA: 105, scoreB: 110 },
       { pts: 20, reb: 5, ast: 5 },
     );
     if (duplicateResult || state.season.events.triggeredIds.includes('validation_duplicate_story') || state.season.events.storyTimeline.length !== 1) {

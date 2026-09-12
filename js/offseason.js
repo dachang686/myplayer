@@ -132,17 +132,19 @@ function getTeamRenewalWillingness() {
     }
     return !!willing;
   }
+  var profile = typeof getCareerProfile === 'function' ? getCareerProfile() : {};
+  var commitment = Math.max(-12, Math.min(12, Number(profile.loyalty) || 0));
   var ovr = STATE.finalOVR || 70;
   var age = c.currentAge || 22;
   var bench = !STATE.season.isUserStarter;
-  if (ovr >= 85) return rememberDecision(true);
+  if (ovr >= 85) return rememberDecision(Math.random() < Math.max(0.88, Math.min(0.98, 0.94 + commitment * 0.01)));
   if (ovr < 72) return rememberDecision(Math.random() < 0.35);
   var p = 0.86;
   if (age >= 33) p -= 0.16;
   if (bench) p -= 0.12;
   if (ovr < 78) p -= 0.12;
   if (getLastSeasonWinRate() < 0.45) p -= 0.08;
-  return rememberDecision(Math.random() < Math.max(0.45, p));
+  return rememberDecision(Math.random() < Math.max(0.45, Math.min(0.96, p + commitment * 0.01)));
 }
 
 function recordTeamNonRenewal() {
@@ -2400,6 +2402,8 @@ function getTradeRequestApprovalChance(preferredTeam) {
   if ((STATE.finalOVR || 0) >= 90) chance -= 12;
   else if ((STATE.finalOVR || 0) < 76) chance += 8;
   chance += Math.min(8, Math.max(0, profile.controversy || 0));
+  // Public commitment has a practical cost if a later trade request reverses it.
+  chance -= Math.min(10, Math.max(-4, Number(profile.loyalty) || 0) * 1.25);
 
   if (preferredTeam && preferredTeam !== STATE.careerTeam && typeof calcTeamLineup === 'function') {
     var lineup = calcTeamLineup(preferredTeam);
