@@ -3362,13 +3362,16 @@ function calcOvrPositionScore(attrs, pos) {
 }
 
 function calcOVR(attrs, pos) {
+  // 自建球员的属性对象本身不携带 pos。休赛期训练、年度成长和剧情加点
+  // 会直接传 STATE.attrs，因此必须沿用建档时选定的位置，不能落到统一模型的 SF 默认值。
+  var resolvedPos = pos || (typeof STATE !== 'undefined' && STATE && STATE.position);
   var unifiedOvr = typeof getUnifiedPlayerOvr === 'function'
     ? getUnifiedPlayerOvr
     : (SIM_CONFIG && SIM_CONFIG.getUnifiedPlayerOvr);
-  if (typeof unifiedOvr === 'function') return unifiedOvr(attrs, pos);
+  if (typeof unifiedOvr === 'function') return unifiedOvr(attrs, resolvedPos);
   var model = SIM_CONFIG && SIM_CONFIG.OVR_MODEL;
   if (!model) return 50;
-  var positions = getOvrPositions(pos);
+  var positions = getOvrPositions(resolvedPos);
   var primaryScore = calcOvrPositionScore(attrs, positions[0]);
   var positionScore = primaryScore;
   if (positions[1]) {

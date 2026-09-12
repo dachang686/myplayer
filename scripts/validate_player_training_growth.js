@@ -129,6 +129,19 @@ check(JSON.stringify({ attrs: context.STATE.attrs, age: context.STATE.career.cur
   '同赛季重复确认再次改变了球员');
 check(counters.save === 1 && counters.continue === 1 && counters.draft === 1, '重复确认没有只恢复后续流程');
 
+// 训练和休赛期剧情调用 calcOVR(STATE.attrs) 时，属性对象不含位置；必须沿用自建时的位置，
+// 防止 PG/SG/C 被统一模型按默认 SF 位置重算而发生 OVR 跳变。
+const positionRegressionAttrs = {
+  threePT: 38, MID: 83, FIN: 93, DNK: 76, HAN: 92, PAS: 88, PDEF: 71,
+  STL: 79, IDEF: 95, BLK: 91, REB: 66, ATH: 83, STR: 88, CLU: 89,
+};
+context.STATE = { attrs: Object.assign({}, positionRegressionAttrs), position: 'PG' };
+const positionAwareOvr = context.calcOVR(context.STATE.attrs, 'PG');
+const implicitPositionOvr = context.calcOVR(context.STATE.attrs);
+check(positionAwareOvr === 90, `PG 回归样本建档 OVR 异常：${positionAwareOvr}`);
+check(implicitPositionOvr === positionAwareOvr,
+  `未传位置时 OVR 未沿用自建位置：PG ${positionAwareOvr}，实际 ${implicitPositionOvr}`);
+
 resetState({ level: 90 });
 context.STATE._tpPending = { MID: 10 };
 const overBudgetBefore = JSON.stringify(context.STATE.attrs);
