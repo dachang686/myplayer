@@ -1,0 +1,2639 @@
+{
+  "seeds": 3,
+  "checkpoints": [
+    10,
+    15,
+    20,
+    25,
+    30,
+    35
+  ],
+  "equilibriumCheckpoints": [
+    20,
+    25,
+    30,
+    35
+  ],
+  "summaries": [
+    {
+      "season": 10,
+      "samples": 3,
+      "count90": {
+        "min": 46,
+        "max": 57,
+        "avg": 51
+      },
+      "count85": {
+        "min": 109,
+        "max": 117,
+        "avg": 113.67
+      },
+      "maxOvr": {
+        "min": 99,
+        "max": 99,
+        "avg": 99
+      },
+      "count99": {
+        "min": 2,
+        "max": 4,
+        "avg": 3
+      },
+      "top35Under30": {
+        "min": 7,
+        "max": 8,
+        "avg": 7.33
+      },
+      "top35Age30To34": {
+        "min": 24,
+        "max": 25,
+        "avg": 24.67
+      },
+      "top35Age35Plus": {
+        "min": 3,
+        "max": 3,
+        "avg": 3
+      },
+      "top35AverageAge": {
+        "min": 31.34,
+        "max": 31.69,
+        "avg": 31.55
+      },
+      "positionStats": {
+        "PG": {
+          "players": {
+            "min": 128,
+            "max": 130,
+            "avg": 129
+          },
+          "count80": {
+            "min": 53,
+            "max": 57,
+            "avg": 55.3333
+          },
+          "count85": {
+            "min": 25,
+            "max": 29,
+            "avg": 27.3333
+          },
+          "count90": {
+            "min": 11,
+            "max": 13,
+            "avg": 12
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.4109,
+            "max": 0.4453,
+            "avg": 0.429
+          },
+          "share85": {
+            "min": 0.1953,
+            "max": 0.2248,
+            "avg": 0.2118
+          },
+          "share90": {
+            "min": 0.0853,
+            "max": 0.1016,
+            "avg": 0.093
+          },
+          "averagePotential": {
+            "min": 85.6406,
+            "max": 86.4186,
+            "avg": 86.0556
+          },
+          "generatedPlayers": {
+            "min": 60,
+            "max": 60,
+            "avg": 60
+          },
+          "generatedCount80": {
+            "min": 12,
+            "max": 21,
+            "avg": 16.3333
+          },
+          "generatedCount85": {
+            "min": 4,
+            "max": 6,
+            "avg": 4.6667
+          },
+          "generatedCount90": {
+            "min": 0,
+            "max": 1,
+            "avg": 0.3333
+          },
+          "generatedAveragePotential": {
+            "min": 88.2,
+            "max": 89.7167,
+            "avg": 88.8111
+          },
+          "maturityRate": {
+            "min": 0.037,
+            "max": 0.1481,
+            "avg": 0.1111
+          },
+          "maturityEligible": {
+            "min": 27,
+            "max": 27,
+            "avg": 27
+          }
+        },
+        "SG": {
+          "players": {
+            "min": 120,
+            "max": 124,
+            "avg": 121.6667
+          },
+          "count80": {
+            "min": 47,
+            "max": 53,
+            "avg": 49.3333
+          },
+          "count85": {
+            "min": 20,
+            "max": 25,
+            "avg": 22.3333
+          },
+          "count90": {
+            "min": 8,
+            "max": 13,
+            "avg": 10.6667
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.3884,
+            "max": 0.4274,
+            "avg": 0.4053
+          },
+          "share85": {
+            "min": 0.1613,
+            "max": 0.2083,
+            "avg": 0.1838
+          },
+          "share90": {
+            "min": 0.0667,
+            "max": 0.1074,
+            "avg": 0.0876
+          },
+          "averagePotential": {
+            "min": 85.75,
+            "max": 85.9597,
+            "avg": 85.8784
+          },
+          "generatedPlayers": {
+            "min": 60,
+            "max": 60,
+            "avg": 60
+          },
+          "generatedCount80": {
+            "min": 16,
+            "max": 23,
+            "avg": 19
+          },
+          "generatedCount85": {
+            "min": 5,
+            "max": 9,
+            "avg": 6.6667
+          },
+          "generatedCount90": {
+            "min": 0,
+            "max": 3,
+            "avg": 1.3333
+          },
+          "generatedAveragePotential": {
+            "min": 89.15,
+            "max": 89.9,
+            "avg": 89.5167
+          },
+          "maturityRate": {
+            "min": 0.1481,
+            "max": 0.2222,
+            "avg": 0.1728
+          },
+          "maturityEligible": {
+            "min": 27,
+            "max": 27,
+            "avg": 27
+          }
+        },
+        "SF": {
+          "players": {
+            "min": 126,
+            "max": 127,
+            "avg": 126.6667
+          },
+          "count80": {
+            "min": 44,
+            "max": 55,
+            "avg": 48.6667
+          },
+          "count85": {
+            "min": 16,
+            "max": 23,
+            "avg": 20
+          },
+          "count90": {
+            "min": 8,
+            "max": 11,
+            "avg": 9.6667
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.3492,
+            "max": 0.4331,
+            "avg": 0.3841
+          },
+          "share85": {
+            "min": 0.127,
+            "max": 0.1811,
+            "avg": 0.1578
+          },
+          "share90": {
+            "min": 0.0635,
+            "max": 0.0866,
+            "avg": 0.0763
+          },
+          "averagePotential": {
+            "min": 85.1417,
+            "max": 85.5669,
+            "avg": 85.4108
+          },
+          "generatedPlayers": {
+            "min": 60,
+            "max": 60,
+            "avg": 60
+          },
+          "generatedCount80": {
+            "min": 9,
+            "max": 17,
+            "avg": 11.6667
+          },
+          "generatedCount85": {
+            "min": 2,
+            "max": 7,
+            "avg": 4.6667
+          },
+          "generatedCount90": {
+            "min": 1,
+            "max": 3,
+            "avg": 2
+          },
+          "generatedAveragePotential": {
+            "min": 87.9,
+            "max": 88.8667,
+            "avg": 88.4833
+          },
+          "maturityRate": {
+            "min": 0.037,
+            "max": 0.1481,
+            "avg": 0.0988
+          },
+          "maturityEligible": {
+            "min": 27,
+            "max": 27,
+            "avg": 27
+          }
+        },
+        "PF": {
+          "players": {
+            "min": 111,
+            "max": 119,
+            "avg": 115.3333
+          },
+          "count80": {
+            "min": 43,
+            "max": 50,
+            "avg": 46.6667
+          },
+          "count85": {
+            "min": 16,
+            "max": 24,
+            "avg": 19
+          },
+          "count90": {
+            "min": 7,
+            "max": 11,
+            "avg": 9
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.3874,
+            "max": 0.431,
+            "avg": 0.4045
+          },
+          "share85": {
+            "min": 0.1379,
+            "max": 0.2017,
+            "avg": 0.1643
+          },
+          "share90": {
+            "min": 0.0588,
+            "max": 0.0948,
+            "avg": 0.0782
+          },
+          "averagePotential": {
+            "min": 85.5135,
+            "max": 86.2328,
+            "avg": 85.9322
+          },
+          "generatedPlayers": {
+            "min": 60,
+            "max": 60,
+            "avg": 60
+          },
+          "generatedCount80": {
+            "min": 15,
+            "max": 17,
+            "avg": 15.6667
+          },
+          "generatedCount85": {
+            "min": 3,
+            "max": 9,
+            "avg": 6
+          },
+          "generatedCount90": {
+            "min": 0,
+            "max": 2,
+            "avg": 1.3333
+          },
+          "generatedAveragePotential": {
+            "min": 87.2333,
+            "max": 89.3667,
+            "avg": 88.4944
+          },
+          "maturityRate": {
+            "min": 0.0741,
+            "max": 0.2963,
+            "avg": 0.1728
+          },
+          "maturityEligible": {
+            "min": 27,
+            "max": 27,
+            "avg": 27
+          }
+        },
+        "C": {
+          "players": {
+            "min": 115,
+            "max": 120,
+            "avg": 117
+          },
+          "count80": {
+            "min": 55,
+            "max": 59,
+            "avg": 57.6667
+          },
+          "count85": {
+            "min": 23,
+            "max": 28,
+            "avg": 25
+          },
+          "count90": {
+            "min": 9,
+            "max": 11,
+            "avg": 9.6667
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.4783,
+            "max": 0.5086,
+            "avg": 0.4928
+          },
+          "share85": {
+            "min": 0.2,
+            "max": 0.2333,
+            "avg": 0.2134
+          },
+          "share90": {
+            "min": 0.075,
+            "max": 0.0948,
+            "avg": 0.0827
+          },
+          "averagePotential": {
+            "min": 86.1652,
+            "max": 86.9569,
+            "avg": 86.4963
+          },
+          "generatedPlayers": {
+            "min": 60,
+            "max": 60,
+            "avg": 60
+          },
+          "generatedCount80": {
+            "min": 23,
+            "max": 27,
+            "avg": 25.3333
+          },
+          "generatedCount85": {
+            "min": 7,
+            "max": 10,
+            "avg": 8.6667
+          },
+          "generatedCount90": {
+            "min": 1,
+            "max": 4,
+            "avg": 2.3333
+          },
+          "generatedAveragePotential": {
+            "min": 88.3667,
+            "max": 90.2333,
+            "avg": 89.2722
+          },
+          "maturityRate": {
+            "min": 0.2222,
+            "max": 0.2593,
+            "avg": 0.2346
+          },
+          "maturityEligible": {
+            "min": 27,
+            "max": 27,
+            "avg": 27
+          }
+        }
+      }
+    },
+    {
+      "season": 15,
+      "samples": 3,
+      "count90": {
+        "min": 29,
+        "max": 35,
+        "avg": 31.67
+      },
+      "count85": {
+        "min": 99,
+        "max": 108,
+        "avg": 103
+      },
+      "maxOvr": {
+        "min": 98,
+        "max": 99,
+        "avg": 98.67
+      },
+      "count99": {
+        "min": 0,
+        "max": 4,
+        "avg": 2
+      },
+      "top35Under30": {
+        "min": 9,
+        "max": 13,
+        "avg": 11.67
+      },
+      "top35Age30To34": {
+        "min": 10,
+        "max": 15,
+        "avg": 12.33
+      },
+      "top35Age35Plus": {
+        "min": 10,
+        "max": 12,
+        "avg": 11
+      },
+      "top35AverageAge": {
+        "min": 31.17,
+        "max": 32.31,
+        "avg": 31.85
+      },
+      "positionStats": {
+        "PG": {
+          "players": {
+            "min": 105,
+            "max": 109,
+            "avg": 107.3333
+          },
+          "count80": {
+            "min": 39,
+            "max": 49,
+            "avg": 43
+          },
+          "count85": {
+            "min": 19,
+            "max": 24,
+            "avg": 21.3333
+          },
+          "count90": {
+            "min": 4,
+            "max": 5,
+            "avg": 4.3333
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.3714,
+            "max": 0.4537,
+            "avg": 0.4004
+          },
+          "share85": {
+            "min": 0.1743,
+            "max": 0.2222,
+            "avg": 0.1988
+          },
+          "share90": {
+            "min": 0.0367,
+            "max": 0.0476,
+            "avg": 0.0405
+          },
+          "averagePotential": {
+            "min": 88.287,
+            "max": 89.1905,
+            "avg": 88.6913
+          },
+          "generatedPlayers": {
+            "min": 89,
+            "max": 90,
+            "avg": 89.6667
+          },
+          "generatedCount80": {
+            "min": 26,
+            "max": 33,
+            "avg": 28.6667
+          },
+          "generatedCount85": {
+            "min": 10,
+            "max": 14,
+            "avg": 12
+          },
+          "generatedCount90": {
+            "min": 1,
+            "max": 2,
+            "avg": 1.3333
+          },
+          "generatedAveragePotential": {
+            "min": 88.4111,
+            "max": 89.3483,
+            "avg": 88.8087
+          },
+          "maturityRate": {
+            "min": 0.1404,
+            "max": 0.2281,
+            "avg": 0.1883
+          },
+          "maturityEligible": {
+            "min": 56,
+            "max": 57,
+            "avg": 56.6667
+          }
+        },
+        "SG": {
+          "players": {
+            "min": 105,
+            "max": 109,
+            "avg": 107
+          },
+          "count80": {
+            "min": 41,
+            "max": 45,
+            "avg": 43.6667
+          },
+          "count85": {
+            "min": 20,
+            "max": 22,
+            "avg": 21.3333
+          },
+          "count90": {
+            "min": 8,
+            "max": 9,
+            "avg": 8.6667
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.3832,
+            "max": 0.4286,
+            "avg": 0.4082
+          },
+          "share85": {
+            "min": 0.1869,
+            "max": 0.2095,
+            "avg": 0.1994
+          },
+          "share90": {
+            "min": 0.0748,
+            "max": 0.0857,
+            "avg": 0.081
+          },
+          "averagePotential": {
+            "min": 88.6762,
+            "max": 88.7156,
+            "avg": 88.7007
+          },
+          "generatedPlayers": {
+            "min": 90,
+            "max": 90,
+            "avg": 90
+          },
+          "generatedCount80": {
+            "min": 32,
+            "max": 34,
+            "avg": 33
+          },
+          "generatedCount85": {
+            "min": 13,
+            "max": 15,
+            "avg": 14
+          },
+          "generatedCount90": {
+            "min": 4,
+            "max": 5,
+            "avg": 4.3333
+          },
+          "generatedAveragePotential": {
+            "min": 88.7111,
+            "max": 89.3667,
+            "avg": 89.0593
+          },
+          "maturityRate": {
+            "min": 0.193,
+            "max": 0.2632,
+            "avg": 0.2222
+          },
+          "maturityEligible": {
+            "min": 57,
+            "max": 57,
+            "avg": 57
+          }
+        },
+        "SF": {
+          "players": {
+            "min": 105,
+            "max": 111,
+            "avg": 108.3333
+          },
+          "count80": {
+            "min": 34,
+            "max": 44,
+            "avg": 39.6667
+          },
+          "count85": {
+            "min": 13,
+            "max": 17,
+            "avg": 14.6667
+          },
+          "count90": {
+            "min": 4,
+            "max": 6,
+            "avg": 5
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.3119,
+            "max": 0.3964,
+            "avg": 0.3663
+          },
+          "share85": {
+            "min": 0.1238,
+            "max": 0.1532,
+            "avg": 0.1351
+          },
+          "share90": {
+            "min": 0.036,
+            "max": 0.055,
+            "avg": 0.0462
+          },
+          "averagePotential": {
+            "min": 88.0631,
+            "max": 88.8857,
+            "avg": 88.4294
+          },
+          "generatedPlayers": {
+            "min": 90,
+            "max": 90,
+            "avg": 90
+          },
+          "generatedCount80": {
+            "min": 22,
+            "max": 30,
+            "avg": 27.3333
+          },
+          "generatedCount85": {
+            "min": 9,
+            "max": 10,
+            "avg": 9.3333
+          },
+          "generatedCount90": {
+            "min": 2,
+            "max": 3,
+            "avg": 2.3333
+          },
+          "generatedAveragePotential": {
+            "min": 88.3556,
+            "max": 89.1333,
+            "avg": 88.737
+          },
+          "maturityRate": {
+            "min": 0.1404,
+            "max": 0.1579,
+            "avg": 0.1462
+          },
+          "maturityEligible": {
+            "min": 57,
+            "max": 57,
+            "avg": 57
+          }
+        },
+        "PF": {
+          "players": {
+            "min": 106,
+            "max": 106,
+            "avg": 106
+          },
+          "count80": {
+            "min": 36,
+            "max": 40,
+            "avg": 38.3333
+          },
+          "count85": {
+            "min": 14,
+            "max": 18,
+            "avg": 16.3333
+          },
+          "count90": {
+            "min": 1,
+            "max": 4,
+            "avg": 2.6667
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.3396,
+            "max": 0.3774,
+            "avg": 0.3616
+          },
+          "share85": {
+            "min": 0.1321,
+            "max": 0.1698,
+            "avg": 0.1541
+          },
+          "share90": {
+            "min": 0.0094,
+            "max": 0.0377,
+            "avg": 0.0252
+          },
+          "averagePotential": {
+            "min": 88.0472,
+            "max": 88.6604,
+            "avg": 88.4308
+          },
+          "generatedPlayers": {
+            "min": 88,
+            "max": 90,
+            "avg": 89
+          },
+          "generatedCount80": {
+            "min": 26,
+            "max": 28,
+            "avg": 27
+          },
+          "generatedCount85": {
+            "min": 10,
+            "max": 13,
+            "avg": 12
+          },
+          "generatedCount90": {
+            "min": 1,
+            "max": 3,
+            "avg": 2
+          },
+          "generatedAveragePotential": {
+            "min": 88.2,
+            "max": 89.0909,
+            "avg": 88.7
+          },
+          "maturityRate": {
+            "min": 0.1228,
+            "max": 0.2182,
+            "avg": 0.1791
+          },
+          "maturityEligible": {
+            "min": 55,
+            "max": 57,
+            "avg": 56
+          }
+        },
+        "C": {
+          "players": {
+            "min": 105,
+            "max": 109,
+            "avg": 107.3333
+          },
+          "count80": {
+            "min": 53,
+            "max": 63,
+            "avg": 59.3333
+          },
+          "count85": {
+            "min": 24,
+            "max": 34,
+            "avg": 29.3333
+          },
+          "count90": {
+            "min": 8,
+            "max": 13,
+            "avg": 11
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.4862,
+            "max": 0.5905,
+            "avg": 0.5533
+          },
+          "share85": {
+            "min": 0.2222,
+            "max": 0.3238,
+            "avg": 0.2738
+          },
+          "share90": {
+            "min": 0.0741,
+            "max": 0.1193,
+            "avg": 0.1025
+          },
+          "averagePotential": {
+            "min": 88.1667,
+            "max": 89.3945,
+            "avg": 88.6791
+          },
+          "generatedPlayers": {
+            "min": 89,
+            "max": 90,
+            "avg": 89.6667
+          },
+          "generatedCount80": {
+            "min": 40,
+            "max": 52,
+            "avg": 47.3333
+          },
+          "generatedCount85": {
+            "min": 18,
+            "max": 27,
+            "avg": 23
+          },
+          "generatedCount90": {
+            "min": 3,
+            "max": 9,
+            "avg": 6.3333
+          },
+          "generatedAveragePotential": {
+            "min": 88.3111,
+            "max": 89.7111,
+            "avg": 88.925
+          },
+          "maturityRate": {
+            "min": 0.2456,
+            "max": 0.3929,
+            "avg": 0.3356
+          },
+          "maturityEligible": {
+            "min": 56,
+            "max": 57,
+            "avg": 56.6667
+          }
+        }
+      }
+    },
+    {
+      "season": 20,
+      "samples": 3,
+      "count90": {
+        "min": 20,
+        "max": 27,
+        "avg": 22.33
+      },
+      "count85": {
+        "min": 83,
+        "max": 94,
+        "avg": 87
+      },
+      "maxOvr": {
+        "min": 99,
+        "max": 99,
+        "avg": 99
+      },
+      "count99": {
+        "min": 1,
+        "max": 2,
+        "avg": 1.67
+      },
+      "top35Under30": {
+        "min": 8,
+        "max": 13,
+        "avg": 11
+      },
+      "top35Age30To34": {
+        "min": 18,
+        "max": 22,
+        "avg": 20
+      },
+      "top35Age35Plus": {
+        "min": 3,
+        "max": 5,
+        "avg": 4
+      },
+      "top35AverageAge": {
+        "min": 30.43,
+        "max": 31.89,
+        "avg": 31.03
+      },
+      "positionStats": {
+        "PG": {
+          "players": {
+            "min": 100,
+            "max": 104,
+            "avg": 102.3333
+          },
+          "count80": {
+            "min": 29,
+            "max": 36,
+            "avg": 32.6667
+          },
+          "count85": {
+            "min": 12,
+            "max": 18,
+            "avg": 15
+          },
+          "count90": {
+            "min": 2,
+            "max": 5,
+            "avg": 3
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.29,
+            "max": 0.3462,
+            "avg": 0.3188
+          },
+          "share85": {
+            "min": 0.12,
+            "max": 0.1731,
+            "avg": 0.1462
+          },
+          "share90": {
+            "min": 0.0194,
+            "max": 0.0481,
+            "avg": 0.0292
+          },
+          "averagePotential": {
+            "min": 89.3077,
+            "max": 89.35,
+            "avg": 89.3228
+          },
+          "generatedPlayers": {
+            "min": 100,
+            "max": 103,
+            "avg": 101.6667
+          },
+          "generatedCount80": {
+            "min": 29,
+            "max": 35,
+            "avg": 32.3333
+          },
+          "generatedCount85": {
+            "min": 12,
+            "max": 17,
+            "avg": 14.6667
+          },
+          "generatedCount90": {
+            "min": 2,
+            "max": 5,
+            "avg": 3
+          },
+          "generatedAveragePotential": {
+            "min": 89.2816,
+            "max": 89.35,
+            "avg": 89.3184
+          },
+          "maturityRate": {
+            "min": 0.1642,
+            "max": 0.2286,
+            "avg": 0.1937
+          },
+          "maturityEligible": {
+            "min": 67,
+            "max": 70,
+            "avg": 68.6667
+          }
+        },
+        "SG": {
+          "players": {
+            "min": 102,
+            "max": 104,
+            "avg": 103
+          },
+          "count80": {
+            "min": 41,
+            "max": 43,
+            "avg": 41.6667
+          },
+          "count85": {
+            "min": 11,
+            "max": 19,
+            "avg": 16
+          },
+          "count90": {
+            "min": 6,
+            "max": 6,
+            "avg": 6
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.3981,
+            "max": 0.4135,
+            "avg": 0.4045
+          },
+          "share85": {
+            "min": 0.1068,
+            "max": 0.1863,
+            "avg": 0.1554
+          },
+          "share90": {
+            "min": 0.0577,
+            "max": 0.0588,
+            "avg": 0.0583
+          },
+          "averagePotential": {
+            "min": 89,
+            "max": 89.3786,
+            "avg": 89.1807
+          },
+          "generatedPlayers": {
+            "min": 102,
+            "max": 104,
+            "avg": 103
+          },
+          "generatedCount80": {
+            "min": 41,
+            "max": 43,
+            "avg": 41.6667
+          },
+          "generatedCount85": {
+            "min": 11,
+            "max": 19,
+            "avg": 16
+          },
+          "generatedCount90": {
+            "min": 6,
+            "max": 6,
+            "avg": 6
+          },
+          "generatedAveragePotential": {
+            "min": 89,
+            "max": 89.3786,
+            "avg": 89.1807
+          },
+          "maturityRate": {
+            "min": 0.1571,
+            "max": 0.2319,
+            "avg": 0.1954
+          },
+          "maturityEligible": {
+            "min": 69,
+            "max": 71,
+            "avg": 70
+          }
+        },
+        "SF": {
+          "players": {
+            "min": 100,
+            "max": 104,
+            "avg": 102.6667
+          },
+          "count80": {
+            "min": 33,
+            "max": 42,
+            "avg": 37.6667
+          },
+          "count85": {
+            "min": 11,
+            "max": 18,
+            "avg": 14.3333
+          },
+          "count90": {
+            "min": 1,
+            "max": 4,
+            "avg": 2.3333
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.3173,
+            "max": 0.42,
+            "avg": 0.3676
+          },
+          "share85": {
+            "min": 0.11,
+            "max": 0.1731,
+            "avg": 0.1392
+          },
+          "share90": {
+            "min": 0.01,
+            "max": 0.0385,
+            "avg": 0.0226
+          },
+          "averagePotential": {
+            "min": 88.8077,
+            "max": 89.0096,
+            "avg": 88.8858
+          },
+          "generatedPlayers": {
+            "min": 99,
+            "max": 104,
+            "avg": 102
+          },
+          "generatedCount80": {
+            "min": 32,
+            "max": 42,
+            "avg": 37.3333
+          },
+          "generatedCount85": {
+            "min": 11,
+            "max": 18,
+            "avg": 14
+          },
+          "generatedCount90": {
+            "min": 1,
+            "max": 3,
+            "avg": 2
+          },
+          "generatedAveragePotential": {
+            "min": 88.8077,
+            "max": 88.9126,
+            "avg": 88.8596
+          },
+          "maturityRate": {
+            "min": 0.1364,
+            "max": 0.2113,
+            "avg": 0.173
+          },
+          "maturityEligible": {
+            "min": 66,
+            "max": 71,
+            "avg": 69
+          }
+        },
+        "PF": {
+          "players": {
+            "min": 101,
+            "max": 105,
+            "avg": 102.6667
+          },
+          "count80": {
+            "min": 33,
+            "max": 36,
+            "avg": 34
+          },
+          "count85": {
+            "min": 11,
+            "max": 15,
+            "avg": 13
+          },
+          "count90": {
+            "min": 2,
+            "max": 5,
+            "avg": 3.3333
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.3143,
+            "max": 0.3529,
+            "avg": 0.3313
+          },
+          "share85": {
+            "min": 0.1078,
+            "max": 0.1429,
+            "avg": 0.1265
+          },
+          "share90": {
+            "min": 0.019,
+            "max": 0.049,
+            "avg": 0.0326
+          },
+          "averagePotential": {
+            "min": 88.6667,
+            "max": 88.8333,
+            "avg": 88.7574
+          },
+          "generatedPlayers": {
+            "min": 100,
+            "max": 104,
+            "avg": 101.6667
+          },
+          "generatedCount80": {
+            "min": 33,
+            "max": 36,
+            "avg": 34
+          },
+          "generatedCount85": {
+            "min": 11,
+            "max": 15,
+            "avg": 13
+          },
+          "generatedCount90": {
+            "min": 2,
+            "max": 5,
+            "avg": 3.3333
+          },
+          "generatedAveragePotential": {
+            "min": 88.6346,
+            "max": 88.802,
+            "avg": 88.7255
+          },
+          "maturityRate": {
+            "min": 0.1471,
+            "max": 0.1642,
+            "avg": 0.1554
+          },
+          "maturityEligible": {
+            "min": 67,
+            "max": 71,
+            "avg": 68.6667
+          }
+        },
+        "C": {
+          "players": {
+            "min": 104,
+            "max": 107,
+            "avg": 105
+          },
+          "count80": {
+            "min": 54,
+            "max": 60,
+            "avg": 57.6667
+          },
+          "count85": {
+            "min": 26,
+            "max": 32,
+            "avg": 28.6667
+          },
+          "count90": {
+            "min": 3,
+            "max": 12,
+            "avg": 7.6667
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.5047,
+            "max": 0.5769,
+            "avg": 0.5496
+          },
+          "share85": {
+            "min": 0.25,
+            "max": 0.3077,
+            "avg": 0.2731
+          },
+          "share90": {
+            "min": 0.0288,
+            "max": 0.1154,
+            "avg": 0.073
+          },
+          "averagePotential": {
+            "min": 88.5192,
+            "max": 90.2336,
+            "avg": 89.4785
+          },
+          "generatedPlayers": {
+            "min": 104,
+            "max": 105,
+            "avg": 104.3333
+          },
+          "generatedCount80": {
+            "min": 54,
+            "max": 60,
+            "avg": 57.6667
+          },
+          "generatedCount85": {
+            "min": 26,
+            "max": 32,
+            "avg": 28.6667
+          },
+          "generatedCount90": {
+            "min": 3,
+            "max": 12,
+            "avg": 7.6667
+          },
+          "generatedAveragePotential": {
+            "min": 88.5192,
+            "max": 90.3238,
+            "avg": 89.5086
+          },
+          "maturityRate": {
+            "min": 0.338,
+            "max": 0.3803,
+            "avg": 0.3598
+          },
+          "maturityEligible": {
+            "min": 71,
+            "max": 72,
+            "avg": 71.3333
+          }
+        }
+      }
+    },
+    {
+      "season": 25,
+      "samples": 3,
+      "count90": {
+        "min": 16,
+        "max": 22,
+        "avg": 19.67
+      },
+      "count85": {
+        "min": 84,
+        "max": 87,
+        "avg": 85.33
+      },
+      "maxOvr": {
+        "min": 97,
+        "max": 98,
+        "avg": 97.67
+      },
+      "count99": {
+        "min": 0,
+        "max": 0,
+        "avg": 0
+      },
+      "top35Under30": {
+        "min": 14,
+        "max": 16,
+        "avg": 15
+      },
+      "top35Age30To34": {
+        "min": 14,
+        "max": 16,
+        "avg": 15.33
+      },
+      "top35Age35Plus": {
+        "min": 4,
+        "max": 5,
+        "avg": 4.67
+      },
+      "top35AverageAge": {
+        "min": 30.17,
+        "max": 30.71,
+        "avg": 30.52
+      },
+      "positionStats": {
+        "PG": {
+          "players": {
+            "min": 100,
+            "max": 106,
+            "avg": 102.6667
+          },
+          "count80": {
+            "min": 30,
+            "max": 33,
+            "avg": 31.6667
+          },
+          "count85": {
+            "min": 13,
+            "max": 15,
+            "avg": 14
+          },
+          "count90": {
+            "min": 2,
+            "max": 2,
+            "avg": 2
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.2941,
+            "max": 0.32,
+            "avg": 0.3085
+          },
+          "share85": {
+            "min": 0.1275,
+            "max": 0.1415,
+            "avg": 0.1363
+          },
+          "share90": {
+            "min": 0.0189,
+            "max": 0.02,
+            "avg": 0.0195
+          },
+          "averagePotential": {
+            "min": 88.6226,
+            "max": 89.5588,
+            "avg": 89.1572
+          },
+          "generatedPlayers": {
+            "min": 100,
+            "max": 106,
+            "avg": 102.6667
+          },
+          "generatedCount80": {
+            "min": 30,
+            "max": 33,
+            "avg": 31.6667
+          },
+          "generatedCount85": {
+            "min": 13,
+            "max": 15,
+            "avg": 14
+          },
+          "generatedCount90": {
+            "min": 2,
+            "max": 2,
+            "avg": 2
+          },
+          "generatedAveragePotential": {
+            "min": 88.6226,
+            "max": 89.5588,
+            "avg": 89.1572
+          },
+          "maturityRate": {
+            "min": 0.1739,
+            "max": 0.1791,
+            "avg": 0.177
+          },
+          "maturityEligible": {
+            "min": 67,
+            "max": 73,
+            "avg": 69.6667
+          }
+        },
+        "SG": {
+          "players": {
+            "min": 101,
+            "max": 103,
+            "avg": 102
+          },
+          "count80": {
+            "min": 42,
+            "max": 44,
+            "avg": 43.3333
+          },
+          "count85": {
+            "min": 13,
+            "max": 18,
+            "avg": 16
+          },
+          "count90": {
+            "min": 1,
+            "max": 6,
+            "avg": 3.3333
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.4078,
+            "max": 0.4356,
+            "avg": 0.4249
+          },
+          "share85": {
+            "min": 0.1262,
+            "max": 0.1765,
+            "avg": 0.157
+          },
+          "share90": {
+            "min": 0.0097,
+            "max": 0.0594,
+            "avg": 0.0328
+          },
+          "averagePotential": {
+            "min": 88.8252,
+            "max": 89.5196,
+            "avg": 89.1744
+          },
+          "generatedPlayers": {
+            "min": 101,
+            "max": 103,
+            "avg": 102
+          },
+          "generatedCount80": {
+            "min": 42,
+            "max": 44,
+            "avg": 43.3333
+          },
+          "generatedCount85": {
+            "min": 13,
+            "max": 18,
+            "avg": 16
+          },
+          "generatedCount90": {
+            "min": 1,
+            "max": 6,
+            "avg": 3.3333
+          },
+          "generatedAveragePotential": {
+            "min": 88.8252,
+            "max": 89.5196,
+            "avg": 89.1744
+          },
+          "maturityRate": {
+            "min": 0.1571,
+            "max": 0.25,
+            "avg": 0.2082
+          },
+          "maturityEligible": {
+            "min": 68,
+            "max": 70,
+            "avg": 69
+          }
+        },
+        "SF": {
+          "players": {
+            "min": 99,
+            "max": 105,
+            "avg": 102.3333
+          },
+          "count80": {
+            "min": 32,
+            "max": 42,
+            "avg": 37
+          },
+          "count85": {
+            "min": 14,
+            "max": 17,
+            "avg": 15.6667
+          },
+          "count90": {
+            "min": 3,
+            "max": 3,
+            "avg": 3
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.3232,
+            "max": 0.4,
+            "avg": 0.3608
+          },
+          "share85": {
+            "min": 0.1333,
+            "max": 0.165,
+            "avg": 0.1533
+          },
+          "share90": {
+            "min": 0.0286,
+            "max": 0.0303,
+            "avg": 0.0293
+          },
+          "averagePotential": {
+            "min": 88.7087,
+            "max": 89.1414,
+            "avg": 88.9659
+          },
+          "generatedPlayers": {
+            "min": 99,
+            "max": 105,
+            "avg": 102.3333
+          },
+          "generatedCount80": {
+            "min": 32,
+            "max": 42,
+            "avg": 37
+          },
+          "generatedCount85": {
+            "min": 14,
+            "max": 17,
+            "avg": 15.6667
+          },
+          "generatedCount90": {
+            "min": 3,
+            "max": 3,
+            "avg": 3
+          },
+          "generatedAveragePotential": {
+            "min": 88.7087,
+            "max": 89.1414,
+            "avg": 88.9659
+          },
+          "maturityRate": {
+            "min": 0.1667,
+            "max": 0.2,
+            "avg": 0.1879
+          },
+          "maturityEligible": {
+            "min": 66,
+            "max": 72,
+            "avg": 69.3333
+          }
+        },
+        "PF": {
+          "players": {
+            "min": 101,
+            "max": 106,
+            "avg": 103
+          },
+          "count80": {
+            "min": 33,
+            "max": 38,
+            "avg": 35.3333
+          },
+          "count85": {
+            "min": 10,
+            "max": 13,
+            "avg": 12
+          },
+          "count90": {
+            "min": 1,
+            "max": 5,
+            "avg": 3.3333
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.3235,
+            "max": 0.3585,
+            "avg": 0.3429
+          },
+          "share85": {
+            "min": 0.098,
+            "max": 0.1287,
+            "avg": 0.1165
+          },
+          "share90": {
+            "min": 0.0094,
+            "max": 0.0495,
+            "avg": 0.0327
+          },
+          "averagePotential": {
+            "min": 88.6337,
+            "max": 89.4118,
+            "avg": 88.8956
+          },
+          "generatedPlayers": {
+            "min": 100,
+            "max": 105,
+            "avg": 102
+          },
+          "generatedCount80": {
+            "min": 33,
+            "max": 38,
+            "avg": 35.3333
+          },
+          "generatedCount85": {
+            "min": 10,
+            "max": 13,
+            "avg": 12
+          },
+          "generatedCount90": {
+            "min": 1,
+            "max": 5,
+            "avg": 3.3333
+          },
+          "generatedAveragePotential": {
+            "min": 88.6,
+            "max": 89.3861,
+            "avg": 88.8652
+          },
+          "maturityRate": {
+            "min": 0.1343,
+            "max": 0.1667,
+            "avg": 0.1494
+          },
+          "maturityEligible": {
+            "min": 67,
+            "max": 72,
+            "avg": 69
+          }
+        },
+        "C": {
+          "players": {
+            "min": 104,
+            "max": 109,
+            "avg": 106.6667
+          },
+          "count80": {
+            "min": 53,
+            "max": 63,
+            "avg": 58.6667
+          },
+          "count85": {
+            "min": 26,
+            "max": 30,
+            "avg": 27.6667
+          },
+          "count90": {
+            "min": 5,
+            "max": 10,
+            "avg": 8
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.5096,
+            "max": 0.5888,
+            "avg": 0.5496
+          },
+          "share85": {
+            "min": 0.2385,
+            "max": 0.2804,
+            "avg": 0.2595
+          },
+          "share90": {
+            "min": 0.0467,
+            "max": 0.0962,
+            "avg": 0.0752
+          },
+          "averagePotential": {
+            "min": 88.9533,
+            "max": 89.3846,
+            "avg": 89.2013
+          },
+          "generatedPlayers": {
+            "min": 104,
+            "max": 109,
+            "avg": 106.6667
+          },
+          "generatedCount80": {
+            "min": 53,
+            "max": 63,
+            "avg": 58.6667
+          },
+          "generatedCount85": {
+            "min": 26,
+            "max": 30,
+            "avg": 27.6667
+          },
+          "generatedCount90": {
+            "min": 5,
+            "max": 10,
+            "avg": 8
+          },
+          "generatedAveragePotential": {
+            "min": 88.9533,
+            "max": 89.3846,
+            "avg": 89.2013
+          },
+          "maturityRate": {
+            "min": 0.3026,
+            "max": 0.3919,
+            "avg": 0.3583
+          },
+          "maturityEligible": {
+            "min": 71,
+            "max": 76,
+            "avg": 73.6667
+          }
+        }
+      }
+    },
+    {
+      "season": 30,
+      "samples": 3,
+      "count90": {
+        "min": 24,
+        "max": 27,
+        "avg": 25.33
+      },
+      "count85": {
+        "min": 85,
+        "max": 91,
+        "avg": 88
+      },
+      "maxOvr": {
+        "min": 98,
+        "max": 99,
+        "avg": 98.67
+      },
+      "count99": {
+        "min": 0,
+        "max": 1,
+        "avg": 0.67
+      },
+      "top35Under30": {
+        "min": 12,
+        "max": 15,
+        "avg": 14
+      },
+      "top35Age30To34": {
+        "min": 18,
+        "max": 20,
+        "avg": 19
+      },
+      "top35Age35Plus": {
+        "min": 1,
+        "max": 3,
+        "avg": 2
+      },
+      "top35AverageAge": {
+        "min": 30.34,
+        "max": 30.63,
+        "avg": 30.48
+      },
+      "positionStats": {
+        "PG": {
+          "players": {
+            "min": 100,
+            "max": 104,
+            "avg": 102
+          },
+          "count80": {
+            "min": 29,
+            "max": 35,
+            "avg": 32
+          },
+          "count85": {
+            "min": 9,
+            "max": 12,
+            "avg": 10.6667
+          },
+          "count90": {
+            "min": 2,
+            "max": 4,
+            "avg": 3
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.2843,
+            "max": 0.35,
+            "avg": 0.314
+          },
+          "share85": {
+            "min": 0.0865,
+            "max": 0.12,
+            "avg": 0.1048
+          },
+          "share90": {
+            "min": 0.0196,
+            "max": 0.04,
+            "avg": 0.0295
+          },
+          "averagePotential": {
+            "min": 88.451,
+            "max": 89.7212,
+            "avg": 89.034
+          },
+          "generatedPlayers": {
+            "min": 100,
+            "max": 104,
+            "avg": 102
+          },
+          "generatedCount80": {
+            "min": 29,
+            "max": 35,
+            "avg": 32
+          },
+          "generatedCount85": {
+            "min": 9,
+            "max": 12,
+            "avg": 10.6667
+          },
+          "generatedCount90": {
+            "min": 2,
+            "max": 4,
+            "avg": 3
+          },
+          "generatedAveragePotential": {
+            "min": 88.451,
+            "max": 89.7212,
+            "avg": 89.034
+          },
+          "maturityRate": {
+            "min": 0.1127,
+            "max": 0.1791,
+            "avg": 0.1407
+          },
+          "maturityEligible": {
+            "min": 67,
+            "max": 71,
+            "avg": 69
+          }
+        },
+        "SG": {
+          "players": {
+            "min": 102,
+            "max": 107,
+            "avg": 104
+          },
+          "count80": {
+            "min": 35,
+            "max": 48,
+            "avg": 43.3333
+          },
+          "count85": {
+            "min": 16,
+            "max": 21,
+            "avg": 18.6667
+          },
+          "count90": {
+            "min": 6,
+            "max": 8,
+            "avg": 7
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.3431,
+            "max": 0.466,
+            "avg": 0.4161
+          },
+          "share85": {
+            "min": 0.1569,
+            "max": 0.1963,
+            "avg": 0.1792
+          },
+          "share90": {
+            "min": 0.0588,
+            "max": 0.0777,
+            "avg": 0.0673
+          },
+          "averagePotential": {
+            "min": 88.7477,
+            "max": 89.7087,
+            "avg": 89.2338
+          },
+          "generatedPlayers": {
+            "min": 102,
+            "max": 107,
+            "avg": 104
+          },
+          "generatedCount80": {
+            "min": 35,
+            "max": 48,
+            "avg": 43.3333
+          },
+          "generatedCount85": {
+            "min": 16,
+            "max": 21,
+            "avg": 18.6667
+          },
+          "generatedCount90": {
+            "min": 6,
+            "max": 8,
+            "avg": 7
+          },
+          "generatedAveragePotential": {
+            "min": 88.7477,
+            "max": 89.7087,
+            "avg": 89.2338
+          },
+          "maturityRate": {
+            "min": 0.1884,
+            "max": 0.2429,
+            "avg": 0.2203
+          },
+          "maturityEligible": {
+            "min": 69,
+            "max": 74,
+            "avg": 71
+          }
+        },
+        "SF": {
+          "players": {
+            "min": 100,
+            "max": 105,
+            "avg": 102.6667
+          },
+          "count80": {
+            "min": 34,
+            "max": 40,
+            "avg": 37
+          },
+          "count85": {
+            "min": 14,
+            "max": 15,
+            "avg": 14.3333
+          },
+          "count90": {
+            "min": 2,
+            "max": 6,
+            "avg": 3.6667
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.3301,
+            "max": 0.381,
+            "avg": 0.3603
+          },
+          "share85": {
+            "min": 0.1359,
+            "max": 0.1429,
+            "avg": 0.1396
+          },
+          "share90": {
+            "min": 0.019,
+            "max": 0.0583,
+            "avg": 0.0358
+          },
+          "averagePotential": {
+            "min": 88.3333,
+            "max": 89.51,
+            "avg": 89.0449
+          },
+          "generatedPlayers": {
+            "min": 100,
+            "max": 105,
+            "avg": 102.6667
+          },
+          "generatedCount80": {
+            "min": 34,
+            "max": 40,
+            "avg": 37
+          },
+          "generatedCount85": {
+            "min": 14,
+            "max": 15,
+            "avg": 14.3333
+          },
+          "generatedCount90": {
+            "min": 2,
+            "max": 6,
+            "avg": 3.6667
+          },
+          "generatedAveragePotential": {
+            "min": 88.3333,
+            "max": 89.51,
+            "avg": 89.0449
+          },
+          "maturityRate": {
+            "min": 0.2,
+            "max": 0.209,
+            "avg": 0.2058
+          },
+          "maturityEligible": {
+            "min": 67,
+            "max": 72,
+            "avg": 69.6667
+          }
+        },
+        "PF": {
+          "players": {
+            "min": 96,
+            "max": 102,
+            "avg": 99.3333
+          },
+          "count80": {
+            "min": 25,
+            "max": 30,
+            "avg": 28.3333
+          },
+          "count85": {
+            "min": 13,
+            "max": 14,
+            "avg": 13.3333
+          },
+          "count90": {
+            "min": 2,
+            "max": 4,
+            "avg": 3
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.25,
+            "max": 0.3125,
+            "avg": 0.2855
+          },
+          "share85": {
+            "min": 0.13,
+            "max": 0.1373,
+            "avg": 0.1342
+          },
+          "share90": {
+            "min": 0.0196,
+            "max": 0.04,
+            "avg": 0.0303
+          },
+          "averagePotential": {
+            "min": 88.75,
+            "max": 89.4792,
+            "avg": 89.0078
+          },
+          "generatedPlayers": {
+            "min": 96,
+            "max": 102,
+            "avg": 99.3333
+          },
+          "generatedCount80": {
+            "min": 25,
+            "max": 30,
+            "avg": 28.3333
+          },
+          "generatedCount85": {
+            "min": 13,
+            "max": 14,
+            "avg": 13.3333
+          },
+          "generatedCount90": {
+            "min": 2,
+            "max": 4,
+            "avg": 3
+          },
+          "generatedAveragePotential": {
+            "min": 88.75,
+            "max": 89.4792,
+            "avg": 89.0078
+          },
+          "maturityRate": {
+            "min": 0.1739,
+            "max": 0.194,
+            "avg": 0.1861
+          },
+          "maturityEligible": {
+            "min": 63,
+            "max": 69,
+            "avg": 66.3333
+          }
+        },
+        "C": {
+          "players": {
+            "min": 105,
+            "max": 106,
+            "avg": 105.3333
+          },
+          "count80": {
+            "min": 54,
+            "max": 59,
+            "avg": 56.6667
+          },
+          "count85": {
+            "min": 30,
+            "max": 32,
+            "avg": 31
+          },
+          "count90": {
+            "min": 5,
+            "max": 12,
+            "avg": 8.6667
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.5094,
+            "max": 0.5619,
+            "avg": 0.5381
+          },
+          "share85": {
+            "min": 0.2857,
+            "max": 0.3048,
+            "avg": 0.2943
+          },
+          "share90": {
+            "min": 0.0472,
+            "max": 0.1143,
+            "avg": 0.0824
+          },
+          "averagePotential": {
+            "min": 89,
+            "max": 89.6571,
+            "avg": 89.3746
+          },
+          "generatedPlayers": {
+            "min": 105,
+            "max": 106,
+            "avg": 105.3333
+          },
+          "generatedCount80": {
+            "min": 54,
+            "max": 59,
+            "avg": 56.6667
+          },
+          "generatedCount85": {
+            "min": 30,
+            "max": 32,
+            "avg": 31
+          },
+          "generatedCount90": {
+            "min": 5,
+            "max": 12,
+            "avg": 8.6667
+          },
+          "generatedAveragePotential": {
+            "min": 89,
+            "max": 89.6571,
+            "avg": 89.3746
+          },
+          "maturityRate": {
+            "min": 0.3611,
+            "max": 0.4028,
+            "avg": 0.3779
+          },
+          "maturityEligible": {
+            "min": 72,
+            "max": 73,
+            "avg": 72.3333
+          }
+        }
+      }
+    },
+    {
+      "season": 35,
+      "samples": 3,
+      "count90": {
+        "min": 21,
+        "max": 24,
+        "avg": 22.67
+      },
+      "count85": {
+        "min": 79,
+        "max": 87,
+        "avg": 83
+      },
+      "maxOvr": {
+        "min": 98,
+        "max": 99,
+        "avg": 98.67
+      },
+      "count99": {
+        "min": 0,
+        "max": 1,
+        "avg": 0.67
+      },
+      "top35Under30": {
+        "min": 10,
+        "max": 14,
+        "avg": 11.67
+      },
+      "top35Age30To34": {
+        "min": 16,
+        "max": 20,
+        "avg": 18.33
+      },
+      "top35Age35Plus": {
+        "min": 4,
+        "max": 6,
+        "avg": 5
+      },
+      "top35AverageAge": {
+        "min": 30.54,
+        "max": 30.86,
+        "avg": 30.75
+      },
+      "positionStats": {
+        "PG": {
+          "players": {
+            "min": 99,
+            "max": 104,
+            "avg": 101
+          },
+          "count80": {
+            "min": 29,
+            "max": 35,
+            "avg": 32.6667
+          },
+          "count85": {
+            "min": 11,
+            "max": 13,
+            "avg": 11.6667
+          },
+          "count90": {
+            "min": 2,
+            "max": 3,
+            "avg": 2.3333
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.29,
+            "max": 0.3434,
+            "avg": 0.3233
+          },
+          "share85": {
+            "min": 0.1058,
+            "max": 0.1313,
+            "avg": 0.1157
+          },
+          "share90": {
+            "min": 0.02,
+            "max": 0.0288,
+            "avg": 0.023
+          },
+          "averagePotential": {
+            "min": 88.1731,
+            "max": 89.697,
+            "avg": 88.9367
+          },
+          "generatedPlayers": {
+            "min": 99,
+            "max": 104,
+            "avg": 101
+          },
+          "generatedCount80": {
+            "min": 29,
+            "max": 35,
+            "avg": 32.6667
+          },
+          "generatedCount85": {
+            "min": 11,
+            "max": 13,
+            "avg": 11.6667
+          },
+          "generatedCount90": {
+            "min": 2,
+            "max": 3,
+            "avg": 2.3333
+          },
+          "generatedAveragePotential": {
+            "min": 88.1731,
+            "max": 89.697,
+            "avg": 88.9367
+          },
+          "maturityRate": {
+            "min": 0.1194,
+            "max": 0.1667,
+            "avg": 0.147
+          },
+          "maturityEligible": {
+            "min": 66,
+            "max": 71,
+            "avg": 68
+          }
+        },
+        "SG": {
+          "players": {
+            "min": 102,
+            "max": 104,
+            "avg": 103
+          },
+          "count80": {
+            "min": 42,
+            "max": 48,
+            "avg": 45
+          },
+          "count85": {
+            "min": 17,
+            "max": 21,
+            "avg": 19
+          },
+          "count90": {
+            "min": 5,
+            "max": 7,
+            "avg": 6.3333
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.4078,
+            "max": 0.4615,
+            "avg": 0.4368
+          },
+          "share85": {
+            "min": 0.165,
+            "max": 0.2059,
+            "avg": 0.1845
+          },
+          "share90": {
+            "min": 0.049,
+            "max": 0.068,
+            "avg": 0.0614
+          },
+          "averagePotential": {
+            "min": 89.0388,
+            "max": 89.5686,
+            "avg": 89.2474
+          },
+          "generatedPlayers": {
+            "min": 102,
+            "max": 104,
+            "avg": 103
+          },
+          "generatedCount80": {
+            "min": 42,
+            "max": 48,
+            "avg": 45
+          },
+          "generatedCount85": {
+            "min": 17,
+            "max": 21,
+            "avg": 19
+          },
+          "generatedCount90": {
+            "min": 5,
+            "max": 7,
+            "avg": 6.3333
+          },
+          "generatedAveragePotential": {
+            "min": 89.0388,
+            "max": 89.5686,
+            "avg": 89.2474
+          },
+          "maturityRate": {
+            "min": 0.2286,
+            "max": 0.2609,
+            "avg": 0.2477
+          },
+          "maturityEligible": {
+            "min": 69,
+            "max": 71,
+            "avg": 70
+          }
+        },
+        "SF": {
+          "players": {
+            "min": 99,
+            "max": 105,
+            "avg": 102.3333
+          },
+          "count80": {
+            "min": 32,
+            "max": 36,
+            "avg": 34.6667
+          },
+          "count85": {
+            "min": 9,
+            "max": 17,
+            "avg": 13.3333
+          },
+          "count90": {
+            "min": 1,
+            "max": 6,
+            "avg": 3
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.3232,
+            "max": 0.3495,
+            "avg": 0.3385
+          },
+          "share85": {
+            "min": 0.0909,
+            "max": 0.165,
+            "avg": 0.1298
+          },
+          "share90": {
+            "min": 0.0095,
+            "max": 0.0583,
+            "avg": 0.0293
+          },
+          "averagePotential": {
+            "min": 88.0667,
+            "max": 89.2222,
+            "avg": 88.6044
+          },
+          "generatedPlayers": {
+            "min": 99,
+            "max": 105,
+            "avg": 102.3333
+          },
+          "generatedCount80": {
+            "min": 32,
+            "max": 36,
+            "avg": 34.6667
+          },
+          "generatedCount85": {
+            "min": 9,
+            "max": 17,
+            "avg": 13.3333
+          },
+          "generatedCount90": {
+            "min": 1,
+            "max": 6,
+            "avg": 3
+          },
+          "generatedAveragePotential": {
+            "min": 88.0667,
+            "max": 89.2222,
+            "avg": 88.6044
+          },
+          "maturityRate": {
+            "min": 0.1061,
+            "max": 0.2143,
+            "avg": 0.1531
+          },
+          "maturityEligible": {
+            "min": 66,
+            "max": 72,
+            "avg": 69.3333
+          }
+        },
+        "PF": {
+          "players": {
+            "min": 99,
+            "max": 104,
+            "avg": 102
+          },
+          "count80": {
+            "min": 28,
+            "max": 40,
+            "avg": 32.3333
+          },
+          "count85": {
+            "min": 9,
+            "max": 11,
+            "avg": 10
+          },
+          "count90": {
+            "min": 2,
+            "max": 3,
+            "avg": 2.6667
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.2816,
+            "max": 0.3846,
+            "avg": 0.3163
+          },
+          "share85": {
+            "min": 0.0865,
+            "max": 0.1111,
+            "avg": 0.0982
+          },
+          "share90": {
+            "min": 0.0192,
+            "max": 0.0303,
+            "avg": 0.0262
+          },
+          "averagePotential": {
+            "min": 87.9596,
+            "max": 89.0194,
+            "avg": 88.6436
+          },
+          "generatedPlayers": {
+            "min": 99,
+            "max": 104,
+            "avg": 102
+          },
+          "generatedCount80": {
+            "min": 28,
+            "max": 40,
+            "avg": 32.3333
+          },
+          "generatedCount85": {
+            "min": 9,
+            "max": 11,
+            "avg": 10
+          },
+          "generatedCount90": {
+            "min": 2,
+            "max": 3,
+            "avg": 2.6667
+          },
+          "generatedAveragePotential": {
+            "min": 87.9596,
+            "max": 89.0194,
+            "avg": 88.6436
+          },
+          "maturityRate": {
+            "min": 0.1268,
+            "max": 0.1667,
+            "avg": 0.1454
+          },
+          "maturityEligible": {
+            "min": 66,
+            "max": 71,
+            "avg": 69
+          }
+        },
+        "C": {
+          "players": {
+            "min": 102,
+            "max": 111,
+            "avg": 106
+          },
+          "count80": {
+            "min": 56,
+            "max": 63,
+            "avg": 60
+          },
+          "count85": {
+            "min": 21,
+            "max": 35,
+            "avg": 29
+          },
+          "count90": {
+            "min": 7,
+            "max": 10,
+            "avg": 8.3333
+          },
+          "zero90Samples": 0,
+          "share80": {
+            "min": 0.549,
+            "max": 0.581,
+            "avg": 0.5658
+          },
+          "share85": {
+            "min": 0.1892,
+            "max": 0.3333,
+            "avg": 0.2755
+          },
+          "share90": {
+            "min": 0.0631,
+            "max": 0.0952,
+            "avg": 0.0789
+          },
+          "averagePotential": {
+            "min": 89.009,
+            "max": 89.6373,
+            "avg": 89.317
+          },
+          "generatedPlayers": {
+            "min": 102,
+            "max": 111,
+            "avg": 106
+          },
+          "generatedCount80": {
+            "min": 56,
+            "max": 63,
+            "avg": 60
+          },
+          "generatedCount85": {
+            "min": 21,
+            "max": 35,
+            "avg": 29
+          },
+          "generatedCount90": {
+            "min": 7,
+            "max": 10,
+            "avg": 8.3333
+          },
+          "generatedAveragePotential": {
+            "min": 89.009,
+            "max": 89.6373,
+            "avg": 89.317
+          },
+          "maturityRate": {
+            "min": 0.2436,
+            "max": 0.4167,
+            "avg": 0.3457
+          },
+          "maturityEligible": {
+            "min": 69,
+            "max": 78,
+            "avg": 73
+          }
+        }
+      }
+    }
+  ],
+  "seedsWith99Overflow": 0,
+  "allowed99OverflowSeeds": 2,
+  "failureCount": 0,
+  "failures": []
+}

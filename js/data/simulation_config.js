@@ -221,7 +221,7 @@ const SIM_CONFIG = {
     C: "中锋"
   },
   POS_LIST: ["PG", "SG", "SF", "PF", "C"],
-  /** @deprecated 旧建模资料；运行时 V6 overall 不读取此表。 */
+  /** @deprecated 旧建模资料；运行时 V7 overall 不读取此表。 */
   OVR_WEIGHTS: {
     PG: {
       threePT: 0.1,
@@ -304,7 +304,7 @@ const SIM_CONFIG = {
       CLU: 0.04
     }
   },
-  /** @deprecated 旧线性拟合资料，仅供历史校准脚本读取；运行时 V6 overall 不读取此模型。 */
+  /** @deprecated 旧线性拟合资料，仅供历史校准脚本读取；运行时 V7 overall 仅对非中锋位置读取此模型。 */
   OVR_MODEL: {
     secondaryPositionWeight: 0.2,
     base: 22.902948,
@@ -336,10 +336,10 @@ const SIM_CONFIG = {
       eliteExcess: 0.087269
     }
   },
-  /** 统一比赛评分模型。OVR 由 14 项可见属性按位置权重直接计算。 */
+  /** 统一比赛评分模型。外线/锋线沿用属性拟合，中锋 OVR 使用角色组合递减计价。 */
   PLAYER_RATING_MODEL: {
-    version: 6,
-    mode: 'position-weighted-monotonic-14-attribute-fit',
+    version: 7,
+    mode: 'position-weighted-monotonic-14-attribute-fit-center-role-composite',
     attributeSchemaVersion: 3,
     handleAttribute: 'Ball Handle',
     validPositions: ['PG', 'SG', 'SF', 'PF', 'C'],
@@ -879,6 +879,48 @@ function getUnifiedPlayerRating(player, position) {
     return clampRating(50 + (roleScore - 50) * multiplier);
   }
 
+  // 中锋 OVR 先计算自主进攻、吃饼终结、防守支柱三个角色，再只按
+  // 70% / 20% / 10% 计价。三组覆盖除 CLU 外的比赛角色属性，避免单一
+  // 吃饼/护框角色把重复的 FIN、REB、IDEF、BLK 完整叠加；MID/3PT 都保留边际。
+  // CLU 是关键时刻能力，不属于防守支柱；它在下方以独立的总评贡献计价，
+  // 并在 regulationOverall 中按同一实际贡献精确扣除。
+  var centerRoleScores = {
+    selfCreation: (attr('HAN') + attr('MID') * 0.60 + attr('threePT') * 0.40 + attr('PAS') + attr('FIN')) / 4,
+    rimFinishing: (attr('FIN') + attr('DNK') + attr('ATH')) / 3,
+    defensiveAnchor: attr('IDEF') * 0.22 + attr('BLK') * 0.18 + attr('REB') * 0.18
+      + attr('STR') * 0.14 + attr('PDEF') * 0.10 + attr('STL') * 0.08,
+  };
+  var centerTechnicalPackage = (attr('HAN') + attr('MID') + attr('threePT') + attr('PAS') + attr('FIN')) / 5;
+  var centerPostPackage = (attr('MID') + attr('FIN') + attr('STR')) / 3;
+  var centerRoleValues = {
+    // 这是角色价值的校准层，不改变 70/20/10 的组合顺序；自主进攻
+    // 和内线技术包的高端收益用于保留 Embiid/Wembanyama 类型的技术中锋。
+    selfCreation: clampRating(
+      50 + (centerRoleScores.selfCreation - 50) * 1.45
+        + Math.max(0, centerTechnicalPackage - 75) * 0.25
+        + Math.max(0, centerPostPackage - 80) * 0.40
+    ),
+    rimFinishing: clampRating(50 + (centerRoleScores.rimFinishing - 50)),
+    defensiveAnchor: clampRating(
+      50 + (centerRoleScores.defensiveAnchor - 50) * 1.30
+        + Math.max(0, (
+           attr('PDEF') + attr('STL') + attr('IDEF') + attr('BLK')
+            + attr('REB') + attr('STR')
+         ) / 6 - 70) * 0.25
+      ),
+  };
+  var centerRoleRanking = Object.keys(centerRoleValues).map(function(key) {
+    return centerRoleValues[key];
+  }).sort(function(a, b) { return b - a; });
+  var centerRoleWeighted = centerRoleRanking[0] * 0.70
+    + centerRoleRanking[1] * 0.20
+    + centerRoleRanking[2] * 0.10;
+  var centerRoleCalibrationLift = Math.min(3, Math.max(0, (centerRoleWeighted - 50) * 0.08));
+  var centerRoleComposite = clampRating(centerRoleWeighted
+    + Math.max(0, centerRoleRanking[1] - 75) * 0.10
+    + Math.max(0, centerRoleRanking[2] - 70) * 0.25
+    + centerRoleCalibrationLift);
+
   var shootingGravity = component(weighted({ threePT: 0.68, MID: 0.32 }), ['threePT', 'MID']);
   var rimScoring = component(weighted({ FIN: 0.52, DNK: 0.22, ATH: 0.14, STR: 0.12 }), ['FIN', 'DNK', 'ATH', 'STR']);
   var shotCreation = component(
@@ -1019,20 +1061,46 @@ function getUnifiedPlayerRating(player, position) {
   var secondaryPosition = listedPositions[1] || null;
   var secondaryWeight = secondaryPosition ? Number(SIM_CONFIG.PLAYER_RATING_MODEL.secondaryPositionWeight) || 0.2 : 0;
   var inputScale = Number(fitModel.inputScale) || 49;
-  function fittedPositionOvr(positionKey) {
+  function fittedLegacyPositionOvr(positionKey) {
     var weights = fitWeights[positionKey] || {};
     return 50 + Object.keys(weights).reduce(function(sum, key) {
       return sum + (attr(key) - 50) / inputScale * Number(weights[key] || 0);
     }, 0);
+  }
+  // 角色组合占 70% 主权重；保留 30% 全属性校准，避免低使用率属性在
+  // 角色排序后出现零边际，也让既有真实名单的 OVR 迁移保持连续。
+  // C 的关键球贡献独立于三个角色，避免把 CLU 误解成防守支柱，同时保留
+  // 所有 14 项属性的严格正向边际。该项与 C 的历史拟合 CLU 权重合并后，
+  // 下方 regulationOverall 可以扣除完全相同的实际贡献。
+  var centerClutchRoleContribution = (attr('CLU') - 50) * 0.05;
+  var centerLegacyClutchContribution = (attr('CLU') - 50) / inputScale
+    * Number((fitWeights.C || {}).CLU || 0) * 0.30;
+  var centerClutchContribution = centerClutchRoleContribution + centerLegacyClutchContribution;
+  var centerRoleOverall = clampRating(
+    centerRoleComposite * 0.70 + fittedLegacyPositionOvr('C') * 0.30 + centerClutchRoleContribution
+  );
+  function fittedPositionOvr(positionKey) {
+    if (positionKey === 'C') return centerRoleOverall;
+    return fittedLegacyPositionOvr(positionKey);
   }
   // 运行时公式仅读取 14 项属性和既有位置；来源 OVR 不参与计算，也没有顶端压缩或球员特赦。
   var primaryOverall = fittedPositionOvr(primaryPosition);
   var secondaryOverall = secondaryPosition ? fittedPositionOvr(secondaryPosition) : primaryOverall;
   var rawOverall = primaryOverall * (1 - secondaryWeight) + secondaryOverall * secondaryWeight;
   var overall = clampRating(rawOverall);
-  var clutchWeight = Number((fitWeights[primaryPosition] || {}).CLU || 0) * (1 - secondaryWeight)
-    + Number((fitWeights[secondaryPosition] || {}).CLU || 0) * secondaryWeight;
-  var regulationOverall = clampRating(rawOverall - (attr('CLU') - 50) / inputScale * clutchWeight);
+  // regulationOverall 明确排除 CLU，但只扣除其在当前主/副位置组合中真实
+  // 贡献的部分：C 使用独立关键球贡献，其他位置使用历史拟合 CLU 权重。
+  var centerClutchPositionWeight = (primaryPosition === 'C' ? 1 - secondaryWeight : 0)
+    + (secondaryPosition === 'C' ? secondaryWeight : 0);
+  var legacyClutchPositionWeight = (primaryPosition !== 'C'
+      ? Number((fitWeights[primaryPosition] || {}).CLU || 0) * (1 - secondaryWeight)
+      : 0)
+    + (secondaryPosition && secondaryPosition !== 'C'
+      ? Number((fitWeights[secondaryPosition] || {}).CLU || 0) * secondaryWeight
+      : 0);
+  var clutchContribution = centerClutchContribution * centerClutchPositionWeight
+    + (attr('CLU') - 50) / inputScale * legacyClutchPositionWeight;
+  var regulationOverall = clampRating(rawOverall - clutchContribution);
 
   var creationLoadValue = clampRating(
     roleImpact.primaryCreator * 0.55 + touchLoad * 0.25 + ballSecurity * 0.20
@@ -1078,7 +1146,7 @@ function getUnifiedPlayerRating(player, position) {
       pointOfAttackDefense: pointOfAttackDefense, interiorDefense: interiorDefense,
       rimProtection: rimProtection, rebounding: rebounding, disruption: disruption,
     },
-    roles: roleV5,
+    roles: Object.assign({}, roleV5, { center: centerRoleValues, centerRaw: centerRoleScores }),
     capacity: {
       touchLoad: touchLoad,
       shotLoad: shotLoad,
@@ -1094,6 +1162,8 @@ function getUnifiedPlayerRating(player, position) {
       secondaryOverall: secondaryOverall,
       rawOverall: rawOverall,
       regulationOverall: regulationOverall,
+      centerRoleOverall: centerRoleOverall,
+      clutchContribution: clutchContribution,
     },
     // 保留旧字段，令页面、存档和现有校验可渐进迁移。
     shooting: shootingGravity, rim: rimScoring, creation: shotCreation,

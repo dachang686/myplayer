@@ -1451,20 +1451,30 @@ function processDraft() {
     var rookie = generateRookie();
     if (rookie._fixedProspectRating) syncAuthoredRookieOvr(rookie);
     rookie._draftTalentSeed = getDraftTalentSeed(rookie);
+    rookie._draftTargetTie = rngNext();
     return rookie;
   }).sort(function(left, right) {
     return Number(right._draftTalentSeed) - Number(left._draftTalentSeed);
   });
-  var assignments = assignPositionBalancedDraftTargets(prospects, targetOvrs);
+  var assignments = assignDraftTargetsByCurrentOvr(prospects, targetOvrs);
+  assignments.forEach(function(assignment) {
+    var rookie = assignment.player;
+    var targetOvr = assignment.targetOvr || 60;
+    prepareDraftProspectForTarget(rookie, targetOvr, rngNext);
+  });
+  // 先完成 OVR/POT，再按 60/35/5 的人才分决定顺位；位置不参与基础排序。
+  assignments.sort(function(left, right) {
+    return getDraftTalentScore(right.player, 50) - getDraftTalentScore(left.player, 50)
+      || (Number(right.player && right.player.ovr) || 0) - (Number(left.player && left.player.ovr) || 0)
+      || String(left.player && left.player.id || '').localeCompare(String(right.player && right.player.id || ''));
+  });
   assignments.forEach(function(assignment, idx) {
     var t = teams[idx];
     var rookie = assignment.player;
     // 当届新秀只在本次休赛期受交易保护，下一休赛期会统一解除。
     rookie._justSigned = true;
-    var targetOvr = assignment.targetOvr || 60;
-    prepareDraftProspectForTarget(rookie, targetOvr, rngNext);
     var rookieGene = getPlayerGene(rookie);
-    rookieGene.potential = inferLeaguePlayerPotential(rookie, getLeaguePlayerAge(rookie));
+    rookieGene.potential = getDraftProspectPotential(rookie);
     rookieGene.potentialVersion = PLAYER_POTENTIAL_MODEL_VERSION;
     // 新秀合同
     if (idx < 5) rookie.contract = 4;
@@ -3498,14 +3508,38 @@ var GENERATED_DRAFT_OVR_TIERS = [
   { id: 'development', share: 0.267, min: 60, max: 67 },
   { id: 'longshot', share: 0.067, min: 50, max: 59 }
 ];
-var DRAFT_POSITION_DIVERSITY_MAX_TALENT_GAP = 5;
-var FIXED_PROSPECT_DRAFT_TALENT_OFFSETS = { PG: 4, SG: 4, SF: 1, PF: 1, C: 0 };
+var DRAFT_CLOSE_TALENT_SCORE_GAP = 1.5;
+var GENERATED_POTENTIAL_MODEL_VERSION = 5;
 
 function getDraftTalentSeed(player) {
-  var source = Number(player && player.ovr) || 50;
-  if (!player || !player._fixedProspectRating) return source;
-  var position = getGeneratedPlayerMainPos(player);
-  return source + (Number(FIXED_PROSPECT_DRAFT_TALENT_OFFSETS[position]) || 0);
+  // 这里只保留属性落地前的当前能力种子，用于分配当届 OVR 档位。
+  // 最终选秀排序在 POT 生成后使用 getDraftTalentScore；位置不再获得固定补偿。
+  var savedSeed = Number(player && player._draftTalentSeed);
+  return Number.isFinite(savedSeed) ? savedSeed : (Number(player && player.ovr) || 50);
+}
+
+function getDraftProspectPotential(player) {
+  if (!player) return 50;
+  var saved = Number(player._draftPotential);
+  if (Number.isFinite(saved) && Number(player._draftPotentialVersion) === GENERATED_POTENTIAL_MODEL_VERSION) {
+    return Math.max(Number(player.ovr) || 50, Math.min(99, Math.round(saved)));
+  }
+  if (Number.isFinite(saved) && !Number.isFinite(Number(player._draftPotentialVersion))) {
+    return Math.max(Number(player.ovr) || 50, Math.min(99, Math.round(saved)));
+  }
+  var age = Number(player._age);
+  var potential = typeof inferGeneratedPlayerPotential === 'function'
+    ? inferGeneratedPlayerPotential(player, Number.isFinite(age) ? age : 20)
+    : Number(player.ovr) || 50;
+  player._draftPotential = potential;
+  return potential;
+}
+
+function getDraftTalentScore(player, fitRisk) {
+  var currentOvr = Math.max(25, Math.min(99, Number(player && player.ovr) || 50));
+  var potential = Math.max(currentOvr, Math.min(99, getDraftProspectPotential(player)));
+  var fit = Number.isFinite(Number(fitRisk)) ? Math.max(0, Math.min(100, Number(fitRisk))) : 50;
+  return currentOvr * 0.60 + potential * 0.35 + fit * 0.05;
 }
 
 function getGeneratedDraftOvrTier(ovr) {
@@ -3541,56 +3575,25 @@ function buildGeneratedDraftOvrTargets(count, randomFn) {
   return targets.sort(function(left, right) { return right - left; });
 }
 
-function getDraftTierPositionRankLimit(tier) {
-  if (tier === 'elite') return 1;
-  if (tier === 'high') return 2;
-  if (tier === 'rotation') return 3;
-  if (tier === 'development') return 4;
-  return 5;
-}
-
-function getDraftPositionTalentRank(player, prospects) {
-  var position = getGeneratedPlayerMainPos(player);
-  var rank = 0;
-  var talent = Number(player && player._draftTalentSeed) || 0;
-  (prospects || []).forEach(function(candidate) {
-    if (getGeneratedPlayerMainPos(candidate) !== position) return;
-    var candidateTalent = Number(candidate && candidate._draftTalentSeed) || 0;
-    if (candidateTalent > talent
-      || (candidateTalent === talent && String(candidate && candidate.id || '') < String(player && player.id || ''))) {
-      rank++;
-    }
-  });
-  return rank + 1;
-}
-
 /**
- * 每档首席仍按全局来源评分确定；后续席位仅在位置内前 N 名、且接近全局最佳时优先未覆盖位置。
- * 位置资格只用于近档平局，绝不能让明显更弱的候选人越档取得高潜入口。
+ * 当届 OVR 档位只按当前能力种子分配，完全不读取位置。
+ * 位置多样性属于最终选秀排序的近邻打破平局规则，不再决定谁能进入精英档。
  */
-function assignPositionBalancedDraftTargets(prospects, targetOvrs) {
-  var remaining = (prospects || []).slice();
+function assignDraftTargetsByCurrentOvr(prospects, targetOvrs) {
+  var remaining = (prospects || []).slice().sort(function(left, right) {
+    return getDraftTalentSeed(right) - getDraftTalentSeed(left)
+      || (Number(right && right._draftTargetTie) || 0) - (Number(left && left._draftTargetTie) || 0)
+      || String(left && left.id || '').localeCompare(String(right && right.id || ''));
+  });
   var targets = (targetOvrs || []).slice();
-  var tierPositionCounts = {};
   var assignments = [];
   targets.forEach(function(target) {
     var tier = getGeneratedDraftOvrTier(target);
-    var counts = tierPositionCounts[tier] || (tierPositionCounts[tier] = {});
-    var rankLimit = getDraftTierPositionRankLimit(tier);
-    var bestTalent = Number(remaining[0] && remaining[0]._draftTalentSeed) || 0;
-    var diversified = remaining.filter(function(player) {
-      return !counts[getGeneratedPlayerMainPos(player)]
-        && getDraftPositionTalentRank(player, remaining) <= rankLimit
-        && bestTalent - (Number(player._draftTalentSeed) || 0) <= DRAFT_POSITION_DIVERSITY_MAX_TALENT_GAP;
-    });
-    var pool = diversified.length ? diversified : remaining;
-    var player = pool[0];
+    var player = remaining[0];
     if (!player) return;
-    var position = getGeneratedPlayerMainPos(player);
-    counts[position] = (counts[position] || 0) + 1;
-    remaining.splice(remaining.indexOf(player), 1);
+    remaining.shift();
     assignments.push({ player: player, targetOvr: target, tier: tier,
-      sourceTalentGap: Math.max(0, bestTalent - (Number(player._draftTalentSeed) || 0)) });
+      sourceTalentGap: 0 });
   });
   return assignments;
 }
@@ -3630,10 +3633,50 @@ function fitAuthoredRookieAttributesToTarget(player, targetOvr) {
   return player;
 }
 
+function buildPositionNeutralPotentialProbe(player, randomFn) {
+  var random = typeof randomFn === 'function' ? randomFn : Math.random;
+  var rareTalentRoll = random();
+  var rareTalentProbe = rareTalentRoll < 0.15;
+  var probe = {
+    id: String(player && player.id || '') + '|potential',
+    _prospectId: String(player && player._prospectId || player && player.id || '') + '|potential',
+    pos: 'SF',
+    ovr: rareTalentProbe
+      ? 72 + Math.floor(random() * 12)
+      : 66 + Math.floor(random() * 16),
+    _age: Number(player && player._age) || 20,
+  };
+  // 随机新秀的潜力基因先从统一、与位置无关的属性包抽样；之后才按位置
+  // 生成实际入场 OVR 属性。这样 C/PG 的角色模板不会预先决定 POT 分布。
+  var attributeFloor = rareTalentProbe ? 65 : 52;
+  var attributeSpan = rareTalentProbe ? 35 : 35;
+  ATTR_KEYS.forEach(function(key) {
+    probe[key] = clampLeagueAttribute(attributeFloor + Math.floor(random() * attributeSpan));
+  });
+  return probe;
+}
+
 function prepareDraftProspectForTarget(player, targetOvr, randomFn) {
   if (!player) return player;
   var target = Math.max(50, Math.min(99, Math.round(Number(targetOvr) || 50)));
-  if (player._fixedProspectRating && ATTR_KEYS.every(function(key) { return Number.isFinite(Number(player[key])); })) {
+  var potentialVersion = Number(player._draftPotentialVersion);
+  if (potentialVersion !== GENERATED_POTENTIAL_MODEL_VERSION) delete player._draftPotential;
+  var hasFixedAttributes = player._fixedProspectRating
+    && ATTR_KEYS.every(function(key) { return Number.isFinite(Number(player[key])); });
+  // 先从候选人的原始画像冻结 POT，再处理本届 OVR 档位；这样同一候选
+  // 即使被分配到不同当前能力档，也不会得到不同的潜力。
+  if (!Number.isFinite(Number(player._draftPotential))) {
+    if (hasFixedAttributes) {
+      player._draftPotential = inferGeneratedPlayerPotential(player, Number(player._age) || 20);
+    } else {
+      // 随机候选先用位置无关的潜在画像生成 POT，POT 不读取后续目标 OVR
+      // 或位置模板；实际比赛属性随后仍按其位置与当前能力生成。
+      var potentialProbe = buildPositionNeutralPotentialProbe(player, randomFn);
+      player._draftPotential = inferGeneratedPlayerPotential(potentialProbe, Number(player._age) || 20);
+    }
+    player._draftPotentialVersion = GENERATED_POTENTIAL_MODEL_VERSION;
+  }
+  if (hasFixedAttributes) {
     fitAuthoredRookieAttributesToTarget(player, target);
   } else {
     player.ovr = target;
@@ -3642,6 +3685,7 @@ function prepareDraftProspectForTarget(player, targetOvr, randomFn) {
   player._rookieSeason = getCurrentLeagueSeasonNumber();
   player._draftOvr = Number(player.ovr) || target;
   player._draftTier = getGeneratedDraftOvrTier(player._draftOvr);
+  // POT 已在目标档位处理前冻结；_draftTier 只表示当前能力稀有度。
   refreshGeneratedPlayerType(player);
   return player;
 }
@@ -4026,7 +4070,7 @@ var _playerAges = null;
 var _playerGenes = null;
 var _playerAgeSources = null;
 var PLAYER_LOYALTY_GENE_VERSION = 3;
-var PLAYER_POTENTIAL_MODEL_VERSION = 3;
+var PLAYER_POTENTIAL_MODEL_VERSION = GENERATED_POTENTIAL_MODEL_VERSION;
 // 年龄统一按第 1 赛季开打日（2025-10-21）计算，避免赛季内因生日变化
 // 导致阵容展示、衰退和退役链路使用不同年龄。以下覆盖同时兼容旧年龄快照。
 var PLAYER_AGE_OVERRIDES = { P0168: 26, P0383: 20, P0379: 40 };
@@ -4127,45 +4171,6 @@ function inferGeneratedPlayerDraftOvr(player, currentOvr, age) {
   return estimated;
 }
 
-function isEliteGeneratedDraftPick(player) {
-  if (!isGeneratedLeaguePlayer(player)) return false;
-  var draftOvr = Number(player && player._draftOvr);
-  if (!Number.isFinite(draftOvr)) {
-    draftOvr = inferGeneratedPlayerDraftOvr(player, Number(player && player.ovr) || 60, getLeaguePlayerAge(player));
-  }
-  return draftOvr >= 80 && draftOvr <= 84;
-}
-
-function getEliteDraftGrowthBonus(player, age) {
-  if (!isEliteGeneratedDraftPick(player)) return 0;
-  var bonus = age <= 22 ? 0.30 : (age <= 25 ? 0.32 : (age <= 28 ? 0.24 : 0));
-  // 每届约四名精英中只有一名获得时代级兑现加成；不提高入联盟 OVR，
-  // 也不延长 30 岁后的巅峰，用极少数顶尖球员维持联盟最高值。
-  if (generatedPlayerStableHash(player) % 4 === 0) {
-    if (age <= 22) bonus += 0.12;
-    else if (age <= 25) bonus += 0.58;
-    else if (age <= 28) bonus += 0.54;
-  }
-  return bonus;
-}
-
-function isHighGeneratedDraftPick(player) {
-  if (!isGeneratedLeaguePlayer(player)) return false;
-  var draftOvr = Number(player && player._draftOvr);
-  if (!Number.isFinite(draftOvr)) {
-    draftOvr = inferGeneratedPlayerDraftOvr(player, Number(player && player.ovr) || 60, getLeaguePlayerAge(player));
-  }
-  return draftOvr >= 75 && draftOvr <= 79;
-}
-
-function getHighDraftGrowthBonus(player, age) {
-  if (!isHighGeneratedDraftPick(player)) return 0;
-  if (age <= 22) return 0.14;
-  if (age <= 25) return 0.09;
-  if (age <= 28) return 0.05;
-  return 0;
-}
-
 function getGeneratedPlayerAgeFactor(player, age, ovr) {
   if (age <= 22) return 1 + rngNext() * 1.5;
   if (age <= 28) return (rngNext() - 0.35) * 1.2;
@@ -4178,6 +4183,70 @@ function getGeneratedPlayerAgeFactor(player, age, ovr) {
   return -2.32 - rngNext() * 2.25;
 }
 
+function getGeneratedPlayerPotentialAttribute(player, key) {
+  var value = Number(player && player[key]);
+  if (!Number.isFinite(value)) value = Number(player && player.ovr) || 50;
+  return Math.max(25, Math.min(99, value));
+}
+
+function getGeneratedPlayerPotentialProfile(player, age) {
+  var values = ATTR_KEYS.map(function(key) {
+    return getGeneratedPlayerPotentialAttribute(player, key);
+  });
+  var byKey = {};
+  ATTR_KEYS.forEach(function(key, index) { byKey[key] = values[index]; });
+  function average(keys) {
+    return keys.reduce(function(sum, key) { return sum + byKey[key]; }, 0) / keys.length;
+  }
+  // 用位置无关的技术组衡量“能否扩展到更多比赛角色”，不把 PG/C 等先验写进 POT。
+  var groups = [
+    average(['threePT', 'MID']),
+    average(['HAN', 'PAS']),
+    average(['FIN', 'DNK', 'ATH']),
+    average(['PDEF', 'STL', 'IDEF', 'BLK']),
+    average(['REB', 'STR']),
+  ].sort(function(left, right) { return right - left; });
+  var topThreeAverage = (groups[0] + groups[1] + groups[2]) / 3;
+  var topFourAverage = (groups[0] + groups[1] + groups[2] + groups[3]) / 4;
+  var currentOvr = Math.max(50, Math.min(99, Number(player && player.ovr) || 50));
+  var playerAge = Number(age);
+  if (!Number.isFinite(playerAge)) playerAge = 20;
+  var ageRoom = Math.max(0, Math.min(10, (29 - playerAge) * 0.85));
+  var technicalBreadth = Math.max(0, Math.min(10,
+    (topThreeAverage - 58) * 0.42 + Math.max(0, topFourAverage - 65) * 0.08
+  ));
+  var maxAttribute = Math.max.apply(Math, values);
+  var rareCount = values.filter(function(value) { return value >= 86; }).length;
+  var eliteCount = values.filter(function(value) { return value >= 92; }).length;
+  var talentHash = generatedPlayerStableHash(player);
+  var rareTalent = Math.max(0, Math.min(9,
+    Math.max(0, maxAttribute - 82) * 0.28
+      + rareCount * 0.50
+      + eliteCount * 0.65
+      + (talentHash % 9) * 0.45
+      + 0.90
+  ));
+  // 当前能力越接近完整属性包，剩余可兑现空间越少；单一角色的高完成度
+  // 不会自动变成高 POT，但低 OVR 的宽技能/稀有天赋仍有机会成为高上限。
+  var allAttributeAverage = values.reduce(function(sum, value) { return sum + value; }, 0) / values.length;
+  var specializationPenalty = Math.max(0, groups[0] - groups[1]) * 0.40;
+  var completionPenalty = Math.max(0, Math.min(16,
+    Math.max(0, currentOvr - 72) * 0.48
+      + Math.max(0, currentOvr - allAttributeAverage) * 0.28
+      + specializationPenalty
+  ));
+  return {
+    currentOvr: currentOvr,
+    ageRoom: ageRoom,
+    technicalBreadth: technicalBreadth,
+    rareTalent: rareTalent,
+    completionPenalty: completionPenalty,
+    specializationPenalty: specializationPenalty,
+    topThreeAverage: topThreeAverage,
+    allAttributeAverage: allAttributeAverage,
+  };
+}
+
 function getGeneratedPlayerPotentialCap(player, draftOvr) {
   var identity = String(player && (player._prospectId || player.id) || '');
   if (typeof MVP_STAR_PROSPECT_IDS !== 'undefined') {
@@ -4187,13 +4256,8 @@ function getGeneratedPlayerPotentialCap(player, draftOvr) {
       return authoredStarCaps[starIndex] || 96;
     }
   }
-  // 新秀的潜力入口绑定入选档位而不是当前 OVR；这样后续成长不会改写其初始稀有度。
-  var tier = String(player && player._draftTier || getGeneratedDraftOvrTier(draftOvr));
-  if (tier === 'longshot') return 80;
-  if (tier === 'development') return 86;
-  if (tier === 'rotation') return 92;
-  if (tier === 'high') return 96;
-  return 98;
+  // 保留旧函数名供存档/校验兼容；普通新秀不再由 draftOvr 或选秀档位封顶。
+  return 99;
 }
 
 function inferGeneratedPlayerPotential(player, age) {
@@ -4207,23 +4271,15 @@ function inferGeneratedPlayerPotential(player, age) {
   if (starIndex >= 0) {
     potential = getGeneratedPlayerPotentialCap(player, draftOvr);
   } else {
-    var talentHash = generatedPlayerStableHash(player);
-    var highPick = draftOvr >= 75 && draftOvr <= 79;
-    // Good first-round prospects are not uniformly future All-Stars. A wider
-    // ceiling distribution keeps role players while the rare elite gene can
-    // realize a genuinely higher peak, rather than flattening everyone at 90–94.
-    var variance = highPick ? talentHash % 7 - 3 : talentHash % 3;
-    var baseGain = draftOvr <= 59 ? 13 : (draftOvr <= 67 ? 14 : (draftOvr <= 74 ? 15 : (draftOvr <= 79 ? 12 : 18)));
-    potential = Math.min(getGeneratedPlayerPotentialCap(player, draftOvr), draftOvr + baseGain + variance);
-    if (draftOvr >= 80 && talentHash % 4 !== 0) {
-      // Previously every 80–84 prospect had exactly 98 potential (the formula
-      // always hit its cap), so all four top prospects per class became stars.
-      // Retain 98 for the rare era gene; other elite prospects have varied ceilings.
-      potential = Math.min(getGeneratedPlayerPotentialCap(player, draftOvr), draftOvr + 7 + talentHash % 8);
-    }
+    var profile = getGeneratedPlayerPotentialProfile(player, age);
+    potential = profile.currentOvr
+      + profile.ageRoom
+      + profile.technicalBreadth
+      + profile.rareTalent
+      - profile.completionPenalty;
   }
-  // 不回退已有存档的当前能力；新版只阻止后续继续越过合理上限。
-  return Math.max(currentOvr, Math.min(99, potential));
+  // 不回退已有存档的当前能力；新版只保留 99 的全局上限。
+  return Math.max(currentOvr, Math.min(getGeneratedPlayerPotentialCap(player, draftOvr), Math.round(potential)));
 }
 
 function inferLeaguePlayerPotential(player, age) {
@@ -4396,10 +4452,17 @@ function getPotentialGrowthBias(potential, ovr, age) {
   if (typeof potential !== 'number' || age > 29) return 0;
   var potentialGap = potential - ovr;
   if (potentialGap <= 0) return 0;
-  if (age <= 22) return Math.min(1.35, potentialGap * 0.11);
-  if (age <= 25) return Math.min(1.05, potentialGap * 0.09);
-  if (age <= 28) return Math.min(0.60, potentialGap * 0.06);
-  return Math.min(0.25, potentialGap * 0.03);
+  // 成长速度只读取潜力差和年龄，不读取选秀档位；高 POT 后卫需要数年兑现，
+  // 但一旦保持明显潜力差，不能被低即战力永久锁死。
+  var baseBias;
+  if (age <= 22) baseBias = Math.min(1.60, potentialGap * 0.13);
+  else if (age <= 25) baseBias = Math.min(2.50, potentialGap * 0.30);
+  else if (age <= 28) baseBias = Math.min(1.80, potentialGap * 0.18);
+  else baseBias = Math.min(0.80, potentialGap * 0.12);
+  // 只给真正高 POT 的少数球员额外兑现速度，普通高完成度球员仍按基础曲线走。
+  var premium = Math.max(0, potential - 90);
+  var premiumBias = age <= 22 ? 0 : (age <= 25 ? premium * 0.35 : (age <= 28 ? premium * 0.25 : premium * 0.20));
+  return Math.min(baseBias + premiumBias, age <= 22 ? 2.40 : (age <= 25 ? 5.00 : (age <= 28 ? 3.50 : 1.80)));
 }
 
 function inferAge(playerId, ovr) {
@@ -4536,8 +4599,6 @@ function evolveLeague() {
       var randFactor = (rngNext() - 0.5) * 1.5;
       var change = ageFactor * 0.5 + volFactor * 0.3 + randFactor * 0.2;
       change += getPotentialGrowthBias(gene.potential, p.ovr, age);
-      change += getEliteDraftGrowthBonus(p, age);
-      change += getHighDraftGrowthBonus(p, age);
       var catchupActive = isGeneratedLeaguePlayer(p)
         && age <= 29
         && Number(p._talentCatchupSeasons) > 0
@@ -4548,7 +4609,8 @@ function evolveLeague() {
         change = 0;
       }
       if (change <= 0 && isGeneratedLeaguePlayer(p) && age <= 25 && Number(gene.potential) - Number(p.ovr) >= 8) {
-        if (rngNext() < (isEliteGeneratedDraftPick(p) ? 0.48 : 0.38)) change = 0.85;
+        var potentialGap = Number(gene.potential) - Number(p.ovr);
+        if (rngNext() < (potentialGap >= 14 ? 0.48 : 0.38)) change = 0.85;
       }
       if (isMvpStar(p) && age <= 26) change += 0.25 + rngNext() * 0.40; // 重点新秀仍更快成长，但不再稳定每年跳 2 点
       if (change > 0 && p.ovr >= gene.potential) change = 0;

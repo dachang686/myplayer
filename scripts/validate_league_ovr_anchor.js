@@ -57,6 +57,8 @@ const tatum = initialPlayers.find(player => player.id === 'P0040');
 const zubac = initialPlayers.find(player => player.id === 'P0191');
 const wembanyama = initialPlayers.find(player => player.id === 'P0452');
 const holmgren = initialPlayers.find(player => player.id === 'P0348');
+const embiid = initialPlayers.find(player => player.id === 'P0382');
+const capela = initialPlayers.find(player => player.id === 'P0180');
 const brown = initialPlayers.find(player => player.id === 'P0380');
 const edwards = initialPlayers.find(player => player.id === 'P0296');
 const leonard = initialPlayers.find(player => player.id === 'P0471');
@@ -67,8 +69,11 @@ assert(zubac && zubac.ovr === config.getUnifiedPlayerOvr(zubac, zubac.pos) && zu
 assert(wembanyama && Math.abs(wembanyama.ovr - wembanyama._sourceOvr) <= 1 && wembanyama.HAN === 70
   && wembanyama.threePT === 80 && wembanyama.IDEF === 93 && wembanyama.BLK === 95
   && holmgren && Math.abs(holmgren.ovr - holmgren._sourceOvr) <= 1 && holmgren.HAN === 65
-  && holmgren.threePT === 82 && holmgren.IDEF === 84 && holmgren.BLK === 93,
-`高护框与投射画像必须仅通过统一公式同步 OVR，不能漂移属性：${JSON.stringify({ wembanyama, holmgren })}`);
+  && holmgren.threePT === 82 && holmgren.IDEF === 84 && holmgren.BLK === 93
+  && embiid && embiid.ovr >= 90
+  && capela && capela.ovr <= 80
+  && embiid.ovr - capela.ovr >= 10,
+`高护框、技术型和吃饼画像必须仅通过统一公式同步 OVR，不能漂移属性：${JSON.stringify({ wembanyama, holmgren, embiid, capela })}`);
 assert([brown, edwards, tatum, leonard].every(player => player
   && Math.abs(player.ovr - player._sourceOvr) <= 3
   && player.ovr === config.getUnifiedPlayerOvr(player, player.pos)),

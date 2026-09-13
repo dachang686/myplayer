@@ -57,8 +57,7 @@ if (targets.length !== 30 || Math.max(...targets) > 84 || Math.min(...targets) <
 }
 
 const positions = ['PG', 'SG', 'SF', 'PF', 'C'];
-const maxPositionPriorityGap = vm.runInContext('DRAFT_POSITION_DIVERSITY_MAX_TALENT_GAP', context);
-// 明显领先的候选人不得因位置优先而降档。
+// 当届 OVR 档位不再因为位置多样性重排；相同当前能力的候选人必须得到相同的来源种子。
 const stackedCenterProspects = Array.from({ length: 30 }, (_, index) => ({
   id: `R-BALANCE-${index}`,
   pos: index < 12 ? 'C' : positions[(index - 12) % positions.length],
@@ -66,24 +65,25 @@ const stackedCenterProspects = Array.from({ length: 30 }, (_, index) => ({
 }));
 context.prospectProbe = stackedCenterProspects;
 context.targetProbe = targets;
-const balancedAssignments = vm.runInContext('assignPositionBalancedDraftTargets(prospectProbe, targetProbe)', context);
+const balancedAssignments = vm.runInContext('assignDraftTargetsByCurrentOvr(prospectProbe, targetProbe)', context);
 const eliteAssignments = balancedAssignments.filter(row => row.tier === 'elite');
 const highAssignments = balancedAssignments.filter(row => row.tier === 'high');
 if (eliteAssignments.map(row => row.player._draftTalentSeed).join(',') !== '95,94,93,92'
-  || eliteAssignments.some(row => row.sourceTalentGap > maxPositionPriorityGap)) {
-  failures.push('明显领先的候选人被位置优先错误降档');
-}
-const closeProspects = [
-  ['C', 95], ['C', 94], ['PG', 93], ['SG', 92], ['SF', 91], ['PF', 90],
-].map(([pos, seed], index) => ({ id: `R-CLOSE-${index}`, pos, _draftTalentSeed: seed }));
-context.prospectProbe = closeProspects;
-const closeAssignments = vm.runInContext('assignPositionBalancedDraftTargets(prospectProbe, targetProbe)', context);
-const closeElitePositions = closeAssignments.filter(row => row.tier === 'elite').map(row => row.player.pos);
-if (new Set(closeElitePositions).size !== 4 || closeAssignments[1].player._draftTalentSeed < 92) {
-  failures.push('位置内前列候选人未获得精英档位置多样性优先');
+  || eliteAssignments.some(row => row.sourceTalentGap !== 0)) {
+  failures.push('当前 OVR 档位分配仍受位置规则影响');
 }
 
-// 用完整真实固定候选池采样，防止只在分差很小的人工夹具上通过。
+const equalGuard = { id: 'R-GUARD', pos: 'PG', ovr: 78, _fixedProspectRating: true };
+const equalCenter = { id: 'R-CENTER', pos: 'C', ovr: 78, _fixedProspectRating: true };
+context.equalGuard = equalGuard;
+context.equalCenter = equalCenter;
+const guardSeed = vm.runInContext('getDraftTalentSeed(equalGuard)', context);
+const centerSeed = vm.runInContext('getDraftTalentSeed(equalCenter)', context);
+if (guardSeed !== 78 || centerSeed !== 78 || guardSeed !== centerSeed) {
+  failures.push(`后卫固定人才分仍有位置补偿：${guardSeed}/${centerSeed}`);
+}
+
+// 用完整真实固定候选池验证：位置不再改变同一来源 OVR 的排序种子。
 const fixedProspectPool = Object.entries(vm.runInContext('FUTURE_PROSPECT_RATINGS', context)).map(([id, rating]) => {
   const player = { id, pos: rating.pos, _fixedProspectRating: true, ...rating.attributes };
   context.playerProbe = player;
@@ -92,56 +92,14 @@ const fixedProspectPool = Object.entries(vm.runInContext('FUTURE_PROSPECT_RATING
   player._draftTalentSeed = vm.runInContext('getDraftTalentSeed(playerProbe)', context);
   return player;
 });
-const assignmentFn = vm.runInContext('assignPositionBalancedDraftTargets', context);
-let poolRandomState = 20260912;
-function poolRandom() {
-  poolRandomState = (Math.imul(poolRandomState, 1664525) + 1013904223) >>> 0;
-  return poolRandomState / 0x100000000;
-}
-const realPoolTierPositions = Object.fromEntries(['elite', 'high', 'combined'].map(tier => [tier, Object.fromEntries(positions.map(pos => [pos, 0]))]));
-const realPoolTierGaps = { elite: [], high: [], combined: [] };
+const assignmentFn = vm.runInContext('assignDraftTargetsByCurrentOvr', context);
 const eliteTargets = targets.filter(value => value >= 80);
 const highTargets = targets.filter(value => value >= 75 && value <= 79);
-for (let sampleIndex = 0; sampleIndex < 10000; sampleIndex++) {
-  const sample = fixedProspectPool.slice();
-  for (let index = 0; index < 30; index++) {
-    const swapIndex = index + Math.floor(poolRandom() * (sample.length - index));
-    [sample[index], sample[swapIndex]] = [sample[swapIndex], sample[index]];
-  }
-  const sampledProspects = sample.slice(0, 30).sort((left, right) =>
-    right._draftTalentSeed - left._draftTalentSeed || left.id.localeCompare(right.id));
-  assignmentFn(sampledProspects, eliteTargets.concat(highTargets)).forEach(({ player, tier, sourceTalentGap }) => {
-    realPoolTierPositions[tier][player.pos]++;
-    realPoolTierPositions.combined[player.pos]++;
-    realPoolTierGaps[tier].push(sourceTalentGap);
-    realPoolTierGaps.combined.push(sourceTalentGap);
-  });
+const sourceAssignments = assignmentFn(fixedProspectPool.slice().sort((left, right) =>
+  right._draftTalentSeed - left._draftTalentSeed || left.id.localeCompare(right.id)), eliteTargets.concat(highTargets));
+if (sourceAssignments.some(row => row.sourceTalentGap !== 0)) {
+  failures.push('真实固定候选池仍出现位置导致的档位提档');
 }
-const realPoolTierShares = Object.fromEntries(Object.entries(realPoolTierPositions).map(([tier, counts]) => {
-  const total = Object.values(counts).reduce((sum, count) => sum + count, 0);
-  return [tier, Object.fromEntries(Object.entries(counts).map(([pos, count]) => [pos, count / total]))];
-}));
-const realPoolTierGapSummary = Object.fromEntries(Object.entries(realPoolTierGaps).map(([tier, gaps]) => [tier, {
-  average: gaps.reduce((sum, gap) => sum + gap, 0) / gaps.length,
-  maximum: Math.max(...gaps),
-}]));
-if (Object.values(realPoolTierGapSummary).some(summary => summary.maximum > maxPositionPriorityGap)) {
-  failures.push(`真实固定候选池出现超过 ${maxPositionPriorityGap} 分的高潜提档：${JSON.stringify(realPoolTierGapSummary)}`);
-}
-const minimumGuardShares = { elite: { PG: 0.08, SG: 0.10 }, high: { PG: 0.04, SG: 0.06 }, combined: { PG: 0.08, SG: 0.10 } };
-const maximumCenterShares = { elite: 0.35, high: 0.40, combined: 0.36 };
-Object.entries(minimumGuardShares).forEach(([tier, minimums]) => {
-  Object.entries(minimums).forEach(([position, minimum]) => {
-    if (realPoolTierShares[tier][position] < minimum) {
-      failures.push(`真实固定候选池 ${tier} 档 ${position} 占比 ${realPoolTierShares[tier][position].toFixed(4)} 低于 ${minimum}`);
-    }
-  });
-});
-Object.entries(maximumCenterShares).forEach(([tier, maximum]) => {
-  if (realPoolTierShares[tier].C > maximum) {
-    failures.push(`真实固定候选池 ${tier} 档 C 占比 ${realPoolTierShares[tier].C.toFixed(4)} 高于 ${maximum}`);
-  }
-});
 const generated = [];
 let maximumEntryOvr = 0;
 let maximumTargetResidual = 0;
@@ -173,7 +131,7 @@ for (let index = 0; index < targets.length; index++) {
 
   const potential = vm.runInContext('inferGeneratedPlayerPotential(playerProbe, 20)', context);
   maximumNormalPotential = Math.max(maximumNormalPotential, potential);
-  if (potential > 98 || potential < player.ovr) failures.push(`${player.id} 普通潜力异常：${potential}`);
+  if (potential > 99 || potential < player.ovr) failures.push(`${player.id} 普通潜力异常：${potential}`);
 
   const growthPlayer = JSON.parse(JSON.stringify(player));
   context.playerProbe = growthPlayer;
@@ -195,7 +153,7 @@ for (let index = 0; index < targets.length; index++) {
 }
 
 const capChecks = [
-  [55, 80], [63, 86], [70, 92], [77, 96], [82, 98],
+  [55, 99], [63, 99], [70, 99], [77, 99], [82, 99],
 ];
 for (const [draftOvr, expectedCap] of capChecks) {
   context.playerProbe = { id: `R-CAP-${draftOvr}`, _prospectId: `CAP-${draftOvr}`, pos: 'SF', ovr: draftOvr, _draftOvr: draftOvr };
@@ -217,6 +175,63 @@ const starCaps = MVP_STAR_PROSPECT_IDS.map((id, index) => {
 context.playerProbe = { id: 'R-LEGACY-99', _prospectId: 'LEGACY-99', pos: 'PG', ovr: 99, _draftOvr: 84, _age: 24 };
 const legacyPotential = vm.runInContext('inferGeneratedPlayerPotential(playerProbe, 24)', context);
 if (legacyPotential !== 99) failures.push(`旧存档 99 被错误回退到 ${legacyPotential}`);
+
+// 同一属性包只改变 _draftOvr 时，POT 必须保持不变；还要真正走完整的
+// “固定候选人→目标档位拟合属性”流程，防止只测字段而漏掉间接绑定。
+const potentialIndependence = vm.runInContext(`(() => {
+  const attributes = {
+    threePT: 84, MID: 82, FIN: 80, DNK: 70, HAN: 88, PAS: 86,
+    PDEF: 62, STL: 58, IDEF: 54, BLK: 42, REB: 48, ATH: 78, STR: 52, CLU: 70,
+  };
+  const lowPick = Object.assign({ id: 'R-POT-INDEPENDENT', _prospectId: 'POT-INDEPENDENT', pos: 'PG', ovr: 77, _draftOvr: 55, _age: 20 }, attributes);
+  const highPick = Object.assign({ id: 'R-POT-INDEPENDENT', _prospectId: 'POT-INDEPENDENT', pos: 'PG', ovr: 77, _draftOvr: 84, _age: 20 }, attributes);
+  const source = FUTURE_PROSPECT_RATINGS.D001;
+  const lowTarget = Object.assign({ id: 'R-POT-TARGET', _prospectId: 'D001', pos: source.pos, ovr: source.ovr, _age: 20, _fixedProspectRating: true }, source.attributes);
+  const highTarget = Object.assign({}, lowTarget);
+  prepareDraftProspectForTarget(lowTarget, 60, Math.random);
+  prepareDraftProspectForTarget(highTarget, 84, Math.random);
+  const lowRandomTarget = { id: 'R-POT-RANDOM', _prospectId: 'POT-RANDOM', pos: 'PG', ovr: 60, _age: 20 };
+  const highRandomTarget = { id: 'R-POT-RANDOM', _prospectId: 'POT-RANDOM', pos: 'PG', ovr: 84, _age: 20 };
+  let lowSeed = 20260913;
+  let highSeed = 20260913;
+  const lowRandom = () => ((lowSeed = (Math.imul(lowSeed, 1664525) + 1013904223) >>> 0) / 0x100000000);
+  const highRandom = () => ((highSeed = (Math.imul(highSeed, 1664525) + 1013904223) >>> 0) / 0x100000000);
+  prepareDraftProspectForTarget(lowRandomTarget, 60, lowRandom);
+  prepareDraftProspectForTarget(highRandomTarget, 84, highRandom);
+  return {
+    lowPick: inferGeneratedPlayerPotential(lowPick, 20),
+    highPick: inferGeneratedPlayerPotential(highPick, 20),
+    lowTarget: { ovr: lowTarget.ovr, potential: lowTarget._draftPotential },
+    highTarget: { ovr: highTarget.ovr, potential: highTarget._draftPotential },
+    lowRandomTarget: { ovr: lowRandomTarget.ovr, potential: lowRandomTarget._draftPotential },
+    highRandomTarget: { ovr: highRandomTarget.ovr, potential: highRandomTarget._draftPotential },
+    score: getDraftTalentScore({ ovr: 77, _draftPotential: 95 }, 50),
+  };
+})()`, context);
+if (potentialIndependence.lowPick !== potentialIndependence.highPick
+  || potentialIndependence.lowTarget.potential !== potentialIndependence.highTarget.potential
+  || potentialIndependence.lowRandomTarget.potential !== potentialIndependence.highRandomTarget.potential) {
+  failures.push(`POT 仍受选秀档位影响：${JSON.stringify(potentialIndependence)}`);
+}
+const expectedTalentScore = 77 * 0.60 + 95 * 0.35 + 50 * 0.05;
+if (Math.abs(potentialIndependence.score - expectedTalentScore) > 1e-9) {
+  failures.push(`选秀人才分权重异常：${potentialIndependence.score}`);
+}
+
+// 年轻、跨技能组且有稀有天赋的后卫可以压过完成度高但技能集窄的中锋。
+const broadGuardPotential = vm.runInContext(`inferGeneratedPlayerPotential({
+  id: 'R-POT-BROAD-GUARD', _prospectId: 'POT-BROAD-GUARD', pos: 'PG', ovr: 77, _age: 20,
+  threePT: 88, MID: 84, FIN: 82, DNK: 68, HAN: 92, PAS: 90,
+  PDEF: 58, STL: 52, IDEF: 38, BLK: 30, REB: 42, ATH: 82, STR: 48, CLU: 78,
+}, 20)`, context);
+const matureCenterPotential = vm.runInContext(`inferGeneratedPlayerPotential({
+  id: 'R-POT-MATURE-CENTER', _prospectId: 'POT-MATURE-CENTER', pos: 'C', ovr: 82, _age: 20,
+  threePT: 35, MID: 45, FIN: 82, DNK: 80, HAN: 35, PAS: 45,
+  PDEF: 55, STL: 45, IDEF: 95, BLK: 92, REB: 90, ATH: 60, STR: 92, CLU: 65,
+}, 20)`, context);
+if (broadGuardPotential <= matureCenterPotential) {
+  failures.push(`宽技能后卫未获得更高 POT：${broadGuardPotential}/${matureCenterPotential}`);
+}
 
 // 固定候选人可被压入当届稀有度，但不能翻转原始强弱项顺序。
 const futureRatings = vm.runInContext('FUTURE_PROSPECT_RATINGS', context);
@@ -245,10 +260,17 @@ if (authoredPlayer.ovr < 69 || authoredPlayer.ovr > 71) {
 }
 
 if (!draftFlowSource.includes('buildGeneratedDraftOvrTargets(prospects.length, rngNext)')
-  || !draftFlowSource.includes('assignPositionBalancedDraftTargets(prospects, targetOvrs)')
-  || !draftFlowSource.includes('prepareDraftProspectForTarget(assignment.player, assignment.targetOvr, rngNext)')
-  || !offseasonSource.includes('var assignments = assignPositionBalancedDraftTargets(prospects, targetOvrs)')) {
-  failures.push('正式选秀面板未接入班级稀有度分布');
+  || !draftFlowSource.includes('assignDraftTargetsByCurrentOvr(prospects, targetOvrs)')
+  || !draftFlowSource.includes('getDraftTalentScore(a, 50)')
+  || !offseasonSource.includes('var assignments = assignDraftTargetsByCurrentOvr(prospects, targetOvrs)')
+  || !offseasonSource.includes('getDraftTalentScore(right.player, 50)')) {
+  failures.push('正式选秀流程未接入 OVR/POT 联合人才分');
+}
+if (offseasonSource.includes('FIXED_PROSPECT_DRAFT_TALENT_OFFSETS')) {
+  failures.push('仍残留 PG/SG 固定人才分补偿');
+}
+if (offseasonSource.includes('getEliteDraftGrowthBonus') || offseasonSource.includes('getHighDraftGrowthBonus')) {
+  failures.push('成长仍直接绑定精英/高档选秀标签');
 }
 if (!indexSource.includes('function prepareScheduledStarRookiesForDraft()')
   || !indexSource.includes('for (var start = 0; start < STAR_ROOKIES.length; start += 3)')) {
@@ -265,11 +287,11 @@ const report = {
   maximumGrowthDelta,
   stackedEliteTalent: eliteAssignments.map(row => row.player._draftTalentSeed),
   stackedHighTalent: highAssignments.map(row => row.player._draftTalentSeed),
-  closeElitePositions,
-  maxPositionPriorityGap,
-  realPoolTierPositions,
-  realPoolTierShares,
-  realPoolTierGapSummary,
+  equalPositionSeeds: { PG: guardSeed, C: centerSeed },
+  sourceAssignmentCount: sourceAssignments.length,
+  potentialIndependence,
+  broadGuardPotential,
+  matureCenterPotential,
   slowAttributeGrowthViolations,
   starCaps,
   legacy99Preserved: legacyPotential === 99,

@@ -630,18 +630,25 @@
         ? getDraftTalentSeed(player)
         : (Number(player.ovr) || 50);
       player._draftTie = seededValue(draft.seed, 'board|' + player.id);
+      player._draftTargetTie = seededValue(draft.seed, 'target|' + player.id);
       prospects.push(player);
     }
     prospects.sort(function(a, b) {
       return (Number(b._draftTalentSeed) || 0) - (Number(a._draftTalentSeed) || 0) || a._draftTie - b._draftTie;
     });
     var targetOvrs = buildGeneratedDraftOvrTargets(prospects.length, rngNext);
-    var assignments = assignPositionBalancedDraftTargets(prospects, targetOvrs);
+    var assignments = assignDraftTargetsByCurrentOvr(prospects, targetOvrs);
     assignments.forEach(function(assignment) {
       prepareDraftProspectForTarget(assignment.player, assignment.targetOvr, rngNext);
     });
+    prospects.forEach(function(player) {
+      player._draftPotential = getDraftProspectPotential(player);
+      player._draftTalentScore = getDraftTalentScore(player, 50);
+    });
     prospects.sort(function(a, b) {
-      return (Number(b.ovr) || 0) - (Number(a.ovr) || 0) || a._draftTie - b._draftTie;
+      return b._draftTalentScore - a._draftTalentScore
+        || (Number(b.ovr) || 0) - (Number(a.ovr) || 0)
+        || a._draftTie - b._draftTie;
     });
     prospects.forEach(function(player, index) {
       player._draftBoardRank = index + 1;
@@ -681,17 +688,37 @@
     }).sort(function(a, b) { return b.score - a.score; }).slice(0, 2).map(function(item) { return item.pos; });
   }
 
+  function getDraftFitRiskScore(team, player) {
+    var primaryPos = String(player && player.pos || 'SF').split('/')[0];
+    var need = getTeamPositionNeed(team, primaryPos);
+    // 适配/风险只占 5%；需求不会把明显更弱的球员抬过高潜候选人。
+    return Math.max(50, Math.min(80, 50 + need));
+  }
+
   function rankProspectsForTeam(draft, team, pickNumber) {
     var available = availableProspects(draft);
     var boardWindow = pickNumber <= 10 ? 5 : (pickNumber <= 20 ? 8 : 12);
-    available.sort(function(a, b) { return a._draftBoardRank - b._draftBoardRank; });
+    available.sort(function(a, b) {
+      return getDraftTalentScore(b, 50) - getDraftTalentScore(a, 50)
+        || a._draftBoardRank - b._draftBoardRank;
+    });
     return available.slice(0, Math.min(boardWindow, available.length)).map(function(player) {
-      var primaryPos = String(player.pos || 'SF').split('/')[0];
-      var score = (Number(player.ovr) || 0) * 10;
-      score += getTeamPositionNeed(team, primaryPos);
-      score += seededValue(draft.seed, 'fit|' + pickNumber + '|' + team + '|' + player.id) * 8;
-      return { player: player, score: score };
-    }).sort(function(a, b) { return b.score - a.score; });
+      var fitRisk = getDraftFitRiskScore(team, player);
+      return {
+        player: player,
+        score: getDraftTalentScore(player, fitRisk),
+        fitRisk: fitRisk,
+        positionNeed: getTeamPositionNeed(team, String(player.pos || 'SF').split('/')[0]),
+      };
+    }).sort(function(a, b) {
+      var scoreGap = Math.abs(b.score - a.score);
+      if (scoreGap > DRAFT_CLOSE_TALENT_SCORE_GAP) return b.score - a.score;
+      // 只有最终人才分很接近时，才使用位置需求/随机签位噪声打破平局。
+      return b.positionNeed - a.positionNeed
+        || (seededValue(draft.seed, 'fit|' + pickNumber + '|' + team + '|' + b.player.id)
+          - seededValue(draft.seed, 'fit|' + pickNumber + '|' + team + '|' + a.player.id))
+        || b.score - a.score;
+    });
   }
 
   function getSuggestionDecision(draft, team, pickNumber, ranked) {
@@ -752,6 +779,11 @@
     player.contract = order.pick <= 14 ? 4 : 3;
     player.loyalty = getRookieContractLoyalty(player.contract);
     player.type = '新秀';
+    if (typeof getPlayerGene === 'function') {
+      var rookieGene = getPlayerGene(player);
+      rookieGene.potential = getDraftProspectPotential(player);
+      rookieGene.potentialVersion = PLAYER_POTENTIAL_MODEL_VERSION;
+    }
     roster.push(player);
     STATE._leagueChanges = STATE._leagueChanges || { retired: [], rookies: [], teamChanges: {}, trades: [] };
     STATE._leagueChanges.rookies = STATE._leagueChanges.rookies || [];
@@ -834,6 +866,7 @@
       name: decision.player.cname,
       pos: decision.player.pos,
       ovr: decision.player.ovr,
+      potential: getDraftProspectPotential(decision.player),
       profile: decision.player._draftProfileLabel,
       cutPlayer: cuts.length ? cuts.map(function(player) { return player.cname; }).join('、') : '',
       suggestion: suggestion
@@ -881,20 +914,21 @@
     return '<div class="draft-prospect-row' + (suggested ? ' is-suggested' : '') + '">' +
       '<span class="draft-board-rank">' + player._draftBoardRank + '</span>' +
       '<div class="draft-prospect-main"><strong>' + player.cname + '</strong><span>' + player.pos + ' · ' + (player.height || '身高未知') + ' · ' + player._draftProfileLabel + '</span><small>优势：' + player._draftStrengths + '</small></div>' +
-      '<div class="draft-prospect-side"><span>' + player._draftProjection + '</span>' +
+      '<div class="draft-prospect-side"><span>' + player._draftProjection + ' · OVR ' + player.ovr + ' / POT ' + player._draftPotential + '</span>' +
         (canSuggest ? '<button type="button" onclick="suggestDraftProspect(\'' + player.id + '\')">' + (suggested ? '已建议' : '建议选择') + '</button>' : '') +
       '</div></div>';
   }
 
   function draftPickRow(pick) {
     var advice = '';
+    var potential = pick.potential == null ? '—' : pick.potential;
     if (pick.suggestion) {
       advice = '<small class="draft-advice-result ' + (pick.suggestion.accepted ? 'is-accepted' : 'is-declined') + '">' +
         (pick.suggestion.accepted ? '管理层采纳了你的建议' : '管理层未采纳你的建议') + '</small>';
     }
     return '<div class="draft-result-row' + (pick.team === STATE.careerTeam ? ' is-mine' : '') + '">' +
       '<span class="draft-pick-no">' + pick.pick + '</span><span class="draft-team-logo">' + getTeamLogo(pick.team, 26) + '</span>' +
-      '<div><strong>' + pick.name + '</strong><span>' + getTeamName(pick.team) + ' · ' + pick.pos + ' · OVR ' + pick.ovr + '</span>' + advice + '</div></div>';
+      '<div><strong>' + pick.name + '</strong><span>' + getTeamName(pick.team) + ' · ' + pick.pos + ' · OVR ' + pick.ovr + ' / POT ' + potential + '</span>' + advice + '</div></div>';
   }
 
   function renderCompletedDraft(draft) {
@@ -939,7 +973,7 @@
       '<section class="draft-clock' + (isMine ? ' is-mine' : '') + '"><span class="draft-clock-pick">第 ' + order.pick + ' 顺位</span>' +
         '<div>' + getTeamLogo(team, 40) + '<div><strong>' + getTeamName(team) + '</strong><small>阵容需求：' + needs.join(' / ') + '</small></div></div>' +
         (isMine ? '<p>你可以向管理层建议一名球员。建议会被认真考虑，但最终决定仍由球队做出。</p>' : '') + '</section>' +
-      '<section class="draft-prospects"><div class="draft-section-head"><h2>待选新秀</h2><span>真实 OVR 将在选中后揭晓</span></div>' +
+      '<section class="draft-prospects"><div class="draft-section-head"><h2>待选新秀</h2><span>当前能力 OVR · 未来潜力 POT</span></div>' +
         shown.map(function(player) { return prospectRow(player, isMine, draft.pendingSuggestionId === player.id); }).join('') + '</section>' +
       '<section class="draft-results-list"><h2>最近选择</h2>' + (recent.length ? recent.map(draftPickRow).join('') : '<p class="draft-empty">选秀尚未开始</p>') + '</section>' +
       '<div class="draft-actions"><button type="button" class="draft-action-primary" onclick="makeNextDraftPick()">公布下一签</button>' +

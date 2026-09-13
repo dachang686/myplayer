@@ -71,6 +71,12 @@ for (const pos of config.POS_LIST) for (const key of config.ATTR_LIST) {
   assert(high > low + 1, `${pos} ${key} 必须有实际的 OVR 权重`);
 }
 
+const centerClutchLow = config.getUnifiedPlayerRating(player({ pos: 'C', CLU: 25 }));
+const centerClutchHigh = config.getUnifiedPlayerRating(player({ pos: 'C', CLU: 99 }));
+assert(centerClutchHigh.overall > centerClutchLow.overall
+  && centerClutchHigh.pricing.regulationOverall >= centerClutchLow.pricing.regulationOverall,
+  `C 的 CLU 必须正向影响 OVR，不能在 regulationOverall 中反向扣分：${JSON.stringify({ centerClutchLow, centerClutchHigh })}`);
+
 const defenseOnly = { PDEF: 82, IDEF: 86, STL: 78, BLK: 88, REB: 90, ATH: 80, STR: 88 };
 const lowOffenseDefender = config.getUnifiedPlayerRating(player(Object.assign({}, defenseOnly, { HAN: 25, PAS: 25 })));
 const highOffenseDefender = config.getUnifiedPlayerRating(player(Object.assign({}, defenseOnly, { HAN: 99, PAS: 99 })));
@@ -83,8 +89,8 @@ const positionProbe = player({ threePT: 84, MID: 81, FIN: 78, HAN: 88, PAS: 91, 
 const positionOvrs = ['PG', 'SG', 'SF', 'PF', 'C'].map(pos => config.getUnifiedPlayerRating(positionProbe, pos).overall);
 assert(Math.max(...positionOvrs) - Math.min(...positionOvrs) > 5,
   `位置加权模型必须让同一属性包在不同位置得到不同 OVR：${JSON.stringify(positionOvrs)}`);
-assert(config.PLAYER_RATING_MODEL.version === 6
-  && config.PLAYER_RATING_MODEL.mode === 'position-weighted-monotonic-14-attribute-fit'
+assert(config.PLAYER_RATING_MODEL.version === 7
+  && config.PLAYER_RATING_MODEL.mode === 'position-weighted-monotonic-14-attribute-fit-center-role-composite'
   && config.PLAYER_RATING_MODEL.attributeSchemaVersion === 3
   && config.PLAYER_RATING_MODEL.handleAttribute === 'Ball Handle',
   `统一评分模型必须使用 14 项位置加权拟合公式：${JSON.stringify(config.PLAYER_RATING_MODEL)}`);
@@ -116,6 +122,12 @@ assert(pureAnchor.roles.defensiveAnchor > 95
   && pureAnchor.overall <= 84.01
   && Math.abs(pureAnchor.rotationValue - pureAnchor.overall) > 0.1,
   `纯防守支柱不应被 14 项拟合公式误判为全能超巨，且轮换价值仍与 OVR 分离：${JSON.stringify(pureAnchor)}`);
+const pureCenterAnchor = config.getUnifiedPlayerRating(player({
+  pos: 'C', FIN: 62, DNK: 72, HAN: 48, PAS: 45, PDEF: 70, IDEF: 97,
+  STL: 65, BLK: 97, REB: 97, ATH: 78, STR: 94,
+}));
+assert(pureCenterAnchor.overall <= 90,
+  `纯防守中锋不能被角色组合误判为全能超巨：${JSON.stringify({ pureCenterAnchor })}`);
 
 const fitPositionProbe = player({
   threePT: 86, MID: 84, FIN: 94, DNK: 90, HAN: 88, PAS: 78,
@@ -279,11 +291,11 @@ const specialistResidual = specialtyRows.slice(-specialtyGroupSize)
 assert(residualMetrics.count === 525
   && residualMetrics.meanAbsoluteError <= 2.2
   && residualMetrics.spearman >= 0.85,
-`V6 位置加权公式与来源名单拟合异常：${JSON.stringify(residualMetrics)}`);
+`V7 角色组合 OVR 与来源名单拟合异常：${JSON.stringify(residualMetrics)}`);
 assert(Object.values(residualsByPosition).every(value => Math.abs(value) <= 1),
-  `V6 位置加权公式存在明显位置系统偏差：${JSON.stringify(residualsByPosition)}`);
+  `V7 角色组合 OVR 存在明显位置系统偏差：${JSON.stringify(residualsByPosition)}`);
 assert(Math.abs(specialistResidual - balancedResidual) <= 1,
-  `V6 位置加权公式对均衡型/专项型球员偏差过大：${JSON.stringify({ balancedResidual, specialistResidual })}`);
+  `V7 角色组合 OVR 对均衡型/专项型球员偏差过大：${JSON.stringify({ balancedResidual, specialistResidual })}`);
 
 console.log(JSON.stringify({
   baseline: baseline.overall,
