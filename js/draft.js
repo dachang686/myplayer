@@ -706,23 +706,18 @@
       var fitRisk = getDraftFitRiskScore(team, player);
       return {
         player: player,
+        baseScore: getDraftTalentScore(player, 50),
         score: getDraftTalentScore(player, fitRisk),
         fitRisk: fitRisk,
         positionNeed: getTeamPositionNeed(team, String(player.pos || 'SF').split('/')[0]),
         tie: seededValue(draft.seed, 'fit|' + pickNumber + '|' + team + '|' + player.id),
       };
     });
-    // 先以统一的榜首人才分确定 topScore - 1.5 候选带，再只在该带内
-    // 使用位置需求；候选带外始终按人才分排序，保证比较器具有传递性。
-    var topScore = ranked.reduce(function(maximum, item) {
-      return Math.max(maximum, item.score);
-    }, -Infinity);
-    var closeBand = ranked.filter(function(item) {
-      return topScore - item.score <= DRAFT_CLOSE_TALENT_SCORE_GAP + 1e-9;
-    });
-    var outsideBand = ranked.filter(function(item) {
-      return topScore - item.score > DRAFT_CLOSE_TALENT_SCORE_GAP + 1e-9;
-    });
+    // 与自动选秀共用中性 OVR/POT 基础分候选带；实际球队适配只在带内
+    // 生效，避免适配项先改变候选带、再被位置需求重复使用。
+    var candidateBand = getDraftTalentCandidateBand(ranked);
+    var closeBand = candidateBand.closeBand;
+    var outsideBand = candidateBand.outsideBand;
     closeBand.sort(function(a, b) {
       return b.positionNeed - a.positionNeed
         || b.tie - a.tie
@@ -929,7 +924,7 @@
     return '<div class="draft-prospect-row' + (suggested ? ' is-suggested' : '') + '">' +
       '<span class="draft-board-rank">' + player._draftBoardRank + '</span>' +
       '<div class="draft-prospect-main"><strong>' + player.cname + '</strong><span>' + player.pos + ' · ' + (player.height || '身高未知') + ' · ' + player._draftProfileLabel + '</span><small>优势：' + player._draftStrengths + '</small></div>' +
-      '<div class="draft-prospect-side"><span>' + player._draftProjection + ' · OVR ' + player.ovr + ' / POT ' + player._draftPotential + '</span>' +
+      '<div class="draft-prospect-side"><span>' + player._draftProjection + ' · OVR ' + player.ovr + ' / POT ' + getDraftProspectPotential(player) + '</span>' +
         (canSuggest ? '<button type="button" onclick="suggestDraftProspect(\'' + player.id + '\')">' + (suggested ? '已建议' : '建议选择') + '</button>' : '') +
       '</div></div>';
   }

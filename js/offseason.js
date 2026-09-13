@@ -3548,6 +3548,22 @@ function getDraftTalentScore(player, fitRisk) {
   return currentOvr * 0.60 + potential * 0.35 + fit * 0.05;
 }
 
+function getDraftTalentCandidateBand(rows) {
+  var candidates = (rows || []).filter(function(row) {
+    return row && Number.isFinite(Number(row.baseScore));
+  });
+  var topScore = candidates.reduce(function(maximum, row) {
+    return Math.max(maximum, Number(row.baseScore));
+  }, -Infinity);
+  var inBand = candidates.filter(function(row) {
+    return topScore - Number(row.baseScore) <= DRAFT_CLOSE_TALENT_SCORE_GAP + 1e-9;
+  });
+  var outsideBand = candidates.filter(function(row) {
+    return topScore - Number(row.baseScore) > DRAFT_CLOSE_TALENT_SCORE_GAP + 1e-9;
+  });
+  return { topScore: topScore, closeBand: inBand, outsideBand: outsideBand };
+}
+
 function draftCanPlayPosition(playerPos, targetPos) {
   return String(playerPos || '').split(/\s*\/\s*/).map(function(value) {
     return value.trim();
@@ -3605,10 +3621,8 @@ function selectDraftAssignmentForTeam(assignments, team) {
   if (!rows.length) return null;
   // 先以不含球队偏好的 OVR/POT 基础人才分确定候选带，适配只在这组
   // 本来就接近的球员之间生效，避免 5% 项改变明显的全局能力排序。
-  var topScore = rows.reduce(function(maximum, row) { return Math.max(maximum, row.baseScore); }, -Infinity);
-  var topBand = rows.filter(function(row) {
-    return topScore - row.baseScore <= DRAFT_CLOSE_TALENT_SCORE_GAP + 1e-9;
-  });
+  var candidateBand = getDraftTalentCandidateBand(rows);
+  var topBand = candidateBand.closeBand;
   topBand.sort(function(left, right) {
     return right.positionNeed - left.positionNeed
       || right.score - left.score

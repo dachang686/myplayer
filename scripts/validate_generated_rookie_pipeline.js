@@ -234,6 +234,11 @@ const fitIntegration = vm.runInContext(`(() => {
   const selected = selectDraftAssignmentForTeam([
     { player: pgCandidate }, { player: centerCandidate },
   ], 'NEEDY');
+  const candidateBand = getDraftTalentCandidateBand([
+    { id: 'R-BAND-TOP', baseScore: 100 },
+    { id: 'R-BAND-NEAR', baseScore: 98.6 },
+    { id: 'R-BAND-OUTSIDE', baseScore: 97.2 },
+  ]);
   return {
     needyPgFit,
     needyCenterFit,
@@ -242,6 +247,8 @@ const fitIntegration = vm.runInContext(`(() => {
     talentScoreGap: getDraftTalentScore(pgCandidate, needyPgFit)
       - getDraftTalentScore(centerCandidate, needyCenterFit),
     selected: selected && selected.player && selected.player.id,
+    baseBand: candidateBand.closeBand.map(row => row.id),
+    outsideBand: candidateBand.outsideBand.map(row => row.id),
   };
 })()`, context);
 if (fitIntegration.needyPgFit !== 78
@@ -249,8 +256,41 @@ if (fitIntegration.needyPgFit !== 78
   || fitIntegration.filledPgFit !== 50
   || fitIntegration.filledCenterFit !== 78
   || Math.abs(fitIntegration.talentScoreGap - 1.4) > 1e-9
-  || fitIntegration.selected !== 'R-FIT-PG') {
+  || fitIntegration.selected !== 'R-FIT-PG'
+  || fitIntegration.baseBand.join(',') !== 'R-BAND-TOP,R-BAND-NEAR'
+  || fitIntegration.outsideBand.join(',') !== 'R-BAND-OUTSIDE') {
   failures.push(`自动选秀未使用真实适配分或近邻带排序异常：${JSON.stringify(fitIntegration)}`);
+}
+
+// 目标 OVR 可能高于独立潜力种子；列表与落地记录都必须通过 getter
+// 展示/使用 max(OVR, POT)，不能出现可见的 POT < OVR。
+const displayPotentialProbe = vm.runInContext(`(() => {
+  let seed = 20260913;
+  const random = () => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 0x100000000);
+  const rows = [];
+  for (let index = 0; index < 200; index++) {
+    const player = {
+      id: 'R-DISPLAY-' + index,
+      _prospectId: 'DISPLAY-' + index,
+      pos: ['PG', 'SG', 'SF', 'PF', 'C'][index % 5],
+      ovr: 84,
+      _age: 20,
+    };
+    prepareDraftProspectForTarget(player, 84, random);
+    rows.push({ raw: player._draftPotential, display: getDraftProspectPotential(player), ovr: player.ovr });
+  }
+  return {
+    count: rows.length,
+    rawBelowOvr: rows.filter(row => row.raw < row.ovr).length,
+    invalidDisplay: rows.filter(row => row.display < row.ovr).length,
+    minimumDisplay: Math.min(...rows.map(row => row.display)),
+  };
+})()`, context);
+if (displayPotentialProbe.count !== 200
+  || displayPotentialProbe.rawBelowOvr === 0
+  || displayPotentialProbe.invalidDisplay !== 0
+  || displayPotentialProbe.minimumDisplay < 84) {
+  failures.push(`随机新秀 POT 展示未统一使用 getter：${JSON.stringify(displayPotentialProbe)}`);
 }
 
 // 年轻、跨技能组且有稀有天赋的后卫可以压过完成度高但技能集窄的中锋。
@@ -303,8 +343,11 @@ if (!draftFlowSource.includes('buildGeneratedDraftOvrTargets(prospects.length, r
   failures.push('正式选秀流程未接入 OVR/POT 联合人才分');
 }
 if (draftFlowSource.includes('var scoreGap = Math.abs(b.score - a.score)')
-  || !draftFlowSource.includes('var topScore = ranked.reduce')
-  || !draftFlowSource.includes('var closeBand = ranked.filter')) {
+  || !offseasonSource.includes('function getDraftTalentCandidateBand(rows)')
+  || !offseasonSource.includes('var candidateBand = getDraftTalentCandidateBand(rows)')
+  || !draftFlowSource.includes('var candidateBand = getDraftTalentCandidateBand(ranked)')
+  || !draftFlowSource.includes('baseScore: getDraftTalentScore(player, 50)')
+  || !draftFlowSource.includes('getDraftProspectPotential(player)')) {
   failures.push('交互选秀仍使用非传递的两两近邻比较器');
 }
 if (offseasonSource.includes('FIXED_PROSPECT_DRAFT_TALENT_OFFSETS')) {
@@ -332,6 +375,7 @@ const report = {
   sourceAssignmentCount: sourceAssignments.length,
   potentialIndependence,
   fitIntegration,
+  displayPotentialProbe,
   broadGuardPotential,
   matureCenterPotential,
   slowAttributeGrowthViolations,
