@@ -702,23 +702,38 @@
       return getDraftTalentScore(b, 50) - getDraftTalentScore(a, 50)
         || a._draftBoardRank - b._draftBoardRank;
     });
-    return available.slice(0, Math.min(boardWindow, available.length)).map(function(player) {
+    var ranked = available.slice(0, Math.min(boardWindow, available.length)).map(function(player) {
       var fitRisk = getDraftFitRiskScore(team, player);
       return {
         player: player,
         score: getDraftTalentScore(player, fitRisk),
         fitRisk: fitRisk,
         positionNeed: getTeamPositionNeed(team, String(player.pos || 'SF').split('/')[0]),
+        tie: seededValue(draft.seed, 'fit|' + pickNumber + '|' + team + '|' + player.id),
       };
-    }).sort(function(a, b) {
-      var scoreGap = Math.abs(b.score - a.score);
-      if (scoreGap > DRAFT_CLOSE_TALENT_SCORE_GAP) return b.score - a.score;
-      // 只有最终人才分很接近时，才使用位置需求/随机签位噪声打破平局。
-      return b.positionNeed - a.positionNeed
-        || (seededValue(draft.seed, 'fit|' + pickNumber + '|' + team + '|' + b.player.id)
-          - seededValue(draft.seed, 'fit|' + pickNumber + '|' + team + '|' + a.player.id))
-        || b.score - a.score;
     });
+    // 先以统一的榜首人才分确定 topScore - 1.5 候选带，再只在该带内
+    // 使用位置需求；候选带外始终按人才分排序，保证比较器具有传递性。
+    var topScore = ranked.reduce(function(maximum, item) {
+      return Math.max(maximum, item.score);
+    }, -Infinity);
+    var closeBand = ranked.filter(function(item) {
+      return topScore - item.score <= DRAFT_CLOSE_TALENT_SCORE_GAP + 1e-9;
+    });
+    var outsideBand = ranked.filter(function(item) {
+      return topScore - item.score > DRAFT_CLOSE_TALENT_SCORE_GAP + 1e-9;
+    });
+    closeBand.sort(function(a, b) {
+      return b.positionNeed - a.positionNeed
+        || b.tie - a.tie
+        || b.score - a.score
+        || a.player._draftBoardRank - b.player._draftBoardRank;
+    });
+    outsideBand.sort(function(a, b) {
+      return b.score - a.score
+        || a.player._draftBoardRank - b.player._draftBoardRank;
+    });
+    return closeBand.concat(outsideBand);
   }
 
   function getSuggestionDecision(draft, team, pickNumber, ranked) {

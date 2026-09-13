@@ -1072,12 +1072,30 @@ function getUnifiedPlayerRating(player, position) {
   // C 的关键球贡献独立于三个角色，避免把 CLU 误解成防守支柱，同时保留
   // 所有 14 项属性的严格正向边际。该项与 C 的历史拟合 CLU 权重合并后，
   // 下方 regulationOverall 可以扣除完全相同的实际贡献。
-  var centerClutchRoleContribution = (attr('CLU') - 50) * 0.05;
-  var centerLegacyClutchContribution = (attr('CLU') - 50) / inputScale
-    * Number((fitWeights.C || {}).CLU || 0) * 0.30;
-  var centerClutchContribution = centerClutchRoleContribution + centerLegacyClutchContribution;
+  var centerClutchOvrContribution = (attr('CLU') - 50) * 0.05;
+  var centerLegacyClutchValue = (attr('CLU') - 50) / inputScale
+    * Number((fitWeights.C || {}).CLU || 0);
+  // STL 在 C 的防守角色中保留，但其完整属性边际还需要一个极小的
+  // 校准项，避免经过角色排序与 70/20/10 递减后被数值精度吞掉。
+  var centerStealCalibrationContribution = (attr('STL') - 50) * 0.0002;
+  // 角色组合对完成度较低的中锋采用有限的校准回补，避免单一角色的
+  // 70/20/10 递减把可靠轮换低估；高端技术角色只在未达到顶端时获得
+  // 小幅保留，顶级多角色中锋不会被额外抬高。
+  var centerCompletionCalibrationLift = centerRoleComposite < 85
+    ? Math.max(0, Math.min(3, (centerRoleComposite - 55) * 0.30))
+    : 0;
+  var centerTechnicalCalibrationLift = Math.min(1.5, Math.max(0, (centerRoleRanking[0] - 88) * 0.50))
+    * Math.max(0, Math.min(1, (94 - centerRoleComposite) / 4));
   var centerRoleOverall = clampRating(
-    centerRoleComposite * 0.70 + fittedLegacyPositionOvr('C') * 0.30 + centerClutchRoleContribution
+    centerRoleComposite * 0.70 + fittedLegacyPositionOvr('C') * 0.30
+      + centerClutchOvrContribution + centerStealCalibrationContribution
+      + centerCompletionCalibrationLift + centerTechnicalCalibrationLift
+  );
+  var centerRoleOverallWithoutClutch = clampRating(
+    centerRoleComposite * 0.70
+      + (fittedLegacyPositionOvr('C') - centerLegacyClutchValue) * 0.30
+      + centerStealCalibrationContribution
+      + centerCompletionCalibrationLift + centerTechnicalCalibrationLift
   );
   function fittedPositionOvr(positionKey) {
     if (positionKey === 'C') return centerRoleOverall;
@@ -1088,19 +1106,22 @@ function getUnifiedPlayerRating(player, position) {
   var secondaryOverall = secondaryPosition ? fittedPositionOvr(secondaryPosition) : primaryOverall;
   var rawOverall = primaryOverall * (1 - secondaryWeight) + secondaryOverall * secondaryWeight;
   var overall = clampRating(rawOverall);
-  // regulationOverall 明确排除 CLU，但只扣除其在当前主/副位置组合中真实
-  // 贡献的部分：C 使用独立关键球贡献，其他位置使用历史拟合 CLU 权重。
-  var centerClutchPositionWeight = (primaryPosition === 'C' ? 1 - secondaryWeight : 0)
-    + (secondaryPosition === 'C' ? secondaryWeight : 0);
-  var legacyClutchPositionWeight = (primaryPosition !== 'C'
-      ? Number((fitWeights[primaryPosition] || {}).CLU || 0) * (1 - secondaryWeight)
-      : 0)
-    + (secondaryPosition && secondaryPosition !== 'C'
-      ? Number((fitWeights[secondaryPosition] || {}).CLU || 0) * secondaryWeight
-      : 0);
-  var clutchContribution = centerClutchContribution * centerClutchPositionWeight
-    + (attr('CLU') - 50) / inputScale * legacyClutchPositionWeight;
-  var regulationOverall = clampRating(rawOverall - clutchContribution);
+  // regulationOverall 直接按“CLU=50 的同一球员”重建，而不是用已经经过
+  // 99 上限裁剪的总评反推；这样 C 的独立关键球项在任何数值区间都能被
+  // 精确排除，混合位置也只扣除对应主/副位置的实际贡献。
+  function getRegulationPositionOvr(positionKey, overallValue) {
+    if (positionKey === 'C') return centerRoleOverallWithoutClutch;
+    return overallValue - (attr('CLU') - 50) / inputScale
+      * Number((fitWeights[positionKey] || {}).CLU || 0);
+  }
+  var primaryRegulationOverall = getRegulationPositionOvr(primaryPosition, primaryOverall);
+  var secondaryRegulationOverall = secondaryPosition
+    ? getRegulationPositionOvr(secondaryPosition, secondaryOverall)
+    : primaryRegulationOverall;
+  var regulationRawOverall = primaryRegulationOverall * (1 - secondaryWeight)
+    + secondaryRegulationOverall * secondaryWeight;
+  var clutchContribution = rawOverall - regulationRawOverall;
+  var regulationOverall = clampRating(regulationRawOverall);
 
   var creationLoadValue = clampRating(
     roleImpact.primaryCreator * 0.55 + touchLoad * 0.25 + ballSecurity * 0.20

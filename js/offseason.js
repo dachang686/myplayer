@@ -1462,12 +1462,18 @@ function processDraft() {
     var targetOvr = assignment.targetOvr || 60;
     prepareDraftProspectForTarget(rookie, targetOvr, rngNext);
   });
-  // 先完成 OVR/POT，再按 60/35/5 的人才分决定顺位；位置不参与基础排序。
-  assignments.sort(function(left, right) {
-    return getDraftTalentScore(right.player, 50) - getDraftTalentScore(left.player, 50)
-      || (Number(right.player && right.player.ovr) || 0) - (Number(left.player && left.player.ovr) || 0)
-      || String(left.player && left.player.id || '').localeCompare(String(right.player && right.player.id || ''));
+  // 先完成 OVR/POT；随后按每支球队的真实适配分逐顺位计算 60/35/5 人才分。
+  // 适配只影响本队榜首 1.5 分候选带，不会让明显更弱的球员越级。
+  var remainingAssignments = assignments.slice();
+  var orderedAssignments = [];
+  teams.forEach(function(team) {
+    var selected = selectDraftAssignmentForTeam(remainingAssignments, team);
+    if (!selected) return;
+    orderedAssignments.push(selected);
+    var selectedIndex = remainingAssignments.indexOf(selected);
+    if (selectedIndex >= 0) remainingAssignments.splice(selectedIndex, 1);
   });
+  assignments = orderedAssignments;
   assignments.forEach(function(assignment, idx) {
     var t = teams[idx];
     var rookie = assignment.player;
@@ -3542,6 +3548,77 @@ function getDraftTalentScore(player, fitRisk) {
   return currentOvr * 0.60 + potential * 0.35 + fit * 0.05;
 }
 
+function draftCanPlayPosition(playerPos, targetPos) {
+  return String(playerPos || '').split(/\s*\/\s*/).map(function(value) {
+    return value.trim();
+  }).indexOf(targetPos) >= 0;
+}
+
+function getDraftTeamPositionNeed(team, position) {
+  var roster = typeof LEAGUE_PLAYER_DATA !== 'undefined' && LEAGUE_PLAYER_DATA
+    ? (LEAGUE_PLAYER_DATA[team] || [])
+    : [];
+  var count = 0;
+  var best = 0;
+  roster.forEach(function(player) {
+    if (!draftCanPlayPosition(player && player.pos, position)) return;
+    count++;
+    best = Math.max(best, Number(player && player.ovr) || 0);
+  });
+  if (count === 0) return 28;
+  if (count === 1) return 18;
+  if (best < 75) return 12;
+  if (best < 82) return 6;
+  return 0;
+}
+
+function getDraftFitRiskScoreForTeam(team, player) {
+  var primaryPos = String(player && player.pos || 'SF').split('/')[0].trim();
+  return Math.max(50, Math.min(80, 50 + getDraftTeamPositionNeed(team, primaryPos)));
+}
+
+function getDraftCandidateStableTie(player) {
+  var targetTie = Number(player && player._draftTargetTie);
+  if (Number.isFinite(targetTie)) return targetTie;
+  var draftTie = Number(player && player._draftTie);
+  return Number.isFinite(draftTie) ? draftTie : 0;
+}
+
+/**
+ * 自动选秀按每个球队的真实适配分逐顺位选择。近邻判断先固定本轮榜首
+ * 人才分的 topScore - 1.5 候选带，再只在候选带内按位置需求打破平局，
+ * 避免把两两比较写成非传递排序。
+ */
+function selectDraftAssignmentForTeam(assignments, team) {
+  var rows = (assignments || []).map(function(assignment) {
+    var player = assignment && assignment.player;
+    var position = String(player && player.pos || 'SF').split('/')[0].trim();
+    var fitRisk = getDraftFitRiskScoreForTeam(team, player);
+    return {
+      assignment: assignment,
+      baseScore: getDraftTalentScore(player, 50),
+      score: getDraftTalentScore(player, fitRisk),
+      positionNeed: getDraftTeamPositionNeed(team, position),
+      stableTie: getDraftCandidateStableTie(player),
+    };
+  });
+  if (!rows.length) return null;
+  // 先以不含球队偏好的 OVR/POT 基础人才分确定候选带，适配只在这组
+  // 本来就接近的球员之间生效，避免 5% 项改变明显的全局能力排序。
+  var topScore = rows.reduce(function(maximum, row) { return Math.max(maximum, row.baseScore); }, -Infinity);
+  var topBand = rows.filter(function(row) {
+    return topScore - row.baseScore <= DRAFT_CLOSE_TALENT_SCORE_GAP + 1e-9;
+  });
+  topBand.sort(function(left, right) {
+    return right.positionNeed - left.positionNeed
+      || right.score - left.score
+      || right.stableTie - left.stableTie
+      || String(left.assignment.player && left.assignment.player.id || '')
+        .localeCompare(String(right.assignment.player && right.assignment.player.id || ''));
+  });
+  return topBand[0].assignment;
+}
+
 function getGeneratedDraftOvrTier(ovr) {
   var rating = Number(ovr) || 50;
   for (var i = 0; i < GENERATED_DRAFT_OVR_TIERS.length; i++) {
@@ -3650,7 +3727,7 @@ function buildPositionNeutralPotentialProbe(player, randomFn) {
   // 生成实际入场 OVR 属性。这样 C/PG 的角色模板不会预先决定 POT 分布。
   var attributeFloor = rareTalentProbe ? 65 : 52;
   var attributeSpan = rareTalentProbe ? 35 : 35;
-  ATTR_KEYS.forEach(function(key) {
+  getLeagueAttributeKeys().forEach(function(key) {
     probe[key] = clampLeagueAttribute(attributeFloor + Math.floor(random() * attributeSpan));
   });
   return probe;
@@ -4190,11 +4267,12 @@ function getGeneratedPlayerPotentialAttribute(player, key) {
 }
 
 function getGeneratedPlayerPotentialProfile(player, age) {
-  var values = ATTR_KEYS.map(function(key) {
+  var potentialAttributeKeys = getLeagueAttributeKeys();
+  var values = potentialAttributeKeys.map(function(key) {
     return getGeneratedPlayerPotentialAttribute(player, key);
   });
   var byKey = {};
-  ATTR_KEYS.forEach(function(key, index) { byKey[key] = values[index]; });
+  potentialAttributeKeys.forEach(function(key, index) { byKey[key] = values[index]; });
   function average(keys) {
     return keys.reduce(function(sum, key) { return sum + byKey[key]; }, 0) / keys.length;
   }

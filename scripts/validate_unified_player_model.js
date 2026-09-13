@@ -73,9 +73,10 @@ for (const pos of config.POS_LIST) for (const key of config.ATTR_LIST) {
 
 const centerClutchLow = config.getUnifiedPlayerRating(player({ pos: 'C', CLU: 25 }));
 const centerClutchHigh = config.getUnifiedPlayerRating(player({ pos: 'C', CLU: 99 }));
-assert(centerClutchHigh.overall > centerClutchLow.overall
-  && centerClutchHigh.pricing.regulationOverall >= centerClutchLow.pricing.regulationOverall,
-  `C 的 CLU 必须正向影响 OVR，不能在 regulationOverall 中反向扣分：${JSON.stringify({ centerClutchLow, centerClutchHigh })}`);
+assert(centerClutchHigh.overall > centerClutchLow.overall + 1
+  && Math.abs(centerClutchHigh.pricing.regulationOverall - centerClutchLow.pricing.regulationOverall) < 1e-9
+  && centerClutchHigh.pricing.clutchContribution > centerClutchLow.pricing.clutchContribution,
+  `C 的 CLU 必须只影响总 OVR，且从 regulationOverall 中扣除相同实际贡献：${JSON.stringify({ centerClutchLow, centerClutchHigh })}`);
 
 const defenseOnly = { PDEF: 82, IDEF: 86, STL: 78, BLK: 88, REB: 90, ATH: 80, STR: 88 };
 const lowOffenseDefender = config.getUnifiedPlayerRating(player(Object.assign({}, defenseOnly, { HAN: 25, PAS: 25 })));

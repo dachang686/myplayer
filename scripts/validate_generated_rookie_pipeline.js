@@ -218,6 +218,41 @@ if (Math.abs(potentialIndependence.score - expectedTalentScore) > 1e-9) {
   failures.push(`选秀人才分权重异常：${potentialIndependence.score}`);
 }
 
+// 自动选秀必须把球队真实位置需求带入 5% 适配项，并只在统一榜首候选
+// 带内使用需求打破平局；否则 processDraft 的适配项会退化为常数 50。
+context.LEAGUE_PLAYER_DATA = {
+  NEEDY: [{ pos: 'C', ovr: 85 }, { pos: 'C', ovr: 84 }],
+  FILLED: [{ pos: 'PG', ovr: 85 }, { pos: 'PG', ovr: 84 }],
+};
+const fitIntegration = vm.runInContext(`(() => {
+  const pgCandidate = { id: 'R-FIT-PG', pos: 'PG', ovr: 80, _draftPotential: 90 };
+  const centerCandidate = { id: 'R-FIT-C', pos: 'C', ovr: 80, _draftPotential: 90 };
+  const needyPgFit = getDraftFitRiskScoreForTeam('NEEDY', pgCandidate);
+  const needyCenterFit = getDraftFitRiskScoreForTeam('NEEDY', centerCandidate);
+  const filledPgFit = getDraftFitRiskScoreForTeam('FILLED', pgCandidate);
+  const filledCenterFit = getDraftFitRiskScoreForTeam('FILLED', centerCandidate);
+  const selected = selectDraftAssignmentForTeam([
+    { player: pgCandidate }, { player: centerCandidate },
+  ], 'NEEDY');
+  return {
+    needyPgFit,
+    needyCenterFit,
+    filledPgFit,
+    filledCenterFit,
+    talentScoreGap: getDraftTalentScore(pgCandidate, needyPgFit)
+      - getDraftTalentScore(centerCandidate, needyCenterFit),
+    selected: selected && selected.player && selected.player.id,
+  };
+})()`, context);
+if (fitIntegration.needyPgFit !== 78
+  || fitIntegration.needyCenterFit !== 50
+  || fitIntegration.filledPgFit !== 50
+  || fitIntegration.filledCenterFit !== 78
+  || Math.abs(fitIntegration.talentScoreGap - 1.4) > 1e-9
+  || fitIntegration.selected !== 'R-FIT-PG') {
+  failures.push(`自动选秀未使用真实适配分或近邻带排序异常：${JSON.stringify(fitIntegration)}`);
+}
+
 // 年轻、跨技能组且有稀有天赋的后卫可以压过完成度高但技能集窄的中锋。
 const broadGuardPotential = vm.runInContext(`inferGeneratedPlayerPotential({
   id: 'R-POT-BROAD-GUARD', _prospectId: 'POT-BROAD-GUARD', pos: 'PG', ovr: 77, _age: 20,
@@ -263,8 +298,14 @@ if (!draftFlowSource.includes('buildGeneratedDraftOvrTargets(prospects.length, r
   || !draftFlowSource.includes('assignDraftTargetsByCurrentOvr(prospects, targetOvrs)')
   || !draftFlowSource.includes('getDraftTalentScore(a, 50)')
   || !offseasonSource.includes('var assignments = assignDraftTargetsByCurrentOvr(prospects, targetOvrs)')
-  || !offseasonSource.includes('getDraftTalentScore(right.player, 50)')) {
+  || !offseasonSource.includes('selectDraftAssignmentForTeam(remainingAssignments, team)')
+  || !offseasonSource.includes('getDraftFitRiskScoreForTeam(team, player)')) {
   failures.push('正式选秀流程未接入 OVR/POT 联合人才分');
+}
+if (draftFlowSource.includes('var scoreGap = Math.abs(b.score - a.score)')
+  || !draftFlowSource.includes('var topScore = ranked.reduce')
+  || !draftFlowSource.includes('var closeBand = ranked.filter')) {
+  failures.push('交互选秀仍使用非传递的两两近邻比较器');
 }
 if (offseasonSource.includes('FIXED_PROSPECT_DRAFT_TALENT_OFFSETS')) {
   failures.push('仍残留 PG/SG 固定人才分补偿');
@@ -290,6 +331,7 @@ const report = {
   equalPositionSeeds: { PG: guardSeed, C: centerSeed },
   sourceAssignmentCount: sourceAssignments.length,
   potentialIndependence,
+  fitIntegration,
   broadGuardPotential,
   matureCenterPotential,
   slowAttributeGrowthViolations,
