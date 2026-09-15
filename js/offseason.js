@@ -4267,11 +4267,11 @@ function getGeneratedPlayerAgeFactor(player, age, ovr) {
   if (age <= 28) return (rngNext() - 0.35) * 1.2;
   if (age <= 30) return (rngNext() - 0.62) * 0.8;
   // 年龄曲线只由年龄决定，不能因为当前 OVR 或选秀档位而冻结衰退。
-  // 31–32 岁轻度下滑，33–34 岁稳定下滑，35 岁后快速下滑（相对初版略加重）。
-  if (age <= 32) return -0.50 - rngNext() * 0.55;
-  if (age <= 34) return -1.12 - rngNext() * 0.92;
-  if (age <= 35) return -1.88 - rngNext() * 1.15;
-  return -2.32 - rngNext() * 2.25;
+  // 31–32 岁轻度下滑，33–34 岁稳定下滑，35 岁后快速下滑。
+  if (age <= 32) return -0.80 - rngNext() * 0.60;
+  if (age <= 34) return -1.60 - rngNext() * 0.90;
+  if (age <= 35) return -2.40 - rngNext() * 1.15;
+  return -3.20 - rngNext() * 2.00;
 }
 
 function getGeneratedPlayerPotentialAttribute(player, key) {
@@ -4381,8 +4381,9 @@ function inferLeaguePlayerPotential(player, age) {
   var playerAge = Number(age) || inferAge(player && player.id, ovr);
   if (playerAge >= 29) return ovr;
 
-  // 现实球员以当前能力相对同龄人的领先程度决定上限；引入高位递减阻尼，避免全体年轻球员虚高至 95~99。
-  var ageRoom = Math.max(0, (28 - playerAge) * 0.50);
+  // 现实球员以当前能力相对同龄人的领先程度决定上限；
+  // 引入双层递减阻尼，避免大量年轻球员无脑冲上 85+ / 90+。
+  var ageRoom = Math.max(0, (28 - playerAge) * 0.42);
   var ageBenchmark = Math.max(68, Math.min(88, 68 + Math.max(0, playerAge - 18) * 2));
   var abilityBonus = Math.max(-2, Math.min(2, Math.round((ovr - ageBenchmark) / 5)));
   var rawGrowth = Math.max(0, ageRoom + abilityBonus);
@@ -4393,8 +4394,13 @@ function inferLeaguePlayerPotential(player, age) {
     potential = Math.min(99, ovr + rawGrowth);
   } else {
     var rawPotential = ovr + rawGrowth;
-    if (rawPotential > 90) {
-      potential = 90 + (rawPotential - 90) * 0.45;
+    if (rawPotential > 84) {
+      var d1 = 84 + (rawPotential - 84) * 0.50;
+      if (d1 > 88) {
+        potential = 88 + (d1 - 88) * 0.25;
+      } else {
+        potential = d1;
+      }
     } else {
       potential = rawPotential;
     }

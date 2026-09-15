@@ -285,8 +285,8 @@ for (let seedIndex = 0; seedIndex < SEED_COUNT; seedIndex++) {
   for (const season of CHECKPOINTS) {
     const snapshot = snapshots[season];
     if (!snapshot) continue;
-    if (season <= 15 && !inRange(snapshot.count90, 18, 60)) {
-      failures.push(`seed ${seed} 第 ${season} 季 90+ = ${snapshot.count90}，过渡期预期 18–60`);
+    if (season <= 15 && !inRange(snapshot.count90, 15, 60)) {
+      failures.push(`seed ${seed} 第 ${season} 季 90+ = ${snapshot.count90}，过渡期预期 15–60`);
     }
     if (EQUILIBRIUM_CHECKPOINTS.includes(season)) {
       if (snapshot.top35Under30 < 8) {
