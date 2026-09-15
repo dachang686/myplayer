@@ -4381,12 +4381,25 @@ function inferLeaguePlayerPotential(player, age) {
   var playerAge = Number(age) || inferAge(player && player.id, ovr);
   if (playerAge >= 29) return ovr;
 
-  // 现实球员以当前能力相对同龄人的领先程度决定上限，年轻球员保留更多成长空间。
-  var ageRoom = Math.max(1, 29 - playerAge);
+  // 现实球员以当前能力相对同龄人的领先程度决定上限；引入高位递减阻尼，避免全体年轻球员虚高至 95~99。
+  var ageRoom = Math.max(0, (28 - playerAge) * 0.50);
   var ageBenchmark = Math.max(68, Math.min(88, 68 + Math.max(0, playerAge - 18) * 2));
-  var abilityBonus = Math.max(-2, Math.min(3, Math.round((ovr - ageBenchmark) / 5)));
-  var potential = ovr + Math.max(0, ageRoom + abilityBonus);
-  return Math.max(ovr, Math.min(99, potential));
+  var abilityBonus = Math.max(-2, Math.min(2, Math.round((ovr - ageBenchmark) / 5)));
+  var rawGrowth = Math.max(0, ageRoom + abilityBonus);
+  var isGenerational = (typeof isMvpStar === 'function' && isMvpStar(player))
+    || ovr >= 95 || (playerAge <= 22 && ovr >= 92);
+  var potential;
+  if (isGenerational) {
+    potential = Math.min(99, ovr + rawGrowth);
+  } else {
+    var rawPotential = ovr + rawGrowth;
+    if (rawPotential > 90) {
+      potential = 90 + (rawPotential - 90) * 0.45;
+    } else {
+      potential = rawPotential;
+    }
+  }
+  return Math.max(ovr, Math.min(99, Math.round(potential)));
 }
 
 function getPublishedPlayerLoyalty(playerId) {
