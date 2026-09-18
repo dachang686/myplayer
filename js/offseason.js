@@ -2133,7 +2133,7 @@ function applyLeaguePlayerOvrChange(player, oldOvr, newOvr) {
 
   var age = Number(player._age) || 27;
   var requestedMagnitude = Math.max(1, Math.abs(requested - before));
-  var cap = Math.min(2, requestedMagnitude);
+  var cap = direction > 0 ? Math.min(2, requestedMagnitude) : Math.min(3, requestedMagnitude);
   var magnitude = cap;
   var profile = getLeaguePlayerDevelopmentProfile(player);
   var declineFast = ['ATH','STR','PDEF','STL','DNK'];
@@ -2160,7 +2160,7 @@ function applyLeaguePlayerOvrChange(player, oldOvr, newOvr) {
   });
   // A larger positive request must not reduce the number of development
   // rounds. Requests of +3 previously got one round while +1/+2 got two.
-  var growthRounds = generatedPlayer && direction > 0 ? 2 : 1;
+  var growthRounds = (generatedPlayer && direction > 0) || (direction < 0 && requestedMagnitude >= 3) ? 2 : 1;
   for (var growthRound = 0; growthRound < growthRounds; growthRound++) {
     if (typeof calcOVR === 'function') {
       var currentFormulaOvr = calcOVR(player, player.pos);
@@ -2172,9 +2172,9 @@ function applyLeaguePlayerOvrChange(player, oldOvr, newOvr) {
         if (direction < 0 && currentFormulaOvr <= beforeFormulaOvr - requestedMagnitude) break;
       }
     }
-    var roundMagnitude = generatedPlayer && direction > 0 ? 1 : magnitude;
+    var roundMagnitude = (generatedPlayer && direction > 0) ? 1 : (direction < 0 && growthRounds > 1 ? Math.ceil(magnitude / 2) : magnitude);
     applyLeaguePlayerAttributeRound(player, profile, direction, roundMagnitude, roundOptions);
-    if (!generatedPlayer || direction < 0) break;
+    if (!generatedPlayer && direction > 0) break;
   }
 
   if (typeof calcOVR === 'function') {
@@ -2214,7 +2214,9 @@ function getLeaguePlayerRetirementChance(player, age, options) {
   var chance = 0;
   // 高龄必须有基础退役率，避免 35+ 且 OVR≥75 永久滞留；球星档略缓，边缘人更快出清。
   if (currentAge >= 40) chance = 80;
+  else if (currentAge === 39) chance = ovr >= 88 ? 56 : 72;
   else if (currentAge >= 38) chance = ovr >= 88 ? 48 : 65;
+  else if (currentAge === 37) chance = ovr >= 85 ? 38 : (ovr >= 78 ? 48 : 60);
   else if (currentAge >= 36) chance = ovr >= 85 ? 28 : (ovr >= 78 ? 42 : 55);
   else if (currentAge >= 35) chance = ovr >= 85 ? 16 : (ovr >= 78 ? 32 : 48);
   else if (currentAge >= 34) chance = ovr < 75 ? 40 : (ovr < 80 ? 18 : 0);
@@ -2262,10 +2264,10 @@ function evolveUnsignedFreeAgents() {
       }
     }
 
-    // 无队状态下的衰退比在队球员更温和；高龄和低 OVR 球员仍会逐步退出联盟。
-    if (age >= 31 && rngNext() < 0.72) {
+    // 无队状态下的衰退：高龄和低 OVR 球员逐步退出联盟，避免自由池囤积高龄高能老将。
+    if (age >= 31) {
       var decline = age >= 35 ? 1 + Math.floor(rngNext() * 2) : 1;
-      applyLeaguePlayerOvrChange(player, oldOvr, Math.max(55, oldOvr - decline));
+      applyLeaguePlayerOvrChange(player, oldOvr, Math.max(50, oldOvr - decline));
     }
     var retireChance = getLeaguePlayerRetirementChance(player, age, { unsigned: true });
     if (rngNext() * 100 < retireChance) {
@@ -4708,7 +4710,13 @@ function evolveLeague() {
       var ageFactor = getGeneratedPlayerAgeFactor(p, age, p.ovr);
       var volFactor = (rngNext() - 0.5) * volatility * 0.6;
       var randFactor = (rngNext() - 0.5) * 1.5;
-      var change = ageFactor * 0.5 + volFactor * 0.3 + randFactor * 0.2;
+      var change;
+      if (ageFactor < 0) {
+        // 衰退期老将：不再受 0.5 折半压制，随年龄正常平滑衰退，使 33+ 及 35+ 老将 OVR 及时回落
+        change = ageFactor * 0.85 + volFactor * 0.2 + randFactor * 0.2;
+      } else {
+        change = ageFactor * 0.5 + volFactor * 0.3 + randFactor * 0.2;
+      }
       change += getPotentialGrowthBias(gene.potential, p.ovr, age);
       var catchupActive = isGeneratedLeaguePlayer(p)
         && age <= 29

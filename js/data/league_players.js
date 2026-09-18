@@ -7983,7 +7983,7 @@ const LEAGUE_PLAYER_DATA = {
   "PHI": [{
     "id": "P0379",
     "_age": 40,
-    "_protectedRetirementAge": 65,
+    "_protectedRetirementAge": 42,
     "cname": "勒布朗-詹姆斯",
     "pos": "PF / SF",
     "height": "6'9'",
