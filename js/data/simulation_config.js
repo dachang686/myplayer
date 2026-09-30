@@ -887,8 +887,8 @@ function getUnifiedPlayerRating(player, position) {
   var centerRoleScores = {
     selfCreation: (attr('HAN') + attr('MID') * 0.60 + attr('threePT') * 0.40 + attr('PAS') + attr('FIN')) / 4,
     rimFinishing: (attr('FIN') + attr('DNK') + attr('ATH')) / 3,
-    defensiveAnchor: attr('IDEF') * 0.22 + attr('BLK') * 0.18 + attr('REB') * 0.18
-      + attr('STR') * 0.14 + attr('PDEF') * 0.10 + attr('STL') * 0.08,
+    defensiveAnchor: attr('IDEF') * 0.24 + attr('BLK') * 0.20 + attr('REB') * 0.20
+      + attr('STR') * 0.16 + attr('PDEF') * 0.11 + attr('STL') * 0.09,
   };
   var centerTechnicalPackage = (attr('HAN') + attr('MID') + attr('threePT') + attr('PAS') + attr('FIN')) / 5;
   var centerPostPackage = (attr('MID') + attr('FIN') + attr('STR')) / 3;
@@ -896,17 +896,17 @@ function getUnifiedPlayerRating(player, position) {
     // 这是角色价值的校准层，不改变 70/20/10 的组合顺序；自主进攻
     // 和内线技术包的高端收益用于保留 Embiid/Wembanyama 类型的技术中锋。
     selfCreation: clampRating(
-      50 + (centerRoleScores.selfCreation - 50) * 1.45
-        + Math.max(0, centerTechnicalPackage - 75) * 0.25
-        + Math.max(0, centerPostPackage - 80) * 0.40
+      50 + (centerRoleScores.selfCreation - 50) * 1.25
+        + Math.max(0, centerTechnicalPackage - 75) * 0.20
+        + Math.max(0, centerPostPackage - 80) * 0.35
     ),
     rimFinishing: clampRating(50 + (centerRoleScores.rimFinishing - 50)),
     defensiveAnchor: clampRating(
-      50 + (centerRoleScores.defensiveAnchor - 50) * 1.30
+      50 + (centerRoleScores.defensiveAnchor - 50) * 1.15
         + Math.max(0, (
            attr('PDEF') + attr('STL') + attr('IDEF') + attr('BLK')
             + attr('REB') + attr('STR')
-         ) / 6 - 70) * 0.25
+         ) / 6 - 70) * 0.20
       ),
   };
   var centerRoleRanking = Object.keys(centerRoleValues).map(function(key) {
@@ -915,10 +915,10 @@ function getUnifiedPlayerRating(player, position) {
   var centerRoleWeighted = centerRoleRanking[0] * 0.70
     + centerRoleRanking[1] * 0.20
     + centerRoleRanking[2] * 0.10;
-  var centerRoleCalibrationLift = Math.min(3, Math.max(0, (centerRoleWeighted - 50) * 0.08));
+  var centerRoleCalibrationLift = Math.min(1.5, Math.max(0, (centerRoleWeighted - 50) * 0.05));
   var centerRoleComposite = clampRating(centerRoleWeighted
-    + Math.max(0, centerRoleRanking[1] - 75) * 0.10
-    + Math.max(0, centerRoleRanking[2] - 70) * 0.25
+    + Math.max(0, centerRoleRanking[1] - 78) * 0.08
+    + Math.max(0, centerRoleRanking[2] - 75) * 0.15
     + centerRoleCalibrationLift);
 
   var shootingGravity = component(weighted({ threePT: 0.68, MID: 0.32 }), ['threePT', 'MID']);
@@ -1082,9 +1082,9 @@ function getUnifiedPlayerRating(player, position) {
   // 70/20/10 递减把可靠轮换低估；高端技术角色只在未达到顶端时获得
   // 小幅保留，顶级多角色中锋不会被额外抬高。
   var centerCompletionCalibrationLift = centerRoleComposite < 85
-    ? Math.max(0, Math.min(3, (centerRoleComposite - 55) * 0.30))
+    ? Math.max(0, Math.min(2.5, (centerRoleComposite - 55) * 0.25))
     : 0;
-  var centerTechnicalCalibrationLift = Math.min(1.5, Math.max(0, (centerRoleRanking[0] - 88) * 0.50))
+  var centerTechnicalCalibrationLift = Math.min(1.2, Math.max(0, (centerRoleRanking[0] - 88) * 0.35))
     * Math.max(0, Math.min(1, (94 - centerRoleComposite) / 4));
   var centerRoleOverall = clampRating(
     centerRoleComposite * 0.70 + fittedLegacyPositionOvr('C') * 0.30
